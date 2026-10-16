@@ -129,48 +129,60 @@ describe("fetchAlertsList", () => {
     ).not.toHaveProperty("land_filter");
   });
 
-  it("turns a 502 into a retryable error carrying the backend's sentence", async () => {
+  it("turns a 502 into a retryable `unavailable` carrying the backend's sentence", async () => {
     const detail =
       "Integrated alerts data is unavailable right now. Please try again in a moment.";
     mockedFetch.mockResolvedValue(jsonResponse(502, { detail }));
     const error = await fetchAlertsList(aoi, range).catch((e) => e);
     expect(error).toBeInstanceOf(AlertsListError);
-    expect(error.message).toBe(detail);
-    expect(error.retryable).toBe(true);
+    expect(error).toMatchObject({
+      kind: "unavailable",
+      detail,
+      retryable: true,
+    });
   });
 
-  it("shows a 422's reason, final, whether it is the area or the window", async () => {
+  it("keeps a 422's reason, final, whether it is the area or the window", async () => {
     const tooLong =
       "The period from 2025-01-01 to 2026-10-16 is longer than 365 days.";
     mockedFetch.mockResolvedValue(jsonResponse(422, { detail: tooLong }));
     const window = await fetchAlertsList(aoi, range).catch((e) => e);
     expect(window).toBeInstanceOf(AlertsListError);
-    expect(window.message).toBe(tooLong);
-    expect(window.retryable).toBe(false);
+    expect(window).toMatchObject({
+      kind: "rejected",
+      detail: tooLong,
+      retryable: false,
+    });
 
     mockedFetch.mockResolvedValue(
       jsonResponse(422, { detail: "Area type not supported" })
     );
     const area = await fetchAlertsList(aoi, range).catch((e) => e);
-    expect(area.message).toBe("Area type not supported");
-    expect(area.retryable).toBe(false);
+    expect(area).toMatchObject({
+      kind: "rejected",
+      detail: "Area type not supported",
+      retryable: false,
+    });
 
     // FastAPI's list-shaped 422 for a malformed body has no sentence to show.
     mockedFetch.mockResolvedValue(
       jsonResponse(422, { detail: [{ msg: "field required" }] })
     );
     const malformed = await fetchAlertsList(aoi, range).catch((e) => e);
-    expect(malformed.message).toBe("Couldn't load the alerts.");
-    expect(malformed.retryable).toBe(false);
+    expect(malformed).toMatchObject({ kind: "rejected", retryable: false });
+    expect(malformed.detail).toBeUndefined();
   });
 
-  it("asks for sign-in on a 401 and stays generic otherwise", async () => {
+  it("marks a 401 as unauthenticated and anything else as unknown", async () => {
     mockedFetch.mockResolvedValue(
       jsonResponse(401, { detail: "Unauthorized" })
     );
     const unauthorized = await fetchAlertsList(aoi, range).catch((e) => e);
-    expect(unauthorized.message).toBe("Sign in to see the alerts list.");
-    expect(unauthorized.retryable).toBe(false);
+    expect(unauthorized).toMatchObject({
+      kind: "unauthenticated",
+      retryable: false,
+    });
+    expect(unauthorized.detail).toBeUndefined();
 
     // A failed fetch: `apiFetch` rejects with the browser's TypeError.
     mockedFetch.mockImplementation(async () => {
@@ -178,25 +190,26 @@ describe("fetchAlertsList", () => {
     });
     const network = await fetchAlertsList(aoi, range).catch((e) => e);
     expect(network).toBeInstanceOf(AlertsListError);
-    expect(network.message).toBe("Couldn't load the alerts.");
-    expect(network.retryable).toBe(true);
+    expect(network).toMatchObject({ kind: "unknown", retryable: true });
   });
 
-  it("turns a 200 the schema rejects into the generic, retryable error", async () => {
+  it("turns a 200 the schema rejects into the unknown, retryable error", async () => {
     mockedFetch.mockResolvedValue(jsonResponse(200, { rows: "not a list" }));
     const error = await fetchAlertsList(aoi, range).catch((e) => e);
     expect(error).toBeInstanceOf(AlertsListError);
-    expect(error.message).toBe("Couldn't load the alerts.");
-    expect(error.retryable).toBe(true);
+    expect(error).toMatchObject({ kind: "unknown", retryable: true });
   });
 
-  it("maps a bodiless 502 to the generic copy and passes its own errors through", () => {
+  it("keeps a bodiless 502 unavailable without a sentence and passes its own errors through", () => {
     const bare = Object.assign(new Error("Request failed: Bad Gateway"), {
       status: 502,
     });
-    expect(toAlertsListError(bare).message).toBe("Couldn't load the alerts.");
-    expect(toAlertsListError(bare).retryable).toBe(true);
-    const own = new AlertsListError("x", false);
+    expect(toAlertsListError(bare)).toMatchObject({
+      kind: "unavailable",
+      retryable: true,
+    });
+    expect(toAlertsListError(bare).detail).toBeUndefined();
+    const own = new AlertsListError("rejected", "x");
     expect(toAlertsListError(own)).toBe(own);
   });
 });

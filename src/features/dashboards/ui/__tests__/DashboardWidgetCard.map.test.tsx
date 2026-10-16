@@ -47,15 +47,12 @@ const renderMapCard = (isOwner: boolean) =>
       <ChakraProvider value={defaultSystem}>
         <DashboardWidgetCard
           title="Tree cover loss"
-          card={null}
           map={{
             kind: "dataset",
             title: "Tree cover loss",
             tileUrl: "https://example.test/{z}/{x}/{y}.png",
           }}
           aoi={undefined}
-          viewportBbox={null}
-          placeholder={null}
           removeMode="widget"
           isOwner={isOwner}
           isDouble={false}
@@ -93,8 +90,6 @@ describe("DashboardWidgetCard body slot", () => {
         <ChakraProvider value={defaultSystem}>
           <DashboardWidgetCard
             title="Integrated alerts in Guarapuava"
-            card={null}
-            placeholder={null}
             body={<div data-testid="own-body">list and map</div>}
             removeMode="widget"
             isOwner
@@ -123,7 +118,6 @@ describe("DashboardWidgetCard body slot", () => {
         <ChakraProvider value={defaultSystem}>
           <DashboardWidgetCard
             title="Integrated alerts"
-            card={null}
             placeholder="This alerts widget can't be displayed."
             body={<div data-testid="own-body" />}
             removeMode="widget"

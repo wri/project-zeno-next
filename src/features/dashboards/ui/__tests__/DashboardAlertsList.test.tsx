@@ -289,7 +289,7 @@ describe("DashboardAlertsList", () => {
     const retryable = renderList({
       view: {
         kind: "error",
-        failure: { message: UNAVAILABLE, retryable: true },
+        failure: { kind: "unavailable", detail: UNAVAILABLE, retryable: true },
       },
       rows: [],
     });
@@ -302,7 +302,11 @@ describe("DashboardAlertsList", () => {
     renderList({
       view: {
         kind: "error",
-        failure: { message: "Area type not supported", retryable: false },
+        failure: {
+          kind: "rejected",
+          detail: "Area type not supported",
+          retryable: false,
+        },
       },
       rows: [],
     });
@@ -355,7 +359,7 @@ describe("DashboardAlertsList", () => {
   it("shows a failed fetch above the rows it still holds", () => {
     const props = renderList({
       view: readyView(chipRange("new-week", list), {
-        message: "Couldn't load the alerts.",
+        kind: "unknown",
         retryable: true,
       }),
     });

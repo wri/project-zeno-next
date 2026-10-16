@@ -18,12 +18,13 @@ import {
 } from "@phosphor-icons/react";
 
 import InsightCaption from "@/app/components/InsightCaption";
+import { Pill } from "@/src/shared/ui/Pill";
+import type { AlertsListError } from "../api/alerts";
 import {
   formatAlertDate,
   formatHa,
   LAND_FILTERS,
   landFilterOption,
-  pageNumbers,
   rowArea,
   rowsSummary,
   rowTiers,
@@ -34,7 +35,7 @@ import {
   type AlertsLandFilter,
   type DateRange,
 } from "../lib/alertsWidgets";
-import { paginate } from "../lib/pagination";
+import { pageNumbers, paginate } from "../lib/pagination";
 import { TWO_COLUMN_QUERY } from "./gridLayout";
 
 const PAGE_SIZE = 10;
@@ -72,10 +73,22 @@ const HALF_WIDTH_ONLY = {
 
 const CONFIDENCES: AlertsConfidence[] = ["all", "high", "highest"];
 
-/** A failed fetch, as the pane shows it. */
-export interface AlertsFailure {
-  message: string;
-  retryable: boolean;
+/** A failed fetch, as the pane words it: why, and whether a Retry can help. */
+export type AlertsFailure = Pick<
+  AlertsListError,
+  "kind" | "detail" | "retryable"
+>;
+
+/**
+ * The sentence for a failure: the backend's own for a refused request or a
+ * failed job (a 422 or 502 `detail`), a sign-in prompt, else the generic
+ * line.
+ */
+function failureMessage(failure: AlertsFailure): string {
+  if (failure.detail) return failure.detail;
+  return failure.kind === "unauthenticated"
+    ? "Sign in to see the alerts list."
+    : "Couldn't load the alerts.";
 }
 
 /**
@@ -122,68 +135,6 @@ const pillProps = (selected: boolean) =>
     // chevron is 10px.
     _icon: { width: "auto", height: "auto" },
   }) as const;
-
-/**
- * The design's "Dropdown / …" control: a label, the chosen value and a
- * chevron on a 24px pill, opening a menu of the options.
- */
-function FilterDropdown<T extends string | undefined>({
-  label,
-  value,
-  options,
-  onSelect,
-}: {
-  label: string;
-  value: T;
-  options: { value: T; label: string }[];
-  onSelect: (value: T) => void;
-}) {
-  const current = options.find((option) => option.value === value);
-  return (
-    <Menu.Root positioning={{ placement: "bottom-start" }}>
-      <Menu.Trigger asChild>
-        <Button
-          size="xs"
-          h="24px"
-          pl="10px"
-          pr="8px"
-          gap="6px"
-          rounded="sm"
-          variant="outline"
-          bg="white"
-          borderColor="#E0E2E5"
-          fontSize="12px"
-          _icon={{ width: "auto", height: "auto" }}
-          aria-label={`${label}: ${current?.label ?? ""}`}
-        >
-          <Text as="span" fontWeight="normal" color="#565E7B">
-            {label}:
-          </Text>
-          <Text as="span" fontWeight="medium" color="#131619">
-            {current?.label}
-          </Text>
-          <CaretDownIcon size={10} color="#131619" />
-        </Button>
-      </Menu.Trigger>
-      <Portal>
-        <Menu.Positioner>
-          <Menu.Content minW="140px" zIndex={1400}>
-            {options.map((option) => (
-              <Menu.Item
-                key={option.label}
-                value={option.label}
-                onSelect={() => onSelect(option.value)}
-                fontSize="12px"
-              >
-                {option.label}
-              </Menu.Item>
-            ))}
-          </Menu.Content>
-        </Menu.Positioner>
-      </Portal>
-    </Menu.Root>
-  );
-}
 
 /** The design's NEW pill: red on a pale red ground, with a dot. */
 function NewBadge() {
@@ -233,7 +184,7 @@ function FailureNotice({
       borderRadius="sm"
     >
       <Text flex="1" minW={0} fontSize="12px" color="fg">
-        {failure.message}
+        {failureMessage(failure)}
       </Text>
       {failure.retryable && (
         <Button size="xs" variant="outline" bg="white" onClick={onRetry}>
@@ -517,7 +468,8 @@ export default function DashboardAlertsList({
           </Portal>
         </Popover.Root>
         <Box w="1px" h="20px" bg="#DDE2F5" aria-hidden />
-        <FilterDropdown
+        <Pill
+          variant="text"
           label="Confidence"
           value={confidence}
           options={CONFIDENCES.map((value) => ({
@@ -526,7 +478,8 @@ export default function DashboardAlertsList({
           }))}
           onSelect={onConfidence}
         />
-        <FilterDropdown
+        <Pill
+          variant="text"
           label="Intersects"
           value={landFilter}
           options={LAND_FILTERS.map((option) => ({
