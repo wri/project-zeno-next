@@ -60,8 +60,16 @@ export interface AlertDay {
 
 /** `POST /api/alerts/list`, normalised by `api/alerts.ts::toAlertsList`. */
 export interface AlertsList {
-  /** The last day the data covers; every chip counts back from it. */
-  dataTo: string;
+  /**
+   * The latest alert day in the window across every tier (the badge row's
+   * "LATEST" label); absent when the window has no alerts at all.
+   */
+  latest?: string;
+  /**
+   * The day every chip counts back from and the last day a custom range may
+   * reach: `latest`, or the window's end when the window has no alerts.
+   */
+  anchor: string;
   /** The window the rows cover — the request's dates after the backend clamped them. */
   window: DateRange;
   /** The latest full alert week (Sunday to Saturday); the "New this week" range. */
@@ -267,28 +275,28 @@ export function initialWindow(days: number, today: string): DateRange {
 }
 
 /**
- * The inclusive range a chip stands for, counted back from the data's last
- * day (`dataTo`), never from today: the newest alert day is what "last day"
- * means to someone reading the list. A custom range is clamped into the data
- * and ordered.
+ * The inclusive range a chip stands for, counted back from the list's
+ * `anchor` (the latest alert day), never from today or the window's end: the
+ * newest alert day is what "last day" means to someone reading the list. A
+ * custom range is clamped to the anchor and ordered.
  */
 export function chipRange(
   chip: AlertsChip,
-  list: Pick<AlertsList, "dataTo" | "newWeek">,
+  list: Pick<AlertsList, "anchor" | "newWeek">,
   custom?: DateRange
 ): DateRange {
-  const { dataTo } = list;
+  const { anchor } = list;
   switch (chip) {
     case "new-week":
       return { ...list.newWeek };
     case "last-day":
-      return { start: dataTo, end: dataTo };
+      return { start: anchor, end: anchor };
     case "last-3-days":
-      return { start: shiftIsoDate(dataTo, -2), end: dataTo };
+      return { start: shiftIsoDate(anchor, -2), end: anchor };
     case "last-week":
-      return { start: shiftIsoDate(dataTo, -6), end: dataTo };
+      return { start: shiftIsoDate(anchor, -6), end: anchor };
     case "custom": {
-      const end = custom && custom.end < dataTo ? custom.end : dataTo;
+      const end = custom && custom.end < anchor ? custom.end : anchor;
       const wanted = custom?.start ?? end;
       const start = wanted > end ? end : wanted;
       return { start, end };
@@ -298,12 +306,12 @@ export function chipRange(
 
 /**
  * The earliest start a custom range may have: the dataset's first day, or
- * the day that makes the range ending on `dataTo` exactly `MAX_CUSTOM_DAYS`
+ * the day that makes the range ending on `anchor` exactly `MAX_CUSTOM_DAYS`
  * long, whichever is later. The inputs' `min` and the handler's check both
  * read this, so the widget can never ask for a window the backend refuses.
  */
-export function customStartMin(dataTo: string): string {
-  const yearBack = shiftIsoDate(dataTo, -(MAX_CUSTOM_DAYS - 1));
+export function customStartMin(anchor: string): string {
+  const yearBack = shiftIsoDate(anchor, -(MAX_CUSTOM_DAYS - 1));
   return yearBack > ALERTS_DATASET_START ? yearBack : ALERTS_DATASET_START;
 }
 
@@ -410,8 +418,8 @@ export function formatAlertDate(iso: string): string {
   return format(parseISO(iso), "d MMM yyyy");
 }
 
-/** "SEP 28, 2026" — the badge row's `DATA TO` form. */
-export function formatDataTo(iso: string): string {
+/** "SEP 28, 2026" — the badge row's `LATEST` form. */
+export function formatLatest(iso: string): string {
   return format(parseISO(iso), "MMM d, yyyy").toUpperCase();
 }
 

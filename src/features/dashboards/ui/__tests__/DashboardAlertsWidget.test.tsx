@@ -143,7 +143,7 @@ describe("DashboardAlertsWidget", () => {
       initialWindow(30, todayIso()),
       undefined
     );
-    expect(screen.getByText("DATA TO OCT 16, 2026")).toBeTruthy();
+    expect(screen.getByText("LATEST OCT 16, 2026")).toBeTruthy();
     // No pane header: the map lines up with the list; its full-screen
     // control is inside the map.
     expect(screen.queryByText(/· map/)).toBeNull();
@@ -155,14 +155,14 @@ describe("DashboardAlertsWidget", () => {
     expect(mapPane().dataset.context).toBe("");
   });
 
-  it("keeps the params badges behind the Show params toggle, with DATA TO always on", async () => {
+  it("keeps the params badges behind the Show params toggle, with LATEST always on", async () => {
     mockedFetch.mockResolvedValue(toAlertsList(ALERTS_LIST_WIRE));
     renderWidget();
     await screen.findByText(NEW_WEEK_FOOTER);
 
     expect(screen.queryByText("DATASET")).toBeNull();
     expect(screen.queryByText("CONFIDENCE")).toBeNull();
-    expect(screen.getByText("DATA TO OCT 16, 2026")).toBeTruthy();
+    expect(screen.getByText("LATEST OCT 16, 2026")).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "Show params" }));
     expect(screen.getByText("DATASET")).toBeTruthy();
@@ -178,8 +178,11 @@ describe("DashboardAlertsWidget", () => {
     renderWidget();
     await screen.findByText(NEW_WEEK_FOOTER);
 
+    // "Last day" is the latest alert day (16 Oct), not the window's end
+    // (19 Oct) and not today.
     fireEvent.click(screen.getByRole("button", { name: "Last day" }));
     expect(screen.getByText("1 alert day · 5 ha in this period")).toBeTruthy();
+    expect(screen.getByText(/Alert days on 16 Oct 2026/)).toBeTruthy();
     expect(mapPane().dataset.start).toBe("2026-10-16");
     expect(mapPane().dataset.end).toBe("2026-10-16");
 
@@ -255,6 +258,22 @@ describe("DashboardAlertsWidget", () => {
     expect(mockedFetch).toHaveBeenCalledTimes(3);
   });
 
+  it("hides LATEST and counts back from the window's end when the window has no alerts", async () => {
+    mockedFetch.mockResolvedValue(
+      toAlertsList({ ...ALERTS_LIST_WIRE, data_to: null, rows: [] })
+    );
+    renderWidget();
+    await screen.findByText("No alerts in this period.");
+
+    expect(screen.queryByText(/^LATEST /)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Last day" }));
+    expect(screen.getByText(/Alert days on 19 Oct 2026/)).toBeTruthy();
+    expect(mapPane().dataset.start).toBe("2026-10-19");
+    expect(mapPane().dataset.end).toBe("2026-10-19");
+    const start = await openCustomStart();
+    expect(start.getAttribute("max")).toBe("2026-10-19");
+  });
+
   it("fetches a wider window only when a custom range reaches outside, keeping the rows on show", async () => {
     const first = toAlertsList(ALERTS_LIST_WIRE);
     const wider = toAlertsList({
@@ -327,7 +346,7 @@ describe("DashboardAlertsWidget", () => {
     renderWidget();
 
     await screen.findByText(sentence);
-    expect(screen.queryByText("DATA TO OCT 16, 2026")).toBeNull();
+    expect(screen.queryByText("LATEST OCT 16, 2026")).toBeNull();
     // The map still draws the snapshot's own period.
     expect(mapPane().dataset.start).toBe("");
 

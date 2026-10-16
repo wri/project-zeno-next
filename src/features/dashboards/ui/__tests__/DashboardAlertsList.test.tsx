@@ -29,8 +29,8 @@ function readyView(range: DateRange, failure?: AlertsFailure): AlertsListView {
   return {
     kind: "ready",
     range,
-    dataTo: list.dataTo,
-    startMin: customStartMin(list.dataTo),
+    anchor: list.anchor,
+    startMin: customStartMin(list.anchor),
     failure,
   };
 }

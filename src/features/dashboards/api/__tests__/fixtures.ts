@@ -2,16 +2,17 @@ import type { AlertsListWire } from "../alerts";
 
 /**
  * A `POST /api/alerts/list` response shaped exactly as project-zeno sends it
- * (PZB-1468): the widget's 30-day window for Guarapuava (31 inclusive days, the
- * backend's `end - days`) ending on the data's last day,
- * rows newest first, the latest full alert week flagged `new`, one day with
- * no high-confidence area. Shared by the API, list and widget tests, and by
- * the dev-time render of the widget before the backend branch lands.
+ * (PZB-1468): the widget's window for Guarapuava, whose latest alert day
+ * (`data_to`, 16 Oct) is three days before the window's end (19 Oct, the
+ * clamped request end), rows newest first, the latest full alert week flagged
+ * `new`, one day with no high-confidence area. Shared by the API, list and
+ * widget tests, and by the dev-time render of the widget before the backend
+ * branch lands.
  */
 export const ALERTS_LIST_WIRE: AlertsListWire = {
   data_to: "2026-10-16",
   start_date: "2026-09-16",
-  end_date: "2026-10-16",
+  end_date: "2026-10-19",
   new_week: { start_date: "2026-10-04", end_date: "2026-10-10" },
   total_area_ha: 105.7,
   rows: [
