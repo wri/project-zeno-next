@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 
 import {
+  alertsWidgetSize,
   chartTitleOverride,
   dashboardWidgetToInsightWidgets,
   findCuratedWidgetForDataset,
@@ -83,6 +84,15 @@ describe("mapWidgetSize", () => {
     expect(mapWidgetSize({ size: "double" })).toBe("double");
     expect(mapWidgetSize({ size: "garbage" })).toBe("double");
     expect(mapWidgetSize({ size: "single" })).toBe("single");
+  });
+});
+
+describe("alertsWidgetSize", () => {
+  it("defaults to double and honours an explicit single", () => {
+    expect(alertsWidgetSize({})).toBe("double");
+    expect(alertsWidgetSize({ size: "double" })).toBe("double");
+    expect(alertsWidgetSize({ size: "garbage" })).toBe("double");
+    expect(alertsWidgetSize({ size: "single" })).toBe("single");
   });
 });
 
