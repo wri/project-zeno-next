@@ -5,7 +5,7 @@ import MapGl, {
   Source,
   MapRef,
 } from "react-map-gl/maplibre";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type ReactNode } from "react";
 import { registerPrimaryForestProtocol } from "@/app/utils/primaryForestTileProtocol";
 import {
   AbsoluteCenter,
@@ -45,7 +45,14 @@ import { ImageryZoomHint } from "./map/ImageryZoomHint";
 
 const MAPBOX_ACCESS_TOKEN = import.meta.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
-function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
+function Map({
+  disableMapAreaControls,
+  legendHeaderAction,
+}: {
+  disableMapAreaControls?: boolean;
+  /** Rendered in the legend header beside the collapse caret. */
+  legendHeaderAction?: ReactNode;
+}) {
   const mapRef = useRef<MapRef>(null);
   const [mapCenter, setMapCenter] = useState([0, 0]);
   const [showLegend, setShowLegend] = useState(false);
@@ -265,6 +272,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
               onRemoveAoi={handleRemoveAoi}
               boundary={boundary}
               onRemoveBoundary={handleRemoveBoundary}
+              headerAction={legendHeaderAction}
             />
           </Box>
         </Flex>
