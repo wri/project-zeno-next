@@ -52,7 +52,8 @@ import ScrollableTableWrapper from "./widgets/ScrollableTableWrapper";
 import { AnalysisParamsChips } from "./widgets/AnalysisParameters";
 import { buildChips } from "./widgets/analysis-params-utils";
 import { exportChartImage } from "@/app/utils/exportChartImage";
-import { rowsToCsv, csvFilename } from "@/app/utils/csvExport";
+import { csvFilename } from "@/app/utils/csvExport";
+import { downloadCsv, rowsToCsv } from "@/src/shared/lib/csv";
 import { FLUX_UNIT_COLUMN_SUFFIX } from "@/src/shared/lib/units";
 import {
   NetFluxChartBody,
@@ -212,14 +213,7 @@ export default function WidgetMessage({
             FLUX_TREE_VALUE_COLS.has(k) ? `${k}_${FLUX_UNIT_COLUMN_SUFFIX}` : k
           )
         : rowKeys;
-    const csv = rowsToCsv(rows, headers, rowKeys);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = csvFilename(widget.title);
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadCsv(rowsToCsv(rows, headers, rowKeys), csvFilename(widget.title));
   };
 
   const handleExportToAI = (provider: AIProvider) => {

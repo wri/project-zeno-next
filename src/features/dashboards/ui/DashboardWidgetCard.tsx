@@ -39,6 +39,10 @@ import DashboardMapWidget from "./DashboardMapWidget";
  * the page is one of these, so the blue shell is the only box a dashboard
  * widget ever draws.
  *
+ * The content is one of four kinds, in precedence order: a `placeholder`
+ * line, a `map` layer, an insight `card`, or a caller's own `body`. A call
+ * site passes the one it has and omits the rest.
+ *
  * `card` is a single insight card, never a list: an insight with several
  * charts pages through them inside one shell (`DashboardInsightModule` owns
  * the pager and passes the chart on show). The `intro`, `footer` and
@@ -68,16 +72,16 @@ export default function DashboardWidgetCard({
   onRequestRemove,
 }: {
   title: string;
-  /** The insight card to render, or null for a map/text/placeholder cell. */
-  card: InsightWidget | null;
+  /** The insight card to render. */
+  card?: InsightWidget;
   /** The map layer to render for `widget_type: "map"` cells. */
-  map?: MapWidgetLayer | null;
+  map?: MapWidgetLayer;
   /** The dashboard's area — outline, label + viewport fit for map cells. */
   aoi?: MapAreaAoi;
   /** Reserved `config.viewport` bbox override for map cells. */
-  viewportBbox?: [number, number, number, number] | null;
-  /** Placeholder copy when `card` is null (unsupported type / hidden insight). */
-  placeholder: string | null;
+  viewportBbox?: [number, number, number, number];
+  /** Placeholder copy instead of any content (unsupported type / hidden insight). */
+  placeholder?: string;
   /**
    * What `onRemove` actually does, which the confirm dialog explains:
    * `"widget"` deletes the widget from the dashboard, `"chart"` only hides
@@ -325,7 +329,7 @@ export default function DashboardWidgetCard({
           <DashboardMapWidget
             layer={map}
             aoi={aoi}
-            bboxOverride={viewportBbox ?? null}
+            bboxOverride={viewportBbox}
             tall={isDouble}
           />
         </Box>
@@ -348,7 +352,7 @@ export default function DashboardWidgetCard({
           title={displayTitle}
           layer={map}
           aoi={aoi}
-          bboxOverride={viewportBbox ?? null}
+          bboxOverride={viewportBbox}
         />
       )}
 

@@ -4,7 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 
 import { ParamChip } from "@/app/components/ui/ParamChip";
 import AnalysisParametersToggle from "@/app/components/widgets/AnalysisParameters";
-import { downloadCsv } from "@/app/utils/csvExport";
+import { downloadCsv } from "@/src/shared/lib/csv";
+import { todayIso } from "@/src/shared/lib/iso-date";
 import { fetchAlertsList, type AlertsListError } from "../api/alerts";
 import type { Dashboard, DashboardWidget } from "../api/schemas";
 import { dashboardKeys } from "../hooks/dashboardKeys";
@@ -21,7 +22,6 @@ import {
   needsWiderWindow,
   newWeekHa,
   rowsInRange,
-  todayIso,
   visibleRows,
   widenedWindow,
   type AlertsChip,
@@ -87,7 +87,6 @@ export default function DashboardAlertsWidget({
     return (
       <DashboardWidgetCard
         title="Integrated alerts"
-        card={null}
         placeholder="This alerts widget can't be displayed."
         removeMode="widget"
         isOwner={card.isOwner}
@@ -214,8 +213,6 @@ function AlertsCard({
   return (
     <DashboardWidgetCard
       title={title}
-      card={null}
-      placeholder={null}
       removeMode="widget"
       isOwner={isOwner}
       isDouble={isDouble}
@@ -233,7 +230,7 @@ function AlertsCard({
             <Flex
               borderTopWidth="1px"
               borderColor="rgba(19,22,25,0.05)"
-              py="4px"
+              pt="4px"
               align="center"
               gap="4px"
               wrap="wrap"

@@ -2,8 +2,7 @@ import { useState } from "react";
 import { Box, IconButton } from "@chakra-ui/react";
 import { ArrowsOutIcon } from "@phosphor-icons/react";
 
-import type { DateRange } from "../lib/alertsWidgets";
-import type { MapAreaAoi, MapWidgetLayer } from "../lib/mapWidgets";
+import type { DateRange, MapAreaAoi, MapWidgetLayer } from "../lib/mapWidgets";
 import DashboardMapFullscreenDialog from "./DashboardMapFullscreenDialog";
 import DashboardMapWidget from "./DashboardMapWidget";
 
@@ -35,7 +34,6 @@ export default function DashboardAlertsMapPane({
       <DashboardMapWidget
         layer={layer}
         aoi={aoi}
-        bboxOverride={null}
         dateRange={dateRange}
         tall={tall}
       />
@@ -61,7 +59,6 @@ export default function DashboardAlertsMapPane({
         title={title}
         layer={layer}
         aoi={aoi}
-        bboxOverride={null}
         dateRange={dateRange}
       />
     </Box>

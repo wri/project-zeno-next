@@ -10,6 +10,12 @@ import type { DashboardAoi } from "../api/schemas";
 /** The dashboard's area as a map body needs it: outline, label and viewport fit. */
 export type MapAreaAoi = Pick<DashboardAoi, "source" | "src_id" | "name">;
 
+/** An inclusive period of ISO `YYYY-MM-DD` dates. */
+export interface DateRange {
+  start: string;
+  end: string;
+}
+
 /**
  * A renderable map-widget layer parsed from a `widget_type: "map"` config
  * (dashboards-map-widgets-handoff.md). Configs are self-contained snapshots:
@@ -134,9 +140,9 @@ export function mapWidgetLayer(
  */
 export function mapWidgetViewportBbox(
   config: Record<string, unknown>
-): [number, number, number, number] | null {
+): [number, number, number, number] | undefined {
   const viewport = config.viewport;
-  if (!viewport || typeof viewport !== "object") return null;
+  if (!viewport || typeof viewport !== "object") return undefined;
   const bbox = (viewport as { bbox?: unknown }).bbox;
   if (
     Array.isArray(bbox) &&
@@ -145,5 +151,35 @@ export function mapWidgetViewportBbox(
   ) {
     return bbox as [number, number, number, number];
   }
-  return null;
+  return undefined;
+}
+
+function withQueryParam(url: string, key: string, value: string): string {
+  const present = new RegExp(`([?&])${key}=[^&#]*`);
+  if (present.test(url)) return url.replace(present, `$1${key}=${value}`);
+  return `${url}${url.includes("?") ? "&" : "?"}${key}=${value}`;
+}
+
+/**
+ * A dated layer for a period: the snapshot's tile URL with its
+ * `start_date`/`end_date` rewritten (the integrated alerts tile service reads
+ * them as query parameters, and the snapshot already carries the build-time
+ * pair), and the legend's dates to match. A snapshot whose URL lacks the
+ * parameters gets them appended rather than drawing every alert since the
+ * dataset began. The context sub-layer carries no dates and is left alone.
+ */
+export function withTileDates(
+  layer: MapWidgetLayer,
+  range: DateRange
+): MapWidgetLayer {
+  return {
+    ...layer,
+    tileUrl: withQueryParam(
+      withQueryParam(layer.tileUrl, "start_date", range.start),
+      "end_date",
+      range.end
+    ),
+    startDate: range.start,
+    endDate: range.end,
+  };
 }

@@ -66,34 +66,43 @@ export function toAlertsList(wire: AlertsListWire): AlertsList {
 }
 
 /**
- * A failed list fetch, with the copy the widget shows and whether a Retry
- * button makes sense. A 422 (an area or a window the backend refuses) and a
- * 502 (a failed analytics job) both carry a user-facing sentence in
- * `detail`; only the 502 is worth a retry. A 401 is a sign-in prompt.
- * Anything else — a network failure, a body the schema rejects — is generic
- * and retryable.
+ * Why a list fetch failed, for the widget to word: `unauthenticated` (401),
+ * `rejected` (422: an area or a window the backend refuses, final),
+ * `unavailable` (502: a failed analytics job, worth a retry) or `unknown`
+ * (a network failure, a body the schema rejects — retryable). A 422 and a
+ * 502 carry the backend's own user-facing sentence as `detail`.
  */
+export type AlertsListErrorKind =
+  | "unauthenticated"
+  | "rejected"
+  | "unavailable"
+  | "unknown";
+
 export class AlertsListError extends Error {
+  readonly retryable: boolean;
+
   constructor(
-    message: string,
-    readonly retryable: boolean
+    readonly kind: AlertsListErrorKind,
+    readonly detail?: string
   ) {
-    super(message);
+    super(detail ?? kind);
     this.name = "AlertsListError";
+    this.retryable = kind === "unavailable" || kind === "unknown";
   }
 }
 
-const GENERIC_MESSAGE = "Couldn't load the alerts.";
-
 export function toAlertsListError(error: unknown): AlertsListError {
   if (error instanceof AlertsListError) return error;
-  const status = httpStatus(error);
-  if (status === 401) {
-    return new AlertsListError("Sign in to see the alerts list.", false);
+  switch (httpStatus(error)) {
+    case 401:
+      return new AlertsListError("unauthenticated");
+    case 422:
+      return new AlertsListError("rejected", httpDetail(error));
+    case 502:
+      return new AlertsListError("unavailable", httpDetail(error));
+    default:
+      return new AlertsListError("unknown");
   }
-  const sentence =
-    status === 422 || status === 502 ? httpDetail(error) : undefined;
-  return new AlertsListError(sentence ?? GENERIC_MESSAGE, status !== 422);
 }
 
 /**

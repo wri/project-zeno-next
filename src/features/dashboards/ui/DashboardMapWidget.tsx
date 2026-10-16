@@ -23,8 +23,12 @@ import { buildBasemapTileUrl } from "@/app/utils/basemapTileUrl";
 import { createBboxPolygon } from "@/app/utils/bboxUtils";
 import { fetchGeometry } from "@/app/utils/geometryClient";
 import { registerPrimaryForestProtocol } from "@/app/utils/primaryForestTileProtocol";
-import { withTileDates, type DateRange } from "../lib/alertsWidgets";
-import type { MapAreaAoi, MapWidgetLayer } from "../lib/mapWidgets";
+import {
+  withTileDates,
+  type DateRange,
+  type MapAreaAoi,
+  type MapWidgetLayer,
+} from "../lib/mapWidgets";
 import DashboardMapLegend, {
   type MapWidgetOpacity,
 } from "./DashboardMapLegend";
@@ -57,7 +61,8 @@ export default function DashboardMapWidget({
   layer: MapWidgetLayer;
   /** The dashboard's (single) area — outline, label + default viewport fit. */
   aoi: MapAreaAoi | undefined;
-  bboxOverride: [number, number, number, number] | null;
+  /** The reserved `config.viewport` bbox, which wins over the area fit when present. */
+  bboxOverride?: [number, number, number, number];
   /** The period to draw instead of the one the layer's snapshot was built for. */
   dateRange?: DateRange;
   /** Full-width cards get a taller map. */

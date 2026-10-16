@@ -17,8 +17,8 @@ vi.mock("../../api/alerts", async (importOriginal) => ({
 }));
 
 // The browser save is DOM glue; the test reads what would be saved.
-vi.mock("@/app/utils/csvExport", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/app/utils/csvExport")>()),
+vi.mock("@/src/shared/lib/csv", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/src/shared/lib/csv")>()),
   downloadCsv: vi.fn(),
 }));
 
@@ -52,8 +52,9 @@ import {
   ALERTS_WIDGET_CONFIG,
 } from "../../api/__tests__/fixtures";
 import type { DashboardWidget } from "../../api/schemas";
-import { downloadCsv } from "@/app/utils/csvExport";
-import { initialWindow, todayIso } from "../../lib/alertsWidgets";
+import { downloadCsv } from "@/src/shared/lib/csv";
+import { todayIso } from "@/src/shared/lib/iso-date";
+import { initialWindow } from "../../lib/alertsWidgets";
 import DashboardAlertsWidget from "../DashboardAlertsWidget";
 
 const mockedFetch = vi.mocked(fetchAlertsList);
@@ -373,7 +374,7 @@ describe("DashboardAlertsWidget", () => {
     const sentence =
       "Integrated alerts data is unavailable right now. Please try again in a moment.";
     mockedFetch
-      .mockRejectedValueOnce(new AlertsListError(sentence, true))
+      .mockRejectedValueOnce(new AlertsListError("unavailable", sentence))
       .mockResolvedValueOnce(toAlertsList(ALERTS_LIST_WIRE));
     renderWidget();
 
@@ -438,9 +439,7 @@ describe("DashboardAlertsWidget", () => {
   it("keeps the rows on show when a wider window fails, with the failure above them", async () => {
     mockedFetch
       .mockResolvedValueOnce(toAlertsList(ALERTS_LIST_WIRE))
-      .mockRejectedValueOnce(
-        new AlertsListError("Couldn't load the alerts.", true)
-      );
+      .mockRejectedValueOnce(new AlertsListError("unknown"));
     renderWidget();
     await screen.findByText(NEW_WEEK_FOOTER);
 
@@ -473,9 +472,7 @@ describe("DashboardAlertsWidget", () => {
     });
     mockedFetch
       .mockResolvedValueOnce(toAlertsList(ALERTS_LIST_WIRE))
-      .mockRejectedValueOnce(
-        new AlertsListError("Couldn't load the alerts.", true)
-      )
+      .mockRejectedValueOnce(new AlertsListError("unknown"))
       .mockResolvedValueOnce(wider);
     renderWidget();
     await screen.findByText(NEW_WEEK_FOOTER);
@@ -497,7 +494,7 @@ describe("DashboardAlertsWidget", () => {
 
   it("offers no Retry for an area the backend does not cover", async () => {
     mockedFetch.mockRejectedValue(
-      new AlertsListError("Area type not supported", false)
+      new AlertsListError("rejected", "Area type not supported")
     );
     renderWidget();
     await screen.findByText("Area type not supported");

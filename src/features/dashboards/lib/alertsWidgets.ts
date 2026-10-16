@@ -1,7 +1,15 @@
 import { format, parseISO } from "date-fns";
 
-import { rowsToCsv } from "@/app/utils/csvExport";
-import { mapWidgetLayer, str, type MapWidgetLayer } from "./mapWidgets";
+import { rowsToCsv } from "@/src/shared/lib/csv";
+import { shiftIsoDate } from "@/src/shared/lib/iso-date";
+import {
+  mapWidgetLayer,
+  str,
+  type DateRange,
+  type MapWidgetLayer,
+} from "./mapWidgets";
+
+export type { DateRange } from "./mapWidgets";
 
 /**
  * The `widget_type: "alerts"` widget (PZB-1468): a live list of integrated
@@ -9,19 +17,11 @@ import { mapWidgetLayer, str, type MapWidgetLayer } from "./mapWidgets";
  * is the pure half — the config parser, the normalised list shape the API
  * adapter produces, and the string-dated window arithmetic the widget runs on.
  *
- * Every date here is an ISO `YYYY-MM-DD` string and stays one. `new Date(iso)`
- * parses as UTC midnight, so reading it back through local getters west of UTC
- * loses a day; comparisons are therefore lexicographic and day arithmetic goes
- * through `Date.UTC`, never through a `Date`'s local accessors. (`parseISO` of
- * a date-only string is local midnight, so the display formats are safe.)
+ * Every date here is an ISO `YYYY-MM-DD` string and stays one: comparisons
+ * are lexicographic and day arithmetic goes through `shiftIsoDate`, never
+ * through a `Date`'s local accessors. (`parseISO` of a date-only string is
+ * local midnight, so the display formats are safe.)
  */
-
-export interface DateRange {
-  /** Inclusive ISO date. */
-  start: string;
-  /** Inclusive ISO date. */
-  end: string;
-}
 
 /** The area the widget lists alerts for — the request's identity. */
 export interface AlertsAoi {
@@ -94,11 +94,11 @@ export type AlertsConfidence = "all" | "high" | "highest";
  */
 export const TIERS: Record<
   AlertsConfidence,
-  { field: "highHa" | "highestHa" | "totalHa"; label: string; name: string }
+  { field: "highHa" | "highestHa" | "totalHa"; name: string }
 > = {
-  all: { field: "totalHa", label: "Total (ha)", name: "All" },
-  high: { field: "highHa", label: "High (ha)", name: "High" },
-  highest: { field: "highestHa", label: "Highest (ha)", name: "Highest" },
+  all: { field: "totalHa", name: "All" },
+  high: { field: "highHa", name: "High" },
+  highest: { field: "highestHa", name: "Highest" },
 };
 
 /**
@@ -144,25 +144,6 @@ export function landFilterOption(filter?: AlertsLandFilter) {
   return (
     LAND_FILTERS.find((option) => option.filter === filter) ?? LAND_FILTERS[0]
   );
-}
-
-/**
- * The page numbers a pager shows for `total` pages: all of them when few,
- * else the first three, the neighbourhood of the current page and the last,
- * with `"…"` where pages are skipped.
- */
-export function pageNumbers(current: number, total: number): (number | "…")[] {
-  if (total <= 6) return Array.from({ length: total }, (_, i) => i + 1);
-  const shown = new Set([1, 2, 3, current - 1, current, current + 1, total]);
-  const pages = [...shown]
-    .filter((page) => page >= 1 && page <= total)
-    .sort((a, b) => a - b);
-  const out: (number | "…")[] = [];
-  pages.forEach((page, index) => {
-    if (index > 0 && page - pages[index - 1] > 1) out.push("…");
-    out.push(page);
-  });
-  return out;
 }
 
 /** The badge row's CONFIDENCE value: the tiers in the shown rows. */
@@ -243,27 +224,6 @@ export function alertsMapLayer(
 }
 
 // ── Dates ──────────────────────────────────────────────────────────────────
-
-const DAY_MS = 86_400_000;
-
-function utcMillis(iso: string): number {
-  const [y, m, d] = iso.split("-").map(Number);
-  return Date.UTC(y, m - 1, d);
-}
-
-function toIso(millis: number): string {
-  return new Date(millis).toISOString().slice(0, 10);
-}
-
-/** `iso` moved by `days` (negative for earlier), timezone-free. */
-export function shiftIsoDate(iso: string, days: number): string {
-  return toIso(utcMillis(iso) + days * DAY_MS);
-}
-
-/** Today as an ISO date in UTC. `now` is injectable for tests. */
-export function todayIso(now: number = Date.now()): string {
-  return toIso(now);
-}
 
 /**
  * The window the widget asks for before any response exists: the backend's
@@ -382,36 +342,6 @@ export function newWeekHa(
  * appended otherwise. A string edit on purpose: `new URL()` would percent-
  * encode the `{z}/{x}/{y}` placeholders in the path.
  */
-function withQueryParam(url: string, key: string, value: string): string {
-  const present = new RegExp(`([?&])${key}=[^&#]*`);
-  if (present.test(url)) return url.replace(present, `$1${key}=${value}`);
-  return `${url}${url.includes("?") ? "&" : "?"}${key}=${value}`;
-}
-
-/**
- * The alerts layer for a period: the snapshot's tile URL with its
- * `start_date`/`end_date` rewritten (the integrated alerts tile service reads
- * them as query parameters, and the snapshot already carries the build-time
- * pair), and the legend's dates to match. A snapshot whose URL lacks the
- * parameters gets them appended rather than drawing every alert since the
- * dataset began. The context sub-layer carries no dates and is left alone.
- */
-export function withTileDates(
-  layer: MapWidgetLayer,
-  range: DateRange
-): MapWidgetLayer {
-  return {
-    ...layer,
-    tileUrl: withQueryParam(
-      withQueryParam(layer.tileUrl, "start_date", range.start),
-      "end_date",
-      range.end
-    ),
-    startDate: range.start,
-    endDate: range.end,
-  };
-}
-
 // ── Formatting ─────────────────────────────────────────────────────────────
 
 /** "26 Sep 2026" — the table and explainer form. */

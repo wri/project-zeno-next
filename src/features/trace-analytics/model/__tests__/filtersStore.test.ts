@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { presetRange, useFiltersStore } from "../filtersStore";
 import { EARLIEST_DATA_DATE } from "../config";
-import { todayIso } from "../../lib/format";
+import { todayIso } from "@/src/shared/lib/iso-date";
 
 describe("analysis grain", () => {
   it("defaults to per-turn analysis and toggles to conversations", () => {

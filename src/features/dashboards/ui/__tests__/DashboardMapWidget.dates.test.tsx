@@ -74,7 +74,6 @@ const renderMap = (dateRange?: { start: string; end: string }) =>
         <DashboardMapWidget
           layer={layer}
           aoi={undefined}
-          bboxOverride={null}
           dateRange={dateRange}
         />
       </ChakraProvider>
@@ -96,7 +95,6 @@ describe("DashboardMapWidget dateRange", () => {
           <DashboardMapWidget
             layer={layer}
             aoi={undefined}
-            bboxOverride={null}
             dateRange={{ start: "2026-10-16", end: "2026-10-16" }}
           />
         </ChakraProvider>

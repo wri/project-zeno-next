@@ -21,6 +21,9 @@ const MEASURE_LABEL: Record<NetFluxMeasure, string> = {
 };
 const MEASURE_OPTIONS: NetFluxMeasure[] = ["gross", "net"];
 
+/** What the DETAIL pill selects by: the sibling's id, or its title for one rehydrated without an id. */
+const detailValue = (w: InsightWidget) => w.id ?? w.title;
+
 function DetailInfo() {
   return (
     <Box>
@@ -84,9 +87,9 @@ export function NetFluxToolbar({
         {siblings.length > 1 && (
           <Pill
             label="DETAIL"
-            value={netFluxWidgetDetailPillLabel(selected ?? widget)}
+            value={detailValue(selected ?? widget)}
             options={siblings.map((w) => ({
-              value: w.id ?? w.title,
+              value: detailValue(w),
               label: netFluxWidgetDetailPillLabel(w),
             }))}
             onSelect={select}
@@ -96,12 +99,12 @@ export function NetFluxToolbar({
         )}
         <Pill
           label="MEASURE"
-          value={MEASURE_LABEL[measure]}
+          value={measure}
           options={MEASURE_OPTIONS.map((value) => ({
             value,
             label: MEASURE_LABEL[value],
           }))}
-          onSelect={(value) => setMeasure(value as NetFluxMeasure)}
+          onSelect={setMeasure}
           minW="160px"
           info={<MeasureInfo />}
         />

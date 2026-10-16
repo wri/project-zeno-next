@@ -53,31 +53,23 @@ import {
  * can't be rendered.
  */
 interface StandaloneBody {
-  map: MapWidgetLayer | null;
-  text: string | null;
-  placeholder: string | null;
+  map?: MapWidgetLayer;
+  text?: string;
+  placeholder?: string;
 }
 
 function standaloneBody(widget: DashboardWidget): StandaloneBody {
   if (widget.widget_type === "map") {
     const map = mapWidgetLayer(widget.config);
-    return {
-      map,
-      text: null,
-      placeholder: map ? null : "This map widget can't be displayed.",
-    };
+    return map
+      ? { map }
+      : { placeholder: "This map widget can't be displayed." };
   }
   if (widget.widget_type === "text") {
     const text = widgetText(widget.config);
-    return {
-      map: null,
-      text,
-      placeholder: text ? null : "This note is empty.",
-    };
+    return text ? { text } : { placeholder: "This note is empty." };
   }
   return {
-    map: null,
-    text: null,
     placeholder: `This ${widget.widget_type} widget isn't supported here yet.`,
   };
 }
@@ -317,13 +309,12 @@ function ContainerGrid({
           ) : (
             <DashboardWidgetCard
               title={title}
-              card={null}
               map={body?.map}
               aoi={areaAoi}
               viewportBbox={
-                body?.map ? mapWidgetViewportBbox(widget.config) : null
+                body?.map ? mapWidgetViewportBbox(widget.config) : undefined
               }
-              placeholder={body?.placeholder ?? null}
+              placeholder={body?.placeholder}
               removeMode="widget"
               isOwner={isOwner}
               isDouble={size === "double"}
