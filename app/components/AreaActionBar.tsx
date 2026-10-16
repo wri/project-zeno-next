@@ -1,5 +1,6 @@
 import { Button, Flex, Text } from "@chakra-ui/react";
 import { SelectionPlusIcon, UploadSimpleIcon } from "@phosphor-icons/react";
+import type { ReactNode } from "react";
 
 import { useCustomAreasCreate } from "@/app/hooks/useCustomAreasCreate";
 import type { DrawAreaSlice } from "@/app/store/drawAreaSlice";
@@ -69,6 +70,40 @@ const stripButtonProps = {
   borderRadius: "4px",
 } as const;
 
+const STRIP_TONES = {
+  info: { role: "status", bg: "#F2F6FF", borderColor: "#B7C9F0" },
+  error: { role: "alert", bg: "#FFF5F5", borderColor: "#F2B8B5" },
+} as const;
+
+/** The one-line bar under the actions: drawing progress or a draw error. */
+function Strip({
+  tone,
+  children,
+}: {
+  tone: keyof typeof STRIP_TONES;
+  children: ReactNode;
+}) {
+  const { role, bg, borderColor } = STRIP_TONES[tone];
+  return (
+    <Flex
+      role={role}
+      flexShrink={0}
+      align="center"
+      gap="6px"
+      minH="40px"
+      py="4px"
+      pl="10px"
+      pr="4px"
+      bg={bg}
+      border="1px solid"
+      borderColor={borderColor}
+      borderRadius="4px"
+    >
+      {children}
+    </Flex>
+  );
+}
+
 function DrawingStatus({ onRedraw }: { onRedraw: () => void }) {
   const pending = useMapStore((s) => s.pendingDrawnArea);
   const cancelDrawing = useMapStore((s) => s.cancelDrawing);
@@ -119,19 +154,7 @@ function DrawingStatus({ onRedraw }: { onRedraw: () => void }) {
   const naming = pending?.name === null;
 
   return (
-    <Flex
-      role="status"
-      flexShrink={0}
-      align="center"
-      gap="6px"
-      minH="40px"
-      py="4px"
-      pl="10px"
-      pr="4px"
-      bg="#F2F6FF"
-      border="1px solid #B7C9F0"
-      borderRadius="4px"
-    >
+    <Strip tone="info">
       {pending ? (
         <Text
           flex="1"
@@ -172,7 +195,7 @@ function DrawingStatus({ onRedraw }: { onRedraw: () => void }) {
           </Button>
         </>
       )}
-    </Flex>
+    </Strip>
   );
 }
 
@@ -195,19 +218,7 @@ function DrawError({
   const clearValidationError = useMapStore((s) => s.clearValidationError);
 
   return (
-    <Flex
-      role="alert"
-      flexShrink={0}
-      align="center"
-      gap="6px"
-      minH="40px"
-      py="4px"
-      pl="10px"
-      pr="4px"
-      bg="#FFF5F5"
-      border="1px solid #F2B8B5"
-      borderRadius="4px"
-    >
+    <Strip tone="error">
       <Text flex="1" minW={0} fontSize="11px" color="#3A4048">
         {drawErrorMessage(error)}
       </Text>
@@ -222,6 +233,6 @@ function DrawError({
       <Button {...stripButtonProps} variant="outline" onClick={onRetry}>
         Try again
       </Button>
-    </Flex>
+    </Strip>
   );
 }
