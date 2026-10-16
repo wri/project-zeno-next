@@ -5,11 +5,11 @@ import {
   DashboardResponseSchema,
   SectionFromTemplateResponseSchema,
   type AnalysisTemplate,
-  type AoiSearchResult,
   type Dashboard,
   type DashboardCreateRequest,
   type SectionFromTemplateResponse,
 } from "./schemas";
+import type { AoiSearchResult } from "@/src/entities/aoi";
 import { readJson } from "./http";
 import { apiFetch } from "@/app/lib/api-client";
 import { aoiToDashboardCreateRequest } from "../lib/aoi";

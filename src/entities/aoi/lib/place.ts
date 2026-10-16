@@ -13,11 +13,14 @@ const GADM_LEVEL_LABELS: Record<string, string> = {
   "district-county": "District or county",
 };
 
-function gadmLevelLabel(subtype: string): string {
-  const known = GADM_LEVEL_LABELS[subtype];
-  if (known) return known;
+/** A backend subtype in words: `state-province` → "State province". */
+export function subtypeLabel(subtype: string): string {
   const words = subtype.replace(/[-_]+/g, " ").trim();
-  return words ? words.charAt(0).toUpperCase() + words.slice(1) : "Area";
+  return words ? words.charAt(0).toUpperCase() + words.slice(1) : "";
+}
+
+function gadmLevelLabel(subtype: string): string {
+  return GADM_LEVEL_LABELS[subtype] ?? (subtypeLabel(subtype) || "Area");
 }
 
 /**
@@ -41,8 +44,6 @@ export function placeToAoi(hit: AoiSearchResult): AOI {
     src_id: hit.src_id,
     source: hit.source,
     subtype: hit.subtype,
-    ...(hit.bbox?.length === 4
-      ? { bbox: hit.bbox as [number, number, number, number] }
-      : {}),
+    ...(hit.bbox ? { bbox: hit.bbox } : {}),
   };
 }
