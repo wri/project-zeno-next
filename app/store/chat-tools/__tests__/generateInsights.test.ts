@@ -84,6 +84,7 @@ describe("generateInsightsTool", () => {
     );
     const { insights } = useInsightStore.getState();
     expect(insights.map((w) => w.insightId)).toEqual(["ins-1", "ins-1"]);
+    expect(insights.map((w) => w.chartPosition)).toEqual([0, 1]);
   });
 
   it("leaves insightId unset when the stream carries no insight_id", () => {

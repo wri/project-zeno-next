@@ -1,6 +1,7 @@
 import type { MapRef } from "react-map-gl/maplibre";
 
 import type { InsightWidget } from "@/app/types/chat";
+import type { InsightState } from "@/app/store/insightStore";
 import type { ViewContext } from "@/app/store/viewContextStore";
 
 // Keep the payload compact — the backend only echoes these back to the agent
@@ -17,14 +18,32 @@ const wrapLng = (lng: number): number =>
 
 type Viewport = { bbox: [number, number, number, number]; zoom: number };
 
+/** The chart on screen: its insight, and its position among that insight's charts. */
+type FocusedInsight = { id: string; chart_position?: number };
+
+/** The parts of insightStore the map's view context is built from. */
+export type InsightWorkspaceState = Pick<
+  InsightState,
+  "insights" | "focusedWidgetId" | "isWorkspaceCollapsed"
+>;
+
 /**
  * The `view_context` sent with a chat request: the surface registered in
  * viewContextStore plus, on the map, fields computed fresh at send time. These
  * extra fields are never stored, so they can't go stale.
+ *
+ * `visible_insights` is every insight in the map workspace, not only the one
+ * on screen: the card pages through them. `focused_insight` is the chart the
+ * card is showing, and is omitted when the card is collapsed.
  */
 export type ViewContextPayload =
   | Exclude<ViewContext, { page: "map" }>
-  | { page: "map"; viewport?: Viewport; visible_insights?: string[] };
+  | {
+      page: "map";
+      viewport?: Viewport;
+      visible_insights?: string[];
+      focused_insight?: FocusedInsight;
+    };
 
 function buildViewport(mapRef: MapRef | null): Viewport | undefined {
   // The ref can outlive its map (e.g. across a desktop/mobile layout swap);
@@ -64,22 +83,35 @@ function buildVisibleInsights(insights: InsightWidget[]): string[] | undefined {
   return ids.length > 0 ? ids : undefined;
 }
 
+function buildFocusedInsight({
+  insights,
+  focusedWidgetId,
+  isWorkspaceCollapsed,
+}: InsightWorkspaceState): FocusedInsight | undefined {
+  if (isWorkspaceCollapsed || !focusedWidgetId) return undefined;
+  const widget = insights.find((w) => w.id === focusedWidgetId);
+  if (!widget?.insightId) return undefined;
+  return { id: widget.insightId, chart_position: widget.chartPosition };
+}
+
 // Read fresh from mapStore/insightStore on every request, like `ui_context`
 // in messageContext.ts.
 export function enrichMapViewContext(
   base: ViewContext | null,
   mapRef: MapRef | null,
-  insights: InsightWidget[]
+  workspace: InsightWorkspaceState
 ): ViewContextPayload | null {
   if (!base || base.page !== "map") return base;
 
   const viewport = buildViewport(mapRef);
-  const visible_insights = buildVisibleInsights(insights);
+  const visible_insights = buildVisibleInsights(workspace.insights);
+  const focused_insight = buildFocusedInsight(workspace);
 
   // Built from `page` alone so only the live values (or their absence) are sent.
   return {
     page: "map",
     ...(viewport && { viewport }),
     ...(visible_insights && { visible_insights }),
+    ...(focused_insight && { focused_insight }),
   };
 }

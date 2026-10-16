@@ -18,6 +18,8 @@ const chart = (
   type: InsightWidget["type"] = "stacked-bar-with-line"
 ): InsightWidget => ({
   id,
+  // A `chartId`-shaped id belongs to a persisted insight; anything else doesn't.
+  insightId: /^(.+)-chart-\d+$/.exec(id)?.[1],
   type,
   title,
   description: "",
@@ -40,7 +42,7 @@ const OTHER = chart("ins2-chart-0", "Tree cover loss", "bar");
 const ANALYSIS = [FULL, CATEGORY, SUMMARY, TREE, OTHER];
 
 describe("netFluxGroupKey", () => {
-  it("groups the time-series charts of one analysis by their id prefix", () => {
+  it("groups the time-series charts of one analysis by their insightId", () => {
     expect(netFluxGroupKey(FULL)).toBe("ins1");
     expect(netFluxGroupKey(CATEGORY)).toBe("ins1");
     expect(netFluxGroupKey(SUMMARY)).toBe("ins1");
@@ -52,13 +54,8 @@ describe("netFluxGroupKey", () => {
     expect(netFluxGroupKey(OTHER)).toBeNull();
   });
 
-  it("returns null when the id doesn't carry the chart suffix", () => {
-    // e.g. an insight rehydrated from history under a different id scheme.
-    expect(
-      netFluxGroupKey(chart("legacy-id", "Net GHG Flux Summary"))
-    ).toBeNull();
-    const noId = { ...FULL, id: undefined };
-    expect(netFluxGroupKey(noId)).toBeNull();
+  it("returns null for a chart of no persisted insight", () => {
+    expect(netFluxGroupKey({ ...FULL, insightId: undefined })).toBeNull();
   });
 });
 
@@ -224,7 +221,7 @@ describe("collapseNetFluxSiblings", () => {
 });
 
 // The same analysis as it arrives off the dashboards API and the stored
-// insights list: backend chart UUIDs, so no `chartBatchKey` prefix to group by.
+// insights list as one module holds it: no workspace to group across.
 const UUID_TREE = chart("d4e5f6", "Net GHG Flux — Annual Average", "bar");
 const UUID_FULL = chart("a1b2c3", "Net GHG Flux — Full Detail");
 const UUID_CATEGORY = chart("b2c3d4", "Net GHG Flux by Category");

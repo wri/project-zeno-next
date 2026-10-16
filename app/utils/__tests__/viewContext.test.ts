@@ -1,7 +1,10 @@
 import { describe, it, expect } from "vitest";
 import type { MapRef } from "react-map-gl/maplibre";
 
-import { enrichMapViewContext } from "../viewContext";
+import {
+  enrichMapViewContext,
+  type InsightWorkspaceState,
+} from "../viewContext";
 import type { InsightWidget } from "@/app/types/chat";
 
 function fakeMapRef(bounds: {
@@ -23,7 +26,10 @@ function fakeMapRef(bounds: {
   return { getMap: () => map } as unknown as MapRef;
 }
 
-function insight(insightId?: string): InsightWidget {
+function insight(
+  insightId?: string,
+  extra: Partial<InsightWidget> = {}
+): InsightWidget {
   return {
     type: "bar",
     title: "t",
@@ -32,12 +38,25 @@ function insight(insightId?: string): InsightWidget {
     xAxis: "x",
     yAxis: "y",
     ...(insightId ? { insightId } : {}),
+    ...extra,
+  };
+}
+
+function workspace(
+  insights: InsightWidget[],
+  focus: Partial<Omit<InsightWorkspaceState, "insights">> = {}
+): InsightWorkspaceState {
+  return {
+    insights,
+    focusedWidgetId: null,
+    isWorkspaceCollapsed: false,
+    ...focus,
   };
 }
 
 describe("enrichMapViewContext", () => {
   it("passes through null unchanged", () => {
-    expect(enrichMapViewContext(null, null, [])).toBeNull();
+    expect(enrichMapViewContext(null, null, workspace([]))).toBeNull();
   });
 
   it("passes through non-map pages unchanged", () => {
@@ -46,11 +65,13 @@ describe("enrichMapViewContext", () => {
       dashboard_id: "d1",
       dashboard_name: "Paraná",
     };
-    expect(enrichMapViewContext(base, null, [insight("i1")])).toEqual(base);
+    expect(
+      enrichMapViewContext(base, null, workspace([insight("i1")]))
+    ).toEqual(base);
   });
 
   it("adds no viewport/visible_insights when mapRef is absent and no insights are shown", () => {
-    expect(enrichMapViewContext({ page: "map" }, null, [])).toEqual({
+    expect(enrichMapViewContext({ page: "map" }, null, workspace([]))).toEqual({
       page: "map",
     });
   });
@@ -90,7 +111,7 @@ describe("enrichMapViewContext", () => {
     ],
   ])("%s", (_, bounds, viewport) => {
     expect(
-      enrichMapViewContext({ page: "map" }, fakeMapRef(bounds), [])
+      enrichMapViewContext({ page: "map" }, fakeMapRef(bounds), workspace([]))
     ).toEqual({ page: "map", viewport });
   });
 
@@ -104,7 +125,7 @@ describe("enrichMapViewContext", () => {
     } as unknown as MapRef;
 
     expect(
-      enrichMapViewContext({ page: "map" }, mapRef, [insight("i1")])
+      enrichMapViewContext({ page: "map" }, mapRef, workspace([insight("i1")]))
     ).toEqual({ page: "map", visible_insights: ["i1"] });
   });
 
@@ -114,16 +135,22 @@ describe("enrichMapViewContext", () => {
       visible_insights: ["old"],
     };
 
-    expect(enrichMapViewContext(stored, null, [])).toEqual({ page: "map" });
+    expect(enrichMapViewContext(stored, null, workspace([]))).toEqual({
+      page: "map",
+    });
   });
 
   it("adds deduplicated visible_insights from on-map insight widgets", () => {
-    const result = enrichMapViewContext({ page: "map" }, null, [
-      insight("i1"),
-      insight("i2"),
-      insight("i1"),
-      insight(undefined),
-    ]);
+    const result = enrichMapViewContext(
+      { page: "map" },
+      null,
+      workspace([
+        insight("i1"),
+        insight("i2"),
+        insight("i1"),
+        insight(undefined),
+      ])
+    );
 
     expect(result).toEqual({
       page: "map",
@@ -132,11 +159,58 @@ describe("enrichMapViewContext", () => {
   });
 
   it("omits visible_insights when no shown insight has a persisted insightId", () => {
-    const result = enrichMapViewContext({ page: "map" }, null, [
-      insight(undefined),
-      insight(undefined),
-    ]);
+    const result = enrichMapViewContext(
+      { page: "map" },
+      null,
+      workspace([insight(undefined), insight(undefined)])
+    );
 
     expect(result).toEqual({ page: "map" });
+  });
+
+  // Two charts of one analysis, then a second analysis.
+  const stack = [
+    insight("i1", { id: "i1-chart-0", chartPosition: 0 }),
+    insight("i1", { id: "i1-chart-1", chartPosition: 1 }),
+    insight("i2", { id: "i2-chart-0", chartPosition: 0 }),
+  ];
+
+  it("adds focused_insight for the chart the workspace card shows", () => {
+    const result = enrichMapViewContext(
+      { page: "map" },
+      null,
+      workspace(stack, { focusedWidgetId: "i1-chart-1" })
+    );
+
+    expect(result).toEqual({
+      page: "map",
+      visible_insights: ["i1", "i2"],
+      focused_insight: { id: "i1", chart_position: 1 },
+    });
+  });
+
+  it.each([
+    [
+      "the card is collapsed",
+      workspace(stack, {
+        focusedWidgetId: "i1-chart-1",
+        isWorkspaceCollapsed: true,
+      }),
+    ],
+    ["the card shows nothing", workspace(stack)],
+    [
+      "the focused widget has left the workspace",
+      workspace(stack, { focusedWidgetId: "gone" }),
+    ],
+    [
+      "the chart on show has no persisted insight",
+      workspace([insight(undefined, { id: "chart_0" })], {
+        focusedWidgetId: "chart_0",
+      }),
+    ],
+  ])("omits focused_insight when %s", (_, state) => {
+    expect(
+      enrichMapViewContext({ page: "map" }, null, state)
+    ).not.toHaveProperty("focused_insight");
   });
 });
