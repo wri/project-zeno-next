@@ -11,6 +11,14 @@ describe("areaSourceLabel", () => {
     expect(areaSourceLabel("custom")).toBe("Custom area");
   });
 
+  it("names every commodity concession source", () => {
+    expect(areaSourceLabel("oil_palm")).toBe("Oil palm concession");
+    expect(areaSourceLabel("rspo_oil_palm")).toBe("RSPO oil palm concession");
+    expect(areaSourceLabel("logging")).toBe("Logging concession");
+    expect(areaSourceLabel("mining")).toBe("Mining concession");
+    expect(areaSourceLabel("wood_fiber")).toBe("Wood fiber concession");
+  });
+
   it("accepts either case, as the backend and the layer ids disagree", () => {
     expect(areaSourceLabel("GADM")).toBe("Administrative area");
     expect(areaSourceLabel("LandMark")).toBe("Indigenous territory");
