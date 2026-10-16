@@ -96,22 +96,26 @@ const dashboard: Dashboard = {
   widgets: [insightWidget, mapWidget],
 };
 
+const renderGrid = ({ print = false } = {}) =>
+  render(
+    <QueryClientProvider
+      client={
+        new QueryClient({ defaultOptions: { queries: { retry: false } } })
+      }
+    >
+      <ChakraProvider value={defaultSystem}>
+        <DashboardWidgetsGrid dashboard={dashboard} print={print} />
+      </ChakraProvider>
+    </QueryClientProvider>
+  );
+
 describe("DashboardWidgetsGrid grouping", () => {
   beforeEach(() => {
     useAuthStore.setState({ userId: "u1" });
   });
 
   it("renders an insight widget as one card, beside standalone widgets", () => {
-    const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false } },
-    });
-    render(
-      <QueryClientProvider client={queryClient}>
-        <ChakraProvider value={defaultSystem}>
-          <DashboardWidgetsGrid dashboard={dashboard} />
-        </ChakraProvider>
-      </QueryClientProvider>
-    );
+    renderGrid();
 
     // The insight is one card: the narrative and the first of its charts,
     // with the rest a page away — not one card per chart.
@@ -123,6 +127,23 @@ describe("DashboardWidgetsGrid grouping", () => {
     expect(screen.getByTestId("map-widget")).toBeTruthy();
     // Two widgets, so two cards — the insight has no extra remove of its own.
     expect(screen.getAllByLabelText("Remove from dashboard")).toHaveLength(2);
+  });
+
+  it("prints every chart of an insight, read-only even for the owner", () => {
+    renderGrid({ print: true });
+
+    // No pager on paper: each shown chart in turn, the narrative once.
+    const cards = screen.getAllByTestId("widget-message");
+    expect(cards.map((c) => c.textContent)).toEqual([
+      "Alerts trend",
+      "Alerts by driver",
+    ]);
+    expect(screen.getAllByText(/Alerts spiked in July\./)).toHaveLength(1);
+    expect(screen.queryByText(/of 2 charts/)).toBeNull();
+    expect(screen.getByTestId("map-widget")).toBeTruthy();
+    expect(screen.queryByLabelText("Remove from dashboard")).toBeNull();
+    expect(screen.queryByLabelText("Drag to reposition")).toBeNull();
+    expect(screen.queryByLabelText("View map full screen")).toBeNull();
   });
 
   // The post-2020 forest loss template's layout: a section holds the chart at
