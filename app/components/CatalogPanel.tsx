@@ -4,23 +4,12 @@ import {
   Button,
   Flex,
   IconButton,
-  Image,
-  Slider,
   Stack,
   Text,
   Wrap,
-  useDisclosure,
 } from "@chakra-ui/react";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  CaretDownIcon,
-  CircleHalfIcon,
-  EyeIcon,
-  EyeSlashIcon,
-  StackPlusIcon,
-  StackSimpleIcon,
-  XIcon,
-} from "@phosphor-icons/react";
+import { CaretDownIcon, StackPlusIcon, XIcon } from "@phosphor-icons/react";
 import { useShallow } from "zustand/react/shallow";
 
 import {
@@ -34,13 +23,10 @@ import {
   getCatalogColumnMotionStyle,
   getCatalogColumnPanelFlexProps,
 } from "@/app/chatPanelShared";
-import {
-  CATALOG_CARD_WIDTH_PX,
-  getCatalogLeftPx,
-} from "@/app/explorationLayout";
+import { getCatalogLeftPx } from "@/app/explorationLayout";
 import useMapStore from "@/app/store/mapStore";
 import useSidebarStore from "@/app/store/sidebarStore";
-import type { DatasetInfo } from "@/app/types/chat";
+import type { DatasetDetails } from "@/app/types/chat";
 import {
   datasetCardLayers,
   selectDatasetCardLayer,
@@ -50,9 +36,8 @@ import { filterDatasetsByCategory } from "@/app/utils/filterDatasetsByCategory";
 import { filterDatasetsByFeatureFlag } from "@/app/utils/filterDatasetsByFeatureFlag";
 import { useEnabledFlags } from "@/src/shared/lib/feature-flags";
 
-import { CatalogCard } from "./CatalogCard";
-import { DatasetInfoModal } from "./DatasetInfoModal";
-import { Tooltip } from "./ui/tooltip";
+import { DatasetRow } from "./DatasetRow";
+import { PanelEmpty, PanelList } from "./PanelList";
 
 /** Matches ChatPanel compact/full-size enter & exit (slide from the left). */
 const catalogPanelSlideTransition = {
@@ -79,8 +64,6 @@ const catalogListScrollStyle = {
  * Wiring:
  *  - Show-on-map switch ↔ `mapStore.addLayer` / `removeLayer` — the visible
  *    dataset layer IS the scope, so the layer manager is the source of truth.
- *  - Visibility / opacity controls ↔ `mapStore.setLayerVisibility` and
- *    `setLayerOpacity` on `dataset-${dataset_id}`.
  *
  * The existing legend reads from the same `mapStore.layers`, so any layer
  * toggled here automatically appears in the legend with full functionality.
@@ -217,13 +200,13 @@ export default function DataCatalogPanel() {
                 css={catalogListScrollStyle}
               >
                 {cards.length === 0 ? (
-                  <Text fontSize="sm" color="fg.muted" mt={4}>
-                    No datasets in this category yet.
-                  </Text>
+                  <PanelEmpty>No datasets in this category yet.</PanelEmpty>
                 ) : (
-                  cards.map((card) => (
-                    <CatalogCardRow key={card.dataset_id} card={card} />
-                  ))
+                  <PanelList>
+                    {cards.map((card) => (
+                      <CatalogDatasetRow key={card.dataset_id} card={card} />
+                    ))}
+                  </PanelList>
                 )}
               </Stack>
             </Flex>
@@ -235,40 +218,28 @@ export default function DataCatalogPanel() {
 }
 
 /**
- * Single dataset row inside the catalogue: thumbnail + metadata + show-on-map
- * switch, with an expanded controls row (visibility + opacity slider) shown
- * only while the layer is on the map.
+ * One dataset in the catalogue, with its supporting layers (if any) indented
+ * beneath it. Visibility and opacity live in the legend, which reads the same
+ * `mapStore.layers`.
  */
-function CatalogCardRow({ card }: { card: DatasetCardConfig }) {
-  const {
-    open: infoOpen,
-    onOpen: onInfoOpen,
-    onClose: onInfoClose,
-  } = useDisclosure();
-
-  // Single-layer cards fall back to a synthesized one-entry list so this
-  // stays a uniform "N layers" loop with no dataset-identity branching. Ids
-  // are derived by datasetLayerId — the same formula buildDatasetLayers uses
-  // — so a card's rows always match the ids actually on the map.
-  const layerRefs = (
+function CatalogDatasetRow({ card }: { card: DatasetCardConfig }) {
+  // Ids of every layer this card can put on the map (a single-layer card
+  // synthesizes its one), derived by datasetLayerId — the same formula
+  // buildDatasetLayers uses — so they match the ids actually on the map.
+  const layerIds = (
     card.layers?.length ? card.layers : [{ name: card.dataset_name }]
-  ).map((l, index) => ({
-    name: l.name,
-    id: datasetLayerId(card.dataset_id, index, l.name),
-  }));
+  ).map((l, index) => datasetLayerId(card.dataset_id, index, l.name));
 
   // The visible dataset layers IS the scope — the layer manager is the source
   // of truth for "is this dataset active?". Active if any of its layers are on.
   const activeLayerIds = useMapStore(
     useShallow((s) => {
-      const ids = new Set(layerRefs.map((r) => r.id));
+      const ids = new Set(layerIds);
       return s.layers.filter((l) => ids.has(l.id)).map((l) => l.id);
     })
   );
   const addLayer = useMapStore((s) => s.addLayer);
   const removeDatasetLayers = useMapStore((s) => s.removeDatasetLayers);
-
-  const isActive = activeLayerIds.length > 0;
 
   function handleToggle(checked: boolean) {
     if (!checked) {
@@ -278,87 +249,38 @@ function CatalogCardRow({ card }: { card: DatasetCardConfig }) {
     datasetCardLayers(card).forEach(addLayer);
   }
 
-  const dataset = card as unknown as DatasetInfo;
-  const cardText =
-    [card.cadence, card.geographic_coverage, card.provider]
-      .filter(Boolean)
-      .join(" · ") || undefined;
-
   // layers[0] is the card's own default layer, shown above by the card's
   // own toggle; layers[1:] are "supporting layers" (e.g. LGMS's LULUCF/
   // agriculture) disclosed below as their own selectable rows, each with
   // its own info modal — PZB-1346 / project-zeno PR #830.
   const supportingLayers = (card.layers ?? []).slice(1).map((layer, i) => ({
     layer,
-    ref: layerRefs[i + 1],
+    layerId: layerIds[i + 1],
   }));
   const [supportingOpen, setSupportingOpen] = useState(true);
 
   return (
-    <Box w={`${CATALOG_CARD_WIDTH_PX}px`} maxW="100%" flexShrink={0}>
-      <DatasetInfoModal
-        isOpen={infoOpen}
-        onClose={onInfoClose}
-        dataset={dataset}
-      />
-      <CatalogCard
-        thumbnail={
-          card.img ? (
-            <Image
-              objectFit="cover"
-              w="100%"
-              h="100%"
-              src={card.img}
-              alt={card.dataset_name}
-            />
-          ) : (
-            <Flex
-              w="100%"
-              h="100%"
-              align="center"
-              justify="center"
-              bg="gray.50"
-            >
-              <StackSimpleIcon size={32} color="#656E7B" />
-            </Flex>
-          )
-        }
+    <>
+      <DatasetRow
+        dataset={card}
+        img={card.img}
         viewOnly={card.viewOnly}
-        title={card.dataset_name}
-        description={cardText}
-        selected={isActive}
-        showOnMap={isActive}
-        onShowOnMapChange={handleToggle}
-        onInfoClick={onInfoOpen}
-        dataPanel="datasets"
+        interaction={{
+          mode: "toggle",
+          checked: activeLayerIds.length > 0,
+          onChange: handleToggle,
+          dataPanel: "datasets",
+        }}
       />
-      {isActive &&
-        layerRefs.map((ref) => (
-          <LayerControlsRow
-            key={ref.id}
-            layerId={ref.id}
-            // Only label sub-rows when there's more than one layer to
-            // disambiguate — a single-layer dataset's row stays unlabeled.
-            label={layerRefs.length > 1 ? ref.name : card.dataset_name}
-          />
-        ))}
       {supportingLayers.length > 0 && (
-        <Box
-          mt={1}
-          borderRadius="4px"
-          overflow="hidden"
-          border="1px solid"
-          borderColor="rgba(19, 22, 25, 0.1)"
-        >
+        <Stack gap="6px" pl="16px">
           <Flex
             as="button"
             onClick={() => setSupportingOpen((o) => !o)}
+            aria-expanded={supportingOpen}
             align="center"
             gap={2}
-            w="100%"
-            px={4}
-            py="10px"
-            bg="#FAFBFC"
+            py="2px"
           >
             <Box
               transform={supportingOpen ? "rotate(180deg)" : undefined}
@@ -381,17 +303,17 @@ function CatalogCardRow({ card }: { card: DatasetCardConfig }) {
             </Text>
           </Flex>
           {supportingOpen &&
-            supportingLayers.map(({ layer, ref }) => (
+            supportingLayers.map(({ layer, layerId }) => (
               <SupportingLayerRow
                 key={layer.name}
                 card={card}
                 layer={layer}
-                isSelected={activeLayerIds.includes(ref.id)}
+                isSelected={activeLayerIds.includes(layerId)}
               />
             ))}
-        </Box>
+        </Stack>
       )}
-    </Box>
+    </>
   );
 }
 
@@ -406,11 +328,6 @@ function SupportingLayerRow({
   layer: DatasetCardLayer;
   isSelected: boolean;
 }) {
-  const {
-    open: infoOpen,
-    onOpen: onInfoOpen,
-    onClose: onInfoClose,
-  } = useDisclosure();
   const addLayer = useMapStore((s) => s.addLayer);
   const removeDatasetLayers = useMapStore((s) => s.removeDatasetLayers);
 
@@ -421,155 +338,28 @@ function SupportingLayerRow({
     }
   }
 
-  const title = layer.title ?? layer.name;
-  const resolved = {
-    cadence: layer.cadence ?? card.cadence,
-    resolution: layer.resolution ?? card.resolution,
-    geographic_coverage: layer.geographic_coverage ?? card.geographic_coverage,
-    provider: layer.provider ?? card.provider,
-  };
-  const layerDataset = {
-    dataset_id: card.dataset_id,
-    dataset_name: title,
-    tile_url: layer.tile_url,
+  const layerDataset: DatasetDetails = {
+    dataset_name: layer.title ?? layer.name,
     summary: layer.summary,
     description: layer.description,
     cautions: layer.cautions,
     citation: layer.citation,
-    ...resolved,
-  } as unknown as DatasetInfo;
-  const layerText =
-    [resolved.cadence, resolved.geographic_coverage, resolved.provider]
-      .filter(Boolean)
-      .join(" · ") || undefined;
+    cadence: layer.cadence ?? card.cadence,
+    geographic_coverage: layer.geographic_coverage ?? card.geographic_coverage,
+    provider: layer.provider ?? card.provider,
+  };
 
   return (
-    <Flex borderTop="1px solid" borderColor="rgba(19, 22, 25, 0.1)">
-      <Box w="4px" flexShrink={0} bg={isSelected ? "#8EA5EA" : "#E0E2E5"} />
-      <Box flex="1" minW={0}>
-        <DatasetInfoModal
-          isOpen={infoOpen}
-          onClose={onInfoClose}
-          dataset={layerDataset}
-        />
-        <CatalogCard
-          thumbnail={
-            layer.img ? (
-              <Image
-                objectFit="cover"
-                w="100%"
-                h="100%"
-                src={layer.img}
-                alt={title}
-              />
-            ) : (
-              <Flex
-                w="100%"
-                h="100%"
-                align="center"
-                justify="center"
-                bg="gray.50"
-              >
-                <StackSimpleIcon size={32} color="#656E7B" />
-              </Flex>
-            )
-          }
-          viewOnly
-          title={title}
-          description={layerText}
-          selected={isSelected}
-          selectedBg="#F0F4FF"
-          showOnMap={isSelected}
-          onShowOnMapChange={handleToggle}
-          onInfoClick={onInfoOpen}
-          dataPanel="datasets"
-        />
-      </Box>
-    </Flex>
-  );
-}
-
-/** Visibility + opacity controls for one map layer, shown while it's active. */
-function LayerControlsRow({
-  layerId,
-  label,
-}: {
-  layerId: string;
-  label: string;
-}) {
-  const layer = useMapStore(
-    useShallow((s) => s.layers.find((l) => l.id === layerId))
-  );
-  const setLayerVisibility = useMapStore((s) => s.setLayerVisibility);
-  const setLayerOpacity = useMapStore((s) => s.setLayerOpacity);
-
-  if (!layer) return null;
-
-  const isVisible = layer.visible;
-  const opacity = Math.round((layer.opacity ?? 1) * 100);
-
-  return (
-    <Flex
-      align="center"
-      gap={2}
-      mt={1}
-      px={2}
-      py={2}
-      w="100%"
-      minW={0}
-      bg="bg.subtle"
-      borderRadius="4px"
-      border="1px solid"
-      borderColor="border"
-    >
-      <Tooltip
-        content={isVisible ? "Hide layer" : "Show layer"}
-        positioning={{ placement: "top" }}
-        showArrow
-        variant="dark"
-      >
-        <IconButton
-          aria-label={isVisible ? `Hide ${label} layer` : `Show ${label} layer`}
-          size="xs"
-          variant="ghost"
-          onClick={() => setLayerVisibility(layer.id, !isVisible)}
-        >
-          {isVisible ? <EyeIcon size={16} /> : <EyeSlashIcon size={16} />}
-        </IconButton>
-      </Tooltip>
-      <CircleHalfIcon size={14} color="#656E7B" />
-      <Slider.Root
-        flex="1"
-        minW={0}
-        size="sm"
-        value={[opacity]}
-        min={0}
-        max={100}
-        onValueChange={(v: { value: number[] }) =>
-          setLayerOpacity(layer.id, v.value[0] / 100)
-        }
-        // Chakra's Slider.Root expects string[] (one label per thumb);
-        // this conflicts with jsx-a11y/aria-proptypes which expects a
-        // plain string, so we suppress the lint rule for this prop.
-        // eslint-disable-next-line jsx-a11y/aria-proptypes
-        aria-label={[`${label} opacity`]}
-      >
-        <Slider.Control>
-          <Slider.Track>
-            <Slider.Range />
-          </Slider.Track>
-          <Slider.Thumb index={0} />
-        </Slider.Control>
-      </Slider.Root>
-      <Text
-        fontFamily="mono"
-        fontSize="10px"
-        color="fg.muted"
-        w="4ch"
-        textAlign="right"
-      >
-        {opacity}%
-      </Text>
-    </Flex>
+    <DatasetRow
+      dataset={layerDataset}
+      img={layer.img}
+      viewOnly
+      interaction={{
+        mode: "toggle",
+        checked: isSelected,
+        onChange: handleToggle,
+        dataPanel: "datasets",
+      }}
+    />
   );
 }
