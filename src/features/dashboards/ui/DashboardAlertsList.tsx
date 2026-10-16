@@ -11,7 +11,11 @@ import {
   Table,
   Text,
 } from "@chakra-ui/react";
-import { CaretDownIcon } from "@phosphor-icons/react";
+import {
+  CaretDownIcon,
+  DownloadSimpleIcon,
+  FileCsvIcon,
+} from "@phosphor-icons/react";
 
 import InsightCaption from "@/app/components/InsightCaption";
 import {
@@ -31,15 +35,40 @@ import {
   type DateRange,
 } from "../lib/alertsWidgets";
 import { paginate } from "../lib/pagination";
+import { TWO_COLUMN_QUERY } from "./gridLayout";
 
 const PAGE_SIZE = 10;
 
-const PRESET_CHIPS: { chip: Exclude<AlertsChip, "custom">; label: string }[] = [
-  { chip: "new-week", label: "New this week" },
-  { chip: "last-day", label: "Last day" },
-  { chip: "last-3-days", label: "Last 3 days" },
-  { chip: "last-week", label: "Last week" },
+const CHIP_LABELS: Record<AlertsChip, string> = {
+  "new-week": "New this week",
+  "last-day": "Last day",
+  "last-3-days": "Last 3 days",
+  "last-week": "Last week",
+  custom: "Custom",
+};
+
+/**
+ * The period pills in the full-width toolbar's order. At half width (a
+ * two-column grid: the panes side by side in a double card, or a single
+ * card) the `folded` ones and Custom move into one "More" pill, as the
+ * design's variant B. The width is the panes' own container query, so the
+ * toolbar and the panes always agree; both sets are in the DOM and CSS
+ * shows one.
+ */
+const PILLS: { chip: Exclude<AlertsChip, "custom">; folded?: boolean }[] = [
+  { chip: "new-week" },
+  { chip: "last-day", folded: true },
+  { chip: "last-3-days", folded: true },
+  { chip: "last-week" },
 ];
+
+const MORE_CHIPS: AlertsChip[] = ["last-day", "last-3-days", "custom"];
+
+const FULL_WIDTH_ONLY = { [TWO_COLUMN_QUERY]: { display: "none" } } as const;
+const HALF_WIDTH_ONLY = {
+  display: "none",
+  [TWO_COLUMN_QUERY]: { display: "inline-flex" },
+} as const;
 
 const CONFIDENCES: AlertsConfidence[] = ["all", "high", "highest"];
 
@@ -268,6 +297,7 @@ export default function DashboardAlertsList({
   onConfidence,
   onLandFilter,
   onCustomChange,
+  onDownloadCsv,
   onRetry,
 }: {
   view: AlertsListView;
@@ -287,10 +317,22 @@ export default function DashboardAlertsList({
   onConfidence: (confidence: AlertsConfidence) => void;
   onLandFilter: (filter?: AlertsLandFilter) => void;
   onCustomChange: (range: DateRange) => void;
+  /** Saves the rows on show (period, confidence and land filter applied) as CSV. */
+  onDownloadCsv: () => void;
   onRetry: () => void;
 }) {
   const ready = view.kind === "ready";
   const range = ready ? view.range : undefined;
+
+  // The Custom dates open from the Custom pill at full width and from the
+  // More menu at half width, so the popover is controlled rather than
+  // toggled by one trigger.
+  const [customOpen, setCustomOpen] = useState(false);
+  const openCustom = () => {
+    onChip("custom");
+    setCustomOpen(true);
+  };
+  const moreSelected = MORE_CHIPS.includes(chip);
 
   // The page resets whenever the rows it indexes change identity (a chip, a
   // tier, a new period). Reconciled during render, not in an effect, so the
@@ -319,12 +361,13 @@ export default function DashboardAlertsList({
 
       {/* Filter toolbar: the period pills, a divider, the two dropdowns */}
       <Flex gap="6px" align="center" wrap="wrap">
-        {PRESET_CHIPS.map(({ chip: value, label }) => {
+        {PILLS.map(({ chip: value, folded }) => {
           const selected = chip === value;
           return (
             <Button
               key={value}
               {...pillProps(selected)}
+              css={folded ? FULL_WIDTH_ONLY : undefined}
               aria-pressed={selected}
               disabled={!ready}
               onClick={() => onChip(value)}
@@ -338,7 +381,7 @@ export default function DashboardAlertsList({
                   aria-hidden
                 />
               )}
-              {label}
+              {CHIP_LABELS[value]}
               {value === "new-week" && ready && (
                 <Text
                   as="span"
@@ -354,28 +397,70 @@ export default function DashboardAlertsList({
             </Button>
           );
         })}
-        {/* Custom: the pill selects the chip and opens the dates. Mounted on
-            open, so the inputs start from the committed range each time
-            (they are uncontrolled: a controlled date input snaps a
-            half-typed year back on every keystroke the handler ignores). */}
+        {/* Custom: the pill (or the More menu's item) selects the chip and
+            opens the dates under whichever of the two pills the width shows:
+            both share one anchor. Mounted on open, so the inputs start from
+            the committed range each time (they are uncontrolled: a controlled
+            date input snaps a half-typed year back on every keystroke the
+            handler ignores). */}
         <Popover.Root
+          open={customOpen}
+          onOpenChange={(e) => setCustomOpen(e.open)}
           // Fixed, as the basemap selector's: the dashboard scrolls inside a
           // container, and an absolute positioner lands off the page.
           positioning={{ placement: "bottom-start", strategy: "fixed" }}
           lazyMount
           unmountOnExit
         >
-          <Popover.Trigger asChild>
-            <Button
-              {...pillProps(chip === "custom")}
-              aria-pressed={chip === "custom"}
-              disabled={!ready}
-              onClick={() => onChip("custom")}
-            >
-              Custom
-              <CaretDownIcon size={10} />
-            </Button>
-          </Popover.Trigger>
+          <Popover.Anchor asChild>
+            <Flex display="inline-flex" align="center">
+              <Button
+                {...pillProps(chip === "custom")}
+                css={FULL_WIDTH_ONLY}
+                aria-pressed={chip === "custom"}
+                disabled={!ready}
+                onClick={openCustom}
+              >
+                Custom
+                <CaretDownIcon size={10} />
+              </Button>
+              <Menu.Root positioning={{ placement: "bottom-start" }}>
+                <Menu.Trigger asChild>
+                  <Button
+                    {...pillProps(moreSelected)}
+                    css={HALF_WIDTH_ONLY}
+                    disabled={!ready}
+                    aria-label={
+                      moreSelected
+                        ? `More periods: ${CHIP_LABELS[chip]}`
+                        : "More periods"
+                    }
+                  >
+                    {moreSelected ? CHIP_LABELS[chip] : "More"}
+                    <CaretDownIcon size={10} />
+                  </Button>
+                </Menu.Trigger>
+                <Portal>
+                  <Menu.Positioner>
+                    <Menu.Content minW="140px" zIndex={1400}>
+                      {MORE_CHIPS.map((value) => (
+                        <Menu.Item
+                          key={value}
+                          value={value}
+                          fontSize="12px"
+                          onSelect={() =>
+                            value === "custom" ? openCustom() : onChip(value)
+                          }
+                        >
+                          {CHIP_LABELS[value]}
+                        </Menu.Item>
+                      ))}
+                    </Menu.Content>
+                  </Menu.Positioner>
+                </Portal>
+              </Menu.Root>
+            </Flex>
+          </Popover.Anchor>
           <Portal>
             <Popover.Positioner>
               <Popover.Content w="auto" zIndex={1400}>
@@ -612,6 +697,41 @@ export default function DashboardAlertsList({
               </Button>
             </Flex>
           )}
+        </Flex>
+      )}
+
+      {/* Widget actions, as the chart card's row: the rows on show as CSV.
+          The design's "View data source" waits on a source link the
+          catalogue does not carry yet. */}
+      {ready && (
+        <Flex gap="8px" align="center">
+          <Menu.Root positioning={{ placement: "bottom-start" }}>
+            <Menu.Trigger asChild>
+              <Button
+                size="xs"
+                variant="outline"
+                h={6}
+                rounded="sm"
+                bg="white"
+                color="neutral.500"
+                disabled={rows.length === 0}
+              >
+                <DownloadSimpleIcon size={14} />
+                Download
+                <CaretDownIcon size={12} />
+              </Button>
+            </Menu.Trigger>
+            <Portal>
+              <Menu.Positioner>
+                <Menu.Content minW="180px" zIndex={1400}>
+                  <Menu.Item value="csv" onSelect={onDownloadCsv}>
+                    <FileCsvIcon size={14} />
+                    Data (CSV)
+                  </Menu.Item>
+                </Menu.Content>
+              </Menu.Positioner>
+            </Portal>
+          </Menu.Root>
         </Flex>
       )}
     </Flex>

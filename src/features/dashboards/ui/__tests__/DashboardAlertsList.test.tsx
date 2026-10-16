@@ -1,6 +1,13 @@
 // @vitest-environment happy-dom
 import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { toAlertsList } from "../../api/alerts";
@@ -54,6 +61,7 @@ function propsFor(
     onConfidence: vi.fn<ListProps["onConfidence"]>(),
     onLandFilter: vi.fn<ListProps["onLandFilter"]>(),
     onCustomChange: vi.fn<ListProps["onCustomChange"]>(),
+    onDownloadCsv: vi.fn<ListProps["onDownloadCsv"]>(),
     onRetry: vi.fn<ListProps["onRetry"]>(),
   };
 }
@@ -80,8 +88,8 @@ const UNAVAILABLE =
   "Integrated alerts data is unavailable right now. Please try again in a moment.";
 
 // The menu selects its highlighted item, so hover the item before clicking.
-async function chooseFromDropdown(trigger: string, option: string) {
-  fireEvent.click(screen.getByRole("button", { name: trigger }));
+async function chooseFromDropdown(trigger: HTMLElement, option: string) {
+  fireEvent.click(trigger);
   const item = await screen.findByRole("menuitem", { name: option });
   await act(async () => {
     fireEvent.pointerMove(item, { pointerType: "mouse" });
@@ -90,6 +98,17 @@ async function chooseFromDropdown(trigger: string, option: string) {
     fireEvent.click(item);
   });
 }
+
+const dropdown = (name: string) => screen.getByRole("button", { name });
+
+/**
+ * The half-width "More" pill. happy-dom applies its base `display: none`
+ * but never matches the container query that shows it, so it is hidden
+ * here (and a hidden element has no accessible name, hence the label
+ * query); the menu it opens is not.
+ */
+const morePill = (name = "More periods") =>
+  screen.getByLabelText(name, { selector: "button" });
 
 describe("DashboardAlertsList", () => {
   it("shows the new week's days with NEW badges, hectares on the pill and totals in the footer", () => {
@@ -151,16 +170,16 @@ describe("DashboardAlertsList", () => {
 
   it("offers the confidence tiers in a dropdown and reports the choice", async () => {
     const props = renderList();
-    await chooseFromDropdown("Confidence: All", "Highest");
+    await chooseFromDropdown(dropdown("Confidence: All"), "Highest");
     expect(props.onConfidence).toHaveBeenCalledWith("highest");
   });
 
   it("offers the land filters in a dropdown and reports the choice", async () => {
     const props = renderList();
-    await chooseFromDropdown("Intersects: Any", "Natural lands");
+    await chooseFromDropdown(dropdown("Intersects: Any"), "Natural lands");
     expect(props.onLandFilter).toHaveBeenCalledWith("natural_lands");
 
-    await chooseFromDropdown("Intersects: Any", "Any");
+    await chooseFromDropdown(dropdown("Intersects: Any"), "Any");
     expect(props.onLandFilter).toHaveBeenLastCalledWith(undefined);
   });
 
@@ -297,6 +316,40 @@ describe("DashboardAlertsList", () => {
     renderList({ isFetching: true });
     const table = screen.getByRole("table", { name: "Alert days" });
     expect(table.closest("[aria-busy='true']")).toBeTruthy();
+  });
+
+  it("offers the rows on show as a CSV download, nothing when there are none", async () => {
+    const props = renderList(propsFor("last-week"));
+    await chooseFromDropdown(dropdown("Download"), "Data (CSV)");
+    expect(props.onDownloadCsv).toHaveBeenCalledTimes(1);
+
+    cleanup();
+    renderList({ rows: [] });
+    expect(dropdown("Download").hasAttribute("disabled")).toBe(true);
+  });
+
+  it("folds Last day, Last 3 days and Custom into More, which names the chosen one", async () => {
+    const props = renderList(propsFor("last-week"));
+    // The full-width pills are still in the DOM: the width's CSS shows one set.
+    expect(screen.getByRole("button", { name: "Last day" })).toBeTruthy();
+    expect(morePill().textContent).toBe("More");
+    await chooseFromDropdown(morePill(), "Last 3 days");
+    expect(props.onChip).toHaveBeenCalledWith("last-3-days");
+
+    cleanup();
+    renderList(propsFor("last-3-days"));
+    expect(morePill("More periods: Last 3 days").textContent).toBe(
+      "Last 3 days"
+    );
+  });
+
+  it("opens the Custom dates from the More menu as from the Custom pill", async () => {
+    const props = renderList(
+      propsFor("last-week", "all", chipRange("last-week", list))
+    );
+    await chooseFromDropdown(morePill(), "Custom");
+    expect(props.onChip).toHaveBeenCalledWith("custom");
+    expect(await screen.findByLabelText("Custom period start")).toBeTruthy();
   });
 
   it("shows a failed fetch above the rows it still holds", () => {

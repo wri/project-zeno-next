@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  alertsCsv,
+  alertsCsvFilename,
   alertsMapLayer,
   alertsWidgetSpec,
   chipRange,
@@ -496,6 +498,44 @@ describe("tiers", () => {
     expect(confidenceLabel("all")).toBe("High · Highest");
     expect(confidenceLabel("high")).toBe("High");
     expect(confidenceLabel("highest")).toBe("Highest");
+  });
+});
+
+describe("download", () => {
+  it("writes the rows on show with the tiers as the table names them", () => {
+    const rows = [
+      day({ date: "2026-10-10", highHa: 12.5, highestHa: 3, totalHa: 15.5 }),
+      day({
+        date: "2026-10-09",
+        highHa: 0,
+        highestHa: 1.6,
+        totalHa: 1.6,
+        isNew: false,
+      }),
+    ];
+    expect(alertsCsv(rows, "all")).toBe(
+      [
+        "alert_date,confidence,high_ha,highest_ha,total_ha,new",
+        "2026-10-10,High · Highest,12.5,3,15.5,true",
+        "2026-10-09,Highest,0,1.6,1.6,false",
+      ].join("\n")
+    );
+    expect(alertsCsv(rows, "high").split("\n")[1]).toBe(
+      "2026-10-10,High,12.5,3,15.5,true"
+    );
+    expect(alertsCsv([], "all")).toBe(
+      "alert_date,confidence,high_ha,highest_ha,total_ha,new"
+    );
+  });
+
+  it("names the file after the area and the period", () => {
+    const range = { start: "2026-10-10", end: "2026-10-16" };
+    expect(alertsCsvFilename("Guarapuava, Paraná, Brazil", range)).toBe(
+      "integrated-alerts-guarapuava-parana-brazil-2026-10-10-2026-10-16.csv"
+    );
+    expect(alertsCsvFilename("  ", range)).toBe(
+      "integrated-alerts-area-2026-10-10-2026-10-16.csv"
+    );
   });
 });
 

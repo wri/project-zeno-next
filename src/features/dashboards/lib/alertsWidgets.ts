@@ -1,5 +1,6 @@
 import { format, parseISO } from "date-fns";
 
+import { rowsToCsv } from "@/app/utils/csvExport";
 import { mapWidgetLayer, str, type MapWidgetLayer } from "./mapWidgets";
 
 /**
@@ -421,6 +422,41 @@ export function formatAlertDate(iso: string): string {
 /** "SEP 28, 2026" — the badge row's `LATEST` form. */
 export function formatLatest(iso: string): string {
   return format(parseISO(iso), "MMM d, yyyy").toUpperCase();
+}
+
+// ── Download ───────────────────────────────────────────────────────────────
+
+/**
+ * The rows on show as CSV: the day, the tiers it had alerts in (or the one
+ * tier on show, as the table's CONFIDENCE cell), every tier's area and the
+ * new-week flag.
+ */
+export function alertsCsv(
+  rows: readonly AlertDay[],
+  confidence: AlertsConfidence
+): string {
+  return rowsToCsv(
+    rows.map((row) => ({
+      alert_date: row.date,
+      confidence: rowTiers(row, confidence),
+      high_ha: row.highHa,
+      highest_ha: row.highestHa,
+      total_ha: row.totalHa,
+      new: row.isNew,
+    })),
+    ["alert_date", "confidence", "high_ha", "highest_ha", "total_ha", "new"]
+  );
+}
+
+/** `integrated-alerts-<area>-<start>-<end>.csv`, the area name slugged to ASCII. */
+export function alertsCsvFilename(areaName: string, range: DateRange): string {
+  const area = areaName
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+  return `integrated-alerts-${area || "area"}-${range.start}-${range.end}.csv`;
 }
 
 const HA_FORMAT = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 });
