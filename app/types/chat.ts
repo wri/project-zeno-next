@@ -443,6 +443,24 @@ export interface DatasetInfo {
   [key: string]: unknown; // Allow other properties
 }
 
+/**
+ * What a dataset row and its info modal display. Both an agent-picked
+ * DatasetInfo and a static DatasetCardConfig satisfy it, so neither needs a
+ * cast.
+ */
+export type DatasetDetails = Pick<
+  DatasetInfo,
+  | "dataset_name"
+  | "summary"
+  | "description"
+  | "methodology"
+  | "cautions"
+  | "citation"
+  | "cadence"
+  | "geographic_coverage"
+  | "provider"
+>;
+
 // LangChain content structure (for internal API use)
 export interface LangChainContent {
   text?: string;

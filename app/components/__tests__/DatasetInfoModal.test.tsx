@@ -5,7 +5,7 @@
  * every other dataset keeps its own.
  *
  * The Data Catalog builds this modal straight from the static card
- * (`card as unknown as DatasetInfo` in CatalogPanel) rather than from an agent
+ * (a DatasetCardConfig passed as DatasetDetails) rather than from an agent
  * response, and it is the only LGMS panel a regular user can open — the agent
  * hides LGMS behind the experimental profile. So the card has to carry the
  * same copy as the backend catalog entry.
@@ -14,14 +14,14 @@ import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import type { DatasetInfo } from "@/app/types/chat";
+import type { DatasetDetails, DatasetInfo } from "@/app/types/chat";
 import { DATASET_CARDS } from "@/app/constants/datasets";
 
 import { DatasetInfoModal } from "../DatasetInfoModal";
 
 const LGMS_DATASET_ID = 12;
 
-function renderModal(dataset: DatasetInfo) {
+function renderModal(dataset: DatasetInfo | DatasetDetails) {
   render(
     <ChakraProvider value={defaultSystem}>
       <DatasetInfoModal isOpen onClose={() => {}} dataset={dataset} />
@@ -90,7 +90,7 @@ describe("the LGMS catalog card", () => {
   });
 
   it("opens with the summary lede", () => {
-    renderModal(lgmsCard as unknown as DatasetInfo);
+    renderModal(lgmsCard!);
 
     expect(screen.getByText(lgmsCard?.summary as string)).toBeTruthy();
   });
@@ -100,7 +100,7 @@ describe("the LGMS catalog card", () => {
   });
 
   it("opens with Description, Cautions and Citation but no Methodology", () => {
-    renderModal(lgmsCard as unknown as DatasetInfo);
+    renderModal(lgmsCard!);
 
     expect(screen.getByText("Description")).toBeTruthy();
     expect(screen.getByText("Cautions")).toBeTruthy();
@@ -109,7 +109,7 @@ describe("the LGMS catalog card", () => {
   });
 
   it("renders the citation sources as links", () => {
-    renderModal(lgmsCard as unknown as DatasetInfo);
+    renderModal(lgmsCard!);
 
     const hrefs = [...document.querySelectorAll("a")].map((a) =>
       a.getAttribute("href")
@@ -151,7 +151,7 @@ describe("links in catalog prose", () => {
   });
 
   it("gives the LGMS sources the same treatment", () => {
-    renderModal(lgmsCard as unknown as DatasetInfo);
+    renderModal(lgmsCard!);
 
     const links = [...document.querySelectorAll("a")];
     expect(links.length).toBeGreaterThan(0);
