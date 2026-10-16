@@ -1,13 +1,5 @@
 import { useMemo, useState } from "react";
-import {
-  Box,
-  Button,
-  Flex,
-  IconButton,
-  Stack,
-  Text,
-  Wrap,
-} from "@chakra-ui/react";
+import { Box, Button, Flex, IconButton, Stack, Text } from "@chakra-ui/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { CaretDownIcon, StackPlusIcon, XIcon } from "@phosphor-icons/react";
 import { useShallow } from "zustand/react/shallow";
@@ -38,9 +30,9 @@ import { filterDatasetsByFeatureFlag } from "@/app/utils/filterDatasetsByFeature
 import { searchDatasets } from "@/app/utils/searchDatasets";
 import { useEnabledFlags } from "@/src/shared/lib/feature-flags";
 
-import { CatalogSearchInput } from "./CatalogSearchInput";
 import { DatasetRow } from "./DatasetRow";
-import { PanelEmpty, PanelList, PanelSection } from "./PanelList";
+import { PanelEmpty, PanelList, PanelPills, PanelSection } from "./PanelList";
+import { PanelSearchInput } from "./PanelSearchInput";
 
 /** Matches ChatPanel compact/full-size enter & exit (slide from the left). */
 const catalogPanelSlideTransition = {
@@ -198,39 +190,19 @@ function CatalogBody({
       pb={6}
       overflow="hidden"
     >
-      <CatalogSearchInput
+      <PanelSearchInput
+        label="Search datasets"
+        placeholder="Search datasets, e.g. alerts or land cover"
+        autoFocusOnDesktop
         value={query}
         onChange={setQuery}
         onEscapeEmpty={onClose}
       />
-      <Wrap gap={1} flexShrink={0} overflow="hidden">
-        {DATASET_CATEGORIES.map((cat) => {
-          const isActive = category === cat.id;
-          return (
-            <Button
-              key={cat.id}
-              h="24px"
-              minH="24px"
-              py="4px"
-              px="8px"
-              borderRadius="full"
-              fontSize="12px"
-              fontWeight="400"
-              lineHeight="16px"
-              bg={isActive ? "fg.link" : "neutral.300"}
-              color={isActive ? "white" : "fg"}
-              border="1px solid"
-              borderColor={isActive ? "fg.link" : "neutral.300"}
-              _hover={{
-                bg: isActive ? "fg.link" : "neutral.400",
-              }}
-              onClick={() => onCategoryChange(cat.id)}
-            >
-              {cat.label}
-            </Button>
-          );
-        })}
-      </Wrap>
+      <PanelPills
+        options={DATASET_CATEGORIES}
+        value={category}
+        onChange={onCategoryChange}
+      />
       <Stack
         gap={4}
         flex={1}
