@@ -13,7 +13,7 @@ import type { MessageContext, UiContext } from "@/app/types/chat";
 // non-idempotent, so the client deduplicates). `null` means "nothing for this
 // slot has been sent yet".
 export interface ContextKeys {
-  aoi: string | null; // aoi_name of the first area layer
+  aoi: string | null; // aoiContextKey of the first area layer
   // datasetId plus the active sublayer names, e.g. "12:agriculture,lulucf",
   // so toggling a sublayer on/off re-announces context to the agent.
   dataset: string | null;
@@ -25,6 +25,16 @@ export const emptyContextKeys = (): ContextKeys => ({
   dataset: null,
   daterange: null,
 });
+
+// The `aoi` slot's identity key: the selection name plus its first area's id.
+// The name alone is not an identity: unnamed concession parcels share one
+// ("Mining concession, IDN"), so clicking a second one would not re-announce
+// the area and the agent would keep analysing the first. Shared by
+// deriveContext and chatStore's pick_aoi fold, which must agree on it.
+export const aoiContextKey = (
+  name: string,
+  aoi?: { source?: string; src_id?: string }
+): string => (aoi?.src_id ? `${name}|${aoi.source}:${aoi.src_id}` : name);
 
 // The `dataset` slot's identity key. Only a dataset that *declares* more than
 // one layer carries sublayer names in the key — an ordinary single-layer
@@ -113,6 +123,8 @@ function buildAoiSelected(
     return {
       aoi: {
         name: fromSelection.name,
+        // Lets the backend tell a replayed map pick from an agent selection.
+        display_name: fromSelection.display_name,
         gadm_id: undefined,
         src_id: fromSelection.src_id,
         subtype: fromSelection.subtype,
@@ -159,7 +171,7 @@ export function deriveContext(
   const aoiSelected = buildAoiSelected(layers, registry, excludedLayerIds);
   if (aoiSelected) {
     uiContext.aoi_selected = aoiSelected;
-    keys.aoi = aoiSelected.aoi_name;
+    keys.aoi = aoiContextKey(aoiSelected.aoi_name, aoiSelected.aoi);
   }
 
   const ds = datasetLayers(layers, excludedLayerIds);

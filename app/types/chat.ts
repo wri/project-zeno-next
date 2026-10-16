@@ -164,6 +164,7 @@ export interface UiContext {
   aoi_selected?: {
     aoi: {
       name: string;
+      display_name?: string;
       gadm_id?: string;
       src_id?: string;
       subtype?: string;
@@ -279,6 +280,9 @@ export interface ImageryInfo {
 
 export interface AOI {
   name: string;
+  // The label a concession was picked by on the map, when the backend stores
+  // it under its cleaned name. Absent for every other area.
+  display_name?: string;
   src_id: string;
   source: string;
   subtype: string;
