@@ -1,4 +1,4 @@
-export { EntityCard } from "./EntityCard";
+export { ENTITY_CARD_THUMBNAIL_PX, EntityCard } from "./EntityCard";
 export type { CardInteraction, EntityCardProps } from "./EntityCard";
 export { ENTITY_KINDS } from "./entity-kinds";
 export type { AnalysisVerification, EntityKind } from "./entity-kinds";

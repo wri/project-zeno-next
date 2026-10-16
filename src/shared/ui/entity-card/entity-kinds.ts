@@ -21,15 +21,37 @@ export interface EntityKindSpec {
   label: string;
   /** Accent for the eyebrow, panel header icons and thumbnail fallbacks. */
   color: string;
+  /** Light wash of `color` behind a kind's glyph or thumbnail fallback. */
+  tint: string;
   /** Glyph for a thumbnail with nothing better to show, and for panel headers. */
   Icon: Icon;
 }
 
 export const ENTITY_KINDS: Record<EntityKind, EntityKindSpec> = {
-  area: { label: "AREA", color: "#2D6BE4", Icon: PolygonIcon },
-  dataset: { label: "DATA", color: "#1AA915", Icon: StackSimpleIcon },
-  analysis: { label: "ANALYSIS", color: "#0049AA", Icon: ChartLineIcon },
-  dashboard: { label: "DASHBOARD", color: "#CE8303", Icon: SquaresFourIcon },
+  area: {
+    label: "AREA",
+    color: "#2D6BE4",
+    tint: "rgba(45, 107, 228, 0.06)",
+    Icon: PolygonIcon,
+  },
+  dataset: {
+    label: "DATA",
+    color: "#1AA915",
+    tint: "rgba(26, 169, 21, 0.06)",
+    Icon: StackSimpleIcon,
+  },
+  analysis: {
+    label: "ANALYSIS",
+    color: "#0049AA",
+    tint: "rgba(0, 73, 170, 0.06)",
+    Icon: ChartLineIcon,
+  },
+  dashboard: {
+    label: "DASHBOARD",
+    color: "#CE8303",
+    tint: "rgba(206, 131, 3, 0.06)",
+    Icon: SquaresFourIcon,
+  },
 };
 
 /**

@@ -9,9 +9,8 @@ import {
 
 import useMapStore from "@/app/store/mapStore";
 import { type LayerId, selectLayerOptions } from "@/app/types/map";
-import { EntityCard } from "@/src/shared/ui/entity-card";
+import { ENTITY_KINDS, EntityCard } from "@/src/shared/ui/entity-card";
 
-import { AREA_LABEL_COLOR } from "./AreaCardMenu";
 import { PanelList } from "./PanelList";
 
 const BOUNDARY_ICONS: Record<LayerId, Icon> = {
@@ -87,10 +86,10 @@ function BoundaryThumbnail({ id }: { id: LayerId }) {
       h="100%"
       align="center"
       justify="center"
-      bg="rgba(45, 107, 228, 0.06)"
+      bg={ENTITY_KINDS.area.tint}
       aria-hidden
     >
-      <IconComponent size={28} color={AREA_LABEL_COLOR} weight="light" />
+      <IconComponent size={28} color={ENTITY_KINDS.area.color} weight="light" />
     </Flex>
   );
 }

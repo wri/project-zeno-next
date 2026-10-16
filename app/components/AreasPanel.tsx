@@ -31,11 +31,11 @@ import useSidebarStore, {
   type AreasPanelFilter,
 } from "@/app/store/sidebarStore";
 import type { AOISelection } from "@/app/types/chat";
-import { areaTypeLabel } from "@/app/utils/areaTypeLabel";
+import { areaSourceLabel } from "@/app/utils/areaSourceLabel";
 import { customAreaToFeature } from "@/src/entities/custom-area";
-import { EntityCard } from "@/src/shared/ui/entity-card";
+import { ENTITY_KINDS, EntityCard } from "@/src/shared/ui/entity-card";
 
-import { AREA_LABEL_COLOR, areaActionIconProps } from "./AreaCardMenu";
+import { areaActionIconProps } from "./AreaCardMenu";
 import { AreaThumbnail } from "./AreaThumbnail";
 import ConversationAreaActionsMenu from "./ConversationAreaActionsMenu";
 import CustomAreaActionsMenu from "./CustomAreaActionsMenu";
@@ -197,7 +197,7 @@ function AreasPanelHeader({ onClose }: { onClose: () => void }) {
       minW={0}
     >
       <Flex alignItems="center" gap="8px" minW={0} flex="1" overflow="hidden">
-        <PolygonIcon size={16} color={AREA_LABEL_COLOR} />
+        <PolygonIcon size={16} color={ENTITY_KINDS.area.color} />
         <Text
           fontSize="10px"
           fontWeight="400"
@@ -345,7 +345,7 @@ function ConversationAreaCard({ layer }: { layer: Layer }) {
         )
       }
       title={title}
-      meta={areaTypeLabel(aoiSelection?.aois[0]?.source ?? "custom")}
+      meta={areaSourceLabel(aoiSelection?.aois[0]?.source ?? "custom")}
       interaction={{
         mode: "toggle",
         checked: isVisible,
@@ -473,7 +473,7 @@ function MonitoredAreaCard({ area }: { area: CustomArea }) {
         />
       }
       title={area.name}
-      meta={areaTypeLabel("custom")}
+      meta={areaSourceLabel("custom")}
       interaction={{
         mode: "toggle",
         checked: isVisible,
@@ -518,7 +518,7 @@ function AreaCardActions({
               onLocate();
             }}
           >
-            <CrosshairIcon size={16} color={AREA_LABEL_COLOR} />
+            <CrosshairIcon size={16} color={ENTITY_KINDS.area.color} />
           </IconButton>
         </Tooltip>
       )}

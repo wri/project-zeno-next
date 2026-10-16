@@ -4,8 +4,9 @@ import type { ReactNode } from "react";
 import { CATALOG_CARD_WIDTH_PX } from "@/app/explorationLayout";
 
 /**
- * A column of cards at the exploration panels' card width — the one place
- * that width lives, so the cards themselves have none.
+ * A column of cards at the exploration panels' card width, so the cards
+ * themselves have none. Panels still on `CatalogCard` wrap their own until
+ * they migrate.
  */
 export function PanelList({ children }: { children: ReactNode }) {
   return (

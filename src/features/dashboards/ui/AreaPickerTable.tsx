@@ -240,6 +240,7 @@ function AreaNameCell(props: RowProps) {
           <AreaThumbnail
             aoiSelection={toAoiSelection(row)}
             alt={`Map of ${row.name}`}
+            size={THUMBNAIL_PX}
           />
         </Box>
         {isRenamingThisRow ? (
