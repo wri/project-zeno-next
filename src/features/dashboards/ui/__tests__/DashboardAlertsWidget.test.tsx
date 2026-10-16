@@ -2,7 +2,6 @@
 import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
-  act,
   fireEvent,
   render,
   screen,
@@ -22,20 +21,23 @@ vi.mock("@/src/shared/lib/csv", async (importOriginal) => ({
   downloadCsv: vi.fn(),
 }));
 
-// The map pane's body is MapLibre's; a stub that exposes the period and the
-// layer it was given is what this test needs.
+// The map pane's body is MapLibre's; a stub that exposes the layer it was
+// given (its period and context) is what this test needs.
 vi.mock("../DashboardMapWidget", () => ({
   default: ({
-    dateRange,
     layer,
   }: {
-    dateRange?: { start: string; end: string };
-    layer: { tileUrl: string; contextLayerName?: string };
+    layer: {
+      tileUrl: string;
+      contextLayerName?: string;
+      startDate?: string;
+      endDate?: string;
+    };
   }) => (
     <div
       data-testid="map-widget"
-      data-start={dateRange?.start ?? ""}
-      data-end={dateRange?.end ?? ""}
+      data-start={layer.startDate ?? ""}
+      data-end={layer.endDate ?? ""}
       data-tiles={layer.tileUrl}
       data-context={layer.contextLayerName ?? ""}
     />
@@ -56,6 +58,7 @@ import { downloadCsv } from "@/src/shared/lib/csv";
 import { todayIso } from "@/src/shared/lib/iso-date";
 import { initialWindow } from "../../lib/alertsWidgets";
 import DashboardAlertsWidget from "../DashboardAlertsWidget";
+import { chooseFromMenu } from "./chakraMenu";
 
 const mockedFetch = vi.mocked(fetchAlertsList);
 const mockedDownload = vi.mocked(downloadCsv);
@@ -84,6 +87,22 @@ const aoi = {
   subtype: "district-county",
   name: "Guarapuava",
 };
+
+/** The fixture's window widened to 1 Aug, with one more day in the extra month. */
+const WIDER = toAlertsList({
+  ...ALERTS_LIST_WIRE,
+  start_date: "2026-08-01",
+  rows: [
+    ...ALERTS_LIST_WIRE.rows,
+    {
+      alert_date: "2026-08-20",
+      high_ha: 2,
+      highest_ha: 1,
+      total_ha: 3,
+      new: false,
+    },
+  ],
+});
 
 const NEW_WEEK_FOOTER = "5 alert days · 50.8 ha in this period";
 
@@ -120,17 +139,8 @@ async function openCustomStart() {
   return screen.findByLabelText("Custom period start");
 }
 
-// The menu selects its highlighted item, so hover the item before clicking.
-async function chooseFromDropdown(trigger: string, option: string) {
-  fireEvent.click(screen.getByRole("button", { name: trigger }));
-  const item = await screen.findByRole("menuitem", { name: option });
-  await act(async () => {
-    fireEvent.pointerMove(item, { pointerType: "mouse" });
-  });
-  await act(async () => {
-    fireEvent.click(item);
-  });
-}
+const chooseFromDropdown = (trigger: string, option: string) =>
+  chooseFromMenu(screen.getByRole("button", { name: trigger }), option);
 
 describe("DashboardAlertsWidget", () => {
   // Block body on purpose: a function returned from `beforeEach` runs as the
@@ -150,7 +160,7 @@ describe("DashboardAlertsWidget", () => {
     expect(mockedFetch).toHaveBeenCalledWith(
       aoi,
       initialWindow(30, todayIso()),
-      undefined
+      "any"
     );
     expect(screen.getByText("LATEST OCT 16, 2026")).toBeTruthy();
     // No pane header: the map lines up with the list; its full-screen
@@ -309,21 +319,7 @@ describe("DashboardAlertsWidget", () => {
 
   it("fetches a wider window only when a custom range reaches outside, keeping the rows on show", async () => {
     const first = toAlertsList(ALERTS_LIST_WIRE);
-    const wider = toAlertsList({
-      ...ALERTS_LIST_WIRE,
-      start_date: "2026-08-01",
-      rows: [
-        ...ALERTS_LIST_WIRE.rows,
-        {
-          alert_date: "2026-08-20",
-          high_ha: 2,
-          highest_ha: 1,
-          total_ha: 3,
-          new: false,
-        },
-      ],
-    });
-    let resolveWider: (list: typeof wider) => void = () => {};
+    let resolveWider: (list: typeof WIDER) => void = () => {};
     mockedFetch
       .mockResolvedValueOnce(first)
       .mockImplementationOnce(
@@ -359,7 +355,7 @@ describe("DashboardAlertsWidget", () => {
     ).toBeTruthy();
     expect(mapPane().dataset.start).toBe("2026-08-01");
 
-    resolveWider(wider);
+    resolveWider(WIDER);
     await screen.findByText(
       "Showing 1–10 of 15 alert days · 108.7 ha in this period"
     );
@@ -381,7 +377,7 @@ describe("DashboardAlertsWidget", () => {
     await screen.findByText(sentence);
     expect(screen.queryByText("LATEST OCT 16, 2026")).toBeNull();
     // The map still draws the snapshot's own period.
-    expect(mapPane().dataset.start).toBe("");
+    expect(mapPane().dataset.start).toBe("2026-09-16");
 
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
     await screen.findByText(NEW_WEEK_FOOTER);
@@ -456,24 +452,10 @@ describe("DashboardAlertsWidget", () => {
   });
 
   it("retries a failed wider window and lets its rows replace the held ones", async () => {
-    const wider = toAlertsList({
-      ...ALERTS_LIST_WIRE,
-      start_date: "2026-08-01",
-      rows: [
-        ...ALERTS_LIST_WIRE.rows,
-        {
-          alert_date: "2026-08-20",
-          high_ha: 2,
-          highest_ha: 1,
-          total_ha: 3,
-          new: false,
-        },
-      ],
-    });
     mockedFetch
       .mockResolvedValueOnce(toAlertsList(ALERTS_LIST_WIRE))
       .mockRejectedValueOnce(new AlertsListError("unknown"))
-      .mockResolvedValueOnce(wider);
+      .mockResolvedValueOnce(WIDER);
     renderWidget();
     await screen.findByText(NEW_WEEK_FOOTER);
 

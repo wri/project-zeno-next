@@ -5,16 +5,11 @@ import {
   resolveContextTileUrl,
 } from "@/app/utils/datasetLayerContext";
 import { patchPrimaryForestTileUrl } from "@/app/utils/primaryForestTileProtocol";
+import type { DateRange } from "@/src/shared/lib/iso-date";
 import type { DashboardAoi } from "../api/schemas";
 
 /** The dashboard's area as a map body needs it: outline, label and viewport fit. */
 export type MapAreaAoi = Pick<DashboardAoi, "source" | "src_id" | "name">;
-
-/** An inclusive period of ISO `YYYY-MM-DD` dates. */
-export interface DateRange {
-  start: string;
-  end: string;
-}
 
 /**
  * A renderable map-widget layer parsed from a `widget_type: "map"` config
@@ -154,6 +149,11 @@ export function mapWidgetViewportBbox(
   return undefined;
 }
 
+/**
+ * Sets one query parameter on a tile URL template, in place when present and
+ * appended otherwise. A string edit on purpose: `new URL()` would percent-
+ * encode the `{z}/{x}/{y}` placeholders in the path.
+ */
 function withQueryParam(url: string, key: string, value: string): string {
   const present = new RegExp(`([?&])${key}=[^&#]*`);
   if (present.test(url)) return url.replace(present, `$1${key}=${value}`);

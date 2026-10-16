@@ -7,6 +7,7 @@ import {
   AlertsListError,
   AlertsListResponseSchema,
   fetchAlertsList,
+  isRetryable,
   toAlertsList,
   toAlertsListError,
 } from "../alerts";
@@ -99,7 +100,7 @@ describe("fetchAlertsList", () => {
 
   it("posts the exact request body and returns the normalised list", async () => {
     mockedFetch.mockResolvedValue(jsonResponse(200, ALERTS_LIST_WIRE));
-    const list = await fetchAlertsList(aoi, range);
+    const list = await fetchAlertsList(aoi, range, "any");
     expect(mockedFetch).toHaveBeenCalledTimes(1);
     const [path, init] = mockedFetch.mock.calls[0];
     expect(path).toBe("/api/alerts/list");
@@ -114,7 +115,7 @@ describe("fetchAlertsList", () => {
     expect(list.rows).toHaveLength(14);
   });
 
-  it("sends the land filter only when one is chosen", async () => {
+  it('sends the land filter unless it is "any"', async () => {
     // A fresh Response per call: a body can be read once.
     mockedFetch.mockImplementation(async () =>
       jsonResponse(200, ALERTS_LIST_WIRE)
@@ -123,7 +124,7 @@ describe("fetchAlertsList", () => {
     expect(
       JSON.parse(mockedFetch.mock.calls[0][1]?.body as string)
     ).toMatchObject({ land_filter: "natural_lands" });
-    await fetchAlertsList(aoi, range);
+    await fetchAlertsList(aoi, range, "any");
     expect(
       JSON.parse(mockedFetch.mock.calls[1][1]?.body as string)
     ).not.toHaveProperty("land_filter");
@@ -133,43 +134,36 @@ describe("fetchAlertsList", () => {
     const detail =
       "Integrated alerts data is unavailable right now. Please try again in a moment.";
     mockedFetch.mockResolvedValue(jsonResponse(502, { detail }));
-    const error = await fetchAlertsList(aoi, range).catch((e) => e);
+    const error = await fetchAlertsList(aoi, range, "any").catch((e) => e);
     expect(error).toBeInstanceOf(AlertsListError);
-    expect(error).toMatchObject({
-      kind: "unavailable",
-      detail,
-      retryable: true,
-    });
+    expect(error).toMatchObject({ kind: "unavailable", detail });
+    expect(isRetryable(error.kind)).toBe(true);
   });
 
   it("keeps a 422's reason, final, whether it is the area or the window", async () => {
     const tooLong =
       "The period from 2025-01-01 to 2026-10-16 is longer than 365 days.";
     mockedFetch.mockResolvedValue(jsonResponse(422, { detail: tooLong }));
-    const window = await fetchAlertsList(aoi, range).catch((e) => e);
+    const window = await fetchAlertsList(aoi, range, "any").catch((e) => e);
     expect(window).toBeInstanceOf(AlertsListError);
-    expect(window).toMatchObject({
-      kind: "rejected",
-      detail: tooLong,
-      retryable: false,
-    });
+    expect(window).toMatchObject({ kind: "rejected", detail: tooLong });
+    expect(isRetryable(window.kind)).toBe(false);
 
     mockedFetch.mockResolvedValue(
       jsonResponse(422, { detail: "Area type not supported" })
     );
-    const area = await fetchAlertsList(aoi, range).catch((e) => e);
+    const area = await fetchAlertsList(aoi, range, "any").catch((e) => e);
     expect(area).toMatchObject({
       kind: "rejected",
       detail: "Area type not supported",
-      retryable: false,
     });
 
     // FastAPI's list-shaped 422 for a malformed body has no sentence to show.
     mockedFetch.mockResolvedValue(
       jsonResponse(422, { detail: [{ msg: "field required" }] })
     );
-    const malformed = await fetchAlertsList(aoi, range).catch((e) => e);
-    expect(malformed).toMatchObject({ kind: "rejected", retryable: false });
+    const malformed = await fetchAlertsList(aoi, range, "any").catch((e) => e);
+    expect(malformed.kind).toBe("rejected");
     expect(malformed.detail).toBeUndefined();
   });
 
@@ -177,37 +171,35 @@ describe("fetchAlertsList", () => {
     mockedFetch.mockResolvedValue(
       jsonResponse(401, { detail: "Unauthorized" })
     );
-    const unauthorized = await fetchAlertsList(aoi, range).catch((e) => e);
-    expect(unauthorized).toMatchObject({
-      kind: "unauthenticated",
-      retryable: false,
-    });
+    const unauthorized = await fetchAlertsList(aoi, range, "any").catch(
+      (e) => e
+    );
+    expect(unauthorized.kind).toBe("unauthenticated");
     expect(unauthorized.detail).toBeUndefined();
+    expect(isRetryable(unauthorized.kind)).toBe(false);
 
     // A failed fetch: `apiFetch` rejects with the browser's TypeError.
     mockedFetch.mockImplementation(async () => {
       throw new TypeError("Failed to fetch");
     });
-    const network = await fetchAlertsList(aoi, range).catch((e) => e);
+    const network = await fetchAlertsList(aoi, range, "any").catch((e) => e);
     expect(network).toBeInstanceOf(AlertsListError);
-    expect(network).toMatchObject({ kind: "unknown", retryable: true });
+    expect(network.kind).toBe("unknown");
+    expect(isRetryable(network.kind)).toBe(true);
   });
 
-  it("turns a 200 the schema rejects into the unknown, retryable error", async () => {
+  it("turns a 200 the schema rejects into the unknown error", async () => {
     mockedFetch.mockResolvedValue(jsonResponse(200, { rows: "not a list" }));
-    const error = await fetchAlertsList(aoi, range).catch((e) => e);
+    const error = await fetchAlertsList(aoi, range, "any").catch((e) => e);
     expect(error).toBeInstanceOf(AlertsListError);
-    expect(error).toMatchObject({ kind: "unknown", retryable: true });
+    expect(error.kind).toBe("unknown");
   });
 
   it("keeps a bodiless 502 unavailable without a sentence and passes its own errors through", () => {
     const bare = Object.assign(new Error("Request failed: Bad Gateway"), {
       status: 502,
     });
-    expect(toAlertsListError(bare)).toMatchObject({
-      kind: "unavailable",
-      retryable: true,
-    });
+    expect(toAlertsListError(bare).kind).toBe("unavailable");
     expect(toAlertsListError(bare).detail).toBeUndefined();
     const own = new AlertsListError("rejected", "x");
     expect(toAlertsListError(own)).toBe(own);

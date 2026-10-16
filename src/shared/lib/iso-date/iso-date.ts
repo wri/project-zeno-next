@@ -5,6 +5,12 @@
  * and the UTC slice of `toISOString`, never a `Date`'s local accessors.
  */
 
+/** An inclusive period of ISO `YYYY-MM-DD` dates. */
+export interface DateRange {
+  start: string;
+  end: string;
+}
+
 const DAY_MS = 86_400_000;
 
 function utcMillis(iso: string): number {

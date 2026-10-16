@@ -11,20 +11,18 @@ import {
   Table,
   Text,
 } from "@chakra-ui/react";
-import {
-  CaretDownIcon,
-  DownloadSimpleIcon,
-  FileCsvIcon,
-} from "@phosphor-icons/react";
+import { CaretDownIcon } from "@phosphor-icons/react";
 
 import InsightCaption from "@/app/components/InsightCaption";
+import DownloadMenu from "@/app/components/widgets/DownloadMenu";
+import type { DateRange } from "@/src/shared/lib/iso-date";
 import { Pill } from "@/src/shared/ui/Pill";
-import type { AlertsListError } from "../api/alerts";
+import { isRetryable, type AlertsListError } from "../api/alerts";
 import {
+  customStartMin,
   formatAlertDate,
   formatHa,
   LAND_FILTERS,
-  landFilterOption,
   rowArea,
   rowsSummary,
   rowTiers,
@@ -33,7 +31,6 @@ import {
   type AlertsChip,
   type AlertsConfidence,
   type AlertsLandFilter,
-  type DateRange,
 } from "../lib/alertsWidgets";
 import { pageNumbers, paginate } from "../lib/pagination";
 import { TWO_COLUMN_QUERY } from "./gridLayout";
@@ -73,11 +70,18 @@ const HALF_WIDTH_ONLY = {
 
 const CONFIDENCES: AlertsConfidence[] = ["all", "high", "highest"];
 
-/** A failed fetch, as the pane words it: why, and whether a Retry can help. */
-export type AlertsFailure = Pick<
-  AlertsListError,
-  "kind" | "detail" | "retryable"
->;
+const LAND_FILTER_OPTIONS = (
+  Object.keys(LAND_FILTERS) as AlertsLandFilter[]
+).map((value) => ({ value, label: LAND_FILTERS[value].label }));
+
+/** The Custom popover's two inputs, each editing one end of the range. */
+const CUSTOM_BOUNDS: { bound: keyof DateRange; label: string }[] = [
+  { bound: "start", label: "From" },
+  { bound: "end", label: "To" },
+];
+
+/** A failed fetch, as the pane words it. */
+export type AlertsFailure = Pick<AlertsListError, "kind" | "detail">;
 
 /**
  * The sentence for a failure: the backend's own for a refused request or a
@@ -105,8 +109,6 @@ export type AlertsListView =
       range: DateRange;
       /** The last day a custom range may reach (the latest alert day); bounds the custom inputs. */
       anchor: string;
-      /** The earliest start a custom range may have. */
-      startMin: string;
       failure?: AlertsFailure;
     };
 
@@ -186,7 +188,7 @@ function FailureNotice({
       <Text flex="1" minW={0} fontSize="12px" color="fg">
         {failureMessage(failure)}
       </Text>
-      {failure.retryable && (
+      {isRetryable(failure.kind) && (
         <Button size="xs" variant="outline" bg="white" onClick={onRetry}>
           Retry
         </Button>
@@ -221,6 +223,41 @@ function HeaderCell({
     </Table.ColumnHeader>
   );
 }
+
+function BodyCell({
+  children,
+  numeric,
+  ...rest
+}: {
+  children?: React.ReactNode;
+  numeric?: boolean;
+} & React.ComponentProps<typeof Table.Cell>) {
+  return (
+    <Table.Cell
+      px="8px"
+      py="7px"
+      fontSize="12px"
+      borderColor="#EEF0F7"
+      whiteSpace={numeric ? undefined : "nowrap"}
+      textAlign={numeric ? "end" : undefined}
+      css={numeric ? { fontVariantNumeric: "tabular-nums" } : undefined}
+      {...rest}
+    >
+      {children}
+    </Table.Cell>
+  );
+}
+
+/** The pager's ‹ › arrows: plain text buttons in the footer's grey. */
+const pagerArrowProps = {
+  size: "xs",
+  variant: "plain",
+  px: 0,
+  minW: "auto",
+  h: "18px",
+  fontSize: "13px",
+  color: "#565E7B",
+} as const;
 
 /**
  * The list pane of the alerts widget (Figma "Alert list widget", Stage 1
@@ -260,13 +297,12 @@ export default function DashboardAlertsList({
   newWeekHa: number;
   chip: AlertsChip;
   confidence: AlertsConfidence;
-  /** The Intersects choice; undefined is "Any". */
-  landFilter?: AlertsLandFilter;
+  landFilter: AlertsLandFilter;
   /** The committed custom range, once the Custom pill has been opened. */
   custom?: DateRange;
   onChip: (chip: AlertsChip) => void;
   onConfidence: (confidence: AlertsConfidence) => void;
-  onLandFilter: (filter?: AlertsLandFilter) => void;
+  onLandFilter: (filter: AlertsLandFilter) => void;
   onCustomChange: (range: DateRange) => void;
   /** Saves the rows on show (period, confidence and land filter applied) as CSV. */
   onDownloadCsv: () => void;
@@ -295,7 +331,7 @@ export default function DashboardAlertsList({
 
   const paged = paginate(rows, page, PAGE_SIZE);
   const summary = rowsSummary(rows, confidence);
-  const land = landFilterOption(landFilter);
+  const land = LAND_FILTERS[landFilter];
 
   return (
     <Flex
@@ -418,48 +454,34 @@ export default function DashboardAlertsList({
                 <Popover.Body p={3}>
                   {custom && view.kind === "ready" && (
                     <Flex gap="8px" align="center" wrap="wrap">
-                      <Text as="label" fontSize="12px" color="#565E7B">
-                        From{" "}
-                        <Input
-                          type="date"
-                          size="xs"
-                          w="auto"
-                          display="inline-block"
-                          bg="white"
-                          defaultValue={custom.start}
-                          min={view.startMin}
-                          max={view.anchor}
-                          aria-label="Custom period start"
-                          onChange={(e) =>
-                            e.target.value &&
-                            onCustomChange({
-                              start: e.target.value,
-                              end: custom.end,
-                            })
-                          }
-                        />
-                      </Text>
-                      <Text as="label" fontSize="12px" color="#565E7B">
-                        To{" "}
-                        <Input
-                          type="date"
-                          size="xs"
-                          w="auto"
-                          display="inline-block"
-                          bg="white"
-                          defaultValue={custom.end}
-                          min={view.startMin}
-                          max={view.anchor}
-                          aria-label="Custom period end"
-                          onChange={(e) =>
-                            e.target.value &&
-                            onCustomChange({
-                              start: custom.start,
-                              end: e.target.value,
-                            })
-                          }
-                        />
-                      </Text>
+                      {CUSTOM_BOUNDS.map(({ bound, label }) => (
+                        <Text
+                          key={bound}
+                          as="label"
+                          fontSize="12px"
+                          color="#565E7B"
+                        >
+                          {label}{" "}
+                          <Input
+                            type="date"
+                            size="xs"
+                            w="auto"
+                            display="inline-block"
+                            bg="white"
+                            defaultValue={custom[bound]}
+                            min={customStartMin(view.anchor)}
+                            max={view.anchor}
+                            aria-label={`Custom period ${bound}`}
+                            onChange={(e) =>
+                              e.target.value &&
+                              onCustomChange({
+                                ...custom,
+                                [bound]: e.target.value,
+                              })
+                            }
+                          />
+                        </Text>
+                      ))}
                     </Flex>
                   )}
                 </Popover.Body>
@@ -482,10 +504,7 @@ export default function DashboardAlertsList({
           variant="text"
           label="Intersects"
           value={landFilter}
-          options={LAND_FILTERS.map((option) => ({
-            value: option.filter,
-            label: option.label,
-          }))}
+          options={LAND_FILTER_OPTIONS}
           onSelect={onLandFilter}
         />
       </Flex>
@@ -538,37 +557,12 @@ export default function DashboardAlertsList({
             <Table.Body>
               {paged.items.map((row) => (
                 <Table.Row key={row.date} bg="transparent">
-                  <Table.Cell px="8px" py="7px" w="76px" borderColor="#EEF0F7">
-                    {row.isNew && <NewBadge />}
-                  </Table.Cell>
-                  <Table.Cell
-                    px="8px"
-                    py="7px"
-                    fontSize="12px"
-                    whiteSpace="nowrap"
-                    borderColor="#EEF0F7"
-                  >
-                    {formatAlertDate(row.date)}
-                  </Table.Cell>
-                  <Table.Cell
-                    px="8px"
-                    py="7px"
-                    fontSize="12px"
-                    whiteSpace="nowrap"
-                    borderColor="#EEF0F7"
-                  >
-                    {rowTiers(row, confidence)}
-                  </Table.Cell>
-                  <Table.Cell
-                    px="8px"
-                    py="7px"
-                    fontSize="12px"
-                    textAlign="end"
-                    borderColor="#EEF0F7"
-                    css={{ fontVariantNumeric: "tabular-nums" }}
-                  >
+                  <BodyCell w="76px">{row.isNew && <NewBadge />}</BodyCell>
+                  <BodyCell>{formatAlertDate(row.date)}</BodyCell>
+                  <BodyCell>{rowTiers(row, confidence)}</BodyCell>
+                  <BodyCell numeric>
                     {formatHa(rowArea(row, confidence))}
-                  </Table.Cell>
+                  </BodyCell>
                 </Table.Row>
               ))}
             </Table.Body>
@@ -591,13 +585,7 @@ export default function DashboardAlertsList({
           {paged.totalPages > 1 && (
             <Flex align="center" gap="10px" aria-label="Pages">
               <Button
-                size="xs"
-                variant="plain"
-                px={0}
-                minW="auto"
-                h="18px"
-                fontSize="13px"
-                color="#565E7B"
+                {...pagerArrowProps}
                 aria-label="Previous page"
                 disabled={paged.page === 1}
                 onClick={() => setPage(paged.page - 1)}
@@ -635,13 +623,7 @@ export default function DashboardAlertsList({
                 )
               )}
               <Button
-                size="xs"
-                variant="plain"
-                px={0}
-                minW="auto"
-                h="18px"
-                fontSize="13px"
-                color="#565E7B"
+                {...pagerArrowProps}
                 aria-label="Next page"
                 disabled={paged.page === paged.totalPages}
                 onClick={() => setPage(paged.page + 1)}
@@ -658,33 +640,7 @@ export default function DashboardAlertsList({
           catalogue does not carry yet. */}
       {ready && (
         <Flex gap="8px" align="center">
-          <Menu.Root positioning={{ placement: "bottom-start" }}>
-            <Menu.Trigger asChild>
-              <Button
-                size="xs"
-                variant="outline"
-                h={6}
-                rounded="sm"
-                bg="white"
-                color="neutral.500"
-                disabled={rows.length === 0}
-              >
-                <DownloadSimpleIcon size={14} />
-                Download
-                <CaretDownIcon size={12} />
-              </Button>
-            </Menu.Trigger>
-            <Portal>
-              <Menu.Positioner>
-                <Menu.Content minW="180px" zIndex={1400}>
-                  <Menu.Item value="csv" onSelect={onDownloadCsv}>
-                    <FileCsvIcon size={14} />
-                    Data (CSV)
-                  </Menu.Item>
-                </Menu.Content>
-              </Menu.Positioner>
-            </Portal>
-          </Menu.Root>
+          <DownloadMenu onCsv={onDownloadCsv} disabled={rows.length === 0} />
         </Flex>
       )}
     </Flex>

@@ -1,10 +1,10 @@
 import { z } from "zod";
 
+import type { DateRange } from "@/src/shared/lib/iso-date";
 import type {
   AlertsAoi,
   AlertsLandFilter,
   AlertsList,
-  DateRange,
 } from "../lib/alertsWidgets";
 import { httpDetail, httpStatus, readJson } from "./http";
 
@@ -24,7 +24,7 @@ const WireDateRangeSchema = z.object({
   end_date: z.string(),
 });
 
-export const AlertsListRowSchema = z.object({
+const AlertsListRowSchema = z.object({
   alert_date: z.string(),
   high_ha: z.number(),
   highest_ha: z.number(),
@@ -79,17 +79,18 @@ export type AlertsListErrorKind =
   | "unknown";
 
 export class AlertsListError extends Error {
-  readonly retryable: boolean;
-
   constructor(
     readonly kind: AlertsListErrorKind,
     readonly detail?: string
   ) {
     super(detail ?? kind);
     this.name = "AlertsListError";
-    this.retryable = kind === "unavailable" || kind === "unknown";
   }
 }
+
+/** Whether asking again can help: a failed job or an unknown failure, never a refusal. */
+export const isRetryable = (kind: AlertsListErrorKind): boolean =>
+  kind === "unavailable" || kind === "unknown";
 
 export function toAlertsListError(error: unknown): AlertsListError {
   if (error instanceof AlertsListError) return error;
@@ -107,12 +108,12 @@ export function toAlertsListError(error: unknown): AlertsListError {
 
 /**
  * `landFilter` restricts the rows to alerts on that land class (the
- * Intersects dropdown); the key is left out of the body for "Any".
+ * Intersects dropdown); the wire has no key for "any", so it is left out.
  */
 export async function fetchAlertsList(
   aoi: AlertsAoi,
   range: DateRange,
-  landFilter?: AlertsLandFilter
+  landFilter: AlertsLandFilter
 ): Promise<AlertsList> {
   try {
     const data = await readJson<unknown>("/api/alerts/list", {
@@ -124,7 +125,7 @@ export async function fetchAlertsList(
         subtype: aoi.subtype,
         start_date: range.start,
         end_date: range.end,
-        ...(landFilter ? { land_filter: landFilter } : {}),
+        ...(landFilter === "any" ? {} : { land_filter: landFilter }),
       }),
     });
     return toAlertsList(AlertsListResponseSchema.parse(data));

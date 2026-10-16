@@ -1,6 +1,6 @@
 import { CloseButton, Dialog, Portal } from "@chakra-ui/react";
 
-import type { DateRange, MapAreaAoi, MapWidgetLayer } from "../lib/mapWidgets";
+import type { MapAreaAoi, MapWidgetLayer } from "../lib/mapWidgets";
 import DashboardMapWidget from "./DashboardMapWidget";
 
 /**
@@ -19,7 +19,6 @@ export default function DashboardMapFullscreenDialog({
   layer,
   aoi,
   bboxOverride,
-  dateRange,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -28,8 +27,6 @@ export default function DashboardMapFullscreenDialog({
   /** The dashboard's (single) area — outline, label + default viewport fit. */
   aoi: MapAreaAoi | undefined;
   bboxOverride?: [number, number, number, number];
-  /** The period the card is showing, so full screen shows the same one. */
-  dateRange?: DateRange;
 }) {
   return (
     <Dialog.Root
@@ -61,7 +58,6 @@ export default function DashboardMapFullscreenDialog({
                 layer={layer}
                 aoi={aoi}
                 bboxOverride={bboxOverride}
-                dateRange={dateRange}
                 fill
               />
             </Dialog.Body>

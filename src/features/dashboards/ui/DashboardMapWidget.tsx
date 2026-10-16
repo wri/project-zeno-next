@@ -23,12 +23,7 @@ import { buildBasemapTileUrl } from "@/app/utils/basemapTileUrl";
 import { createBboxPolygon } from "@/app/utils/bboxUtils";
 import { fetchGeometry } from "@/app/utils/geometryClient";
 import { registerPrimaryForestProtocol } from "@/app/utils/primaryForestTileProtocol";
-import {
-  withTileDates,
-  type DateRange,
-  type MapAreaAoi,
-  type MapWidgetLayer,
-} from "../lib/mapWidgets";
+import type { MapAreaAoi, MapWidgetLayer } from "../lib/mapWidgets";
 import DashboardMapLegend, {
   type MapWidgetOpacity,
 } from "./DashboardMapLegend";
@@ -46,15 +41,13 @@ const AOI_COLORS = aoiBoundaryColors("light");
  * viewport to that area — or to the reserved `config.viewport` bbox
  * override, which wins when present.
  *
- * `dateRange` re-dates a dated layer (the alerts widget's map pane follows
- * the period its list shows): the tile URL's date parameters and the
- * legend's dates are rewritten, nothing else about the layer changes.
+ * A layer whose `tileUrl` changes (the alerts widget re-dates its tiles per
+ * period) gets a fresh raster source: see the tiles `<Source key>` below.
  */
 export default function DashboardMapWidget({
-  layer: snapshotLayer,
+  layer,
   aoi,
   bboxOverride,
-  dateRange,
   tall,
   fill,
 }: {
@@ -63,19 +56,12 @@ export default function DashboardMapWidget({
   aoi: MapAreaAoi | undefined;
   /** The reserved `config.viewport` bbox, which wins over the area fit when present. */
   bboxOverride?: [number, number, number, number];
-  /** The period to draw instead of the one the layer's snapshot was built for. */
-  dateRange?: DateRange;
   /** Full-width cards get a taller map. */
   tall?: boolean;
   /** Fills its container (the full-screen dialog) and allows scroll-zoom. */
   fill?: boolean;
 }) {
   const mapRef = useRef<MapRef>(null);
-
-  const layer = useMemo(
-    () => (dateRange ? withTileDates(snapshotLayer, dateRange) : snapshotLayer),
-    [snapshotLayer, dateRange]
-  );
 
   // Legend-controlled raster opacity (0–100). 80 matches the explorer's
   // default dataset opacity and the legend's default display value.
