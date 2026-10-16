@@ -61,6 +61,14 @@ export function insightWidgetSize(config: Record<string, unknown>): WidgetSize {
 }
 
 /**
+ * Alerts widgets default to full width: the card holds the alerts list beside
+ * its map, which only fit side by side across both columns.
+ */
+export function alertsWidgetSize(config: Record<string, unknown>): WidgetSize {
+  return config.size === "single" ? "single" : "double";
+}
+
+/**
  * A chart's manual title override. Charts render as individual cards, so each
  * carries its own rename under `config.titles[chartId]` (mirrors
  * `config.sizes`). Returns undefined when unset/blank so the caller falls back
