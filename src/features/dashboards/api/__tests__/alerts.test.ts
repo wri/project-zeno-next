@@ -121,15 +121,30 @@ describe("fetchAlertsList", () => {
     expect(error.status).toBe(502);
   });
 
-  it("turns a 422 into a final error for an unsupported area", async () => {
+  it("shows a 422's reason, final, whether it is the area or the window", async () => {
+    const tooLong =
+      "The period from 2025-01-01 to 2026-10-16 is longer than 365 days.";
+    mockedFetch.mockResolvedValue(jsonResponse(422, { detail: tooLong }));
+    const window = await fetchAlertsList(aoi, range).catch((e) => e);
+    expect(window).toBeInstanceOf(AlertsListError);
+    expect(window.message).toBe(tooLong);
+    expect(window.retryable).toBe(false);
+    expect(window.status).toBe(422);
+
     mockedFetch.mockResolvedValue(
       jsonResponse(422, { detail: "Area type not supported" })
     );
-    const error = await fetchAlertsList(aoi, range).catch((e) => e);
-    expect(error).toBeInstanceOf(AlertsListError);
-    expect(error.message).toBe("Alerts aren't available for this area.");
-    expect(error.retryable).toBe(false);
-    expect(error.status).toBe(422);
+    const area = await fetchAlertsList(aoi, range).catch((e) => e);
+    expect(area.message).toBe("Area type not supported");
+    expect(area.retryable).toBe(false);
+
+    // FastAPI's list-shaped 422 for a malformed body has no sentence to show.
+    mockedFetch.mockResolvedValue(
+      jsonResponse(422, { detail: [{ msg: "field required" }] })
+    );
+    const malformed = await fetchAlertsList(aoi, range).catch((e) => e);
+    expect(malformed.message).toBe("Couldn't load the alerts.");
+    expect(malformed.retryable).toBe(false);
   });
 
   it("asks for sign-in on a 401 and stays generic otherwise", async () => {
@@ -155,7 +170,8 @@ describe("fetchAlertsList", () => {
     const bare = Object.assign(new Error("Request failed: Bad Gateway"), {
       status: 502,
     });
-    expect(toAlertsListError(bare).message).toBe("Request failed: Bad Gateway");
+    expect(toAlertsListError(bare).message).toBe("Couldn't load the alerts.");
+    expect(toAlertsListError(bare).retryable).toBe(true);
     const own = new AlertsListError("x", false, 422);
     expect(toAlertsListError(own)).toBe(own);
   });

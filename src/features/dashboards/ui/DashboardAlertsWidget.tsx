@@ -7,9 +7,9 @@ import { fetchAlertsList, toAlertsListError } from "../api/alerts";
 import type { Dashboard, DashboardWidget } from "../api/schemas";
 import { dashboardKeys } from "../hooks/dashboardKeys";
 import {
-  ALERTS_DATASET_START,
   alertsWidgetSpec,
   chipRange,
+  customStartMin,
   formatDataTo,
   initialWindow,
   needsWiderWindow,
@@ -155,25 +155,32 @@ function AlertsCard({
     [list, range, confidence]
   );
 
+  // Counts the times the Custom chip was opened: the date inputs are
+  // uncontrolled (a controlled one would snap a half-typed year back on
+  // every keystroke the handler ignores), so this key resets them to the
+  // committed range each time they open.
+  const [customSession, setCustomSession] = useState(0);
+
   const selectChip = (next: AlertsChip) => {
-    if (next === "custom" && !custom && list) {
+    if (next === "custom") {
       // The inputs open on the last week, the widest preset, so there is
       // something to adjust from.
-      setCustom(chipRange("last-week", list));
+      if (!custom && list) setCustom(chipRange("last-week", list));
+      setCustomSession((session) => session + 1);
     }
     setChip(next);
   };
 
   const changeCustom = (next: DateRange) => {
+    if (!list) return;
     // A date input reports every keystroke, so a year being typed passes
-    // through "0002…" before "2026…": a bound outside the data is left alone
-    // (the input keeps the draft) rather than clamped mid-typing.
-    const last = list?.dataTo ?? todayIso();
-    const inData = (iso: string) => iso >= ALERTS_DATASET_START && iso <= last;
+    // through "0002…" before "2026…": a bound outside the data (or beyond
+    // the window the backend accepts) is left alone until it is inside.
+    const min = customStartMin(list.dataTo);
+    const inData = (iso: string) => iso >= min && iso <= list.dataTo;
     if (!inData(next.start) || !inData(next.end)) return;
     setCustom(next);
     setChip("custom");
-    if (!list) return;
     const resolved = chipRange("custom", list, next);
     if (needsWiderWindow(resolved, list.window)) {
       setRequestWindow((window) => widenedWindow(resolved, window));
@@ -265,6 +272,8 @@ function AlertsCard({
                   chip={chip}
                   confidence={confidence}
                   custom={custom}
+                  customKey={customSession}
+                  startMin={list ? customStartMin(list.dataTo) : null}
                   onChip={selectChip}
                   onConfidence={setConfidence}
                   onCustomChange={changeCustom}

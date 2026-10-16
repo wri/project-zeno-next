@@ -13,7 +13,6 @@ import { ArrowArcLeftIcon, ArrowArcRightIcon } from "@phosphor-icons/react";
 
 import InsightCaption from "@/app/components/InsightCaption";
 import {
-  ALERTS_DATASET_START,
   formatAlertDate,
   formatHa,
   rowsSummary,
@@ -139,6 +138,8 @@ export default function DashboardAlertsList({
   chip,
   confidence,
   custom,
+  customKey,
+  startMin,
   onChip,
   onConfidence,
   onCustomChange,
@@ -163,8 +164,17 @@ export default function DashboardAlertsList({
   newWeekHa: number;
   chip: AlertsChip;
   confidence: AlertsConfidence;
-  /** The custom inputs' values while the Custom chip is on. */
+  /** The committed custom range while the Custom chip is on. */
   custom: DateRange | null;
+  /**
+   * Changes each time the Custom chip opens. The date inputs are
+   * uncontrolled, so the user can type a year digit by digit without the
+   * half-typed value being snapped back; this key resets them to the
+   * committed range on each opening.
+   */
+  customKey: number;
+  /** The earliest start a custom range may have; null until the first response. */
+  startMin: string | null;
   onChip: (chip: AlertsChip) => void;
   onConfidence: (confidence: AlertsConfidence) => void;
   onCustomChange: (range: DateRange) => void;
@@ -273,7 +283,7 @@ export default function DashboardAlertsList({
       </Flex>
 
       {chip === "custom" && custom && (
-        <Flex gap="8px" align="center" wrap="wrap">
+        <Flex key={customKey} gap="8px" align="center" wrap="wrap">
           <Text as="label" fontSize="12px" color="#565E7B">
             From{" "}
             <Input
@@ -282,8 +292,8 @@ export default function DashboardAlertsList({
               w="auto"
               display="inline-block"
               bg="white"
-              value={custom.start}
-              min={ALERTS_DATASET_START}
+              defaultValue={custom.start}
+              min={startMin ?? undefined}
               max={dataTo ?? undefined}
               aria-label="Custom period start"
               onChange={(e) =>
@@ -300,8 +310,8 @@ export default function DashboardAlertsList({
               w="auto"
               display="inline-block"
               bg="white"
-              value={custom.end}
-              min={ALERTS_DATASET_START}
+              defaultValue={custom.end}
+              min={startMin ?? undefined}
               max={dataTo ?? undefined}
               aria-label="Custom period end"
               onChange={(e) =>
