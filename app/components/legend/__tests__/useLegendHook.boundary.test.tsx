@@ -1,8 +1,14 @@
 // @vitest-environment happy-dom
-import { act, renderHook } from "@testing-library/react";
+import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
+import { act, render, renderHook, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useLegendHook } from "../useLegendHook";
+import {
+  BOUNDARY_LEGEND_ID,
+  concessionLegendEntry,
+  useLegendHook,
+} from "../useLegendHook";
+import { CONCESSION_STYLES } from "@/app/types/map";
 import useMapStore from "@/app/store/mapStore";
 import type { Layer } from "@/app/store/layerManagerSlice";
 
@@ -56,5 +62,75 @@ describe("useLegendHook boundary pill", () => {
     expect(result.current.aois).toEqual([
       { layerId: "Pará, Brazil", name: "Pará, Brazil" },
     ]);
+  });
+});
+
+describe("useLegendHook concession layer", () => {
+  beforeEach(() => {
+    useMapStore.setState({
+      selectAreaLayer: "OIL_PALM",
+      boundaryOpacity: 1,
+      layers: [],
+    });
+  });
+
+  it("is a legend layer, not an AREA pill", () => {
+    const { result } = renderHook(() => useLegendHook());
+
+    expect(result.current.boundary).toBeNull();
+    expect(result.current.layers.map((l) => l.id)).toEqual([
+      BOUNDARY_LEGEND_ID,
+    ]);
+    expect(result.current.layers[0]).toMatchObject({
+      title: "Oil palm concessions",
+      opacity: 100,
+    });
+  });
+
+  it("names the countries the source covers", () => {
+    render(
+      <ChakraProvider value={defaultSystem}>
+        {concessionLegendEntry(CONCESSION_STYLES.OIL_PALM!, 1).children}
+      </ChakraProvider>
+    );
+
+    expect(screen.getByText("for certain countries")).toBeTruthy();
+    expect(CONCESSION_STYLES.OIL_PALM!.countries).toContain("Indonesia");
+  });
+
+  it("sets the boundary opacity from the legend", () => {
+    const { result } = renderHook(() => useLegendHook());
+
+    act(() =>
+      result.current.handleLayerAction({
+        action: "opacity",
+        payload: { id: BOUNDARY_LEGEND_ID, opacity: 40 },
+      })
+    );
+
+    expect(useMapStore.getState().boundaryOpacity).toBe(0.4);
+    expect(result.current.layers[0].opacity).toBe(40);
+  });
+
+  it("turns the layer off when its entry is removed", () => {
+    const { result } = renderHook(() => useLegendHook());
+
+    act(() =>
+      result.current.handleLayerAction({
+        action: "remove",
+        payload: { id: BOUNDARY_LEGEND_ID },
+      })
+    );
+
+    expect(useMapStore.getState().selectAreaLayer).toBeNull();
+    expect(result.current.layers).toEqual([]);
+  });
+
+  it("resets the opacity when another layer is switched on", () => {
+    useMapStore.setState({ boundaryOpacity: 0.3 });
+
+    act(() => useMapStore.getState().setSelectAreaLayer("MINING"));
+
+    expect(useMapStore.getState().boundaryOpacity).toBe(1);
   });
 });

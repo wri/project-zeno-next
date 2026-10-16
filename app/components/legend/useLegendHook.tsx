@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
-import { Text } from "@chakra-ui/react";
+import { Box, Text } from "@chakra-ui/react";
 
 import {
   isImageryGroup,
   LayerActionHandler,
   LegendContextLayer,
   LegendEntry,
+  LegendLayer,
   LegendParam,
 } from "@/app/components/legend/types";
 import { LegendSequential } from "@/app/components/legend/LegendSequential";
@@ -21,7 +22,12 @@ import {
 import { buildYearParam, YearParam } from "@/app/utils/formatYearRange";
 import { formatCanopyThreshold } from "@/app/utils/formatCanopyThreshold";
 import type { DatasetLegendConfig } from "@/app/constants/datasets";
-import { selectLayerOptions } from "@/app/types/map";
+import {
+  CONCESSION_STYLES,
+  type ConcessionStyle,
+  selectLayerOptions,
+} from "@/app/types/map";
+import { Tooltip } from "@/app/components/ui/tooltip";
 import { isAreaLayer } from "@/app/store/layerManagerSlice";
 import {
   buildImageryGroup,
@@ -102,6 +108,60 @@ export function renderLegendSymbology(legend: DatasetLegendConfig) {
   ) : null;
 }
 
+/**
+ * Id of the legend entry for a concession boundary layer. It is no map-manager
+ * layer: its actions act on `selectAreaLayer` and `boundaryOpacity`.
+ */
+export const BOUNDARY_LEGEND_ID = "boundary-layer";
+
+/**
+ * A concession boundary layer as a legend layer, as on the GNW concessions
+ * map: a swatch row, and a note naming the countries the source covers.
+ */
+export function concessionLegendEntry(
+  style: ConcessionStyle,
+  opacity: number
+): LegendLayer {
+  return {
+    id: BOUNDARY_LEGEND_ID,
+    title: style.title,
+    opacity: opacity * 100,
+    info: style.info,
+    // Drawn like a dataset layer's symbol legend (Grasslands), so the entry
+    // matches the other layers in the legend.
+    symbology: (
+      <LegendSymbolList
+        items={[{ label: style.title, color: style.fillColor }]}
+      />
+    ),
+    children: (
+      <Text fontSize="xs">
+        This layer is only available{" "}
+        <Tooltip
+          content={style.countries.join(", ")}
+          positioning={{ placement: "top" }}
+          showArrow
+        >
+          {/* The dotted underline of the GNW map's country note. */}
+          <Box
+            as="u"
+            tabIndex={0}
+            cursor="help"
+            textDecorationLine="underline"
+            textDecorationStyle="dotted"
+            textDecorationColor="#b2b6bd"
+            textDecorationThickness="0.125em"
+            css={{ textDecorationSkipInk: "none" }}
+          >
+            for certain countries
+          </Box>
+        </Tooltip>
+        .
+      </Text>
+    ),
+  };
+}
+
 export interface LegendAoi {
   /** Id of the map layer this AOI belongs to — used to remove it. */
   layerId: string;
@@ -125,7 +185,12 @@ export function useLegendHook() {
     reorderLayers,
     selectAreaLayer,
     setSelectAreaLayer,
+    boundaryOpacity,
+    setBoundaryOpacity,
   } = useMapStore();
+  const concessionStyle = selectAreaLayer
+    ? CONCESSION_STYLES[selectAreaLayer]
+    : undefined;
   const isImageryUpdating = useChatStore((s) => s.isImageryUpdating);
 
   useEffect(() => {
@@ -167,7 +232,10 @@ export function useLegendHook() {
       );
       let imageryGroupPushed = false;
 
-      const entries: LegendEntry[] = [];
+      // A concession boundary layer is a legend layer, not an AREA pill.
+      const entries: LegendEntry[] = concessionStyle
+        ? [concessionLegendEntry(concessionStyle, boundaryOpacity)]
+        : [];
       for (const layer of managedLayers) {
         if (layer.parentLayerId) continue;
         if (isAreaLayer(layer)) continue;
@@ -223,7 +291,13 @@ export function useLegendHook() {
     };
 
     setLayers(buildEntries());
-  }, [managedLayers, isImageryUpdating, palettesByDatasetId]);
+  }, [
+    managedLayers,
+    isImageryUpdating,
+    palettesByDatasetId,
+    concessionStyle,
+    boundaryOpacity,
+  ]);
 
   // One chip per visible area layer, using the selection name as the label.
   // The visible layer IS the scope — removing the chip removes the layer.
@@ -232,9 +306,10 @@ export function useLegendHook() {
     name: l.selectionName ?? l.name,
   }));
 
-  const boundaryName = selectLayerOptions.find(
-    (o) => o.id === selectAreaLayer
-  )?.name;
+  // The concession layers are legend layers (above), so they get no pill.
+  const boundaryName = concessionStyle
+    ? undefined
+    : selectLayerOptions.find((o) => o.id === selectAreaLayer)?.name;
   const boundary: LegendBoundary | null = boundaryName
     ? { name: boundaryName }
     : null;
@@ -258,6 +333,8 @@ export function useLegendHook() {
         // sub-layers along. Layers with no legend entry (AOI layers) keep
         // their position at the end — reorderLayers drops any id not listed.
         const orderedIds = payload.layers.flatMap((entry) => {
+          // The boundary layer is no map-manager layer.
+          if (entry.id === BOUNDARY_LEGEND_ID) return [];
           if (isImageryGroup(entry)) {
             return entry.captures.map((c) => c.layerId);
           }
@@ -270,6 +347,14 @@ export function useLegendHook() {
           .map((l) => l.id)
           .filter((id) => !orderedIds.includes(id));
         reorderLayers([...orderedIds, ...rest]);
+        return;
+      }
+
+      // The boundary entry's controls act on the boundary layer: removing
+      // it turns the layer off (and its Boundaries card).
+      if (payload.id === BOUNDARY_LEGEND_ID) {
+        if (action === "remove") setSelectAreaLayer(null);
+        if (action === "opacity") setBoundaryOpacity(payload.opacity / 100);
         return;
       }
 
@@ -312,6 +397,8 @@ export function useLegendHook() {
       setLayerOpacity,
       setLayerVisibility,
       reorderLayers,
+      setSelectAreaLayer,
+      setBoundaryOpacity,
     ]
   );
 

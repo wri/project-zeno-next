@@ -64,6 +64,11 @@ const AREA_TYPE_LABELS: Record<string, string> = {
   kba: "Key biodiversity areas",
   wdpa: "Protected areas",
   landmark: "Indigenous territories",
+  oil_palm: "Oil palm concessions",
+  rspo_oil_palm: "RSPO oil palm concessions",
+  logging: "Logging concessions",
+  mining: "Mining concessions",
+  wood_fiber: "Wood fiber concessions",
   custom: "User uploaded areas",
 };
 
