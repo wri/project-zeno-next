@@ -85,3 +85,61 @@ describe("DashboardWidgetCard map full screen", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   });
 });
+
+describe("DashboardWidgetCard body slot", () => {
+  it("renders a caller's body where the chart or map would be, with no full screen", () => {
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <ChakraProvider value={defaultSystem}>
+          <DashboardWidgetCard
+            title="Integrated alerts in Guarapuava"
+            card={null}
+            placeholder={null}
+            body={<div data-testid="own-body">list and map</div>}
+            removeMode="widget"
+            isOwner
+            isDouble
+            onArmDrag={() => {}}
+            onToggleSize={() => {}}
+            onRemove={() => {}}
+          />
+        </ChakraProvider>
+      </QueryClientProvider>
+    );
+
+    expect(screen.getByTestId("own-body").textContent).toBe("list and map");
+    expect(screen.queryByTestId("mapgl")).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "View map full screen" })
+    ).toBeNull();
+    // The owner actions are the shell's, as for every other widget.
+    expect(screen.getByLabelText("Remove from dashboard")).toBeTruthy();
+    expect(screen.getByLabelText("Shrink to one column")).toBeTruthy();
+  });
+
+  it("gives a placeholder precedence over a body", () => {
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <ChakraProvider value={defaultSystem}>
+          <DashboardWidgetCard
+            title="Integrated alerts"
+            card={null}
+            placeholder="This alerts widget can't be displayed."
+            body={<div data-testid="own-body" />}
+            removeMode="widget"
+            isOwner={false}
+            isDouble
+            onArmDrag={() => {}}
+            onToggleSize={() => {}}
+            onRemove={() => {}}
+          />
+        </ChakraProvider>
+      </QueryClientProvider>
+    );
+
+    expect(
+      screen.getByText("This alerts widget can't be displayed.")
+    ).toBeTruthy();
+    expect(screen.queryByTestId("own-body")).toBeNull();
+  });
+});
