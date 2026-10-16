@@ -2,8 +2,10 @@ import type { ReactNode } from "react";
 import { IconButton, Menu, Portal } from "@chakra-ui/react";
 import { DotsThreeVerticalIcon } from "@phosphor-icons/react";
 
-/** Accent shared by the Areas panel card actions and labels. */
-export const AREA_LABEL_COLOR = "#2D6BE4";
+import { ENTITY_KINDS } from "@/src/shared/ui/entity-card";
+
+/** Accent shared by the Areas panel card actions and labels — the AREA kind's. */
+export const AREA_LABEL_COLOR = ENTITY_KINDS.area.color;
 
 /** Compact 16px icon styling shared by the area card title actions. */
 export const areaActionIconProps = {
