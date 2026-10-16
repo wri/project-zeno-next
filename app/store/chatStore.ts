@@ -17,6 +17,7 @@ import {
   CreateDashboardSuggestion,
 } from "@/app/types/chat";
 import useMapStore from "./mapStore";
+import { setLayerContextListener } from "./layerManagerSlice";
 import {
   datasetContextKey,
   deriveContext,
@@ -1351,5 +1352,11 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     }
   },
 }));
+
+// Layers re-added to (or removed from) the map rejoin the chat context.
+setLayerContextListener((layerIds) => {
+  const { includeLayerInContext } = useChatStore.getState();
+  layerIds.forEach(includeLayerInContext);
+});
 
 export default useChatStore;

@@ -8,14 +8,7 @@
  */
 import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-
-// layerManagerSlice dynamically imports chatStore to fold layer add/remove
-// into `lastSentContext`; stub it so the store round-trip doesn't depend on
-// chatStore's own (unrelated) import chain resolving cleanly in this test.
-vi.mock("@/app/store/chatStore", () => ({
-  default: { getState: () => ({ includeLayerInContext: () => {} }) },
-}));
+import { beforeEach, describe, expect, it } from "vitest";
 
 import DataCatalogPanel from "../CatalogPanel";
 import { DATASET_CARDS } from "@/app/constants/datasets";

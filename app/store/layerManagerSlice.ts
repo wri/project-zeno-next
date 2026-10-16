@@ -4,6 +4,24 @@ import type { AOISelection, ImageryInfo } from "@/app/types/chat";
 import type { VectorStyleSpec } from "@/app/constants/datasets";
 import type { MapState } from "./mapStore";
 
+/**
+ * Told which layers were just added to or removed from the map. `chatStore`
+ * registers one so a layer the user dropped from the chat context (its chip
+ * ✕) rejoins it on its next map change. It can't be imported here directly —
+ * `chatStore` already imports `mapStore` — so it registers itself on load;
+ * before then nothing is listening, which is fine: its exclusion list starts
+ * empty.
+ */
+type LayerContextListener = (layerIds: string[]) => void;
+
+let layerContextListener: LayerContextListener | null = null;
+
+export function setLayerContextListener(
+  listener: LayerContextListener | null
+): void {
+  layerContextListener = listener;
+}
+
 export interface FeatureRef {
   name: string;
   source: string;
@@ -118,17 +136,13 @@ export const createLayerManagerSlice: StateCreator<
     set((state) => ({
       layers: [...state.layers.filter((l) => l.id !== layer.id), newLayer],
     }));
-    void import("@/app/store/chatStore").then(({ default: useChatStore }) => {
-      useChatStore.getState().includeLayerInContext(layer.id);
-    });
+    layerContextListener?.([layer.id]);
   },
   removeLayer: (id) => {
     set((state) => ({
       layers: state.layers.filter((l) => l.id !== id),
     }));
-    void import("@/app/store/chatStore").then(({ default: useChatStore }) => {
-      useChatStore.getState().includeLayerInContext(id);
-    });
+    layerContextListener?.([id]);
   },
   removeDatasetLayers: (datasetId) => {
     const removedIds = get()
@@ -143,12 +157,7 @@ export const createLayerManagerSlice: StateCreator<
         return datasetId === undefined ? false : l.datasetId !== datasetId;
       }),
     }));
-    if (removedIds.length > 0) {
-      void import("@/app/store/chatStore").then(({ default: useChatStore }) => {
-        const { includeLayerInContext } = useChatStore.getState();
-        removedIds.forEach(includeLayerInContext);
-      });
-    }
+    if (removedIds.length > 0) layerContextListener?.(removedIds);
   },
   setLayerVisibility: (id, visible) => {
     set((state) => ({
