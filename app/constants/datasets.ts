@@ -262,6 +262,27 @@ function sbtnSingleClassLayer({
   };
 }
 
+/**
+ * The SBTN natural-forest classes (natural forests 2, mangroves 5, wet
+ * natural forests 8, natural peat forests 9) as one swatch, under whichever
+ * name and explanation a dataset restricts itself by.
+ */
+function naturalForestLayer({
+  label,
+  info,
+}: {
+  label: string;
+  info: string;
+}): ContextLayerMetadata {
+  return sbtnSingleClassLayer({
+    title: "SBTN Natural forest (2020)",
+    label,
+    color: SBTN_NATURAL_CLASSES[0].color,
+    values: [2, 5, 8, 9],
+    info,
+  });
+}
+
 // The colour the UMD tiles actually paint (sampled from the published v201901
 // PNGs), so the legend matches the map.
 const PRIMARY_FOREST_COLOR = "#668636";
@@ -333,12 +354,16 @@ export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
   // natural forest (project-zeno#853): only the four classes the analysis
   // counts (natural forests 2, mangroves 5, wet natural forests 8, natural peat
   // forests 9), as one swatch in the card's natural-forests colour.
-  natural_forest: sbtnSingleClassLayer({
-    title: "SBTN Natural forest (2020)",
+  natural_forest: naturalForestLayer({
     label: "Natural forest",
-    color: SBTN_NATURAL_CLASSES[0].color,
-    values: [2, 5, 8, 9],
     info: "Tree cover loss is restricted to natural forest in the SBTN Natural Lands Map (2020 baseline): natural forests, natural peat forests, mangroves and wet natural forests. Covers loss from 2021 onward; no canopy cover threshold applies.",
+  }),
+  // The same four classes under the analytics API's own name for its
+  // `land_filter`, which the alerts widget's Intersects dropdown sends and
+  // the alerts layer snapshot carries as a context layer (PZB-1468).
+  natural_forests: naturalForestLayer({
+    label: "Natural forests",
+    info: "Alerts are restricted to natural forest in the SBTN Natural Lands Map (2020 baseline): natural forests, natural peat forests, mangroves and wet natural forests.",
   }),
 };
 

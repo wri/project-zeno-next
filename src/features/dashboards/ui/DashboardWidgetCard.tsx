@@ -2,7 +2,6 @@ import { useState } from "react";
 import {
   Box,
   Button,
-  CloseButton,
   Dialog,
   Flex,
   Icon,
@@ -28,7 +27,8 @@ import AnalysisParametersToggle, {
 import { buildChips } from "@/app/components/widgets/analysis-params-utils";
 import { toaster } from "@/app/components/ui/toaster";
 import type { InsightWidget } from "@/app/types/chat";
-import type { MapWidgetLayer } from "../lib/mapWidgets";
+import type { MapAreaAoi, MapWidgetLayer } from "../lib/mapWidgets";
+import DashboardMapFullscreenDialog from "./DashboardMapFullscreenDialog";
 import DashboardMapWidget from "./DashboardMapWidget";
 
 /**
@@ -39,11 +39,17 @@ import DashboardMapWidget from "./DashboardMapWidget";
  * the page is one of these, so the blue shell is the only box a dashboard
  * widget ever draws.
  *
+ * The content is one of four kinds, in precedence order: a `placeholder`
+ * line, a `map` layer, an insight `card`, or a caller's own `body`. A call
+ * site passes the one it has and omits the rest.
+ *
  * `card` is a single insight card, never a list: an insight with several
  * charts pages through them inside one shell (`DashboardInsightModule` owns
  * the pager and passes the chart on show). The `intro`, `footer` and
  * `headerActions` slots are what it hangs off the shell; `onRequestRemove`
- * lets it confirm removal with its own copy.
+ * lets it confirm removal with its own copy. A widget that is neither a
+ * chart nor a map brings its whole body as `body` (the alerts widget's list
+ * and map panes).
  */
 export default function DashboardWidgetCard({
   title,
@@ -57,6 +63,7 @@ export default function DashboardWidgetCard({
   isDouble,
   headerActions,
   intro,
+  body,
   footer,
   onArmDrag,
   onToggleSize,
@@ -65,16 +72,16 @@ export default function DashboardWidgetCard({
   onRequestRemove,
 }: {
   title: string;
-  /** The insight card to render, or null for a map/text/placeholder cell. */
-  card: InsightWidget | null;
+  /** The insight card to render. */
+  card?: InsightWidget;
   /** The map layer to render for `widget_type: "map"` cells. */
-  map?: MapWidgetLayer | null;
+  map?: MapWidgetLayer;
   /** The dashboard's area — outline, label + viewport fit for map cells. */
-  aoi?: { source: string; src_id: string; name: string };
+  aoi?: MapAreaAoi;
   /** Reserved `config.viewport` bbox override for map cells. */
-  viewportBbox?: [number, number, number, number] | null;
-  /** Placeholder copy when `card` is null (unsupported type / hidden insight). */
-  placeholder: string | null;
+  viewportBbox?: [number, number, number, number];
+  /** Placeholder copy instead of any content (unsupported type / hidden insight). */
+  placeholder?: string;
   /**
    * What `onRemove` actually does, which the confirm dialog explains:
    * `"widget"` deletes the widget from the dashboard, `"chart"` only hides
@@ -90,6 +97,13 @@ export default function DashboardWidgetCard({
    * its own padding, so a call site can align it with whatever it introduces.
    */
   intro?: React.ReactNode;
+  /**
+   * The body itself, for a card that has neither a chart (`card`) nor a map
+   * (`map`) and is not a placeholder: rendered exactly where those would be.
+   * Carries its own padding. The alerts widget renders its list and map
+   * panes this way, inside the one shell every other widget draws.
+   */
+  body?: React.ReactNode;
   /** Rendered inside the shell below the body — the analysis chart pager. */
   footer?: React.ReactNode;
   /** Pointer down on the drag handle — arms the grid item's HTML5 drag. */
@@ -315,16 +329,16 @@ export default function DashboardWidgetCard({
           <DashboardMapWidget
             layer={map}
             aoi={aoi}
-            bboxOverride={viewportBbox ?? null}
+            bboxOverride={viewportBbox}
             tall={isDouble}
           />
         </Box>
+      ) : card ? (
+        <Box px="8px" pb="8px" flex="1" minW={0}>
+          <WidgetMessage widget={card} inWorkspace fullWidth={isDouble} />
+        </Box>
       ) : (
-        card && (
-          <Box px="8px" pb="8px" flex="1" minW={0}>
-            <WidgetMessage widget={card} inWorkspace fullWidth={isDouble} />
-          </Box>
-        )
+        body
       )}
 
       {footer}
@@ -332,42 +346,14 @@ export default function DashboardWidgetCard({
       {/* A second map mounts only while the dialog is open — the same MapLibre
           instance is never rendered in two places. */}
       {map && (
-        <Dialog.Root
+        <DashboardMapFullscreenDialog
           open={fullscreen}
-          onOpenChange={(e) => setFullscreen(e.open)}
-          size="cover"
-          lazyMount
-          unmountOnExit
-        >
-          <Portal>
-            <Dialog.Backdrop />
-            <Dialog.Positioner>
-              <Dialog.Content p={4}>
-                <Dialog.Header px={0} pt={0} pb={3}>
-                  <Dialog.Title fontSize="md" fontWeight="medium">
-                    {displayTitle}
-                  </Dialog.Title>
-                  <Dialog.CloseTrigger
-                    asChild
-                    position="absolute"
-                    top={3}
-                    right={3}
-                  >
-                    <CloseButton size="sm" />
-                  </Dialog.CloseTrigger>
-                </Dialog.Header>
-                <Dialog.Body p={0} flex="1" minH={0}>
-                  <DashboardMapWidget
-                    layer={map}
-                    aoi={aoi}
-                    bboxOverride={viewportBbox ?? null}
-                    fill
-                  />
-                </Dialog.Body>
-              </Dialog.Content>
-            </Dialog.Positioner>
-          </Portal>
-        </Dialog.Root>
+          onOpenChange={setFullscreen}
+          title={displayTitle}
+          layer={map}
+          aoi={aoi}
+          bboxOverride={viewportBbox}
+        />
       )}
 
       <Dialog.Root

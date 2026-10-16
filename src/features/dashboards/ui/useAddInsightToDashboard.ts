@@ -1,6 +1,7 @@
 import { toaster } from "@/app/components/ui/toaster";
 import useAuthStore from "@/app/store/authStore";
 import useViewContextStore from "@/app/store/viewContextStore";
+import { isConflict } from "../api/http";
 import { hasWidgetCustomization } from "../lib/widgets";
 import {
   useAddInsightWidget,
@@ -82,7 +83,7 @@ export function useAddInsightToDashboard(
       // a race). That is the state the caller wanted, so stay quiet; the
       // mutation's onSettled has already queued the detail refetch that will
       // flip `added`.
-      if ((err as { status?: number }).status === 409) return;
+      if (isConflict(err)) return;
       toaster.create({
         title: "Couldn't add to dashboard",
         description: "The analysis wasn't added. Please try again.",
