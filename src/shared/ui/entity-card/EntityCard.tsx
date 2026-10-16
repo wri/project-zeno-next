@@ -18,7 +18,8 @@ import {
 import { InfoButton } from "./InfoButton";
 import { toggleAriaLabel, type ToggleVerb } from "./toggle-aria-label";
 
-const THUMBNAIL_PX = 44;
+/** Side of the card's square thumbnail slot. */
+export const ENTITY_CARD_THUMBNAIL_PX = 44;
 const ARROW_CLASS = "entity-card-arrow";
 
 /**
@@ -43,8 +44,6 @@ export type CardInteraction =
       dataPanel?: string;
     }
   | { mode: "link"; onClick: () => void; ariaLabel: string };
-
-const STATIC: CardInteraction = { mode: "static" };
 
 export interface EntityCardProps {
   kind: EntityKind;
@@ -89,7 +88,7 @@ export function EntityCard({
   badge,
   thumbnail,
   showKind = false,
-  interaction = STATIC,
+  interaction = { mode: "static" },
   onInfo,
   infoLabel,
   actions,
@@ -163,8 +162,8 @@ export function EntityCard({
       onKeyDown={link ? handleKeyDown : undefined}
     >
       <Flex
-        w={`${THUMBNAIL_PX}px`}
-        h={`${THUMBNAIL_PX}px`}
+        w={`${ENTITY_CARD_THUMBNAIL_PX}px`}
+        h={`${ENTITY_CARD_THUMBNAIL_PX}px`}
         flexShrink={0}
         align="center"
         justify="center"

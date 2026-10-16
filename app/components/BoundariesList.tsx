@@ -18,9 +18,8 @@ import {
   type LayerId,
   selectLayerOptions,
 } from "@/app/types/map";
-import { EntityCard } from "@/src/shared/ui/entity-card";
+import { ENTITY_KINDS, EntityCard } from "@/src/shared/ui/entity-card";
 
-import { AREA_LABEL_COLOR } from "./AreaCardMenu";
 import { PanelList } from "./PanelList";
 
 // Phosphor has no pickaxe or palm-oil icon: mining is a shovel, and RSPO
@@ -120,14 +119,14 @@ function BoundaryThumbnail({ id }: { id: LayerId }) {
   const IconComponent = BOUNDARY_ICONS[id];
   // A concession's icon takes its layer's accent, so the card matches the
   // colour of the layer on the map.
-  const color = CONCESSION_STYLES[id]?.accent ?? AREA_LABEL_COLOR;
+  const color = CONCESSION_STYLES[id]?.accent ?? ENTITY_KINDS.area.color;
   return (
     <Flex
       w="100%"
       h="100%"
       align="center"
       justify="center"
-      bg="rgba(45, 107, 228, 0.06)"
+      bg={ENTITY_KINDS.area.tint}
       aria-hidden
     >
       <IconComponent size={28} color={color} weight="light" />

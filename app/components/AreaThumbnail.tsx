@@ -6,14 +6,16 @@ import type { Feature, FeatureCollection, Geometry } from "geojson";
 import useMapStore from "@/app/store/mapStore";
 import type { AOISelection } from "@/app/types/chat";
 import { buildStaticMapUrl } from "@/app/utils/areaStaticMapUrl";
-import { ENTITY_KINDS } from "@/src/shared/ui/entity-card";
-
-/** Matches the catalog card thumbnail column width. */
-const THUMBNAIL_SIZE_PX = 96;
+import {
+  ENTITY_CARD_THUMBNAIL_PX,
+  ENTITY_KINDS,
+} from "@/src/shared/ui/entity-card";
 
 interface AreaThumbnailProps {
   aoiSelection: AOISelection;
   alt: string;
+  /** Side of the slot it fills, in CSS px; sizes the static-map request. Defaults to a card's. */
+  size?: number;
   /** When geometry isn't in the map registry yet (e.g. monitored custom areas). */
   geometry?: FeatureCollection | Feature | Geometry | null;
 }
@@ -43,7 +45,7 @@ function AreaThumbnailFallback() {
     <Flex
       w="100%"
       h="100%"
-      bg="rgba(45, 107, 228, 0.08)"
+      bg={ENTITY_KINDS.area.tint}
       alignItems="center"
       justifyContent="center"
     >
@@ -52,10 +54,11 @@ function AreaThumbnailFallback() {
   );
 }
 
-/** Static map thumbnail for area catalog cards — same source as chat `AreaCard`. */
+/** Static map thumbnail for area cards and the picker — same source as chat `AreaCard`. */
 export function AreaThumbnail({
   aoiSelection,
   alt,
+  size = ENTITY_CARD_THUMBNAIL_PX,
   geometry: geometryOverride,
 }: AreaThumbnailProps) {
   const geoJsonRegistry = useMapStore((s) => s.geoJsonRegistry);
@@ -67,8 +70,8 @@ export function AreaThumbnail({
   );
 
   const staticMapUrl = useMemo(
-    () => buildStaticMapUrl(aoiSelection, geometry, THUMBNAIL_SIZE_PX),
-    [aoiSelection, geometry]
+    () => buildStaticMapUrl(aoiSelection, geometry, size),
+    [aoiSelection, geometry, size]
   );
 
   if (!staticMapUrl || imgError) {
