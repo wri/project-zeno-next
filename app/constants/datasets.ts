@@ -341,6 +341,16 @@ export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
     values: [2, 5, 8, 9],
     info: "Tree cover loss is restricted to natural forest in the SBTN Natural Lands Map (2020 baseline): natural forests, natural peat forests, mangroves and wet natural forests. Covers loss from 2021 onward; no canopy cover threshold applies.",
   }),
+  // The same four classes under the analytics API's own name for its
+  // `land_filter`, which the alerts widget's Intersects dropdown sends and
+  // the alerts layer snapshot carries as a context layer (PZB-1468).
+  natural_forests: sbtnSingleClassLayer({
+    title: "SBTN Natural forest (2020)",
+    label: "Natural forests",
+    color: SBTN_NATURAL_CLASSES[0].color,
+    values: [2, 5, 8, 9],
+    info: "Alerts are restricted to natural forest in the SBTN Natural Lands Map (2020 baseline): natural forests, natural peat forests, mangroves and wet natural forests.",
+  }),
 };
 
 /**

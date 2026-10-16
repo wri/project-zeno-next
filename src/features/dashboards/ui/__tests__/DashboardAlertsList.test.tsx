@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { toAlertsList } from "../../api/alerts";
@@ -50,9 +50,9 @@ function propsFor(
     chip,
     confidence,
     custom,
-    customKey: 1,
     onChip: vi.fn<ListProps["onChip"]>(),
     onConfidence: vi.fn<ListProps["onConfidence"]>(),
+    onLandFilter: vi.fn<ListProps["onLandFilter"]>(),
     onCustomChange: vi.fn<ListProps["onCustomChange"]>(),
     onRetry: vi.fn<ListProps["onRetry"]>(),
   };
@@ -71,29 +71,61 @@ const renderList = (props: Partial<ListProps> = {}) => {
 const rowsOf = () =>
   within(screen.getByRole("table", { name: "Alert days" })).getAllByRole("row");
 
+const cellsOf = (row: HTMLElement) =>
+  within(row)
+    .getAllByRole("cell")
+    .map((cell) => cell.textContent);
+
 const UNAVAILABLE =
   "Integrated alerts data is unavailable right now. Please try again in a moment.";
 
+// The menu selects its highlighted item, so hover the item before clicking.
+async function chooseFromDropdown(trigger: string, option: string) {
+  fireEvent.click(screen.getByRole("button", { name: trigger }));
+  const item = await screen.findByRole("menuitem", { name: option });
+  await act(async () => {
+    fireEvent.pointerMove(item, { pointerType: "mouse" });
+  });
+  await act(async () => {
+    fireEvent.click(item);
+  });
+}
+
 describe("DashboardAlertsList", () => {
-  it("shows the new week's days with NEW badges, hectares on the chip and totals in the footer", () => {
+  it("shows the new week's days with NEW badges, hectares on the pill and totals in the footer", () => {
     renderList();
 
-    const newChip = screen.getByRole("button", { name: /New this week/ });
-    expect(newChip.textContent).toContain("50.8 ha");
-    expect(newChip.getAttribute("aria-pressed")).toBe("true");
+    const newPill = screen.getByRole("button", { name: /New this week/ });
+    expect(newPill.textContent).toContain("50.8 ha");
+    expect(newPill.getAttribute("aria-pressed")).toBe("true");
     expect(
       screen.getByText(
         /Alert days from 4 Oct 2026 to 10 Oct 2026, newest first/
       )
     ).toBeTruthy();
 
-    // Header row plus one per day, newest first, each new.
+    // The Stage 1 columns: badge, date, the tiers the day had, its area.
+    const table = screen.getByRole("table", { name: "Alert days" });
+    expect(
+      within(table)
+        .getAllByRole("columnheader")
+        .map((h) => h.textContent)
+    ).toEqual(["", "Alert date", "Confidence", "Total area (ha)"]);
     const rows = rowsOf();
     expect(rows).toHaveLength(1 + 5);
-    expect(within(rows[1]).getByText("10 Oct 2026")).toBeTruthy();
-    expect(within(rows[5]).getByText("4 Oct 2026")).toBeTruthy();
+    expect(cellsOf(rows[1])).toEqual([
+      "NEW",
+      "10 Oct 2026",
+      "High · Highest",
+      "15.5",
+    ]);
+    expect(cellsOf(rows[5])).toEqual([
+      "NEW",
+      "4 Oct 2026",
+      "High · Highest",
+      "1.5",
+    ]);
     expect(screen.getAllByText("NEW")).toHaveLength(5);
-    expect(within(rows[1]).getByText("15.5")).toBeTruthy();
 
     expect(
       screen.getByText("5 alert days · 50.8 ha in this period")
@@ -101,60 +133,111 @@ describe("DashboardAlertsList", () => {
     expect(screen.queryByRole("button", { name: "Next page" })).toBeNull();
   });
 
-  it("reports chip and confidence choices up, without filtering itself", () => {
+  it("names only the tiers a day had alerts in", () => {
+    renderList(propsFor("last-week"));
+    const rows = rowsOf();
+    // 15 Oct had no highest-confidence area, 14 Oct no high.
+    expect(cellsOf(rows[2])).toEqual(["", "15 Oct 2026", "High", "2.1"]);
+    expect(cellsOf(rows[3])).toEqual(["", "14 Oct 2026", "Highest", "1.6"]);
+  });
+
+  it("reports chip choices up, without filtering itself", () => {
     const props = renderList();
     fireEvent.click(screen.getByRole("button", { name: "Last week" }));
     expect(props.onChip).toHaveBeenCalledWith("last-week");
-    fireEvent.click(screen.getByRole("button", { name: "Custom" }));
-    expect(props.onChip).toHaveBeenCalledWith("custom");
-    fireEvent.click(screen.getByRole("button", { name: "Highest" }));
-    expect(props.onConfidence).toHaveBeenCalledWith("highest");
     // The rows are the container's; this pane did not change them.
     expect(rowsOf()).toHaveLength(1 + 5);
   });
 
-  it("shows a single tier as its own column, dropping the days with none", () => {
-    renderList(propsFor("last-week", "highest"));
-    const table = screen.getByRole("table", { name: "Alert days" });
-    expect(within(table).getByText("Highest (ha)")).toBeTruthy();
-    expect(within(table).queryByText("High (ha)")).toBeNull();
-    expect(within(table).queryByText("Total (ha)")).toBeNull();
+  it("offers the confidence tiers in a dropdown and reports the choice", async () => {
+    const props = renderList();
+    await chooseFromDropdown("Confidence: All", "Highest");
+    expect(props.onConfidence).toHaveBeenCalledWith("highest");
+  });
+
+  it("offers the land filters in a dropdown and reports the choice", async () => {
+    const props = renderList();
+    await chooseFromDropdown("Intersects: Any", "Natural lands");
+    expect(props.onLandFilter).toHaveBeenCalledWith("natural_lands");
+
+    await chooseFromDropdown("Intersects: Any", "Any");
+    expect(props.onLandFilter).toHaveBeenLastCalledWith(undefined);
+  });
+
+  it("shows a single tier in the cells, dropping the days with none, and names the land filter", () => {
+    renderList({
+      ...propsFor("last-week", "highest"),
+      landFilter: "natural_lands",
+    });
+    expect(
+      screen.getByRole("button", { name: "Confidence: Highest" })
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Intersects: Natural lands" })
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        /Alert days from 10 Oct 2026 to 16 Oct 2026, on natural lands, newest first/
+      )
+    ).toBeTruthy();
     // 10–16 Oct has five days; the 15th had no highest-confidence area.
-    const dates = rowsOf()
-      .slice(1)
-      .map((row) => within(row).getAllByRole("cell")[1].textContent);
-    expect(dates).toEqual([
+    const rows = rowsOf().slice(1);
+    expect(rows.map((row) => cellsOf(row)[1])).toEqual([
       "16 Oct 2026",
       "14 Oct 2026",
       "12 Oct 2026",
       "10 Oct 2026",
     ]);
+    expect(rows.map((row) => cellsOf(row)[2])).toEqual([
+      "Highest",
+      "Highest",
+      "Highest",
+      "Highest",
+    ]);
+    expect(cellsOf(rows[0])[3]).toBe("0.8");
     expect(
       screen.getByText("4 alert days · 7.6 ha in this period")
     ).toBeTruthy();
   });
 
-  it("pages at ten rows", () => {
+  it("pages at ten rows with numbered pages", () => {
     renderList(
       propsFor("custom", "all", { start: "2026-09-01", end: "2026-10-16" })
     );
     expect(rowsOf()).toHaveLength(1 + 10);
-    expect(screen.getByText("1 of 2")).toBeTruthy();
     expect(
-      screen.getByText("14 alert days · 105.7 ha in this period")
+      screen.getByText(
+        "Showing 1–10 of 14 alert days · 105.7 ha in this period"
+      )
     ).toBeTruthy();
+    expect(
+      screen
+        .getByRole("button", { name: "Page 1" })
+        .getAttribute("aria-current")
+    ).toBe("page");
 
-    fireEvent.click(screen.getByRole("button", { name: "Next page" }));
+    fireEvent.click(screen.getByRole("button", { name: "Page 2" }));
     expect(rowsOf()).toHaveLength(1 + 4);
-    expect(screen.getByText("2 of 2")).toBeTruthy();
-    expect(within(rowsOf()[4]).getByText("18 Sep 2026")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Showing 11–14 of 14 alert days · 105.7 ha in this period"
+      )
+    ).toBeTruthy();
+    expect(cellsOf(rowsOf()[4])[1]).toBe("18 Sep 2026");
+
+    fireEvent.click(screen.getByRole("button", { name: "Previous page" }));
+    expect(rowsOf()).toHaveLength(1 + 10);
   });
 
-  it("shows the custom inputs on the Custom chip and reports a changed bound", () => {
+  it("opens the custom dates from the Custom pill and reports a changed bound", async () => {
     const props = renderList(
       propsFor("custom", "all", { start: "2026-10-10", end: "2026-10-16" })
     );
-    const from = screen.getByLabelText("Custom period start");
+    expect(screen.queryByLabelText("Custom period start")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Custom" }));
+    expect(props.onChip).toHaveBeenCalledWith("custom");
+
+    const from = await screen.findByLabelText("Custom period start");
     expect(from.getAttribute("value")).toBe("2026-10-10");
     expect(from.getAttribute("max")).toBe("2026-10-16");
     // A year back from the data's last day: the longest window the backend takes.
@@ -210,13 +293,13 @@ describe("DashboardAlertsList", () => {
     expect(screen.queryByRole("button", { name: "Retry" })).toBeNull();
   });
 
-  it("dims the rows on show while a wider window loads", () => {
+  it("dims the rows on show while another list loads", () => {
     renderList({ isFetching: true });
     const table = screen.getByRole("table", { name: "Alert days" });
     expect(table.closest("[aria-busy='true']")).toBeTruthy();
   });
 
-  it("shows a failed wider fetch above the rows it still holds", () => {
+  it("shows a failed fetch above the rows it still holds", () => {
     const props = renderList({
       view: readyView(chipRange("new-week", list), {
         message: "Couldn't load the alerts.",

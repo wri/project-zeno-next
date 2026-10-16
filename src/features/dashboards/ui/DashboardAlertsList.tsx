@@ -3,36 +3,42 @@ import {
   Box,
   Button,
   Flex,
-  IconButton,
   Input,
+  Menu,
+  Popover,
+  Portal,
   Skeleton,
   Table,
   Text,
 } from "@chakra-ui/react";
-import { ArrowArcLeftIcon, ArrowArcRightIcon } from "@phosphor-icons/react";
+import { CaretDownIcon } from "@phosphor-icons/react";
 
 import InsightCaption from "@/app/components/InsightCaption";
 import {
   formatAlertDate,
   formatHa,
+  LAND_FILTERS,
+  landFilterOption,
+  pageNumbers,
+  rowArea,
   rowsSummary,
+  rowTiers,
   TIERS,
-  tierColumns,
   type AlertDay,
   type AlertsChip,
   type AlertsConfidence,
+  type AlertsLandFilter,
   type DateRange,
 } from "../lib/alertsWidgets";
 import { paginate } from "../lib/pagination";
 
 const PAGE_SIZE = 10;
 
-const CHIPS: { chip: AlertsChip; label: string }[] = [
+const PRESET_CHIPS: { chip: Exclude<AlertsChip, "custom">; label: string }[] = [
   { chip: "new-week", label: "New this week" },
   { chip: "last-day", label: "Last day" },
   { chip: "last-3-days", label: "Last 3 days" },
   { chip: "last-week", label: "Last week" },
-  { chip: "custom", label: "Custom" },
 ];
 
 const CONFIDENCES: AlertsConfidence[] = ["all", "high", "highest"];
@@ -46,7 +52,7 @@ export interface AlertsFailure {
 /**
  * What the pane has to show, settled once by the container: nothing yet,
  * a failure with no rows behind it, or rows for a period — possibly with a
- * failure above them (a wider window that did not load).
+ * failure above them (a wider window or a land filter that did not load).
  */
 export type AlertsListView =
   | { kind: "loading" }
@@ -66,6 +72,88 @@ function rangeLabel(range: DateRange): string {
   return range.start === range.end
     ? `on ${formatAlertDate(range.start)}`
     : `from ${formatAlertDate(range.start)} to ${formatAlertDate(range.end)}`;
+}
+
+/** The design's filter pill: a rounded 24px chip, solid primary when on. */
+const pillProps = (selected: boolean) =>
+  ({
+    size: "xs",
+    h: "24px",
+    px: "10px",
+    gap: "6px",
+    rounded: "full",
+    fontSize: "12px",
+    fontWeight: "medium",
+    colorPalette: selected ? "primary" : undefined,
+    variant: selected ? "solid" : "outline",
+    bg: selected ? undefined : "white",
+    borderColor: selected ? undefined : "#E0E2E5",
+    color: selected ? undefined : "#131619",
+    // The button recipe sizes every descendant svg to 20px; the design's
+    // chevron is 10px.
+    _icon: { width: "auto", height: "auto" },
+  }) as const;
+
+/**
+ * The design's "Dropdown / …" control: a label, the chosen value and a
+ * chevron on a 24px pill, opening a menu of the options.
+ */
+function FilterDropdown<T extends string | undefined>({
+  label,
+  value,
+  options,
+  onSelect,
+}: {
+  label: string;
+  value: T;
+  options: { value: T; label: string }[];
+  onSelect: (value: T) => void;
+}) {
+  const current = options.find((option) => option.value === value);
+  return (
+    <Menu.Root positioning={{ placement: "bottom-start" }}>
+      <Menu.Trigger asChild>
+        <Button
+          size="xs"
+          h="24px"
+          pl="10px"
+          pr="8px"
+          gap="6px"
+          rounded="sm"
+          variant="outline"
+          bg="white"
+          borderColor="#E0E2E5"
+          fontSize="12px"
+          _icon={{ width: "auto", height: "auto" }}
+          aria-label={`${label}: ${current?.label ?? ""}`}
+        >
+          <Text as="span" fontWeight="normal" color="#565E7B">
+            {label}:
+          </Text>
+          <Text as="span" fontWeight="medium" color="#131619">
+            {current?.label}
+          </Text>
+          <CaretDownIcon size={10} color="#131619" />
+        </Button>
+      </Menu.Trigger>
+      <Portal>
+        <Menu.Positioner>
+          <Menu.Content minW="140px" zIndex={1400}>
+            {options.map((option) => (
+              <Menu.Item
+                key={option.label}
+                value={option.label}
+                onSelect={() => onSelect(option.value)}
+                fontSize="12px"
+              >
+                {option.label}
+              </Menu.Item>
+            ))}
+          </Menu.Content>
+        </Menu.Positioner>
+      </Portal>
+    </Menu.Root>
+  );
 }
 
 /** The design's NEW pill: red on a pale red ground, with a dot. */
@@ -146,6 +234,7 @@ function HeaderCell({
       color="#565E7B"
       textTransform="uppercase"
       whiteSpace="nowrap"
+      borderColor="#EEF0F7"
       textAlign={numeric ? "end" : undefined}
     >
       {children}
@@ -155,15 +244,16 @@ function HeaderCell({
 
 /**
  * The list pane of the alerts widget (Figma "Alert list widget", Stage 1
- * columns): the curated caption, the period chips and confidence toggle, an
- * explainer, the table of alert days, and a footer with the period's totals
- * and the pager. Presentational: the rows arrive filtered to the period and
- * confidence, every choice goes back up through a callback, and nothing here
- * fetches. The container (`DashboardAlertsWidget`) owns the query and the
- * date-range state it shares with the map pane.
+ * columns): the curated caption, the period pills with the Custom popover,
+ * the Confidence and Intersects dropdowns, an explainer, the table of alert
+ * days, and a footer with the period's totals and the pager. Presentational:
+ * the rows arrive filtered to the period and confidence, every choice goes
+ * back up through a callback, and nothing here fetches. The container
+ * (`DashboardAlertsWidget`) owns the query and the date-range state it
+ * shares with the map pane.
  *
- * The chips carry hectares, not counts: Stage 1 rows are days, so "New this
- * week · 15.5 ha" is the honest number.
+ * The "New this week" pill carries hectares, not a count: Stage 1 rows are
+ * days, so "New this week · 15.5 ha" is the honest number.
  */
 export default function DashboardAlertsList({
   view,
@@ -172,33 +262,30 @@ export default function DashboardAlertsList({
   newWeekHa,
   chip,
   confidence,
+  landFilter,
   custom,
-  customKey,
   onChip,
   onConfidence,
+  onLandFilter,
   onCustomChange,
   onRetry,
 }: {
   view: AlertsListView;
-  /** A refetch in flight behind rows already on show (a widened window). */
+  /** A refetch in flight behind rows already on show (a widened window, a land filter). */
   isFetching: boolean;
   /** The rows for the chosen period and confidence, newest first. */
   rows: readonly AlertDay[];
-  /** The "New this week" chip's hectares in the shown tier. */
+  /** The "New this week" pill's hectares in the shown tier. */
   newWeekHa: number;
   chip: AlertsChip;
   confidence: AlertsConfidence;
-  /** The committed custom range, once the Custom chip has been opened. */
+  /** The Intersects choice; undefined is "Any". */
+  landFilter?: AlertsLandFilter;
+  /** The committed custom range, once the Custom pill has been opened. */
   custom?: DateRange;
-  /**
-   * Changes each time the Custom chip opens. The date inputs are
-   * uncontrolled, so the user can type a year digit by digit without the
-   * half-typed value being snapped back; this key resets them to the
-   * committed range on each opening.
-   */
-  customKey: number;
   onChip: (chip: AlertsChip) => void;
   onConfidence: (confidence: AlertsConfidence) => void;
+  onLandFilter: (filter?: AlertsLandFilter) => void;
   onCustomChange: (range: DateRange) => void;
   onRetry: () => void;
 }) {
@@ -208,14 +295,14 @@ export default function DashboardAlertsList({
   // The page resets whenever the rows it indexes change identity (a chip, a
   // tier, a new period). Reconciled during render, not in an effect, so the
   // table never paints a stale page first.
-  const pageKey = `${chip}|${confidence}|${range?.start}|${range?.end}`;
+  const pageKey = `${chip}|${confidence}|${landFilter}|${range?.start}|${range?.end}`;
   const [paging, setPaging] = useState({ key: pageKey, page: 1 });
   const page = paging.key === pageKey ? paging.page : 1;
   const setPage = (next: number) => setPaging({ key: pageKey, page: next });
 
   const paged = paginate(rows, page, PAGE_SIZE);
   const summary = rowsSummary(rows, confidence);
-  const columns = tierColumns(confidence);
+  const land = landFilterOption(landFilter);
 
   return (
     <Flex
@@ -230,25 +317,27 @@ export default function DashboardAlertsList({
     >
       <InsightCaption curated />
 
-      {/* Period chips, then the confidence toggle */}
+      {/* Filter toolbar: the period pills, a divider, the two dropdowns */}
       <Flex gap="6px" align="center" wrap="wrap">
-        {CHIPS.map(({ chip: value, label }) => {
+        {PRESET_CHIPS.map(({ chip: value, label }) => {
           const selected = chip === value;
           return (
             <Button
               key={value}
-              size="xs"
-              h="24px"
-              px="10px"
-              rounded="full"
-              fontSize="12px"
-              colorPalette={selected ? "primary" : undefined}
-              variant={selected ? "solid" : "outline"}
-              bg={selected ? undefined : "white"}
+              {...pillProps(selected)}
               aria-pressed={selected}
               disabled={!ready}
               onClick={() => onChip(value)}
             >
+              {value === "new-week" && selected && (
+                <Box
+                  as="span"
+                  boxSize="6px"
+                  rounded="full"
+                  bg="white"
+                  aria-hidden
+                />
+              )}
               {label}
               {value === "new-week" && ready && (
                 <Text
@@ -256,86 +345,118 @@ export default function DashboardAlertsList({
                   fontFamily="mono"
                   fontSize="10px"
                   fontWeight="normal"
+                  lineHeight="14px"
                   opacity={selected ? 0.9 : 0.7}
                 >
-                  · {formatHa(newWeekHa)} ha
+                  {formatHa(newWeekHa)} ha
                 </Text>
               )}
             </Button>
           );
         })}
-        <Box w="1px" h="20px" bg="#DDE2F5" mx="2px" aria-hidden />
-        <Flex align="center" gap="2px" role="group" aria-label="Confidence">
-          <Text fontSize="12px" color="#565E7B" pr="4px">
-            Confidence:
-          </Text>
-          {CONFIDENCES.map((value) => {
-            const selected = confidence === value;
-            return (
-              <Button
-                key={value}
-                size="xs"
-                h="24px"
-                px="8px"
-                rounded="sm"
-                fontSize="12px"
-                colorPalette={selected ? "primary" : undefined}
-                variant={selected ? "subtle" : "ghost"}
-                aria-pressed={selected}
-                onClick={() => onConfidence(value)}
-              >
-                {TIERS[value].name}
-              </Button>
-            );
-          })}
-        </Flex>
+        {/* Custom: the pill selects the chip and opens the dates. Mounted on
+            open, so the inputs start from the committed range each time
+            (they are uncontrolled: a controlled date input snaps a
+            half-typed year back on every keystroke the handler ignores). */}
+        <Popover.Root
+          // Fixed, as the basemap selector's: the dashboard scrolls inside a
+          // container, and an absolute positioner lands off the page.
+          positioning={{ placement: "bottom-start", strategy: "fixed" }}
+          lazyMount
+          unmountOnExit
+        >
+          <Popover.Trigger asChild>
+            <Button
+              {...pillProps(chip === "custom")}
+              aria-pressed={chip === "custom"}
+              disabled={!ready}
+              onClick={() => onChip("custom")}
+            >
+              Custom
+              <CaretDownIcon size={10} />
+            </Button>
+          </Popover.Trigger>
+          <Portal>
+            <Popover.Positioner>
+              <Popover.Content w="auto" zIndex={1400}>
+                <Popover.Body p={3}>
+                  {custom && view.kind === "ready" && (
+                    <Flex gap="8px" align="center" wrap="wrap">
+                      <Text as="label" fontSize="12px" color="#565E7B">
+                        From{" "}
+                        <Input
+                          type="date"
+                          size="xs"
+                          w="auto"
+                          display="inline-block"
+                          bg="white"
+                          defaultValue={custom.start}
+                          min={view.startMin}
+                          max={view.dataTo}
+                          aria-label="Custom period start"
+                          onChange={(e) =>
+                            e.target.value &&
+                            onCustomChange({
+                              start: e.target.value,
+                              end: custom.end,
+                            })
+                          }
+                        />
+                      </Text>
+                      <Text as="label" fontSize="12px" color="#565E7B">
+                        To{" "}
+                        <Input
+                          type="date"
+                          size="xs"
+                          w="auto"
+                          display="inline-block"
+                          bg="white"
+                          defaultValue={custom.end}
+                          min={view.startMin}
+                          max={view.dataTo}
+                          aria-label="Custom period end"
+                          onChange={(e) =>
+                            e.target.value &&
+                            onCustomChange({
+                              start: custom.start,
+                              end: e.target.value,
+                            })
+                          }
+                        />
+                      </Text>
+                    </Flex>
+                  )}
+                </Popover.Body>
+              </Popover.Content>
+            </Popover.Positioner>
+          </Portal>
+        </Popover.Root>
+        <Box w="1px" h="20px" bg="#DDE2F5" aria-hidden />
+        <FilterDropdown
+          label="Confidence"
+          value={confidence}
+          options={CONFIDENCES.map((value) => ({
+            value,
+            label: TIERS[value].name,
+          }))}
+          onSelect={onConfidence}
+        />
+        <FilterDropdown
+          label="Intersects"
+          value={landFilter}
+          options={LAND_FILTERS.map((option) => ({
+            value: option.filter,
+            label: option.label,
+          }))}
+          onSelect={onLandFilter}
+        />
       </Flex>
-
-      {chip === "custom" && custom && view.kind === "ready" && (
-        <Flex key={customKey} gap="8px" align="center" wrap="wrap">
-          <Text as="label" fontSize="12px" color="#565E7B">
-            From{" "}
-            <Input
-              type="date"
-              size="xs"
-              w="auto"
-              display="inline-block"
-              bg="white"
-              defaultValue={custom.start}
-              min={view.startMin}
-              max={view.dataTo}
-              aria-label="Custom period start"
-              onChange={(e) =>
-                e.target.value &&
-                onCustomChange({ start: e.target.value, end: custom.end })
-              }
-            />
-          </Text>
-          <Text as="label" fontSize="12px" color="#565E7B">
-            To{" "}
-            <Input
-              type="date"
-              size="xs"
-              w="auto"
-              display="inline-block"
-              bg="white"
-              defaultValue={custom.end}
-              min={view.startMin}
-              max={view.dataTo}
-              aria-label="Custom period end"
-              onChange={(e) =>
-                e.target.value &&
-                onCustomChange({ start: custom.start, end: e.target.value })
-              }
-            />
-          </Text>
-        </Flex>
-      )}
 
       {range && (
         <Text fontSize="12px" lineHeight="16px" color="#565E7B">
-          Alert days {rangeLabel(range)}, newest first. Area is the disturbed
-          area detected on that day.
+          Alert days {rangeLabel(range)}
+          {land.phrase ? `, ${land.phrase}` : ""}, newest first. Area is the
+          disturbed area detected on that day.
         </Text>
       )}
 
@@ -372,17 +493,14 @@ export default function DashboardAlertsList({
               <Table.Row>
                 <HeaderCell />
                 <HeaderCell>Alert date</HeaderCell>
-                {columns.map((column) => (
-                  <HeaderCell key={column.field} numeric>
-                    {column.label}
-                  </HeaderCell>
-                ))}
+                <HeaderCell>Confidence</HeaderCell>
+                <HeaderCell numeric>Total area (ha)</HeaderCell>
               </Table.Row>
             </Table.Header>
             <Table.Body>
               {paged.items.map((row) => (
                 <Table.Row key={row.date} bg="transparent">
-                  <Table.Cell px="8px" py="7px" w="60px">
+                  <Table.Cell px="8px" py="7px" w="76px" borderColor="#EEF0F7">
                     {row.isNew && <NewBadge />}
                   </Table.Cell>
                   <Table.Cell
@@ -390,21 +508,29 @@ export default function DashboardAlertsList({
                     py="7px"
                     fontSize="12px"
                     whiteSpace="nowrap"
+                    borderColor="#EEF0F7"
                   >
                     {formatAlertDate(row.date)}
                   </Table.Cell>
-                  {columns.map((column) => (
-                    <Table.Cell
-                      key={column.field}
-                      px="8px"
-                      py="7px"
-                      fontSize="12px"
-                      textAlign="end"
-                      css={{ fontVariantNumeric: "tabular-nums" }}
-                    >
-                      {formatHa(row[column.field])}
-                    </Table.Cell>
-                  ))}
+                  <Table.Cell
+                    px="8px"
+                    py="7px"
+                    fontSize="12px"
+                    whiteSpace="nowrap"
+                    borderColor="#EEF0F7"
+                  >
+                    {rowTiers(row, confidence)}
+                  </Table.Cell>
+                  <Table.Cell
+                    px="8px"
+                    py="7px"
+                    fontSize="12px"
+                    textAlign="end"
+                    borderColor="#EEF0F7"
+                    css={{ fontVariantNumeric: "tabular-nums" }}
+                  >
+                    {formatHa(rowArea(row, confidence))}
+                  </Table.Cell>
                 </Table.Row>
               ))}
             </Table.Body>
@@ -415,43 +541,75 @@ export default function DashboardAlertsList({
       {ready && (
         <Flex align="center" justify="space-between" gap="8px" wrap="wrap">
           <Text fontSize="12px" lineHeight="16px" color="#565E7B">
-            {summary.days} alert {summary.days === 1 ? "day" : "days"} ·{" "}
+            {paged.totalPages > 1
+              ? `Showing ${(paged.page - 1) * PAGE_SIZE + 1}–${Math.min(
+                  paged.page * PAGE_SIZE,
+                  summary.days
+                )} of ${summary.days} alert days`
+              : `${summary.days} alert ${summary.days === 1 ? "day" : "days"}`}
+            {" · "}
             {formatHa(summary.ha)} ha in this period
           </Text>
           {paged.totalPages > 1 && (
-            <Flex align="center" gap="8px">
-              <IconButton
-                aria-label="Previous page"
-                title="Previous page"
+            <Flex align="center" gap="10px" aria-label="Pages">
+              <Button
                 size="xs"
-                variant="ghost"
-                border="1px solid"
-                borderColor="border.emphasized"
+                variant="plain"
+                px={0}
+                minW="auto"
+                h="18px"
+                fontSize="13px"
+                color="#565E7B"
+                aria-label="Previous page"
                 disabled={paged.page === 1}
                 onClick={() => setPage(paged.page - 1)}
               >
-                <ArrowArcLeftIcon size={14} />
-              </IconButton>
-              <Text
-                fontSize="12px"
-                color="fg.muted"
-                aria-live="polite"
-                css={{ fontVariantNumeric: "tabular-nums" }}
-              >
-                {paged.page} of {paged.totalPages}
-              </Text>
-              <IconButton
-                aria-label="Next page"
-                title="Next page"
+                ‹
+              </Button>
+              {pageNumbers(paged.page, paged.totalPages).map((entry, index) =>
+                entry === "…" ? (
+                  <Text
+                    key={`gap-${index}`}
+                    as="span"
+                    fontSize="12px"
+                    color="#565E7B"
+                    aria-hidden
+                  >
+                    …
+                  </Text>
+                ) : (
+                  <Button
+                    key={entry}
+                    size="xs"
+                    variant="plain"
+                    px={0}
+                    minW="auto"
+                    h="17px"
+                    fontSize="12px"
+                    fontWeight={entry === paged.page ? "medium" : "normal"}
+                    color={entry === paged.page ? "#0049AA" : "#565E7B"}
+                    aria-label={`Page ${entry}`}
+                    aria-current={entry === paged.page ? "page" : undefined}
+                    onClick={() => setPage(entry)}
+                  >
+                    {entry}
+                  </Button>
+                )
+              )}
+              <Button
                 size="xs"
-                variant="ghost"
-                border="1px solid"
-                borderColor="border.emphasized"
+                variant="plain"
+                px={0}
+                minW="auto"
+                h="18px"
+                fontSize="13px"
+                color="#565E7B"
+                aria-label="Next page"
                 disabled={paged.page === paged.totalPages}
                 onClick={() => setPage(paged.page + 1)}
               >
-                <ArrowArcRightIcon size={14} />
-              </IconButton>
+                ›
+              </Button>
             </Flex>
           )}
         </Flex>
