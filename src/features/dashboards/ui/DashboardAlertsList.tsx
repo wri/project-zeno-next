@@ -61,8 +61,8 @@ export type AlertsListView =
       kind: "ready";
       /** The period the rows cover. */
       range: DateRange;
-      /** The data's last day; bounds the custom inputs. */
-      dataTo: string;
+      /** The last day a custom range may reach (the latest alert day); bounds the custom inputs. */
+      anchor: string;
       /** The earliest start a custom range may have. */
       startMin: string;
       failure?: AlertsFailure;
@@ -392,7 +392,7 @@ export default function DashboardAlertsList({
                           bg="white"
                           defaultValue={custom.start}
                           min={view.startMin}
-                          max={view.dataTo}
+                          max={view.anchor}
                           aria-label="Custom period start"
                           onChange={(e) =>
                             e.target.value &&
@@ -413,7 +413,7 @@ export default function DashboardAlertsList({
                           bg="white"
                           defaultValue={custom.end}
                           min={view.startMin}
-                          max={view.dataTo}
+                          max={view.anchor}
                           aria-label="Custom period end"
                           onChange={(e) =>
                             e.target.value &&

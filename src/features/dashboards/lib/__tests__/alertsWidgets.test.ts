@@ -9,8 +9,8 @@ import {
   confidenceLabel,
   customStartMin,
   formatAlertDate,
-  formatDataTo,
   formatHa,
+  formatLatest,
   initialWindow,
   needsWiderWindow,
   newWeekHa,
@@ -62,8 +62,8 @@ const day = (overrides: Partial<AlertDay> = {}): AlertDay => ({
   ...overrides,
 });
 
-const list: Pick<AlertsList, "dataTo" | "newWeek"> = {
-  dataTo: "2026-10-16",
+const list: Pick<AlertsList, "anchor" | "newWeek"> = {
+  anchor: "2026-10-16",
   newWeek: { start: "2026-10-04", end: "2026-10-10" },
 };
 
@@ -266,13 +266,17 @@ describe("chipRange", () => {
     });
   });
 
-  it("never counts from a later data_to than the response gives", () => {
-    const stale = { ...list, dataTo: "2026-10-12" };
-    expect(chipRange("last-day", stale)).toEqual({
+  it("counts back from the anchor, however far it lags the window or today", () => {
+    const lagging = { ...list, anchor: "2026-10-12" };
+    expect(chipRange("last-day", lagging)).toEqual({
       start: "2026-10-12",
       end: "2026-10-12",
     });
-    expect(chipRange("last-week", stale).start).toBe("2026-10-06");
+    expect(chipRange("last-week", lagging).start).toBe("2026-10-06");
+    // A custom range reaching past the anchor stops at it.
+    expect(
+      chipRange("custom", lagging, { start: "2026-10-10", end: "2026-10-16" })
+    ).toEqual({ start: "2026-10-10", end: "2026-10-12" });
   });
 
   it("clamps a custom range into the data and orders it", () => {
@@ -499,8 +503,8 @@ describe("formatting", () => {
   it("formats dates per the design's two forms", () => {
     expect(formatAlertDate("2026-09-26")).toBe("26 Sep 2026");
     expect(formatAlertDate("2026-10-05")).toBe("5 Oct 2026");
-    expect(formatDataTo("2026-09-28")).toBe("SEP 28, 2026");
-    expect(formatDataTo("2026-10-05")).toBe("OCT 5, 2026");
+    expect(formatLatest("2026-09-28")).toBe("SEP 28, 2026");
+    expect(formatLatest("2026-10-05")).toBe("OCT 5, 2026");
   });
 
   it("formats hectares to one decimal with a sliver floor", () => {

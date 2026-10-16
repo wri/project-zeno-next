@@ -37,10 +37,11 @@ describe("AlertsListResponseSchema", () => {
     );
   });
 
-  it("rejects a response missing its rows or its data_to", () => {
-    expect(() =>
-      AlertsListResponseSchema.parse({ ...ALERTS_LIST_WIRE, rows: undefined })
-    ).toThrow();
+  it("takes a null data_to (a window without alerts) but not a missing one", () => {
+    expect(
+      AlertsListResponseSchema.parse({ ...ALERTS_LIST_WIRE, data_to: null })
+        .data_to
+    ).toBeNull();
     expect(() =>
       AlertsListResponseSchema.parse({
         ...ALERTS_LIST_WIRE,
@@ -48,13 +49,21 @@ describe("AlertsListResponseSchema", () => {
       })
     ).toThrow();
   });
+
+  it("rejects a response missing its rows", () => {
+    expect(() =>
+      AlertsListResponseSchema.parse({ ...ALERTS_LIST_WIRE, rows: undefined })
+    ).toThrow();
+  });
 });
 
 describe("toAlertsList", () => {
   it("normalises the wire shape and keeps rows newest first", () => {
     const list = toAlertsList(ALERTS_LIST_WIRE);
-    expect(list.dataTo).toBe("2026-10-16");
-    expect(list.window).toEqual({ start: "2026-09-16", end: "2026-10-16" });
+    expect(list.latest).toBe("2026-10-16");
+    // The chips count back from the latest alert day, not the window's end.
+    expect(list.anchor).toBe("2026-10-16");
+    expect(list.window).toEqual({ start: "2026-09-16", end: "2026-10-19" });
     expect(list.newWeek).toEqual({ start: "2026-10-04", end: "2026-10-10" });
     expect(list.rows).toHaveLength(14);
     expect(list.rows[0]).toEqual({
@@ -71,6 +80,13 @@ describe("toAlertsList", () => {
       "2026-10-05",
       "2026-10-04",
     ]);
+  });
+
+  it("anchors a window without alerts on its end, with no latest day", () => {
+    const list = toAlertsList({ ...ALERTS_LIST_WIRE, data_to: null, rows: [] });
+    expect(list.latest).toBeUndefined();
+    expect(list.anchor).toBe("2026-10-19");
+    expect(list.rows).toEqual([]);
   });
 });
 

@@ -13,7 +13,7 @@ import {
   chipRange,
   confidenceLabel,
   customStartMin,
-  formatDataTo,
+  formatLatest,
   initialWindow,
   needsWiderWindow,
   newWeekHa,
@@ -155,8 +155,8 @@ function AlertsCard({
       ? {
           kind: "ready",
           range,
-          dataTo: list.dataTo,
-          startMin: customStartMin(list.dataTo),
+          anchor: list.anchor,
+          startMin: customStartMin(list.anchor),
           failure,
         }
       : failure
@@ -176,8 +176,8 @@ function AlertsCard({
     // A date input reports every keystroke, so a year being typed passes
     // through "0002…" before "2026…": a bound outside the data (or beyond
     // the window the backend accepts) is left alone until it is inside.
-    const min = customStartMin(list.dataTo);
-    const inData = (iso: string) => iso >= min && iso <= list.dataTo;
+    const min = customStartMin(list.anchor);
+    const inData = (iso: string) => iso >= min && iso <= list.anchor;
     if (!inData(next.start) || !inData(next.end)) return;
     setCustom(next);
     setChip("custom");
@@ -213,7 +213,8 @@ function AlertsCard({
       body={
         <>
           {/* Badge row, as an analysis card's params row: the toggle, the
-              badges once shown, and the data's last day on the right. */}
+              badges once shown, and the latest alert day on the right (no
+              label when the window has no alerts). */}
           <Box px="8px" pb="8px">
             <Flex
               borderTopWidth="1px"
@@ -246,7 +247,7 @@ function AlertsCard({
                 </>
               )}
               <Box flex="1" />
-              {list && (
+              {list?.latest && (
                 <Text
                   fontFamily="mono"
                   fontSize="10px"
@@ -254,7 +255,7 @@ function AlertsCard({
                   color="#565E7B"
                   whiteSpace="nowrap"
                 >
-                  DATA TO {formatDataTo(list.dataTo)}
+                  LATEST {formatLatest(list.latest)}
                 </Text>
               )}
             </Flex>
