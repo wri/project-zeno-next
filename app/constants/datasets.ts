@@ -28,32 +28,33 @@ export type DatasetLegendConfig = {
 
 /**
  * Thematic groupings used to filter the Data Catalog panel.
- * `all` and `in-conversation` are virtual (not assigned per card).
+ * `all` is virtual (not assigned per card). Datasets on the map are pinned in
+ * the panel's own "On map" section rather than a category.
  */
 export type DatasetCategoryId =
   | "all"
-  | "in-conversation"
   | "land-use"
   | "disturbance"
   | "wildfires"
   | "ghg-fluxes"
   | "forests";
 
-export const DATASET_CATEGORIES: { id: DatasetCategoryId; label: string }[] = [
-  { id: "all", label: "All datasets" },
-  { id: "in-conversation", label: "In this conversation" },
-  { id: "forests", label: "Forests" },
-  { id: "land-use", label: "Land use" },
-  { id: "disturbance", label: "Disturbance" },
-  { id: "wildfires", label: "Wildfires" },
-  { id: "ghg-fluxes", label: "GHG fluxes" },
-];
+/** Chip labels, in display order. Exhaustive, so a label lookup is total. */
+export const DATASET_CATEGORY_LABELS: Record<DatasetCategoryId, string> = {
+  all: "All datasets",
+  forests: "Forests",
+  "land-use": "Land use",
+  disturbance: "Disturbance",
+  wildfires: "Wildfires",
+  "ghg-fluxes": "GHG fluxes",
+};
+
+export const DATASET_CATEGORIES = (
+  Object.keys(DATASET_CATEGORY_LABELS) as DatasetCategoryId[]
+).map((id) => ({ id, label: DATASET_CATEGORY_LABELS[id] }));
 
 /** Categories assigned to dataset cards (excludes virtual ones above). */
-export type AssignableDatasetCategoryId = Exclude<
-  DatasetCategoryId,
-  "all" | "in-conversation"
->;
+export type AssignableDatasetCategoryId = Exclude<DatasetCategoryId, "all">;
 
 /**
  * One of a dataset card's primary data layers — only one is on the map at a
