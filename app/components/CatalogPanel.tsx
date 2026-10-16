@@ -1,14 +1,12 @@
 import { useMemo, useState } from "react";
 import {
   Box,
-  Button,
   Flex,
   IconButton,
   Image,
   Slider,
   Stack,
   Text,
-  Wrap,
   useDisclosure,
 } from "@chakra-ui/react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -52,6 +50,7 @@ import { useEnabledFlags } from "@/src/shared/lib/feature-flags";
 
 import { CatalogCard } from "./CatalogCard";
 import { DatasetInfoModal } from "./DatasetInfoModal";
+import { PanelPills } from "./PanelList";
 import { Tooltip } from "./ui/tooltip";
 
 /** Matches ChatPanel compact/full-size enter & exit (slide from the left). */
@@ -180,34 +179,11 @@ export default function DataCatalogPanel() {
               pb={6}
               overflow="hidden"
             >
-              <Wrap gap={1} flexShrink={0} overflow="hidden">
-                {DATASET_CATEGORIES.map((cat) => {
-                  const isActive = category === cat.id;
-                  return (
-                    <Button
-                      key={cat.id}
-                      h="24px"
-                      minH="24px"
-                      py="4px"
-                      px="8px"
-                      borderRadius="full"
-                      fontSize="12px"
-                      fontWeight="400"
-                      lineHeight="16px"
-                      bg={isActive ? "fg.link" : "neutral.300"}
-                      color={isActive ? "white" : "fg"}
-                      border="1px solid"
-                      borderColor={isActive ? "fg.link" : "neutral.300"}
-                      _hover={{
-                        bg: isActive ? "fg.link" : "neutral.400",
-                      }}
-                      onClick={() => setCategory(cat.id)}
-                    >
-                      {cat.label}
-                    </Button>
-                  );
-                })}
-              </Wrap>
+              <PanelPills
+                options={DATASET_CATEGORIES}
+                value={category}
+                onChange={setCategory}
+              />
               <Stack
                 gap={4}
                 flex={1}
