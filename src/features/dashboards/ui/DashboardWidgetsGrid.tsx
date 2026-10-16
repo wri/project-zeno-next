@@ -11,16 +11,12 @@ import {
 import { computeWidgetMove } from "../model/widget-move";
 import type { PendingInsightWidget } from "../model/pending-insight-widgets-store";
 import {
-  alertsWidgetSize,
-  insightWidgetSize,
-  mapWidgetSize,
+  topLevelWidgetSize,
   unresolvedPendingInsightWidgets,
-  widgetSize,
   widgetText,
   withSize,
   withText,
   withWidgetTitle,
-  type WidgetSize,
 } from "../lib/widgets";
 import {
   mapWidgetLayer,
@@ -84,14 +80,6 @@ function standaloneBody(widget: DashboardWidget): StandaloneBody {
     text: null,
     placeholder: `This ${widget.widget_type} widget isn't supported here yet.`,
   };
-}
-
-/** The persisted column span for a top-level item. */
-function topLevelSize(widget: DashboardWidget): WidgetSize {
-  if (widget.widget_type === "insight") return insightWidgetSize(widget.config);
-  if (widget.widget_type === "map") return mapWidgetSize(widget.config);
-  if (widget.widget_type === "alerts") return alertsWidgetSize(widget.config);
-  return widgetSize(widget.config);
 }
 
 /**
@@ -239,7 +227,7 @@ function ContainerGrid({
       patch: {
         config: withSize(
           widget.config,
-          topLevelSize(widget) === "double" ? "single" : "double"
+          topLevelWidgetSize(widget) === "double" ? "single" : "double"
         ),
       },
     });
@@ -248,12 +236,12 @@ function ContainerGrid({
     <DropSlot
       data-testid="widget-drop-slot"
       height={drag?.rect.height ?? 0}
-      css={cellCss(!!dragged && topLevelSize(dragged) === "double")}
+      css={cellCss(!!dragged && topLevelWidgetSize(dragged) === "double")}
     />
   );
 
   const renderWidget = (widget: DashboardWidget) => {
-    const size = topLevelSize(widget);
+    const size = topLevelWidgetSize(widget);
     // Insight and alerts widgets parse their own configs.
     const body =
       widget.widget_type === "insight" || widget.widget_type === "alerts"

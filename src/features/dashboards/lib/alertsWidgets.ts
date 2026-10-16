@@ -1,4 +1,6 @@
-import { mapWidgetLayer, type MapWidgetLayer } from "./mapWidgets";
+import { format, parseISO } from "date-fns";
+
+import { mapWidgetLayer, str, type MapWidgetLayer } from "./mapWidgets";
 
 /**
  * The `widget_type: "alerts"` widget (PZB-1468): a live list of integrated
@@ -9,7 +11,8 @@ import { mapWidgetLayer, type MapWidgetLayer } from "./mapWidgets";
  * Every date here is an ISO `YYYY-MM-DD` string and stays one. `new Date(iso)`
  * parses as UTC midnight, so reading it back through local getters west of UTC
  * loses a day; comparisons are therefore lexicographic and day arithmetic goes
- * through `Date.UTC`, never through a `Date`'s local accessors.
+ * through `Date.UTC`, never through a `Date`'s local accessors. (`parseISO` of
+ * a date-only string is local midnight, so the display formats are safe.)
  */
 
 export interface DateRange {
@@ -56,7 +59,6 @@ export interface AlertsList {
   window: DateRange;
   /** The latest full alert week (Sunday to Saturday); the "New this week" range. */
   newWeek: DateRange;
-  totalHa: number;
   /** Newest first. */
   rows: AlertDay[];
 }
@@ -70,13 +72,42 @@ export type AlertsChip =
 
 export type AlertsConfidence = "all" | "high" | "highest";
 
+/**
+ * What each confidence choice shows: the row field it sums, the column it
+ * heads, and its name in the toggle. "All" is the two tiers and their total.
+ */
+export const TIERS: Record<
+  AlertsConfidence,
+  { field: "highHa" | "highestHa" | "totalHa"; label: string; name: string }
+> = {
+  all: { field: "totalHa", label: "Total (ha)", name: "All" },
+  high: { field: "highHa", label: "High (ha)", name: "High" },
+  highest: { field: "highestHa", label: "Highest (ha)", name: "Highest" },
+};
+
+/** The area columns a confidence choice shows: a single tier is its own total. */
+export function tierColumns(
+  confidence: AlertsConfidence
+): (typeof TIERS)[AlertsConfidence][] {
+  return confidence === "all"
+    ? [TIERS.high, TIERS.highest, TIERS.all]
+    : [TIERS[confidence]];
+}
+
+/** The badge row's CONFIDENCE value: the tiers in the shown rows. */
+export function confidenceLabel(confidence: AlertsConfidence): string {
+  return confidence === "all"
+    ? `${TIERS.high.name} · ${TIERS.highest.name}`
+    : TIERS[confidence].name;
+}
+
 export const DEFAULT_ALERTS_DAYS = 30;
 
 /** The integrated alerts catalogue entry's `start_date`: no alert is older. */
 export const ALERTS_DATASET_START = "2023-12-01";
 
-const str = (value: unknown): string | undefined =>
-  typeof value === "string" && value.trim() ? value : undefined;
+/** The backend refuses a window of more than this many days. */
+export const MAX_CUSTOM_DAYS = 365;
 
 /**
  * Parses an alerts widget's config into a renderable spec, or null when it
@@ -183,9 +214,6 @@ export function chipRange(
   }
 }
 
-/** The backend refuses a window of more than this many days. */
-export const MAX_CUSTOM_DAYS = 365;
-
 /**
  * The earliest start a custom range may have: the dataset's first day, or
  * the day that makes the range ending on `dataTo` exactly `MAX_CUSTOM_DAYS`
@@ -219,18 +247,6 @@ export function rowsInRange(
   return rows.filter((row) => row.date >= range.start && row.date <= range.end);
 }
 
-/** The hectares a row shows under a confidence choice. */
-function tierHa(row: AlertDay, confidence: AlertsConfidence): number {
-  switch (confidence) {
-    case "high":
-      return row.highHa;
-    case "highest":
-      return row.highestHa;
-    case "all":
-      return row.totalHa;
-  }
-}
-
 /**
  * The rows a confidence choice shows. A single tier drops the days that had
  * nothing in it — "High" must not list a day of zero high-confidence alerts —
@@ -241,7 +257,8 @@ export function visibleRows(
   confidence: AlertsConfidence
 ): AlertDay[] {
   if (confidence === "all") return [...rows];
-  return rows.filter((row) => tierHa(row, confidence) > 0);
+  const { field } = TIERS[confidence];
+  return rows.filter((row) => row[field] > 0);
 }
 
 /** The footer's numbers: alert days and hectares in the shown tier. */
@@ -249,9 +266,10 @@ export function rowsSummary(
   rows: readonly AlertDay[],
   confidence: AlertsConfidence
 ): { days: number; ha: number } {
+  const { field } = TIERS[confidence];
   return {
     days: rows.length,
-    ha: rows.reduce((sum, row) => sum + tierHa(row, confidence), 0),
+    ha: rows.reduce((sum, row) => sum + row[field], 0),
   };
 }
 
@@ -261,10 +279,7 @@ export function newWeekHa(
   confidence: AlertsConfidence
 ): number {
   return rowsSummary(
-    visibleRows(
-      rows.filter((row) => row.isNew),
-      confidence
-    ),
+    rows.filter((row) => row.isNew),
     confidence
   ).ha;
 }
@@ -308,36 +323,14 @@ export function withTileDates(
 
 // ── Formatting ─────────────────────────────────────────────────────────────
 
-const MONTHS = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
-
-function parts(iso: string): { year: string; month: string; day: number } {
-  const [year, m, d] = iso.split("-");
-  return { year, month: MONTHS[Number(m) - 1] ?? m, day: Number(d) };
-}
-
 /** "26 Sep 2026" — the table and explainer form. */
 export function formatAlertDate(iso: string): string {
-  const { year, month, day } = parts(iso);
-  return `${day} ${month} ${year}`;
+  return format(parseISO(iso), "d MMM yyyy");
 }
 
 /** "SEP 28, 2026" — the badge row's `DATA TO` form. */
 export function formatDataTo(iso: string): string {
-  const { year, month, day } = parts(iso);
-  return `${month.toUpperCase()} ${day}, ${year}`;
+  return format(parseISO(iso), "MMM d, yyyy").toUpperCase();
 }
 
 const HA_FORMAT = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 });

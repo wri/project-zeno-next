@@ -227,7 +227,7 @@ describe("DashboardAlertsWidget", () => {
     const sentence =
       "Integrated alerts data is unavailable right now. Please try again in a moment.";
     mockedFetch
-      .mockRejectedValueOnce(new AlertsListError(sentence, true, 502))
+      .mockRejectedValueOnce(new AlertsListError(sentence, true))
       .mockResolvedValueOnce(toAlertsList(ALERTS_LIST_WIRE));
     renderWidget();
 
@@ -290,12 +290,51 @@ describe("DashboardAlertsWidget", () => {
     expect(mockedFetch).toHaveBeenCalledTimes(2);
   });
 
+  it("retries a failed wider window and lets its rows replace the held ones", async () => {
+    const wider = toAlertsList({
+      ...ALERTS_LIST_WIRE,
+      start_date: "2026-08-01",
+      rows: [
+        ...ALERTS_LIST_WIRE.rows,
+        {
+          alert_date: "2026-08-20",
+          high_ha: 2,
+          highest_ha: 1,
+          total_ha: 3,
+          new: false,
+        },
+      ],
+    });
+    mockedFetch
+      .mockResolvedValueOnce(toAlertsList(ALERTS_LIST_WIRE))
+      .mockRejectedValueOnce(
+        new AlertsListError("Couldn't load the alerts.", true)
+      )
+      .mockResolvedValueOnce(wider);
+    renderWidget();
+    await screen.findByText("5 alert days · 50.8 ha in this period");
+
+    fireEvent.click(screen.getByRole("button", { name: "Custom" }));
+    fireEvent.change(screen.getByLabelText("Custom period start"), {
+      target: { value: "2026-08-01" },
+    });
+    const alert = await screen.findByRole("alert");
+    fireEvent.click(within(alert).getByRole("button", { name: "Retry" }));
+
+    await screen.findByText("15 alert days · 108.7 ha in this period");
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(mockedFetch).toHaveBeenCalledTimes(3);
+    // Both the failed and the retried call asked for the widened window.
+    expect(mockedFetch.mock.calls[2][1]).toEqual(mockedFetch.mock.calls[1][1]);
+    expect(mockedFetch.mock.calls[2][1].start).toBe("2026-08-01");
+  });
+
   it("offers no Retry for an area the backend does not cover", async () => {
     mockedFetch.mockRejectedValue(
-      new AlertsListError("Alerts aren't available for this area.", false, 422)
+      new AlertsListError("Area type not supported", false)
     );
     renderWidget();
-    await screen.findByText("Alerts aren't available for this area.");
+    await screen.findByText("Area type not supported");
     expect(screen.queryByRole("button", { name: "Retry" })).toBeNull();
     expect(mockedFetch).toHaveBeenCalledTimes(1);
   });

@@ -27,7 +27,7 @@ import AnalysisParametersToggle, {
 import { buildChips } from "@/app/components/widgets/analysis-params-utils";
 import { toaster } from "@/app/components/ui/toaster";
 import type { InsightWidget } from "@/app/types/chat";
-import type { MapWidgetLayer } from "../lib/mapWidgets";
+import type { MapAreaAoi, MapWidgetLayer } from "../lib/mapWidgets";
 import DashboardMapFullscreenDialog from "./DashboardMapFullscreenDialog";
 import DashboardMapWidget from "./DashboardMapWidget";
 
@@ -73,7 +73,7 @@ export default function DashboardWidgetCard({
   /** The map layer to render for `widget_type: "map"` cells. */
   map?: MapWidgetLayer | null;
   /** The dashboard's area — outline, label + viewport fit for map cells. */
-  aoi?: { source: string; src_id: string; name: string };
+  aoi?: MapAreaAoi;
   /** Reserved `config.viewport` bbox override for map cells. */
   viewportBbox?: [number, number, number, number] | null;
   /** Placeholder copy when `card` is null (unsupported type / hidden insight). */

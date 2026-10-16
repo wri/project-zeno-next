@@ -34,10 +34,21 @@ export function widgetSize(config: Record<string, unknown>): WidgetSize {
 }
 
 /**
- * Map widgets default to full width: a map spans both columns.
+ * The widget kinds that span both columns until the owner shrinks them: a
+ * map, an analysis card with its pager, the alerts list beside its map.
  */
-export function mapWidgetSize(config: Record<string, unknown>): WidgetSize {
-  return config.size === "single" ? "single" : "double";
+const FULL_WIDTH_TYPES = new Set(["insight", "map", "alerts"]);
+
+/**
+ * A top-level item's column span: its persisted `size` when it has one,
+ * else double for the kinds that need the width and single for the rest.
+ */
+export function topLevelWidgetSize(
+  widget: Pick<DashboardWidget, "widget_type" | "config">
+): WidgetSize {
+  const { size } = widget.config;
+  if (size === "single" || size === "double") return size;
+  return FULL_WIDTH_TYPES.has(widget.widget_type) ? "double" : "single";
 }
 
 /**
@@ -50,22 +61,6 @@ export function withSize(
   size: WidgetSize
 ): Record<string, unknown> {
   return { ...config, size };
-}
-
-/**
- * Insight widgets default to full width: the analysis card holds a chart and
- * its pager, so it spans both columns until the owner shrinks it.
- */
-export function insightWidgetSize(config: Record<string, unknown>): WidgetSize {
-  return config.size === "single" ? "single" : "double";
-}
-
-/**
- * Alerts widgets default to full width: the card holds the alerts list beside
- * its map, which only fit side by side across both columns.
- */
-export function alertsWidgetSize(config: Record<string, unknown>): WidgetSize {
-  return config.size === "single" ? "single" : "double";
 }
 
 /**
