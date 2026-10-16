@@ -16,7 +16,12 @@ import { MAX_AREA_KM2, MIN_AREA_KM2 } from "@/src/entities/custom-area";
  * replaces the map's old "Drawing AOI" banner and validation toast. Picking an area on the map is done
  * from the Boundaries tab (show a boundary layer, then click a feature).
  */
-export function AreaActionBar() {
+export function AreaActionBar({
+  hideIdle = false,
+}: {
+  /** Hides Draw / Upload (e.g. while searching); a drawing still shows. */
+  hideIdle?: boolean;
+}) {
   const isDrawingMode = useMapStore((s) => s.isDrawingMode);
   const validationError = useMapStore((s) => s.validationError);
   const startDrawing = useMapStore((s) => s.startDrawing);
@@ -37,6 +42,7 @@ export function AreaActionBar() {
   if (validationError) {
     return <DrawError error={validationError} onRetry={handleDraw} />;
   }
+  if (hideIdle) return null;
 
   return (
     <Flex gap="6px" flexShrink={0}>

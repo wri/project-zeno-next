@@ -2,22 +2,18 @@ import type { AoiSearchResult, DashboardAoi } from "../api/schemas";
 import type { CustomArea } from "@/app/schemas/api/custom_areas/get";
 import type { CreateCustomAreaResponse } from "@/app/schemas/api/custom_areas/post";
 
-/** Canonical reference-dataset sources accepted by POST /api/dashboards. */
-export const REFERENCE_AOI_SOURCES = [
-  "gadm",
-  "kba",
-  "wdpa",
-  "landmark",
-] as const;
+import {
+  REFERENCE_AOI_SOURCE_LABELS,
+  REFERENCE_AOI_SOURCES,
+} from "@/src/entities/aoi";
 
-export type ReferenceAoiSource = (typeof REFERENCE_AOI_SOURCES)[number];
-
-export const REFERENCE_AOI_SOURCE_LABELS: Record<ReferenceAoiSource, string> = {
-  gadm: "Administrative areas",
-  kba: "Key biodiversity areas",
-  wdpa: "Protected areas",
-  landmark: "Indigenous lands",
-};
+// The reference sources (also the ones POST /api/dashboards accepts) and
+// their set names live in the `aoi` entity, shared with the Areas panel.
+export {
+  REFERENCE_AOI_SOURCE_LABELS,
+  REFERENCE_AOI_SOURCES,
+} from "@/src/entities/aoi";
+export type { ReferenceAoiSource } from "@/src/entities/aoi";
 
 /** User-facing picker sections — reference datasets first, then custom areas last. */
 export const AREA_PICKER_SECTIONS = [

@@ -53,3 +53,20 @@ export function unionAoiBboxes(
   }
   return found ? [west, south, east, north] : null;
 }
+
+/**
+ * The `flyToBounds` corners for AOI bboxes. Their union keeps a
+ * dateline-crossing extent (east > 180), which flyToBounds expects re-wrapped
+ * to east <= 180. Null when none of them has a bbox.
+ */
+export function aoiFlyBounds(
+  aois: { bbox?: [number, number, number, number] }[]
+): [[number, number], [number, number]] | null {
+  const union = unionAoiBboxes(aois);
+  if (!union) return null;
+  const [west, south, east, north] = union;
+  return [
+    [west, south],
+    [east > 180 ? east - 360 : east, north],
+  ];
+}
