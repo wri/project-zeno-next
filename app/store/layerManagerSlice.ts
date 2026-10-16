@@ -16,9 +16,7 @@ type LayerContextListener = (layerIds: string[]) => void;
 
 let layerContextListener: LayerContextListener | null = null;
 
-export function setLayerContextListener(
-  listener: LayerContextListener | null
-): void {
+export function setLayerContextListener(listener: LayerContextListener): void {
   layerContextListener = listener;
 }
 

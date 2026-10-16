@@ -46,4 +46,10 @@ describe("layer changes rejoin the chat context", () => {
 
     expect(excluded()).toEqual(["dataset-7"]);
   });
+
+  it("leaves the chat store untouched when nothing was excluded", () => {
+    const before = useChatStore.getState();
+    useMapStore.getState().addLayer(layer("a"));
+    expect(useChatStore.getState()).toBe(before);
+  });
 });

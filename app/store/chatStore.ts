@@ -125,7 +125,7 @@ interface ChatActions {
   setDateRange: (range: { start: Date; end: Date }) => void;
   clearDateRange: () => void;
   excludeLayerFromContext: (layerId: string) => void;
-  includeLayerInContext: (layerId: string) => void;
+  includeLayersInContext: (layerIds: string[]) => void;
   // Fold the agent's own picks into the last-sent context so they are never
   // echoed back to the backend on the next user message.
   foldSentContext: (partial: Partial<ContextKeys>) => void;
@@ -579,12 +579,17 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
           }
     ),
 
-  includeLayerInContext: (layerId) =>
-    set((state) => ({
-      excludedContextLayerIds: state.excludedContextLayerIds.filter(
-        (id) => id !== layerId
-      ),
-    })),
+  // A no-op unless one of the ids was excluded (it almost never is), so a
+  // layer change doesn't re-render every whole-store subscriber.
+  includeLayersInContext: (layerIds) =>
+    set((state) => {
+      const next = state.excludedContextLayerIds.filter(
+        (id) => !layerIds.includes(id)
+      );
+      return next.length === state.excludedContextLayerIds.length
+        ? state
+        : { excludedContextLayerIds: next };
+    }),
 
   foldSentContext: (partial) =>
     set((state) => ({
@@ -1360,9 +1365,8 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 }));
 
 // Layers re-added to (or removed from) the map rejoin the chat context.
-setLayerContextListener((layerIds) => {
-  const { includeLayerInContext } = useChatStore.getState();
-  layerIds.forEach(includeLayerInContext);
-});
+setLayerContextListener((layerIds) =>
+  useChatStore.getState().includeLayersInContext(layerIds)
+);
 
 export default useChatStore;
