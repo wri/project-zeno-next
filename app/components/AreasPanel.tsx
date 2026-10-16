@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useMemo, type ReactNode } from "react";
-import { Button, Flex, IconButton, Stack, Text, Wrap } from "@chakra-ui/react";
+import { Flex, IconButton, Stack, Text } from "@chakra-ui/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { CrosshairIcon, PolygonIcon, XIcon } from "@phosphor-icons/react";
 import { useShallow } from "zustand/react/shallow";
@@ -33,7 +33,7 @@ import { AreaThumbnail } from "./AreaThumbnail";
 import ConversationAreaActionsMenu from "./ConversationAreaActionsMenu";
 import CustomAreaActionsMenu from "./CustomAreaActionsMenu";
 import { BoundariesList } from "./BoundariesList";
-import { PanelEmpty, PanelList } from "./PanelList";
+import { PanelEmpty, PanelList, PanelPills } from "./PanelList";
 import { Tooltip } from "./ui/tooltip";
 
 /** Matches CatalogPanel compact/full-size enter & exit (slide from the left). */
@@ -117,34 +117,11 @@ export default function AreasPanel() {
               overflow="hidden"
             >
               <AreaActionBar />
-              <Wrap gap={1} flexShrink={0} overflow="hidden">
-                {AREA_FILTERS.map((f) => {
-                  const isActive = filter === f.id;
-                  return (
-                    <Button
-                      key={f.id}
-                      h="24px"
-                      minH="24px"
-                      py="4px"
-                      px="8px"
-                      borderRadius="full"
-                      fontSize="12px"
-                      fontWeight="400"
-                      lineHeight="16px"
-                      bg={isActive ? "fg.link" : "neutral.300"}
-                      color={isActive ? "white" : "fg"}
-                      border="1px solid"
-                      borderColor={isActive ? "fg.link" : "neutral.300"}
-                      _hover={{
-                        bg: isActive ? "fg.link" : "neutral.400",
-                      }}
-                      onClick={() => setFilter(f.id)}
-                    >
-                      {f.label}
-                    </Button>
-                  );
-                })}
-              </Wrap>
+              <PanelPills
+                options={AREA_FILTERS}
+                value={filter}
+                onChange={setFilter}
+              />
               <Stack
                 gap={4}
                 flex={1}
