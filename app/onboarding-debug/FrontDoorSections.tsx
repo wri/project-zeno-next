@@ -27,7 +27,7 @@ import {
 import { MOCK_PROFILE_CONFIG } from "./mock-profile-config";
 import { DEBUG_NAV_OFFSET, DEBUG_SECTIONS } from "./sections";
 import { AskRulesSimulator } from "./AskRulesSimulator";
-import { PERSONAS, QUESTION, type PersonaId } from "./personas";
+import { LONG_QUESTION, PERSONAS, QUESTION, type PersonaId } from "./personas";
 
 /** Two to four pill buttons that pick one value. */
 function Segmented<T extends string>({
@@ -119,8 +119,14 @@ function ComponentSection({
   );
 }
 
+const TERMS_QUESTIONS = {
+  yes: QUESTION,
+  long: LONG_QUESTION,
+  no: null,
+} as const;
+
 function TermsSection() {
-  const [withQuestion, setWithQuestion] = useState<"yes" | "no">("yes");
+  const [question, setQuestion] = useState<keyof typeof TERMS_QUESTIONS>("yes");
   return (
     <ComponentSection
       id={DEBUG_SECTIONS.terms.id}
@@ -128,23 +134,25 @@ function TermsSection() {
       rules={[
         "After the Resource Watch sign-in, when the account hasn't accepted the current terms (replaces the /onboarding form).",
         "With ?prompt= in the URL, the question shows and Continue runs it.",
+        "The question is clamped to three lines; Show full question appears only when that hides text.",
         "Never for someone who already has a GNW profile.",
       ]}
       controls={
         <Segmented
-          value={withQuestion}
+          value={question}
           options={[
             ["yes", "Arrived with a question"],
+            ["long", "Long question"],
             ["no", "No question"],
           ]}
-          onChange={setWithQuestion}
+          onChange={setQuestion}
         />
       }
     >
       <WelcomeConsent
-        key={withQuestion}
+        key={question}
         name="Maria Silva"
-        pendingPrompt={withQuestion === "yes" ? QUESTION : null}
+        pendingPrompt={TERMS_QUESTIONS[question]}
         onContinue={() => undefined}
       />
     </ComponentSection>
