@@ -27,7 +27,7 @@ import {
 import { MOCK_PROFILE_CONFIG } from "./mock-profile-config";
 import { DEBUG_NAV_OFFSET, DEBUG_SECTIONS } from "./sections";
 import { AskRulesSimulator } from "./AskRulesSimulator";
-import { PERSONAS, QUESTION, type PersonaId } from "./personas";
+import { LONG_QUESTION, PERSONAS, QUESTION, type PersonaId } from "./personas";
 
 /** Two to four pill buttons that pick one value. */
 function Segmented<T extends string>({
@@ -119,8 +119,15 @@ function ComponentSection({
   );
 }
 
+const TERMS_QUESTIONS = {
+  yes: QUESTION,
+  long: LONG_QUESTION,
+  no: null,
+} as const;
+
 function TermsSection() {
-  const [withQuestion, setWithQuestion] = useState<"yes" | "no">("yes");
+  const [withQuestion, setWithQuestion] =
+    useState<keyof typeof TERMS_QUESTIONS>("yes");
   return (
     <ComponentSection
       id={DEBUG_SECTIONS.terms.id}
@@ -128,6 +135,7 @@ function TermsSection() {
       rules={[
         "After the Resource Watch sign-in, when the account hasn't accepted the current terms (replaces the /onboarding form).",
         "With ?prompt= in the URL, the question shows and Continue runs it.",
+        "A long question is clamped to three lines behind Show full question.",
         "Never for someone who already has a GNW profile.",
       ]}
       controls={
@@ -135,6 +143,7 @@ function TermsSection() {
           value={withQuestion}
           options={[
             ["yes", "Arrived with a question"],
+            ["long", "Long question"],
             ["no", "No question"],
           ]}
           onChange={setWithQuestion}
@@ -144,7 +153,7 @@ function TermsSection() {
       <WelcomeConsent
         key={withQuestion}
         name="Maria Silva"
-        pendingPrompt={withQuestion === "yes" ? QUESTION : null}
+        pendingPrompt={TERMS_QUESTIONS[withQuestion]}
         onContinue={() => undefined}
       />
     </ComponentSection>

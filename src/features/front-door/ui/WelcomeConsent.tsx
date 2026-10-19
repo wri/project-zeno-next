@@ -15,6 +15,56 @@ export interface WelcomeConsentProps {
   onContinue: () => void;
 }
 
+const CLAMPED_LINES = 3;
+
+/**
+ * Past this length the question always fills more than three lines, even at
+ * the card's widest, so the toggle never shows for text that already fits.
+ */
+const CLAMP_FROM_CHARS = 180;
+
+/**
+ * The waiting question, clamped when long so the consent checkbox and
+ * Continue stay in view. Styled like the chat's floating recap of an earlier
+ * prompt (PinnedPrompt), so the question looks like it does once it runs.
+ */
+function PendingPrompt({ prompt }: { prompt: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const clampable = prompt.length > CLAMP_FROM_CHARS;
+
+  return (
+    <Box
+      bg="primary.100"
+      color="fg"
+      px={3}
+      py={3}
+      rounded="lg"
+      boxShadow="lg"
+      fontSize="sm"
+      lineHeight="1.5"
+    >
+      <Text lineClamp={clampable && !expanded ? CLAMPED_LINES : undefined}>
+        {prompt}
+      </Text>
+      {clampable && (
+        <Button
+          variant="plain"
+          size="xs"
+          px={0}
+          mt={1}
+          h="auto"
+          color="primary.fg"
+          textDecoration="underline"
+          aria-expanded={expanded}
+          onClick={() => setExpanded((open) => !open)}
+        >
+          {expanded ? "Show less" : "Show full question"}
+        </Button>
+      )}
+    </Box>
+  );
+}
+
 /**
  * The one screen between sign-in and the first answer. Consent is the only
  * input; everything else about the person is asked for later, in the chat.
@@ -60,22 +110,7 @@ export function WelcomeConsent({
           )}
         </Stack>
 
-        {pendingPrompt && (
-          // Styled like the chat's floating recap of an earlier prompt
-          // (PinnedPrompt), so the question looks like it does once it runs.
-          <Box
-            bg="primary.100"
-            color="fg"
-            px={3}
-            py={3}
-            rounded="lg"
-            boxShadow="lg"
-            fontSize="sm"
-            lineHeight="1.5"
-          >
-            {pendingPrompt}
-          </Box>
-        )}
+        {pendingPrompt && <PendingPrompt prompt={pendingPrompt} />}
 
         <Checkbox.Root
           alignItems="flex-start"

@@ -44,6 +44,37 @@ describe("WelcomeConsent", () => {
     ).toBeTruthy();
   });
 
+  it("offers no toggle for a short question", () => {
+    renderWelcome({
+      pendingPrompt: "How much tree cover has Pará lost since 2020?",
+    });
+    expect(screen.queryByRole("button", { name: /show/i })).toBeNull();
+  });
+
+  it("lets a long question be expanded and collapsed again", async () => {
+    const longPrompt = "Compare tree cover loss across Pará by year. ".repeat(
+      8
+    );
+    renderWelcome({ pendingPrompt: longPrompt });
+    expect(screen.getByText(longPrompt.trim())).toBeTruthy();
+
+    const toggle = screen.getByRole("button", { name: "Show full question" });
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+
+    await act(async () => {
+      fireEvent.click(toggle);
+    });
+    const collapse = screen.getByRole("button", { name: "Show less" });
+    expect(collapse.getAttribute("aria-expanded")).toBe("true");
+
+    await act(async () => {
+      fireEvent.click(collapse);
+    });
+    expect(
+      screen.getByRole("button", { name: "Show full question" })
+    ).toBeTruthy();
+  });
+
   it("falls back to a generic greeting and Continue to Horizon", () => {
     renderWelcome();
     expect(screen.getByRole("heading").textContent).toContain(
