@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { Box, Button, Checkbox, Heading, Stack, Text } from "@chakra-ui/react";
 import { ArrowRightIcon } from "@phosphor-icons/react";
 import { personNames } from "../lib/person-names";
@@ -18,42 +18,43 @@ export interface WelcomeConsentProps {
 const CLAMPED_LINES = 3;
 
 /**
- * Past this length the question always fills more than three lines, even at
- * the card's widest, so the toggle never shows for text that already fits.
- */
-const CLAMP_FROM_CHARS = 180;
-
-/**
- * The waiting question, clamped when long so the consent checkbox and
- * Continue stay in view. Styled like the chat's floating recap of an earlier
- * prompt (PinnedPrompt), so the question looks like it does once it runs.
+ * The waiting question, clamped to three lines so the consent checkbox and
+ * Continue stay in view; the toggle shows only when the clamp hides text.
+ * Styled like the chat's floating recap of an earlier prompt (PinnedPrompt),
+ * so the question looks like it does once it runs.
  */
 function PendingPrompt({ prompt }: { prompt: string }) {
+  const textRef = useRef<HTMLParagraphElement>(null);
+  const [overflows, setOverflows] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const clampable = prompt.length > CLAMP_FROM_CHARS;
+
+  // Measured once while clamped; expanding removes the clamp, not the toggle.
+  useLayoutEffect(() => {
+    const el = textRef.current;
+    if (el) setOverflows(el.scrollHeight > el.clientHeight);
+  }, [prompt]);
 
   return (
     <Box
       bg="primary.100"
       color="fg"
-      px={3}
-      py={3}
+      p={3}
       rounded="lg"
       boxShadow="lg"
       fontSize="sm"
       lineHeight="1.5"
     >
-      <Text lineClamp={clampable && !expanded ? CLAMPED_LINES : undefined}>
+      <Text ref={textRef} lineClamp={expanded ? undefined : CLAMPED_LINES}>
         {prompt}
       </Text>
-      {clampable && (
+      {overflows && (
         <Button
           variant="plain"
           size="xs"
           px={0}
           mt={1}
           h="auto"
-          color="primary.fg"
+          colorPalette="primary"
           textDecoration="underline"
           aria-expanded={expanded}
           onClick={() => setExpanded((open) => !open)}

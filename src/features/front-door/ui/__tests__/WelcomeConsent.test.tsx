@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { WelcomeConsent, type WelcomeConsentProps } from "../WelcomeConsent";
 
 function renderWelcome(props: Partial<WelcomeConsentProps> = {}) {
@@ -15,6 +15,10 @@ function renderWelcome(props: Partial<WelcomeConsentProps> = {}) {
 }
 
 describe("WelcomeConsent", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("keeps Continue disabled until the terms are accepted", async () => {
     const { onContinue } = renderWelcome({
       pendingPrompt: "How much tree cover has Pará lost since 2020?",
@@ -42,37 +46,25 @@ describe("WelcomeConsent", () => {
     expect(
       screen.getByText("How much tree cover has Pará lost since 2020?")
     ).toBeTruthy();
-  });
-
-  it("offers no toggle for a short question", () => {
-    renderWelcome({
-      pendingPrompt: "How much tree cover has Pará lost since 2020?",
-    });
+    // happy-dom has no layout, so the question never measures as overflowing.
     expect(screen.queryByRole("button", { name: /show/i })).toBeNull();
   });
 
-  it("lets a long question be expanded and collapsed again", async () => {
-    const longPrompt = "Compare tree cover loss across Pará by year. ".repeat(
-      8
-    );
-    renderWelcome({ pendingPrompt: longPrompt });
-    expect(screen.getByText(longPrompt.trim())).toBeTruthy();
+  it("lets a question that overflows be expanded and collapsed again", () => {
+    // Stand in for layout: the clamped question is taller than its box.
+    vi.spyOn(HTMLElement.prototype, "scrollHeight", "get").mockReturnValue(120);
+    vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockReturnValue(63);
+    renderWelcome({ pendingPrompt: "Compare tree cover loss by year." });
 
     const toggle = screen.getByRole("button", { name: "Show full question" });
     expect(toggle.getAttribute("aria-expanded")).toBe("false");
 
-    await act(async () => {
-      fireEvent.click(toggle);
-    });
-    const collapse = screen.getByRole("button", { name: "Show less" });
-    expect(collapse.getAttribute("aria-expanded")).toBe("true");
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(toggle.textContent).toBe("Show less");
 
-    await act(async () => {
-      fireEvent.click(collapse);
-    });
-    expect(
-      screen.getByRole("button", { name: "Show full question" })
-    ).toBeTruthy();
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
   });
 
   it("falls back to a generic greeting and Continue to Horizon", () => {
