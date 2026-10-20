@@ -188,8 +188,10 @@ export default function DataCatalogPanel() {
 
 /**
  * One dataset in the catalogue, with its supporting layers (if any) indented
- * beneath it. Visibility and opacity live in the legend, which reads the same
- * `mapStore.layers`.
+ * beneath it. Opacity lives in the legend, which reads the same
+ * `mapStore.layers`; at 0% it also hides the layer from the chat context
+ * (`isLayerActive`), so a layer can be hidden there without the switch
+ * rebuilding it from the card's defaults.
  */
 function CatalogDatasetRow({ card }: { card: DatasetCardConfig }) {
   // Ids of every layer this card can put on the map (a single-layer card

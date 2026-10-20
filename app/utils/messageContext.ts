@@ -54,9 +54,9 @@ export function datasetContextKey(
 }
 
 // A dataset layer counts as "active" once it's on the map, visible and not
-// faded out — matches the catalog panel's per-layer eye toggle / opacity
-// slider. Shared by deriveContext (live map layers) and chatStore's
-// pick_dataset fold, which must agree on this predicate.
+// faded out, so the legend's opacity slider at 0% hides a layer from the
+// chat as well as the map. Shared by deriveContext (live map layers) and
+// chatStore's pick_dataset fold, which must agree on this predicate.
 export const isLayerActive = (l: Pick<Layer, "visible" | "opacity">) =>
   l.visible && (l.opacity ?? 1) !== 0;
 
