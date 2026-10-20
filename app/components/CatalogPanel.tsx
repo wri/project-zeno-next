@@ -1,29 +1,13 @@
-import { useMemo, useState } from "react";
-import {
-  Box,
-  Flex,
-  IconButton,
-  Image,
-  Slider,
-  Stack,
-  Text,
-  useDisclosure,
-} from "@chakra-ui/react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Box, Button, Flex, IconButton, Stack, Text } from "@chakra-ui/react";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  CaretDownIcon,
-  CircleHalfIcon,
-  EyeIcon,
-  EyeSlashIcon,
-  StackPlusIcon,
-  StackSimpleIcon,
-  XIcon,
-} from "@phosphor-icons/react";
+import { CaretDownIcon, StackPlusIcon, XIcon } from "@phosphor-icons/react";
 import { useShallow } from "zustand/react/shallow";
 
 import {
   ORDERED_DATASET_CARDS,
   DATASET_CATEGORIES,
+  DATASET_CATEGORY_LABELS,
   type DatasetCardConfig,
   type DatasetCardLayer,
   type DatasetCategoryId,
@@ -32,13 +16,10 @@ import {
   getCatalogColumnMotionStyle,
   getCatalogColumnPanelFlexProps,
 } from "@/app/chatPanelShared";
-import {
-  CATALOG_CARD_WIDTH_PX,
-  getCatalogLeftPx,
-} from "@/app/explorationLayout";
+import { getCatalogLeftPx } from "@/app/explorationLayout";
 import useMapStore from "@/app/store/mapStore";
 import useSidebarStore from "@/app/store/sidebarStore";
-import type { DatasetInfo } from "@/app/types/chat";
+import type { DatasetDetails } from "@/app/types/chat";
 import {
   datasetCardLayers,
   selectDatasetCardLayer,
@@ -46,12 +27,12 @@ import {
 import { datasetLayerId } from "@/app/utils/datasetLayerContext";
 import { filterDatasetsByCategory } from "@/app/utils/filterDatasetsByCategory";
 import { filterDatasetsByFeatureFlag } from "@/app/utils/filterDatasetsByFeatureFlag";
+import { searchDatasets } from "@/app/utils/searchDatasets";
 import { useEnabledFlags } from "@/src/shared/lib/feature-flags";
 
-import { CatalogCard } from "./CatalogCard";
-import { DatasetInfoModal } from "./DatasetInfoModal";
-import { PanelPills } from "./PanelList";
-import { Tooltip } from "./ui/tooltip";
+import { DatasetRow } from "./DatasetRow";
+import { PanelEmpty, PanelList, PanelPills, PanelSection } from "./PanelList";
+import { PanelSearchInput } from "./PanelSearchInput";
 
 /** Matches ChatPanel compact/full-size enter & exit (slide from the left). */
 const catalogPanelSlideTransition = {
@@ -78,42 +59,15 @@ const catalogListScrollStyle = {
  * Wiring:
  *  - Show-on-map switch ↔ `mapStore.addLayer` / `removeLayer` — the visible
  *    dataset layer IS the scope, so the layer manager is the source of truth.
- *  - Visibility / opacity controls ↔ `mapStore.setLayerVisibility` and
- *    `setLayerOpacity` on `dataset-${dataset_id}`.
  *
- * The existing legend reads from the same `mapStore.layers`, so any layer
- * toggled here automatically appears in the legend with full functionality.
+ * The legend reads from the same `mapStore.layers`, so any layer toggled here
+ * appears there with its visibility and opacity controls.
  */
 export default function DataCatalogPanel() {
   const [category, setCategory] = useState<DatasetCategoryId>("all");
   const { dataCatalogOpen, setDataCatalogOpen, isChatFullSize } =
     useSidebarStore();
   const leftPx = getCatalogLeftPx(isChatFullSize);
-
-  // Build the "in this conversation" set from the visible dataset layers — the
-  // layer manager is the source of truth. `useShallow` keeps re-renders stable
-  // across unrelated layer changes (e.g. AOI edits).
-  const activeDatasetIds = useMapStore(
-    useShallow((s) =>
-      s.layers
-        .filter((l) => typeof l.datasetId === "number" && !l.parentLayerId)
-        .map((l) => l.datasetId as number)
-    )
-  );
-
-  // Flag-gated cards are hidden from the catalogue until their flag is on.
-  // Safe to branch on here: the panel only renders once the user opens it, so
-  // the flagged list never differs between the server render and hydration.
-  const enabledFlags = useEnabledFlags();
-  const cards = useMemo(
-    () =>
-      filterDatasetsByCategory(
-        filterDatasetsByFeatureFlag(ORDERED_DATASET_CARDS, enabledFlags),
-        category,
-        activeDatasetIds
-      ),
-    [category, activeDatasetIds, enabledFlags]
-  );
 
   const compactSlide = !isChatFullSize;
 
@@ -168,41 +122,11 @@ export default function DataCatalogPanel() {
                 <XIcon size={12} />
               </IconButton>
             </Flex>
-            <Flex
-              flex={1}
-              minH={0}
-              minW={0}
-              flexDirection="column"
-              gap={4}
-              pt={4}
-              px={3}
-              pb={6}
-              overflow="hidden"
-            >
-              <PanelPills
-                options={DATASET_CATEGORIES}
-                value={category}
-                onChange={setCategory}
-              />
-              <Stack
-                gap={4}
-                flex={1}
-                minH={0}
-                minW={0}
-                pb={2}
-                css={catalogListScrollStyle}
-              >
-                {cards.length === 0 ? (
-                  <Text fontSize="sm" color="fg.muted" mt={4}>
-                    No datasets in this category yet.
-                  </Text>
-                ) : (
-                  cards.map((card) => (
-                    <CatalogCardRow key={card.dataset_id} card={card} />
-                  ))
-                )}
-              </Stack>
-            </Flex>
+            <CatalogBody
+              category={category}
+              onCategoryChange={setCategory}
+              onClose={() => setDataCatalogOpen(false)}
+            />
           </Flex>
         </motion.div>
       )}
@@ -211,42 +135,262 @@ export default function DataCatalogPanel() {
 }
 
 /**
- * Single dataset row inside the catalogue: thumbnail + metadata + show-on-map
- * switch, with an expanded controls row (visibility + opacity slider) shown
- * only while the layer is on the map.
+ * Search, category chips and the dataset list. Mounted only while the panel is
+ * open, so the search query resets each time it opens (the chip persists).
  */
-function CatalogCardRow({ card }: { card: DatasetCardConfig }) {
-  const {
-    open: infoOpen,
-    onOpen: onInfoOpen,
-    onClose: onInfoClose,
-  } = useDisclosure();
+function CatalogBody({
+  category,
+  onCategoryChange,
+  onClose,
+}: {
+  category: DatasetCategoryId;
+  onCategoryChange: (category: DatasetCategoryId) => void;
+  onClose: () => void;
+}) {
+  const [query, setQuery] = useState("");
+  const pending = useRef<{ datasetId: number; index: number } | null>(null);
+  const refocus = useMemo<FocusHandoff>(
+    () => ({
+      hold: (datasetId, index) => {
+        pending.current = { datasetId, index };
+      },
+      take: (datasetId) => {
+        const target = pending.current;
+        if (target?.datasetId !== datasetId) return null;
+        pending.current = null;
+        return target.index;
+      },
+    }),
+    []
+  );
+  // A move is taken in the remounted row's layout effect, which runs before
+  // this one; clearing after every commit drops a hold whose row never
+  // remounted, so it cannot fire on some later, unrelated remount.
+  useLayoutEffect(() => {
+    pending.current = null;
+  });
 
-  // Single-layer cards fall back to a synthesized one-entry list so this
-  // stays a uniform "N layers" loop with no dataset-identity branching. Ids
-  // are derived by datasetLayerId — the same formula buildDatasetLayers uses
-  // — so a card's rows always match the ids actually on the map.
-  const layerRefs = (
+  // Datasets with a layer on the map — the layer manager is the source of
+  // truth. `useShallow` keeps re-renders stable across unrelated layer changes
+  // (e.g. AOI edits).
+  const activeDatasetIds = useMapStore(
+    useShallow((s) =>
+      s.layers
+        .filter((l) => typeof l.datasetId === "number" && !l.parentLayerId)
+        .map((l) => l.datasetId as number)
+    )
+  );
+
+  // Flag-gated cards are hidden from the catalogue until their flag is on.
+  // Safe to branch on here: the panel only renders once the user opens it, so
+  // the flagged list never differs between the server render and hydration.
+  const enabledFlags = useEnabledFlags();
+  const searched = useMemo(
+    () =>
+      searchDatasets(
+        filterDatasetsByFeatureFlag(ORDERED_DATASET_CARDS, enabledFlags),
+        query
+      ),
+    [enabledFlags, query]
+  );
+  const visible = filterDatasetsByCategory(searched, category);
+  const active = new Set(activeDatasetIds);
+  const onMap = visible.filter((c) => active.has(c.dataset_id));
+  const rest = visible.filter((c) => !active.has(c.dataset_id));
+  const categoryLabel = DATASET_CATEGORY_LABELS[category];
+
+  return (
+    <Flex
+      flex={1}
+      minH={0}
+      minW={0}
+      flexDirection="column"
+      gap={3}
+      pt={4}
+      px={3}
+      pb={6}
+      overflow="hidden"
+    >
+      <PanelSearchInput
+        label="Search datasets"
+        placeholder="Search datasets, e.g. alerts or land cover"
+        autoFocusOnDesktop
+        value={query}
+        onChange={setQuery}
+        onEscapeEmpty={onClose}
+      />
+      <PanelPills
+        options={DATASET_CATEGORIES}
+        value={category}
+        onChange={onCategoryChange}
+      />
+      <Stack
+        gap={4}
+        flex={1}
+        minH={0}
+        minW={0}
+        pb={2}
+        css={catalogListScrollStyle}
+      >
+        {visible.length === 0 ? (
+          <CatalogEmptyState
+            query={query.trim()}
+            categoryLabel={categoryLabel}
+            hitsInAll={category === "all" ? 0 : searched.length}
+            onShowAll={() => onCategoryChange("all")}
+          />
+        ) : onMap.length === 0 ? (
+          <CardList cards={rest} refocus={refocus} />
+        ) : (
+          <>
+            <PanelSection label="On map">
+              <CardList cards={onMap} onMap refocus={refocus} />
+            </PanelSection>
+            {rest.length > 0 && (
+              <PanelSection label={categoryLabel}>
+                <CardList cards={rest} refocus={refocus} />
+              </PanelSection>
+            )}
+          </>
+        )}
+      </Stack>
+    </Flex>
+  );
+}
+
+/**
+ * Hands keyboard focus from a row toggled into the other list to its remounted
+ * copy. `index` is the switch's position among the row's switches (0 is the
+ * dataset's own; supporting layers follow).
+ */
+interface FocusHandoff {
+  hold: (datasetId: number, index: number) => void;
+  /** The held switch index for this dataset, once; null if none is held. */
+  take: (datasetId: number) => number | null;
+}
+
+function CardList({
+  cards,
+  onMap = false,
+  refocus,
+}: {
+  cards: DatasetCardConfig[];
+  onMap?: boolean;
+  refocus: FocusHandoff;
+}) {
+  return (
+    <PanelList>
+      {cards.map((card) => (
+        <CatalogDatasetRow
+          key={card.dataset_id}
+          card={card}
+          onMap={onMap}
+          refocus={refocus}
+        />
+      ))}
+    </PanelList>
+  );
+}
+
+const rowSwitches = (group: HTMLElement | null): HTMLInputElement[] =>
+  Array.from(
+    group?.querySelectorAll<HTMLInputElement>('input[type="checkbox"]') ?? []
+  );
+
+function CatalogEmptyState({
+  query,
+  categoryLabel,
+  hitsInAll,
+  onShowAll,
+}: {
+  query: string;
+  categoryLabel: string;
+  /** Matches outside the selected category; 0 hides the "show all" offer. */
+  hitsInAll: number;
+  onShowAll: () => void;
+}) {
+  if (hitsInAll > 0) {
+    return (
+      <Stack gap={1} mt={4} align="flex-start">
+        <Text fontSize="sm" color="fg.muted">
+          No matches in {categoryLabel}.
+        </Text>
+        <Button
+          variant="plain"
+          size="sm"
+          p={0}
+          color="fg.link"
+          onClick={onShowAll}
+        >
+          Show {hitsInAll} result{hitsInAll === 1 ? "" : "s"} in All datasets
+        </Button>
+      </Stack>
+    );
+  }
+  return (
+    <PanelEmpty>
+      {query
+        ? `No datasets match “${query}”.`
+        : "No datasets in this category yet."}
+    </PanelEmpty>
+  );
+}
+
+/**
+ * One dataset in the catalogue, with its supporting layers (if any) indented
+ * beneath it. Opacity lives in the legend, which reads the same
+ * `mapStore.layers`; at 0% it also hides the layer from the chat context
+ * (`isLayerActive`), so a layer can be hidden there without the switch
+ * rebuilding it from the card's defaults.
+ */
+function CatalogDatasetRow({
+  card,
+  onMap,
+  refocus,
+}: {
+  card: DatasetCardConfig;
+  /** Decided once by the panel, which also files this row under On map. */
+  onMap: boolean;
+  refocus: FocusHandoff;
+}) {
+  const groupRef = useRef<HTMLDivElement>(null);
+
+  // Turning the dataset on or off files this row under the other list, so
+  // React mounts a new copy and the focused switch goes with the old one.
+  // Note which switch had focus (only if one did: a pointer click on the row
+  // leaves focus elsewhere), and let the new copy take it back on mount.
+  function keepFocusAcrossMove() {
+    const index = rowSwitches(groupRef.current).findIndex(
+      (el) => el === document.activeElement
+    );
+    if (index >= 0) refocus.hold(card.dataset_id, index);
+  }
+
+  useLayoutEffect(() => {
+    const index = refocus.take(card.dataset_id);
+    if (index !== null) rowSwitches(groupRef.current)[index]?.focus();
+  }, [card.dataset_id, refocus]);
+
+  // Ids of every layer this card can put on the map (a single-layer card
+  // synthesizes its one), derived by datasetLayerId — the same formula
+  // buildDatasetLayers uses — so they match the ids actually on the map.
+  const layerIds = (
     card.layers?.length ? card.layers : [{ name: card.dataset_name }]
-  ).map((l, index) => ({
-    name: l.name,
-    id: datasetLayerId(card.dataset_id, index, l.name),
-  }));
+  ).map((l, index) => datasetLayerId(card.dataset_id, index, l.name));
 
-  // The visible dataset layers IS the scope — the layer manager is the source
-  // of truth for "is this dataset active?". Active if any of its layers are on.
+  // Which of this card's layers are on — only needed to mark the selected
+  // supporting layer; whether the dataset is on at all is the `onMap` prop.
   const activeLayerIds = useMapStore(
     useShallow((s) => {
-      const ids = new Set(layerRefs.map((r) => r.id));
+      const ids = new Set(layerIds);
       return s.layers.filter((l) => ids.has(l.id)).map((l) => l.id);
     })
   );
   const addLayer = useMapStore((s) => s.addLayer);
   const removeDatasetLayers = useMapStore((s) => s.removeDatasetLayers);
 
-  const isActive = activeLayerIds.length > 0;
-
   function handleToggle(checked: boolean) {
+    keepFocusAcrossMove();
     if (!checked) {
       removeDatasetLayers(card.dataset_id);
       return;
@@ -254,87 +398,40 @@ function CatalogCardRow({ card }: { card: DatasetCardConfig }) {
     datasetCardLayers(card).forEach(addLayer);
   }
 
-  const dataset = card as unknown as DatasetInfo;
-  const cardText =
-    [card.cadence, card.geographic_coverage, card.provider]
-      .filter(Boolean)
-      .join(" · ") || undefined;
-
   // layers[0] is the card's own default layer, shown above by the card's
   // own toggle; layers[1:] are "supporting layers" (e.g. LGMS's LULUCF/
   // agriculture) disclosed below as their own selectable rows, each with
   // its own info modal — PZB-1346 / project-zeno PR #830.
   const supportingLayers = (card.layers ?? []).slice(1).map((layer, i) => ({
     layer,
-    ref: layerRefs[i + 1],
+    layerId: layerIds[i + 1],
   }));
   const [supportingOpen, setSupportingOpen] = useState(true);
 
   return (
-    <Box w={`${CATALOG_CARD_WIDTH_PX}px`} maxW="100%" flexShrink={0}>
-      <DatasetInfoModal
-        isOpen={infoOpen}
-        onClose={onInfoClose}
-        dataset={dataset}
-      />
-      <CatalogCard
-        thumbnail={
-          card.img ? (
-            <Image
-              objectFit="cover"
-              w="100%"
-              h="100%"
-              src={card.img}
-              alt={card.dataset_name}
-            />
-          ) : (
-            <Flex
-              w="100%"
-              h="100%"
-              align="center"
-              justify="center"
-              bg="gray.50"
-            >
-              <StackSimpleIcon size={32} color="#656E7B" />
-            </Flex>
-          )
-        }
+    // `display: contents` keeps the rows direct flex items of the list, so
+    // its gap is unchanged; the box only scopes the switch lookup.
+    <Box display="contents" ref={groupRef}>
+      <DatasetRow
+        dataset={card}
+        img={card.img}
         viewOnly={card.viewOnly}
-        title={card.dataset_name}
-        description={cardText}
-        selected={isActive}
-        showOnMap={isActive}
-        onShowOnMapChange={handleToggle}
-        onInfoClick={onInfoOpen}
-        dataPanel="datasets"
+        interaction={{
+          mode: "toggle",
+          checked: onMap,
+          onChange: handleToggle,
+          dataPanel: "datasets",
+        }}
       />
-      {isActive &&
-        layerRefs.map((ref) => (
-          <LayerControlsRow
-            key={ref.id}
-            layerId={ref.id}
-            // Only label sub-rows when there's more than one layer to
-            // disambiguate — a single-layer dataset's row stays unlabeled.
-            label={layerRefs.length > 1 ? ref.name : card.dataset_name}
-          />
-        ))}
       {supportingLayers.length > 0 && (
-        <Box
-          mt={1}
-          borderRadius="4px"
-          overflow="hidden"
-          border="1px solid"
-          borderColor="rgba(19, 22, 25, 0.1)"
-        >
+        <Stack gap="6px" pl="16px">
           <Flex
             as="button"
             onClick={() => setSupportingOpen((o) => !o)}
+            aria-expanded={supportingOpen}
             align="center"
             gap={2}
-            w="100%"
-            px={4}
-            py="10px"
-            bg="#FAFBFC"
+            py="2px"
           >
             <Box
               transform={supportingOpen ? "rotate(180deg)" : undefined}
@@ -357,15 +454,20 @@ function CatalogCardRow({ card }: { card: DatasetCardConfig }) {
             </Text>
           </Flex>
           {supportingOpen &&
-            supportingLayers.map(({ layer, ref }) => (
+            supportingLayers.map(({ layer, layerId }) => (
               <SupportingLayerRow
                 key={layer.name}
                 card={card}
                 layer={layer}
-                isSelected={activeLayerIds.includes(ref.id)}
+                isSelected={activeLayerIds.includes(layerId)}
+                // Swapping one supporting layer for another keeps the dataset
+                // on the map, so only turning it on from off, or off, moves it.
+                onBeforeToggle={(checked) => {
+                  if (!checked || !onMap) keepFocusAcrossMove();
+                }}
               />
             ))}
-        </Box>
+        </Stack>
       )}
     </Box>
   );
@@ -377,175 +479,46 @@ function SupportingLayerRow({
   card,
   layer,
   isSelected,
+  onBeforeToggle,
 }: {
   card: DatasetCardConfig;
   layer: DatasetCardLayer;
   isSelected: boolean;
+  onBeforeToggle: (checked: boolean) => void;
 }) {
-  const {
-    open: infoOpen,
-    onOpen: onInfoOpen,
-    onClose: onInfoClose,
-  } = useDisclosure();
   const addLayer = useMapStore((s) => s.addLayer);
   const removeDatasetLayers = useMapStore((s) => s.removeDatasetLayers);
 
   function handleToggle(checked: boolean) {
+    onBeforeToggle(checked);
     removeDatasetLayers(card.dataset_id);
     if (checked) {
       selectDatasetCardLayer(card, layer.name).forEach(addLayer);
     }
   }
 
-  const title = layer.title ?? layer.name;
-  const resolved = {
-    cadence: layer.cadence ?? card.cadence,
-    resolution: layer.resolution ?? card.resolution,
-    geographic_coverage: layer.geographic_coverage ?? card.geographic_coverage,
-    provider: layer.provider ?? card.provider,
-  };
-  const layerDataset = {
-    dataset_id: card.dataset_id,
-    dataset_name: title,
-    tile_url: layer.tile_url,
+  const layerDataset: DatasetDetails = {
+    dataset_name: layer.title ?? layer.name,
     summary: layer.summary,
     description: layer.description,
     cautions: layer.cautions,
     citation: layer.citation,
-    ...resolved,
-  } as unknown as DatasetInfo;
-  const layerText =
-    [resolved.cadence, resolved.geographic_coverage, resolved.provider]
-      .filter(Boolean)
-      .join(" · ") || undefined;
+    cadence: layer.cadence ?? card.cadence,
+    geographic_coverage: layer.geographic_coverage ?? card.geographic_coverage,
+    provider: layer.provider ?? card.provider,
+  };
 
   return (
-    <Flex borderTop="1px solid" borderColor="rgba(19, 22, 25, 0.1)">
-      <Box w="4px" flexShrink={0} bg={isSelected ? "#8EA5EA" : "#E0E2E5"} />
-      <Box flex="1" minW={0}>
-        <DatasetInfoModal
-          isOpen={infoOpen}
-          onClose={onInfoClose}
-          dataset={layerDataset}
-        />
-        <CatalogCard
-          thumbnail={
-            layer.img ? (
-              <Image
-                objectFit="cover"
-                w="100%"
-                h="100%"
-                src={layer.img}
-                alt={title}
-              />
-            ) : (
-              <Flex
-                w="100%"
-                h="100%"
-                align="center"
-                justify="center"
-                bg="gray.50"
-              >
-                <StackSimpleIcon size={32} color="#656E7B" />
-              </Flex>
-            )
-          }
-          viewOnly
-          title={title}
-          description={layerText}
-          selected={isSelected}
-          selectedBg="#F0F4FF"
-          showOnMap={isSelected}
-          onShowOnMapChange={handleToggle}
-          onInfoClick={onInfoOpen}
-          dataPanel="datasets"
-        />
-      </Box>
-    </Flex>
-  );
-}
-
-/** Visibility + opacity controls for one map layer, shown while it's active. */
-function LayerControlsRow({
-  layerId,
-  label,
-}: {
-  layerId: string;
-  label: string;
-}) {
-  const layer = useMapStore(
-    useShallow((s) => s.layers.find((l) => l.id === layerId))
-  );
-  const setLayerVisibility = useMapStore((s) => s.setLayerVisibility);
-  const setLayerOpacity = useMapStore((s) => s.setLayerOpacity);
-
-  if (!layer) return null;
-
-  const isVisible = layer.visible;
-  const opacity = Math.round((layer.opacity ?? 1) * 100);
-
-  return (
-    <Flex
-      align="center"
-      gap={2}
-      mt={1}
-      px={2}
-      py={2}
-      w="100%"
-      minW={0}
-      bg="bg.subtle"
-      borderRadius="4px"
-      border="1px solid"
-      borderColor="border"
-    >
-      <Tooltip
-        content={isVisible ? "Hide layer" : "Show layer"}
-        positioning={{ placement: "top" }}
-        showArrow
-        variant="dark"
-      >
-        <IconButton
-          aria-label={isVisible ? `Hide ${label} layer` : `Show ${label} layer`}
-          size="xs"
-          variant="ghost"
-          onClick={() => setLayerVisibility(layer.id, !isVisible)}
-        >
-          {isVisible ? <EyeIcon size={16} /> : <EyeSlashIcon size={16} />}
-        </IconButton>
-      </Tooltip>
-      <CircleHalfIcon size={14} color="#656E7B" />
-      <Slider.Root
-        flex="1"
-        minW={0}
-        size="sm"
-        value={[opacity]}
-        min={0}
-        max={100}
-        onValueChange={(v: { value: number[] }) =>
-          setLayerOpacity(layer.id, v.value[0] / 100)
-        }
-        // Chakra's Slider.Root expects string[] (one label per thumb);
-        // this conflicts with jsx-a11y/aria-proptypes which expects a
-        // plain string, so we suppress the lint rule for this prop.
-        // eslint-disable-next-line jsx-a11y/aria-proptypes
-        aria-label={[`${label} opacity`]}
-      >
-        <Slider.Control>
-          <Slider.Track>
-            <Slider.Range />
-          </Slider.Track>
-          <Slider.Thumb index={0} />
-        </Slider.Control>
-      </Slider.Root>
-      <Text
-        fontFamily="mono"
-        fontSize="10px"
-        color="fg.muted"
-        w="4ch"
-        textAlign="right"
-      >
-        {opacity}%
-      </Text>
-    </Flex>
+    <DatasetRow
+      dataset={layerDataset}
+      img={layer.img}
+      viewOnly
+      interaction={{
+        mode: "toggle",
+        checked: isSelected,
+        onChange: handleToggle,
+        dataPanel: "datasets",
+      }}
+    />
   );
 }

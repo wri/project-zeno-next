@@ -4,6 +4,10 @@ import { AOISelection } from "@/app/types/chat";
 import { Tooltip } from "./ui/tooltip";
 import { InfoCard } from "./InfoCard";
 import useMapStore from "@/app/store/mapStore";
+import {
+  aoiFeatureRef,
+  findRegistryEntry,
+} from "@/app/store/layerManagerSlice";
 import { unionAoiBboxes } from "@/app/utils/bboxUtils";
 import { buildStaticMapUrl } from "@/app/utils/areaStaticMapUrl";
 import { useState } from "react";
@@ -47,11 +51,7 @@ export function AreaCard({ aoiSelection }: AreaCardProps) {
   const [imgError, setImgError] = useState(false);
 
   const registryEntry = aoiSelection.aois
-    .map((aoi) =>
-      geoJsonRegistry.find(
-        (e) => e.ref.name === aoi.name && e.ref.source === aoi.source
-      )
-    )
+    .map((aoi) => findRegistryEntry(geoJsonRegistry, aoiFeatureRef(aoi)))
     .find(Boolean);
   const geometry =
     registryEntry?.data ?? aoiSelection.aois[0]?.geometry ?? null;

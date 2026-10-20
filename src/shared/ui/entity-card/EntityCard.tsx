@@ -1,11 +1,6 @@
-import { Box, Flex, Switch, Text } from "@chakra-ui/react";
+import { Box, Flex, Switch, Text, chakra } from "@chakra-ui/react";
 import { ArrowRightIcon } from "@phosphor-icons/react";
-import {
-  useRef,
-  type KeyboardEvent,
-  type MouseEvent,
-  type ReactNode,
-} from "react";
+import { useRef, type MouseEvent, type ReactNode } from "react";
 
 import {
   ENTITY_KINDS,
@@ -26,7 +21,8 @@ const ARROW_CLASS = "entity-card-arrow";
  * How the card responds to the user.
  * - `static`: it only shows (chat cards).
  * - `toggle`: a switch; a click anywhere on the row flips it.
- * - `link`: the whole card is the button (e.g. open a dashboard).
+ * - `link`: a button stretched over the whole card (e.g. open a dashboard);
+ *   the actions and (i) stay separate controls above it.
  */
 export type CardInteraction =
   | { mode: "static" }
@@ -79,6 +75,12 @@ export interface EntityCardProps {
  * real click on the switch's root `<label>` rather than calling `onChange`
  * directly, and nothing here stops propagation (that would hide the click
  * from GTM's document listener).
+ *
+ * In `link` mode the control is a real `<button>` laid over the row, so a
+ * click anywhere opens the card and Enter / Space come from the browser. The
+ * actions and (i) are its siblings, stacked above it, not its children: a
+ * button's content is presentational to assistive tech, so buttons nested in
+ * one go unannounced.
  */
 export function EntityCard({
   kind,
@@ -112,17 +114,7 @@ export function EntityCard({
   }
 
   function handleClick(e: MouseEvent<HTMLDivElement>) {
-    if (!isRowClick(e)) return;
-    if (toggleable) switchRef.current?.click();
-    else link?.onClick();
-  }
-
-  function handleKeyDown(e: KeyboardEvent<HTMLDivElement>) {
-    if (!link || e.target !== e.currentTarget) return;
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      link.onClick();
-    }
+    if (isRowClick(e)) switchRef.current?.click();
   }
 
   const kindSpec = ENTITY_KINDS[kind];
@@ -149,18 +141,24 @@ export function EntityCard({
       transition="border-color 0.16s ease, background-color 0.16s ease"
       _hover={clickable ? { bg: "#FAFBFC" } : undefined}
       _active={link ? { bg: "#F0F4FF", borderColor: "#0049AA" } : undefined}
-      _focusVisible={
-        link
-          ? { outline: "2px solid #0049AA", outlineOffset: "2px" }
-          : undefined
-      }
       css={link ? { [`&:hover .${ARROW_CLASS}`]: { opacity: 1 } } : undefined}
-      role={link ? "button" : undefined}
-      tabIndex={link ? 0 : undefined}
-      aria-label={link?.ariaLabel}
-      onClick={clickable ? handleClick : undefined}
-      onKeyDown={link ? handleKeyDown : undefined}
+      position={link ? "relative" : undefined}
+      onClick={toggleable ? handleClick : undefined}
     >
+      {link && (
+        // Over the border too (-1px), so its focus ring sits where the card's
+        // edge is.
+        <chakra.button
+          type="button"
+          aria-label={link.ariaLabel}
+          onClick={link.onClick}
+          position="absolute"
+          inset="-1px"
+          borderRadius="4px"
+          cursor="pointer"
+          _focusVisible={{ outline: "2px solid #0049AA", outlineOffset: "2px" }}
+        />
+      )}
       <Flex
         w={`${ENTITY_CARD_THUMBNAIL_PX}px`}
         h={`${ENTITY_CARD_THUMBNAIL_PX}px`}
@@ -199,7 +197,15 @@ export function EntityCard({
       </Box>
       {badge}
       {(actions || onInfo) && (
-        <Flex ref={trailingRef} align="center" gap="4px" flexShrink={0}>
+        <Flex
+          ref={trailingRef}
+          align="center"
+          gap="4px"
+          flexShrink={0}
+          // Above the link button, which would otherwise take their clicks.
+          position={link ? "relative" : undefined}
+          zIndex={link ? 1 : undefined}
+        >
           {actions}
           {onInfo && (
             <InfoButton

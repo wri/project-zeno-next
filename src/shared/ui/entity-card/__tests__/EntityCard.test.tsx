@@ -222,38 +222,59 @@ describe("EntityCard — link", () => {
     ariaLabel: "Open dashboard",
   });
 
-  it("is a labelled button that opens on click, Enter and Space", async () => {
+  // A native <button>, so Enter and Space come from the browser.
+  it("opens from a real, labelled button", async () => {
     const onClick = vi.fn();
     renderCard({ kind: "dashboard", interaction: link(onClick) });
-    const card = screen.getByRole("button", { name: "Open dashboard" });
+    const button = screen.getByRole("button", { name: "Open dashboard" });
 
     await act(async () => {
-      fireEvent.click(screen.getByText("Pará, Brazil"));
-      fireEvent.keyDown(card, { key: "Enter" });
-      fireEvent.keyDown(card, { key: " " });
+      fireEvent.click(button);
     });
 
-    expect(onClick).toHaveBeenCalledTimes(3);
+    expect(button.tagName).toBe("BUTTON");
+    expect(button.getAttribute("type")).toBe("button");
+    expect(onClick).toHaveBeenCalledOnce();
   });
 
-  it("does not open from an action inside it", async () => {
+  it("leaves the title readable rather than folding it into the button", () => {
+    renderCard({ kind: "dashboard", interaction: link() });
+    const button = screen.getByRole("button", { name: "Open dashboard" });
+
+    expect(button.contains(screen.getByText("Pará, Brazil"))).toBe(false);
+  });
+
+  it("keeps its actions and (i) as separate controls, not inside the button", async () => {
     const onClick = vi.fn();
     const onMenu = vi.fn();
+    const onInfo = vi.fn();
     renderCard({
       kind: "dashboard",
       interaction: link(onClick),
+      onInfo,
+      infoLabel: "Dashboard info",
       actions: (
         <button type="button" onClick={onMenu}>
           Actions
         </button>
       ),
     });
+    const button = screen.getByRole("button", { name: "Open dashboard" });
+    const action = screen.getByRole("button", { name: "Actions" });
+    const info = screen.getByLabelText("Dashboard info: Pará, Brazil");
+
+    expect(button.contains(action)).toBe(false);
+    expect(button.contains(info)).toBe(false);
+    // No wrapper takes over the role either.
+    expect(button.parentElement?.closest('[role="button"]')).toBeNull();
 
     await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: "Actions" }));
+      fireEvent.click(action);
+      fireEvent.click(info);
     });
 
     expect(onMenu).toHaveBeenCalledOnce();
+    expect(onInfo).toHaveBeenCalledOnce();
     expect(onClick).not.toHaveBeenCalled();
   });
 });

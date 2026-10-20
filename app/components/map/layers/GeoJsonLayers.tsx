@@ -9,6 +9,7 @@ import {
   Layer as ManagedLayer,
   GeoJsonEntry,
   FeatureRef,
+  findRegistryEntry,
 } from "@/app/store/layerManagerSlice";
 import { BasemapTheme } from "../BasemapSelector";
 import bbox from "@turf/bbox";
@@ -58,11 +59,7 @@ function computeCombinedBbox(
 // Given a list of feature refs, resolve them to the corresponding geojson entries
 function resolveFeatureRefs(refs: FeatureRef[], registry: GeoJsonEntry[]) {
   return refs
-    .map((ref) =>
-      registry.find(
-        (e) => e.ref.name === ref.name && e.ref.source === ref.source
-      )
-    )
+    .map((ref) => findRegistryEntry(registry, ref))
     .filter((e): e is GeoJsonEntry => !!e);
 }
 
@@ -156,10 +153,13 @@ function GeoJsonLayerGroup({
     <>
       {/* Polygon outlines per feature */}
       {entries.map((entry) => {
-        const sourceId = `geojson-source-${groupId}-${entry.ref.source}-${entry.ref.name}`;
-        const fillLayerId = `geojson-fill-${groupId}-${entry.ref.source}-${entry.ref.name}`;
-        const casingLayerId = `geojson-line-${groupId}-${entry.ref.source}-${entry.ref.name}-casing`;
-        const lineLayerId = `geojson-line-${groupId}-${entry.ref.source}-${entry.ref.name}-solid`;
+        // The src id keeps two same-name parcels of one selection apart.
+        const { name, source, srcId } = entry.ref;
+        const featureId = `${groupId}-${source}-${name}${srcId ? `-${srcId}` : ""}`;
+        const sourceId = `geojson-source-${featureId}`;
+        const fillLayerId = `geojson-fill-${featureId}`;
+        const casingLayerId = `geojson-line-${featureId}-casing`;
+        const lineLayerId = `geojson-line-${featureId}-solid`;
         // A picked concession is outlined in its commodity's colour, as on
         // the GNW concessions map. A manual pick's source is the layer id,
         // an agent pick's the backend key; both upper-case to the layer id.

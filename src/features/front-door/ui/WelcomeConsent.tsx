@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { Box, Button, Checkbox, Heading, Stack, Text } from "@chakra-ui/react";
 import { ArrowRightIcon } from "@phosphor-icons/react";
 import { personNames } from "../lib/person-names";
@@ -13,6 +13,57 @@ export interface WelcomeConsentProps {
   pendingPrompt?: string | null;
   isSubmitting?: boolean;
   onContinue: () => void;
+}
+
+const CLAMPED_LINES = 3;
+
+/**
+ * The waiting question, clamped to three lines so the consent checkbox and
+ * Continue stay in view; the toggle shows only when the clamp hides text.
+ * Styled like the chat's floating recap of an earlier prompt (PinnedPrompt),
+ * so the question looks like it does once it runs.
+ */
+function PendingPrompt({ prompt }: { prompt: string }) {
+  const textRef = useRef<HTMLParagraphElement>(null);
+  const [overflows, setOverflows] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  // Measured once while clamped; expanding removes the clamp, not the toggle.
+  useLayoutEffect(() => {
+    const el = textRef.current;
+    if (el) setOverflows(el.scrollHeight > el.clientHeight);
+  }, [prompt]);
+
+  return (
+    <Box
+      bg="primary.100"
+      color="fg"
+      p={3}
+      rounded="lg"
+      boxShadow="lg"
+      fontSize="sm"
+      lineHeight="1.5"
+    >
+      <Text ref={textRef} lineClamp={expanded ? undefined : CLAMPED_LINES}>
+        {prompt}
+      </Text>
+      {overflows && (
+        <Button
+          variant="plain"
+          size="xs"
+          px={0}
+          mt={1}
+          h="auto"
+          colorPalette="primary"
+          textDecoration="underline"
+          aria-expanded={expanded}
+          onClick={() => setExpanded((open) => !open)}
+        >
+          {expanded ? "Show less" : "Show full question"}
+        </Button>
+      )}
+    </Box>
+  );
 }
 
 /**
@@ -60,22 +111,7 @@ export function WelcomeConsent({
           )}
         </Stack>
 
-        {pendingPrompt && (
-          // Styled like the chat's floating recap of an earlier prompt
-          // (PinnedPrompt), so the question looks like it does once it runs.
-          <Box
-            bg="primary.100"
-            color="fg"
-            px={3}
-            py={3}
-            rounded="lg"
-            boxShadow="lg"
-            fontSize="sm"
-            lineHeight="1.5"
-          >
-            {pendingPrompt}
-          </Box>
-        )}
+        {pendingPrompt && <PendingPrompt prompt={pendingPrompt} />}
 
         <Checkbox.Root
           alignItems="flex-start"
