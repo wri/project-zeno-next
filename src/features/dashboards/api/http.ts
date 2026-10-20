@@ -29,11 +29,6 @@ export function httpStatus(error: unknown): number | undefined {
   return typeof status === "number" ? status : undefined;
 }
 
-/** Whether an error thrown by `readJson` is the backend refusing a duplicate (409). */
-export function isConflict(error: unknown): boolean {
-  return httpStatus(error) === 409;
-}
-
 /** The backend's string `detail` on an error thrown by `readJson`, if any. */
 export function httpDetail(error: unknown): string | undefined {
   const detail = (error as { detail?: unknown } | null)?.detail;

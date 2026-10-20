@@ -44,7 +44,7 @@ export interface AlertsWidgetSpec {
    * a choice is absent when the snapshot carries no such entry (widgets
    * built before the backend added them).
    */
-  overlays: Partial<Record<AlertsLandOverlay, MapWidgetLayer>>;
+  overlays: Partial<Record<AlertsLandFilter, MapWidgetLayer>>;
 }
 
 /** One alert day, as the list pane renders it. */
@@ -94,14 +94,16 @@ export const TIERS: Record<
   highest: { field: "highestHa", name: "Highest" },
 };
 
+/** The two tiers "All" is made of. */
+const SPLIT_TIERS = [TIERS.high, TIERS.highest];
+
 /**
  * The table's CONFIDENCE cell: the tiers a day had alerts in, under "All",
  * or the one tier on show.
  */
 export function rowTiers(row: AlertDay, confidence: AlertsConfidence): string {
   if (confidence !== "all") return TIERS[confidence].name;
-  return [TIERS.high, TIERS.highest]
-    .filter((tier) => row[tier.field] > 0)
+  return SPLIT_TIERS.filter((tier) => row[tier.field] > 0)
     .map((tier) => tier.name)
     .join(" · ");
 }
@@ -128,13 +130,10 @@ export const LAND_FILTERS: Record<
   natural_forests: { label: "Natural forests", phrase: "on natural forests" },
 };
 
-const tierNames = (tiers: { name: string }[]) =>
-  tiers.map((tier) => tier.name).join(" · ");
-
 /** The badge row's CONFIDENCE value: the tiers in the shown rows. */
 export function confidenceLabel(confidence: AlertsConfidence): string {
   return confidence === "all"
-    ? tierNames([TIERS.high, TIERS.highest])
+    ? SPLIT_TIERS.map((tier) => tier.name).join(" · ")
     : TIERS[confidence].name;
 }
 
@@ -209,8 +208,7 @@ export function alertsMapLayer(
   landFilter: AlertsLandFilter,
   range?: DateRange
 ): MapWidgetLayer {
-  const layer =
-    (landFilter !== "any" && spec.overlays[landFilter]) || spec.layer;
+  const layer = spec.overlays[landFilter] ?? spec.layer;
   return range ? withTileDates(layer, range) : layer;
 }
 
@@ -305,17 +303,15 @@ export function rowsInRange(
 }
 
 /**
- * The rows a confidence choice shows. A single tier drops the days that had
- * nothing in it — "High" must not list a day of zero high-confidence alerts —
- * while "All" keeps every day.
+ * The rows a confidence choice shows: the days with alerts in the shown tier.
+ * "High" must not list a day of zero high-confidence alerts; "All" keeps
+ * every day, as the backend sends only days with high or highest alerts.
  */
 export function visibleRows(
   rows: readonly AlertDay[],
   confidence: AlertsConfidence
 ): AlertDay[] {
-  if (confidence === "all") return [...rows];
-  const { field } = TIERS[confidence];
-  return rows.filter((row) => row[field] > 0);
+  return rows.filter((row) => rowArea(row, confidence) > 0);
 }
 
 /** The footer's numbers: alert days and hectares in the shown tier. */
@@ -323,10 +319,9 @@ export function rowsSummary(
   rows: readonly AlertDay[],
   confidence: AlertsConfidence
 ): { days: number; ha: number } {
-  const { field } = TIERS[confidence];
   return {
     days: rows.length,
-    ha: rows.reduce((sum, row) => sum + row[field], 0),
+    ha: rows.reduce((sum, row) => sum + rowArea(row, confidence), 0),
   };
 }
 

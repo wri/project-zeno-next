@@ -20,7 +20,6 @@ import {
   chipRange,
   confidenceLabel,
   initialWindow,
-  needsWiderWindow,
   rowsInRange,
   sinceRange,
   visibleRows,
@@ -191,11 +190,8 @@ function AlertsCard({
   // during render, like `held`: once the request reaches that far the
   // widened window is the same object, and nothing is set.
   if (list) {
-    const since = sinceRange(list.anchor);
-    if (needsWiderWindow(since, list.window)) {
-      const wider = widenedWindow(since, requestWindow);
-      if (wider !== requestWindow) setRequestWindow(wider);
-    }
+    const wider = widenedWindow(sinceRange(list.anchor), requestWindow);
+    if (wider !== requestWindow) setRequestWindow(wider);
   }
 
   // The params row, as an analysis card's: the area and dataset chips every
