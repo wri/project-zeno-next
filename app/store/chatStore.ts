@@ -99,6 +99,7 @@ interface ChatActions {
   removeMessage: (messageId: string) => void;
   upsertProfileAsk: (type: ProfileAskType) => void;
   upsertAnalyseNudge: (suggestion: AnalyseSuggestion) => void;
+  clearPendingAnalyseNudge: () => void;
   acceptAnalyseNudge: (messageId: string) => void;
   upsertViewAnalysisNudge: (suggestion: ViewAnalysisSuggestion) => void;
   acceptViewAnalysisNudge: (messageId: string) => void;
@@ -638,6 +639,21 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         newMessage,
       ],
     }));
+  },
+
+  // Withdraws the pending analyse nudge, keeping accepted ones as history.
+  clearPendingAnalyseNudge: () => {
+    set((state) =>
+      state.messages.some(
+        (m) => m.type === "analyse-nudge" && !m.analyseSuggestion?.accepted
+      )
+        ? {
+            messages: state.messages.filter(
+              (m) => m.type !== "analyse-nudge" || m.analyseSuggestion?.accepted
+            ),
+          }
+        : state
+    );
   },
 
   acceptAnalyseNudge: (messageId) => {

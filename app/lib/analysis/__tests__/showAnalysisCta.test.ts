@@ -175,6 +175,37 @@ describe("showAnalysisCta", () => {
     expect(showAnalysisCta(selection)).toBe(true);
   });
 
+  it("withdraws the pending nudge when the next area's source isn't covered, keeping accepted ones", () => {
+    // Accepting a nudge sends its prompt with the *current* map context, so a
+    // nudge left over from a GADM area would ask for tree cover on the
+    // concession the user has since clicked, which the backend refuses.
+    seedLayers([
+      datasetLayer({
+        id: `dataset-${TREE_COVER_ID}`,
+        name: "Tree cover",
+        datasetId: TREE_COVER_ID,
+      }),
+    ]);
+    showAnalysisCta({ name: "Acre, Brazil", source: "gadm" });
+    useChatStore.getState().acceptAnalyseNudge(analyseNudges()[0].id);
+    showAnalysisCta(selection);
+    expect(analyseNudges()).toHaveLength(2);
+
+    const concession: AnalysisSelection = {
+      name: "Mining concession, IDN",
+      source: "mining",
+      srcId: "101",
+    };
+    expect(showAnalysisCta(concession)).toBe(false);
+
+    const nudges = analyseNudges();
+    expect(nudges).toHaveLength(1);
+    expect(nudges[0].analyseSuggestion).toMatchObject({
+      areaName: "Acre, Brazil",
+      accepted: true,
+    });
+  });
+
   it("does nothing when no dataset is active (analysis stays gated)", () => {
     expect(showAnalysisCta(selection)).toBe(false);
     expect(analyseNudges()).toHaveLength(0);
