@@ -7,6 +7,8 @@ import {
   CATALOG_CARD_WIDTH_PX,
 } from "@/app/explorationLayout";
 
+import { toggleAriaLabel as mapToggleAriaLabel } from "@/src/shared/ui/entity-card";
+
 import { Tooltip } from "./ui/tooltip";
 import { ViewOnlyBadge } from "./ViewOnlyBadge";
 
@@ -192,8 +194,7 @@ export function CatalogCard({
             colorPalette="primary"
             flexShrink={0}
             aria-label={
-              toggleAriaLabel ??
-              (showOnMap ? `Hide ${title} from map` : `Show ${title} on map`)
+              toggleAriaLabel ?? mapToggleAriaLabel("map", title, showOnMap)
             }
             data-panel={dataPanel}
           >

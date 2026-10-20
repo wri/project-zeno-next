@@ -1,13 +1,5 @@
 import { Suspense, useEffect, useMemo, type ReactNode } from "react";
-import {
-  Box,
-  Button,
-  Flex,
-  IconButton,
-  Stack,
-  Text,
-  Wrap,
-} from "@chakra-ui/react";
+import { Box, Flex, IconButton, Stack, Text } from "@chakra-ui/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { CrosshairIcon, PolygonIcon, XIcon } from "@phosphor-icons/react";
 import { useShallow } from "zustand/react/shallow";
@@ -17,10 +9,7 @@ import {
   getCatalogColumnMotionStyle,
   getCatalogColumnPanelFlexProps,
 } from "@/app/chatPanelShared";
-import {
-  CATALOG_CARD_WIDTH_PX,
-  getCatalogLeftPx,
-} from "@/app/explorationLayout";
+import { getCatalogLeftPx } from "@/app/explorationLayout";
 import { useCustomAreasListSuspense } from "@/app/hooks/useCustomAreasList";
 import { useCustomAreasCreate } from "@/app/hooks/useCustomAreasCreate";
 import type { CustomArea } from "@/app/schemas/api/custom_areas/get";
@@ -34,17 +23,19 @@ import useMapStore from "@/app/store/mapStore";
 import useSidebarStore, {
   type AreasPanelFilter,
 } from "@/app/store/sidebarStore";
+import type { AOISelection } from "@/app/types/chat";
+import { areaSourceLabel } from "@/app/utils/areaSourceLabel";
 import { customAreaToFeature } from "@/src/entities/custom-area";
+import { ENTITY_KINDS, EntityCard } from "@/src/shared/ui/entity-card";
 
-import { CatalogCard } from "./CatalogCard";
-import { AREA_LABEL_COLOR, areaActionIconProps } from "./AreaCardMenu";
+import { areaActionIconProps } from "./AreaCardMenu";
+import { AreaThumbnail } from "./AreaThumbnail";
 import ConversationAreaActionsMenu from "./ConversationAreaActionsMenu";
 import CustomAreaActionsMenu from "./CustomAreaActionsMenu";
 import { AreaToolbarButtons } from "./AreaToolbarButtons";
 import { BoundariesList } from "./BoundariesList";
-import { AreaCatalogThumbnail } from "./AreaCatalogThumbnail";
+import { PanelEmpty, PanelList, PanelPills } from "./PanelList";
 import { Tooltip } from "./ui/tooltip";
-import type { AOISelection } from "@/app/types/chat";
 
 /** Matches CatalogPanel compact/full-size enter & exit (slide from the left). */
 const areasPanelSlideTransition = {
@@ -59,21 +50,6 @@ const areasListScrollStyle = {
   scrollbarWidth: "none",
   "&::-webkit-scrollbar": { display: "none" },
 } as const;
-
-const AREA_TYPE_LABELS: Record<string, string> = {
-  gadm: "Administrative areas",
-  kba: "Key biodiversity areas",
-  wdpa: "Protected areas",
-  landmark: "Indigenous territories",
-  oil_palm: "Oil palm concessions",
-  rspo_oil_palm: "RSPO oil palm concessions",
-  logging: "Logging concessions",
-  mining: "Mining concessions",
-  wood_fiber: "Wood fiber concessions",
-  custom: "User uploaded areas",
-};
-
-const AREA_SELECTED_BG = "rgba(45, 107, 228, 0.06)";
 
 const AREA_FILTERS: { id: AreasPanelFilter; label: string }[] = [
   { id: "boundaries", label: "Boundaries" },
@@ -141,34 +117,11 @@ export default function AreasPanel() {
               pb={6}
               overflow="hidden"
             >
-              <Wrap gap={1} flexShrink={0} overflow="hidden">
-                {AREA_FILTERS.map((f) => {
-                  const isActive = filter === f.id;
-                  return (
-                    <Button
-                      key={f.id}
-                      h="24px"
-                      minH="24px"
-                      py="4px"
-                      px="8px"
-                      borderRadius="full"
-                      fontSize="12px"
-                      fontWeight="400"
-                      lineHeight="16px"
-                      bg={isActive ? "fg.link" : "neutral.300"}
-                      color={isActive ? "white" : "fg"}
-                      border="1px solid"
-                      borderColor={isActive ? "fg.link" : "neutral.300"}
-                      _hover={{
-                        bg: isActive ? "fg.link" : "neutral.400",
-                      }}
-                      onClick={() => setFilter(f.id)}
-                    >
-                      {f.label}
-                    </Button>
-                  );
-                })}
-              </Wrap>
+              <PanelPills
+                options={AREA_FILTERS}
+                value={filter}
+                onChange={setFilter}
+              />
               <Stack
                 gap={4}
                 flex={1}
@@ -183,11 +136,7 @@ export default function AreasPanel() {
                   <ConversationAreasList />
                 ) : (
                   <Suspense
-                    fallback={
-                      <Text fontSize="sm" color="fg.muted" mt={4}>
-                        Loading your areas…
-                      </Text>
-                    }
+                    fallback={<PanelEmpty>Loading your areas…</PanelEmpty>}
                   >
                     <MonitoredAreasList />
                   </Suspense>
@@ -218,7 +167,7 @@ function AreasPanelHeader({ onClose }: { onClose: () => void }) {
       minW={0}
     >
       <Flex alignItems="center" gap="8px" minW={0} flex="1" overflow="hidden">
-        <PolygonIcon size={16} color={AREA_LABEL_COLOR} />
+        <PolygonIcon size={16} color={ENTITY_KINDS.area.color} />
         <Text
           fontSize="10px"
           fontWeight="400"
@@ -253,19 +202,6 @@ function AreasPanelHeader({ onClose }: { onClose: () => void }) {
       </Flex>
     </Flex>
   );
-}
-
-/**
- * Type label string ("Administrative areas" etc.) derived from the resolved
- * AOISelection. Use the resolved selection (which recovers `source` from the
- * geojson registry ref) rather than `layer.aoiSelection` directly: hand-clicked
- * GADM boundaries carry no `aoiSelection`, so reading it would default every
- * one of them to "custom".
- */
-function getAreaTypeLabel(aoiSelection: AOISelection | null): string {
-  const source = aoiSelection?.aois[0]?.source ?? "custom";
-  const label = AREA_TYPE_LABELS[source.toLowerCase()] ?? source;
-  return label || "Area";
 }
 
 /** Display name for an area layer. */
@@ -306,19 +242,19 @@ function ConversationAreasList() {
 
   if (areaLayers.length === 0) {
     return (
-      <Text fontSize="sm" color="fg.muted" mt={4}>
+      <PanelEmpty>
         No areas selected yet. Pick one from Boundaries, upload or draw an area,
         or ask the assistant to find one for you.
-      </Text>
+      </PanelEmpty>
     );
   }
 
   return (
-    <>
+    <PanelList>
       {areaLayers.map((layer) => (
         <ConversationAreaCard key={layer.id} layer={layer} />
       ))}
-    </>
+    </PanelList>
   );
 }
 
@@ -329,6 +265,9 @@ function ConversationAreaCard({ layer }: { layer: Layer }) {
   const geoJsonRegistry = useMapStore((s) => s.geoJsonRegistry);
 
   const isVisible = layer.visible;
+  // The resolved selection recovers `source` from the registry ref; reading
+  // `layer.aoiSelection` directly would label every hand-clicked GADM boundary
+  // (which carries none) as a custom area.
   const aoiSelection = useMemo(
     () => layerToAoiSelection(layer, geoJsonRegistry),
     [layer, geoJsonRegistry]
@@ -364,30 +303,28 @@ function ConversationAreaCard({ layer }: { layer: Layer }) {
   }
 
   return (
-    <Box w={`${CATALOG_CARD_WIDTH_PX}px`} maxW="100%" flexShrink={0}>
-      <CatalogCard
-        thumbnail={
-          aoiSelection ? (
-            <AreaCatalogThumbnail aoiSelection={aoiSelection} alt={title} />
-          ) : undefined
-        }
-        typeLabel="AREA"
-        typeLabelColor={AREA_LABEL_COLOR}
-        title={title}
-        description={getAreaTypeLabel(aoiSelection)}
-        selected={isVisible}
-        selectedBg={AREA_SELECTED_BG}
-        showOnMap={isVisible}
-        onShowOnMapChange={handleToggle}
-        dataPanel="areas"
-        titleActions={
-          <AreaCardActions
-            onLocate={handleLocate}
-            menu={<ConversationAreaActionsMenu layer={layer} />}
-          />
-        }
-      />
-    </Box>
+    <EntityCard
+      kind="area"
+      thumbnail={
+        aoiSelection && (
+          <AreaThumbnail aoiSelection={aoiSelection} alt={title} />
+        )
+      }
+      title={title}
+      meta={areaSourceLabel(aoiSelection?.aois[0]?.source ?? "custom")}
+      interaction={{
+        mode: "toggle",
+        checked: isVisible,
+        onChange: handleToggle,
+        dataPanel: "areas",
+      }}
+      actions={
+        <AreaCardActions
+          onLocate={handleLocate}
+          menu={<ConversationAreaActionsMenu layer={layer} />}
+        />
+      }
+    />
   );
 }
 
@@ -402,18 +339,18 @@ function MonitoredAreasList() {
 
   if (sorted.length === 0) {
     return (
-      <Text fontSize="sm" color="fg.muted" mt={4}>
+      <PanelEmpty>
         No saved areas yet. Upload or draw an area to save it here.
-      </Text>
+      </PanelEmpty>
     );
   }
 
   return (
-    <>
+    <PanelList>
       {sorted.map((area) => (
         <MonitoredAreaCard key={area.id} area={area} />
       ))}
-    </>
+    </PanelList>
   );
 }
 
@@ -492,34 +429,32 @@ function MonitoredAreaCard({ area }: { area: CustomArea }) {
   }
 
   return (
-    <Box w={`${CATALOG_CARD_WIDTH_PX}px`} maxW="100%" flexShrink={0}>
-      <CatalogCard
-        thumbnail={
-          <AreaCatalogThumbnail
-            aoiSelection={aoiSelection}
-            alt={area.name}
-            geometry={feature}
-          />
-        }
-        typeLabel="AREA"
-        typeLabelColor={AREA_LABEL_COLOR}
-        title={area.name}
-        description={AREA_TYPE_LABELS.custom}
-        selected={isVisible}
-        selectedBg={AREA_SELECTED_BG}
-        showOnMap={isVisible}
-        onShowOnMapChange={handleToggle}
-        dataPanel="areas"
-        titleActions={
-          // Rename/delete act on the saved area, so the kebab must show even
-          // when the area isn't on the map; the locate button stays on-map only.
-          <AreaCardActions
-            onLocate={isVisible ? handleLocate : undefined}
-            menu={<CustomAreaActionsMenu area={area} />}
-          />
-        }
-      />
-    </Box>
+    <EntityCard
+      kind="area"
+      thumbnail={
+        <AreaThumbnail
+          aoiSelection={aoiSelection}
+          alt={area.name}
+          geometry={feature}
+        />
+      }
+      title={area.name}
+      meta={areaSourceLabel("custom")}
+      interaction={{
+        mode: "toggle",
+        checked: isVisible,
+        onChange: handleToggle,
+        dataPanel: "areas",
+      }}
+      actions={
+        // Rename/delete act on the saved area, so the kebab must show even
+        // when the area isn't on the map; the locate button stays on-map only.
+        <AreaCardActions
+          onLocate={isVisible ? handleLocate : undefined}
+          menu={<CustomAreaActionsMenu area={area} />}
+        />
+      }
+    />
   );
 }
 
@@ -549,7 +484,7 @@ function AreaCardActions({
               onLocate();
             }}
           >
-            <CrosshairIcon size={16} color={AREA_LABEL_COLOR} />
+            <CrosshairIcon size={16} color={ENTITY_KINDS.area.color} />
           </IconButton>
         </Tooltip>
       )}
