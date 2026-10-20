@@ -40,7 +40,10 @@ import { pullDataTool } from "./chat-tools/pullData";
 import { showImageryTool } from "./chat-tools/showImagery";
 import { isImageryTool } from "@/app/utils/imagery";
 import { queryClient } from "@/app/lib/query-client";
-import { dashboardKeys } from "@/src/features/dashboards/ui/dashboardQueries";
+import {
+  dashboardKeys,
+  invalidateAlertsSummaries,
+} from "@/src/features/dashboards/ui/dashboardQueries";
 import {
   showApiError,
   showError,
@@ -309,6 +312,11 @@ async function processStreamMessage(
     streamMessage.msg_type === "insight_updated"
   ) {
     queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
+  }
+  // Only dashboard_updated can add a chart, so only it can change which
+  // dashboards the alerts summary reports.
+  if (streamMessage.msg_type === "dashboard_updated") {
+    invalidateAlertsSummaries(queryClient);
   }
 
   // A dashboard write also surfaces a synthetic assistant line plus a

@@ -13,7 +13,11 @@ export interface AlertsSummary {
   /** Inclusive ISO dates of the week the summary covers. */
   startDate: string;
   endDate: string;
-  /** Dashboards the backend could assess (see `DashboardAlertsSummaryResponseSchema`). */
+  /**
+   * Dashboards whose alert total the backend obtained, quiet weeks (0 ha)
+   * included. A `null` total is not an assessment, so a response of only
+   * failures counts none.
+   */
   assessedCount: number;
   /** Alert area in hectares by dashboard id, for the dashboards whose week carried alerts. */
   newAlertAreaHa: Record<string, number>;
@@ -24,15 +28,18 @@ export function toAlertsSummary(
   wire: DashboardAlertsSummaryResponse
 ): AlertsSummary {
   const newAlertAreaHa: Record<string, number> = {};
+  let assessedCount = 0;
   for (const [id, row] of Object.entries(wire.dashboards)) {
-    if (row.integrated_alerts !== null && row.integrated_alerts > 0) {
+    if (row.integrated_alerts === null) continue;
+    assessedCount += 1;
+    if (row.integrated_alerts > 0) {
       newAlertAreaHa[id] = row.integrated_alerts;
     }
   }
   return {
     startDate: wire.start_date,
     endDate: wire.end_date,
-    assessedCount: Object.keys(wire.dashboards).length,
+    assessedCount,
     newAlertAreaHa,
   };
 }

@@ -55,8 +55,11 @@ export default function DashboardsPage() {
   // the "n of m" line counts across all of them, and the list endpoint has
   // already returned them all.
   const dashboardIds = useMemo(() => ordered.map((d) => d.id), [ordered]);
-  const { data: alertsSummary, dataUpdatedAt: alertsCheckedAt } =
-    useDashboardAlertsSummary(dashboardIds);
+  const {
+    data: alertsSummary,
+    dataUpdatedAt: alertsCheckedAt,
+    isPlaceholderData: alertsHeldOver,
+  } = useDashboardAlertsSummary(dashboardIds);
 
   // `page` is the clamped result, not `requestedPage`, because a delete can
   // shrink the list out from under the held page number.
@@ -79,7 +82,7 @@ export default function DashboardsPage() {
                 <DashboardsAlertsOverview
                   summary={alertsSummary}
                   dashboardIds={dashboardIds}
-                  checkedAt={alertsCheckedAt}
+                  checkedAt={alertsHeldOver ? undefined : alertsCheckedAt}
                 />
               )}
             </Box>

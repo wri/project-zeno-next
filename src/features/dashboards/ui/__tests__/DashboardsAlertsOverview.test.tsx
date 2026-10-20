@@ -53,6 +53,17 @@ describe("DashboardsAlertsOverview", () => {
     ).toBeTruthy();
   });
 
+  it("leaves out the checked time while the summary is held over", () => {
+    renderOverview({ checkedAt: undefined });
+
+    expect(
+      screen.getByText(
+        "2 of 4 dashboards have new alerts for the week of Oct 5–11"
+      )
+    ).toBeTruthy();
+    expect(screen.queryByText(/Integrated alerts checked/)).toBeNull();
+  });
+
   it("holds its height, silently, while the summary loads", () => {
     const { container } = renderOverview({ summary: undefined });
 

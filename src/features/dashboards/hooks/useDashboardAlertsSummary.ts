@@ -1,4 +1,8 @@
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useQuery,
+  type QueryClient,
+} from "@tanstack/react-query";
 
 import { fetchDashboardAlertsSummary } from "../api/dashboards";
 import { dashboardKeys } from "./dashboardKeys";
@@ -28,5 +32,19 @@ export function useDashboardAlertsSummary(dashboardIds: string[]) {
     // times with all the ids, as the curated analyses also decided.
     retry: false,
     placeholderData: keepPreviousData,
+  });
+}
+
+/**
+ * The summary reports only dashboards with an integrated alerts chart, so a
+ * write that can add or remove a chart (a widget added or deleted, a section
+ * deleted with its widgets, a template applied, an agent write) can move a
+ * dashboard into or out of it. Every cached summary goes stale, since the
+ * list's id set and each detail strip's single id are separate entries; only
+ * the mounted ones refetch straight away.
+ */
+export function invalidateAlertsSummaries(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({
+    queryKey: dashboardKeys.alertsSummaries,
   });
 }

@@ -28,13 +28,25 @@ describe("toAlertsSummary", () => {
     expect(toAlertsSummary(wire)).toEqual({
       startDate: "2026-10-05",
       endDate: "2026-10-11",
-      assessedCount: 3,
+      assessedCount: 2,
       newAlertAreaHa: { parana: 1457.83 },
     });
   });
 
   it("reports nothing assessed for an empty response", () => {
     const summary = toAlertsSummary({ ...wire, dashboards: {} });
+    expect(summary.assessedCount).toBe(0);
+    expect(summary.newAlertAreaHa).toEqual({});
+  });
+
+  it("reports nothing assessed when every total failed", () => {
+    const summary = toAlertsSummary({
+      ...wire,
+      dashboards: {
+        a: { integrated_alerts: null, errors: { integrated_alerts: "down" } },
+        b: { integrated_alerts: null, errors: { integrated_alerts: "down" } },
+      },
+    });
     expect(summary.assessedCount).toBe(0);
     expect(summary.newAlertAreaHa).toEqual({});
   });

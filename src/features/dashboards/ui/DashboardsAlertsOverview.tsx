@@ -29,8 +29,13 @@ export default function DashboardsAlertsOverview({
 }: {
   summary: AlertsSummary | undefined;
   dashboardIds: string[];
-  /** Epoch ms of the fetch that produced `summary` (TanStack's `dataUpdatedAt`). */
-  checkedAt: number;
+  /**
+   * Epoch ms of the fetch that produced `summary` (TanStack's
+   * `dataUpdatedAt`). Undefined while `summary` is held over from a previous
+   * set of dashboards: that check did not cover the set on the page, and
+   * TanStack reports 0 for it, so the line is left out until the new one lands.
+   */
+  checkedAt: number | undefined;
 }) {
   if (!summary || summary.assessedCount === 0) {
     return <Box mt="8px" minH={LINE_HEIGHT} />;
@@ -53,15 +58,17 @@ export default function DashboardsAlertsOverview({
         {total === 1 ? "dashboard has" : "dashboards have"} new alerts for the
         week of {formatWeekRange(summary.startDate, summary.endDate)}
       </Text>
-      <Flex align="center" gap="4px" color="#656E7B">
-        <InfoTooltip about="the alerts check">
-          When this summary was last fetched, not when the integrated alerts
-          dataset was last updated.
-        </InfoTooltip>
-        <Text fontFamily="mono" fontSize="12px" lineHeight="16px">
-          Integrated alerts checked {formatCheckedAt(checkedAt)}
-        </Text>
-      </Flex>
+      {checkedAt !== undefined && (
+        <Flex align="center" gap="4px" color="#656E7B">
+          <InfoTooltip about="the alerts check">
+            When this summary was last fetched, not when the integrated alerts
+            dataset was last updated.
+          </InfoTooltip>
+          <Text fontFamily="mono" fontSize="12px" lineHeight="16px">
+            Integrated alerts checked {formatCheckedAt(checkedAt)}
+          </Text>
+        </Flex>
+      )}
     </Flex>
   );
 }

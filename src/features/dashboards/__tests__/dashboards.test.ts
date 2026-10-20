@@ -299,7 +299,7 @@ describe("fetchDashboardAlertsSummary", () => {
     expect(summary).toEqual({
       startDate: "2026-10-05",
       endDate: "2026-10-11",
-      assessedCount: 2,
+      assessedCount: 1,
       newAlertAreaHa: { d1: 1457.83 },
     });
   });
@@ -339,6 +339,41 @@ describe("fetchDashboardAlertsSummary", () => {
     expect(sentIds.flat()).toEqual(ids);
     expect(summary.assessedCount).toBe(ids.length);
     expect(summary.endDate).toBe("2026-10-11");
+  });
+
+  it("asks for the first response's week in every later request", async () => {
+    const ids = Array.from(
+      { length: ALERTS_SUMMARY_MAX_IDS * 2 + 1 },
+      (_, i) => `d${i}`
+    );
+    // The later responses claim another week, as a request that fell back to
+    // the calendar week would; the summary must still carry the first one.
+    const respond = (dates: typeof week) =>
+      new Response(JSON.stringify({ ...dates, dashboards: {} }), {
+        status: 200,
+      });
+    // A fresh Response per call: a body can only be read once.
+    vi.mocked(apiFetch)
+      .mockResolvedValueOnce(respond(week))
+      .mockImplementation(async () =>
+        respond({ start_date: "2026-10-04", end_date: "2026-10-10" })
+      );
+
+    const summary = await fetchDashboardAlertsSummary(ids);
+
+    const bodies = vi
+      .mocked(apiFetch)
+      .mock.calls.map(
+        ([, init]) => JSON.parse(String(init?.body)) as Record<string, unknown>
+      );
+    expect(bodies).toHaveLength(3);
+    expect(bodies[0]).not.toHaveProperty("start_date");
+    expect(bodies[0]).not.toHaveProperty("end_date");
+    for (const body of bodies.slice(1)) {
+      expect(body).toMatchObject(week);
+    }
+    expect(summary.startDate).toBe(week.start_date);
+    expect(summary.endDate).toBe(week.end_date);
   });
 
   it("refuses an empty list rather than sending a request the backend rejects", async () => {

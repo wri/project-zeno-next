@@ -4,6 +4,11 @@ export const dashboardKeys = {
   aois: (query: string, source: string | null) =>
     ["dashboard-aois", query, source] as const,
   analysisTemplates: ["analysis-templates"] as const,
+  // Prefix of every alerts summary below. Not under `all`: renames and moves
+  // would otherwise re-run an analytics-backed request that they cannot
+  // change. Writes that can add or remove a chart invalidate it instead
+  // (`invalidateAlertsSummaries`).
+  alertsSummaries: ["dashboard-alerts-summary"] as const,
   // `ids` sorted by the caller, so one set of dashboards shares one entry.
   alertsSummary: (ids: readonly string[]) =>
     ["dashboard-alerts-summary", ids] as const,
