@@ -1,0 +1,163 @@
+name: PR Agent
+
+on:
+  # Use pull_request_target (not pull_request) so the workflow definition is
+  # always read from the BASE branch (develop). With `pull_request`, GitHub runs
+  # the workflow file from the PR's merge ref, which is only recomputed when the
+  # PR branch is pushed to. A PR opened before a workflow change keeps running
+  # the OLD workflow until it is rebased/updated.
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review]
+  issue_comment:
+    types: [created]
+
+# Collapse superseded runs: on rapid consecutive pushes (or repeated /review
+# comments), each event would otherwise start an independent pull_request_target
+# run, executing multiple paid LLM reviews in parallel for the same PR. A
+# per-PR concurrency group cancels any in-flight run when a newer one starts.
+concurrency:
+  group: pr-agent-${{ github.event.pull_request.number || github.event.issue.number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  pr_agent:
+    if: |
+      github.event_name == 'pull_request_target' ||
+      (github.event_name == 'issue_comment' &&
+       github.event.issue.pull_request &&
+       (contains(github.event.comment.body, '/review') ||
+        contains(github.event.comment.body, '/describe') ||
+        contains(github.event.comment.body, '/improve') ||
+        contains(github.event.comment.body, '/ask') ||
+        contains(github.event.comment.body, '/update_changelog')) &&
+       contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'),
+                github.event.comment.author_association))
+    runs-on: ubuntu-latest
+    # Bounds runtime and cost if the LLM action hangs (the default cap is 6
+    # hours).
+    timeout-minutes: 60
+    permissions:
+      # PR-Agent's /review (and describe/improve) only posts PR/issue comments;
+      # it does not push commits, so write access to contents is not needed.
+      contents: read
+      pull-requests: write
+      issues: write
+
+    steps:
+      # PR-Agent filters out lockfiles as auto-generated, so a PR that only
+      # bumps a lockfile (e.g. package-lock.json) yields an empty diff and the tool
+      # errors out ("No PR diff fits the /review request"), failing the check.
+      # Detect that case and skip the review instead of reporting a red X.
+      - name: Check for reviewable changes
+        id: reviewable
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "${{ github.event_name }}" = "issue_comment" ]; then
+            pr="${{ github.event.issue.number }}"
+          else
+            pr="${{ github.event.pull_request.number }}"
+          fi
+          echo "pr=$pr" >> "$GITHUB_OUTPUT"
+          files=$(gh api \
+            "repos/${{ github.repository }}/pulls/$pr/files" \
+            --paginate --jq '.[].filename')
+          # Mirrors PR-Agent's AUTO_GENERATED_FILES_EXACT list plus minified
+          # assets and source maps (see pr_agent/algo/language_handler.py).
+          ignored='(^|/)(package-lock\.json|npm-shrinkwrap\.json|yarn\.lock|pnpm-lock\.yaml|composer\.lock|Gemfile\.lock|poetry\.lock|go\.sum|uv\.lock|Cargo\.lock|Pipfile\.lock|mix\.lock|pubspec\.lock|bun\.lockb)$|\.(min\.js|min\.css|js\.map|ts\.map|css\.map)$'
+          # `|| true` guards against grep exiting 1 when every file matches
+          # $ignored: with `bash -eo pipefail` (the default shell), that
+          # non-zero status would abort the step instead of yielding count=0.
+          # It is grouped with grep so it only applies to grep's exit status.
+          count=$(printf '%s\n' "$files" | { grep -vE "$ignored" || true; } | sed '/^[[:space:]]*$/d' | wc -l)
+          if [ "$count" -gt 0 ]; then
+            echo "has_reviewable=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_reviewable=false" >> "$GITHUB_OUTPUT"
+            echo "Only lockfiles/minified assets changed; skipping PR-Agent review."
+          fi
+
+      - name: Note skipped review
+        if: steps.reviewable.outputs.has_reviewable == 'false' && github.event_name == 'issue_comment'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr comment "${{ steps.reviewable.outputs.pr }}" \
+            --repo "${{ github.repository }}" \
+            --body "🤖 PR-Agent skipped: this PR only changes lockfiles/minified assets, which PR-Agent treats as auto-generated and excludes from review."
+
+      # PR-Agent reads its model from the `config.model` env var, so the model
+      # can be chosen dynamically. This step sizes up the change (total added+
+      # removed lines and number of touched files) and maps it to a model tier:
+      #
+      #   light — small diffs: cheapest/fastest model
+      #   heavy — large diffs: strongest available model
+      #
+      # Tune the thresholds and model ids to taste; the heavy-tier id in
+      # particular should be swapped for whatever strong model you prefer to
+      # pay for on complex PRs.
+      - name: Select model by change complexity
+        id: select_model
+        if: steps.reviewable.outputs.has_reviewable == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          pr="${{ steps.reviewable.outputs.pr }}"
+          # One paginated call yields "<additions+deletions> <filename>" per file.
+          data=$(gh api "repos/${{ github.repository }}/pulls/$pr/files" \
+            --paginate --jq '.[] | "\(.additions + .deletions) \(.filename)"')
+          # Apply the same auto-generated-file filter as the "Check for
+          # reviewable changes" step, so the sizing reflects only the diff
+          # PR-Agent will actually review. Without this, a regenerated lockfile
+          # alone (often thousands of lines) would push a small code change
+          # into the expensive heavy tier.
+          ignored='(^|/)(package-lock\.json|npm-shrinkwrap\.json|yarn\.lock|pnpm-lock\.yaml|composer\.lock|Gemfile\.lock|poetry\.lock|go\.sum|uv\.lock|Cargo\.lock|Pipfile\.lock|mix\.lock|pubspec\.lock|bun\.lockb)$|\.(min\.js|min\.css|js\.map|ts\.map|css\.map)$'
+          # `|| true` guards against grep exiting 1 when every file matches
+          # $ignored (same rationale as in the reviewable step).
+          data=$(printf '%s\n' "$data" | { grep -vE "$ignored" || true; } | sed '/^[[:space:]]*$/d')
+          lines=$(printf '%s\n' "$data" | awk '{s+=$1} END {print s+0}')
+          files=$(printf '%s\n' "$data" | awk 'NF {n++} END {print n+0}')
+
+          if [ "$lines" -gt 500 ] || [ "$files" -gt 15 ]; then
+            tier=heavy
+            model='openrouter/z-ai/glm-5.3'
+            fallbacks='["openrouter/deepseek/deepseek-v4.1-flash"]'
+            max_tokens='128000'
+          else
+            tier=light
+            model='openrouter/deepseek/deepseek-v4.1-flash'
+            fallbacks='["openrouter/z-ai/glm-5.3-flash"]'
+            max_tokens='64000'
+          fi
+
+          echo "Diff: $lines changed lines across $files files -> $tier tier"
+          echo "tier=$tier" >> "$GITHUB_OUTPUT"
+          echo "model=$model" >> "$GITHUB_OUTPUT"
+          echo "fallback_models=$fallbacks" >> "$GITHUB_OUTPUT"
+          echo "max_tokens=$max_tokens" >> "$GITHUB_OUTPUT"
+
+      - name: Run PR Agent review
+        if: steps.reviewable.outputs.has_reviewable == 'true'
+        # Pinned to the v0.48.0 release tag. A tag is less tamper-proof than a
+        # full commit SHA (tags are mutable), but it makes upgrades explicit
+        # and readable. the-pr-agent/pr-agent is the new home of the former
+        # qodo-ai/pr-agent. Bump the tag deliberately when upgrading.
+        uses: the-pr-agent/pr-agent@v0.48.0
+        env:
+          # Public GitHub repos do not incur GitHub Actions charges, and
+          # the PR-Agent project itself is open source. Model API usage still
+          # incurs the provider's standard billing, so this key should be set
+          # only if you are comfortable with the provider's usage fees.
+          OPENROUTER__KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          # The setting is `config.model`, and the id must carry the
+          # `openrouter/` prefix so LiteLLM routes via OpenRouter and uses
+          # OPENROUTER__KEY. The model is chosen dynamically by the
+          # "Select model by change complexity" step above based on the size
+          # of the PR diff.
+          config.model: "${{ steps.select_model.outputs.model }}"
+          config.fallback_models: "${{ steps.select_model.outputs.fallback_models }}"
+          # These ids are not in PR-Agent's MAX_TOKENS table, so set the
+          # context window explicitly, per tier: 64000 for light, 128000 for
+          # heavy.
+          config.custom_model_max_tokens: "${{ steps.select_model.outputs.max_tokens }}"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
