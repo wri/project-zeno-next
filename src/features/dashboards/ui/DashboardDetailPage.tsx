@@ -19,6 +19,7 @@ import DashboardHeader from "./DashboardHeader";
 import DashboardPinnedHeader from "./DashboardPinnedHeader";
 import DashboardWidgetsGrid from "./DashboardWidgetsGrid";
 import { HERO_BAND_PROPS } from "./heroGrid";
+import WeeklyAlertsStrip from "./WeeklyAlertsStrip";
 
 export default function DashboardDetailPage() {
   const params = useParams<{ id: string }>();
@@ -135,7 +136,12 @@ export default function DashboardDetailPage() {
                   on the page's gray background
                   (per the grouped-insights design), so the shell wraps only
                   the header. */}
-                <Box
+                <Flex
+                  direction="column"
+                  // The Figma header card stacks the title row and the weekly
+                  // alerts strip 16px apart; a column gap costs nothing when
+                  // the strip renders null.
+                  gap="16px"
                   bgColor="white"
                   {...HERO_BAND_PROPS}
                   borderWidth="1px"
@@ -150,7 +156,8 @@ export default function DashboardDetailPage() {
                   <Box ref={sentinelRef} aria-hidden={pinned} inert={pinned}>
                     <DashboardHeader dashboard={dashboard} isOwner={isOwner} />
                   </Box>
-                </Box>
+                  <WeeklyAlertsStrip dashboard={dashboard} />
+                </Flex>
 
                 {hasContent ? (
                   <DashboardWidgetsGrid dashboard={dashboard} />

@@ -1,7 +1,9 @@
 import { describe, it, expect } from "vitest";
 
 import {
+  INTEGRATED_ALERTS_DATASET_ID,
   chartTitleOverride,
+  countIntegratedAlertsCharts,
   dashboardWidgetToInsightWidgets,
   findCuratedWidgetForDataset,
   hasDashboardContent,
@@ -847,5 +849,38 @@ describe("hasWidgetCustomization", () => {
     expect(hasWidgetCustomization(withSummaryShown({}, true))).toBe(false);
     expect(hasWidgetCustomization(withWidgetTitle({}, "   "))).toBe(false);
     expect(hasWidgetCustomization({ sizes: {}, titles: {} })).toBe(false);
+  });
+});
+
+describe("countIntegratedAlertsCharts", () => {
+  const alerts = (id: string) =>
+    chart({ id, dataset_id: INTEGRATED_ALERTS_DATASET_ID });
+
+  it("counts integrated alerts charts across widgets, like the backend's rule", () => {
+    const widgets = [
+      widget({
+        id: "w-1",
+        insight: { id: "ins-1", charts: [alerts("c-1"), alerts("c-2")] },
+      }),
+      widget({
+        id: "w-2",
+        insight: { id: "ins-2", charts: [chart({ id: "c-3", dataset_id: 2 })] },
+      }),
+      widget({ id: "w-3", insight: { id: "ins-3", charts: [alerts("c-4")] } }),
+    ];
+    expect(countIntegratedAlertsCharts(widgets)).toBe(3);
+  });
+
+  it("ignores charts without a dataset id and widgets without an insight", () => {
+    const widgets = [
+      widget({
+        insight: {
+          id: "ins-1",
+          charts: [chart({ dataset_id: null }), chart({ id: "c-2" })],
+        },
+      }),
+      widget({ id: "w-2", widget_type: "text", insight: null }),
+    ];
+    expect(countIntegratedAlertsCharts(widgets)).toBe(0);
   });
 });
