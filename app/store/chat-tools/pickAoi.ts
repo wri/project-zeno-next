@@ -83,10 +83,15 @@ async function fetchAndRegisterAoi(
   return geoJsonData;
 }
 
+/**
+ * Resolves to the selection installed on the area layer, which can be fewer
+ * areas than were picked (geometry fetches fail per area) and is labelled by
+ * `selectionLabel`, or `undefined` when no layer was added.
+ */
 export async function pickAoiTool(
   streamMessage: StreamMessage,
   addMessage: (message: Omit<ChatMessage, "id">) => void
-) {
+): Promise<AOISelection | undefined> {
   console.log(
     "[pickAoi] called with:",
     JSON.stringify(
@@ -131,6 +136,7 @@ export async function pickAoiTool(
       // stable GLOBAL_LAYER_ID constant so re-adding a global selection
       // replaces the existing layer instead of stacking duplicates.
       // The visible layer IS the scope — no separate context item.
+      const globalSelection = aoiSelection ?? { name: selectionName, aois };
       addLayer({
         id: GLOBAL_LAYER_ID,
         name: selectionName,
@@ -139,7 +145,7 @@ export async function pickAoiTool(
         tileUrl: gadm.url,
         sourceLayer: gadm.sourceLayer,
         selectionName,
-        aoiSelection: aoiSelection ?? { name: selectionName, aois },
+        aoiSelection: globalSelection,
       });
 
       flyToGeoJsonWithRetry(worldBbox);
@@ -147,11 +153,11 @@ export async function pickAoiTool(
       addMessage({
         type: "area-card",
         message: "",
-        aoiSelection: aoiSelection ?? { name: selectionName, aois },
+        aoiSelection: globalSelection,
         timestamp: streamMessage.timestamp,
       });
 
-      return;
+      return globalSelection;
     }
 
     if (aois.length === 0) {
@@ -188,11 +194,15 @@ export async function pickAoiTool(
       name: aoi.name,
       source: aoi.source,
     }));
+    const installed: AOISelection | undefined =
+      successfulAois.length > 0
+        ? { name: selectionName, aois: successfulAois }
+        : undefined;
 
     // The visible layer IS the scope — no separate context item. The layer id
     // is the selection name, so re-picking the same selection replaces it
     // rather than stacking a duplicate; differently-named selections stack.
-    if (successfulRefs.length > 0) {
+    if (installed) {
       addLayer({
         id: selectionName,
         name: selectionName,
@@ -200,7 +210,7 @@ export async function pickAoiTool(
         visible: true,
         featureRefs: successfulRefs,
         selectionName,
-        aoiSelection: { name: selectionName, aois: successfulAois },
+        aoiSelection: installed,
       });
     }
 
@@ -233,11 +243,11 @@ export async function pickAoiTool(
 
     // Only show the area card if at least one AOI rendered successfully,
     // and only include the successful AOIs in the card.
-    if (successfulAois.length > 0) {
+    if (installed) {
       addMessage({
         type: "area-card",
         message: "",
-        aoiSelection: { name: selectionName, aois: successfulAois },
+        aoiSelection: installed,
         timestamp: streamMessage.timestamp,
       });
     }
@@ -252,6 +262,7 @@ export async function pickAoiTool(
     } else if (failures.length === aois.length) {
       throw new Error("Failed to fetch geometry for all selected areas");
     }
+    return installed;
   } catch (error) {
     console.error("Error processing pick_aoi artifact:", error);
 
@@ -262,5 +273,6 @@ export async function pickAoiTool(
       }. Error: ${error instanceof Error ? error.message : "Unknown error"}`,
       timestamp: streamMessage.timestamp,
     });
+    return undefined;
   }
 }

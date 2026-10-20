@@ -487,17 +487,21 @@ async function processStreamMessage(
     ) {
       // The agent picked this AOI itself — fold it into the last-sent context
       // so it isn't echoed back as a "new" selection on the next user message.
-      const aoi = (streamMessage.aoi_selection?.aois?.[0] ??
-        streamMessage.aoi) as
-        | { name?: string; source?: string; src_id?: string }
-        | undefined;
-      const aoiName = streamMessage.aoi_selection?.name ?? aoi?.name;
-      if (aoiName)
-        useChatStore
-          .getState()
-          .foldSentContext({ aoi: aoiContextKey(aoiName, aoi) });
+      // Deferred until pickAoiTool installs the area layer, and keyed from
+      // that layer's selection, not the stream's: deriveContext reads the
+      // layer, which keeps only the areas whose geometry loaded and is named
+      // by selectionLabel. Keyed from the stream, a failed first fetch (or a
+      // display_name) would make the next send re-announce the area as a
+      // single aoi_selected, replacing the agent's multi-area selection.
       // Non-blocking: geometry fetch can be slow; don't stall stream
-      void Promise.resolve().then(() => pickAoiTool(streamMessage, addMessage));
+      void Promise.resolve()
+        .then(() => pickAoiTool(streamMessage, addMessage))
+        .then((installed) => {
+          if (!installed) return;
+          useChatStore.getState().foldSentContext({
+            aoi: aoiContextKey(installed.name, installed.aois[0]),
+          });
+        });
       return;
     }
     // Handling for pick_dataset tool

@@ -930,6 +930,112 @@ describe("pick_dataset stream signal → lastSentContext.dataset fold", () => {
   });
 });
 
+// --- pick_aoi stream signal → area layer + lastSentContext.aoi fold -------
+
+/** One NDJSON line for a resolved pick_aoi turn with a multi-area selection. */
+function pickAoiSelectionLine(aoiSelection: {
+  name: string;
+  aois: Record<string, unknown>[];
+}): string {
+  return JSON.stringify({
+    node: "tools",
+    timestamp: "2026-07-30T00:00:00.500Z",
+    update: JSON.stringify({
+      aoi_selection: aoiSelection,
+      messages: [
+        {
+          lc: 1,
+          type: "constructor",
+          id: ["x"],
+          kwargs: {
+            content: `Selected ${aoiSelection.name}`,
+            type: "tool",
+            name: "pick_aoi",
+            id: "m-pick-aoi",
+            response_metadata: {},
+          },
+        },
+      ],
+    }),
+  });
+}
+
+/** A one-square FeatureCollection, offset so each parcel's geometry differs. */
+const square = (x: number) => ({
+  type: "FeatureCollection",
+  features: [
+    {
+      type: "Feature",
+      properties: {},
+      geometry: {
+        type: "Polygon",
+        coordinates: [
+          [
+            [x, 0],
+            [x + 1, 0],
+            [x + 1, 1],
+            [x, 0],
+          ],
+        ],
+      },
+    },
+  ],
+});
+
+const parcel = (srcId: string, extra: Record<string, unknown> = {}) => ({
+  name: "Mining concession, IDN",
+  source: "mining",
+  src_id: srcId,
+  subtype: "mining-concession",
+  ...extra,
+});
+
+/** The ui_context of the nth POST /api/chat, or undefined when none was sent. */
+const sentUiContext = (n: number) => {
+  const chatCalls = vi
+    .mocked(apiFetch)
+    .mock.calls.filter(([path]) => path === "/api/chat");
+  const body = JSON.parse(String(chatCalls[n][1]!.body));
+  return body.ui_context as Record<string, unknown> | undefined;
+};
+
+describe("pick_aoi stream signal → area layer and lastSentContext.aoi fold", () => {
+  beforeEach(() => {
+    useChatStore.getState().reset();
+    useMapStore.getState().reset();
+    vi.mocked(apiFetch).mockReset();
+  });
+
+  it("doesn't re-announce the agent's selection when its first area's geometry failed", async () => {
+    // The layer keeps only the areas whose geometry loaded, so its first area
+    // (and the aoi key deriveContext computes from it) is parcel 102, not the
+    // stream's first, 101.
+    vi.mocked(apiFetch).mockImplementation((path) =>
+      Promise.resolve(
+        String(path).startsWith("/api/geometry/")
+          ? ({ ok: false, status: 404, statusText: "Not Found" } as Response)
+          : ndjsonResponse([
+              pickAoiSelectionLine({
+                name: "Mining concessions in Riau",
+                aois: [parcel("101"), parcel("102", { geometry: square(0) })],
+              }),
+              agentTextLine("Two parcels."),
+            ])
+      )
+    );
+
+    await useChatStore.getState().sendMessage("mining concessions in Riau");
+    await vi.waitFor(() =>
+      expect(useChatStore.getState().lastSentContext.aoi).toBe(
+        "Mining concessions in Riau|mining:102"
+      )
+    );
+    await useChatStore.getState().sendMessage("and since 2020?");
+
+    expect(sentUiContext(1)?.aoi_selected).toBeUndefined();
+  });
+});
+
 // --- nudge state → "nudge" chat message -----------------------------------
 
 /**
