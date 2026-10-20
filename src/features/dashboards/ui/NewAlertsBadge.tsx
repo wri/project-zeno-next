@@ -1,5 +1,7 @@
 import { Box, Flex, Text } from "@chakra-ui/react";
 
+import { ALERT_COLORS } from "./alertColors";
+
 /**
  * "New alerts this week": the Figma Badge (sm, pill colour, dot, error) a
  * dashboard card carries when its area had integrated alerts in the latest
@@ -14,9 +16,9 @@ export default function NewAlertsBadge() {
       pl="6px"
       pr="8px"
       py="2px"
-      bg="#FEF2F2"
+      bg={ALERT_COLORS.bg}
       borderWidth="1px"
-      borderColor="#F8BABA"
+      borderColor={ALERT_COLORS.border}
       rounded="4px"
     >
       <Box
@@ -24,13 +26,13 @@ export default function NewAlertsBadge() {
         flexShrink={0}
         boxSize="6px"
         rounded="full"
-        bg="#EF4444"
+        bg={ALERT_COLORS.dot}
       />
       <Text
         fontFamily="mono"
         fontSize="10px"
         lineHeight="18px"
-        color="#B91C1C"
+        color={ALERT_COLORS.text}
         whiteSpace="nowrap"
       >
         New alerts this week

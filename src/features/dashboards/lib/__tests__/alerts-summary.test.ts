@@ -14,12 +14,9 @@ const wire = {
   start_date: "2026-10-05",
   end_date: "2026-10-11",
   dashboards: {
-    parana: { integrated_alerts: 1457.83, errors: {} },
-    quiet: { integrated_alerts: 0, errors: {} },
-    broken: {
-      integrated_alerts: null,
-      errors: { integrated_alerts: "Integrated alerts data is unavailable" },
-    },
+    parana: { integrated_alerts: 1457.83 },
+    quiet: { integrated_alerts: 0 },
+    broken: { integrated_alerts: null },
   },
 };
 
@@ -43,8 +40,8 @@ describe("toAlertsSummary", () => {
     const summary = toAlertsSummary({
       ...wire,
       dashboards: {
-        a: { integrated_alerts: null, errors: { integrated_alerts: "down" } },
-        b: { integrated_alerts: null, errors: { integrated_alerts: "down" } },
+        a: { integrated_alerts: null },
+        b: { integrated_alerts: null },
       },
     });
     expect(summary.assessedCount).toBe(0);

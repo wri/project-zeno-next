@@ -368,14 +368,10 @@ export const INTEGRATED_ALERTS_DATASET_ID = 11;
 export function countIntegratedAlertsCharts(
   widgets: readonly DashboardWidget[]
 ): number {
-  return widgets.reduce(
-    (count, widget) =>
-      count +
-      (widget.insight?.charts ?? []).filter(
-        (chart) => chart.dataset_id === INTEGRATED_ALERTS_DATASET_ID
-      ).length,
-    0
-  );
+  return widgets
+    .flatMap((widget) => widget.insight?.charts ?? [])
+    .filter((chart) => chart.dataset_id === INTEGRATED_ALERTS_DATASET_ID)
+    .length;
 }
 
 /**

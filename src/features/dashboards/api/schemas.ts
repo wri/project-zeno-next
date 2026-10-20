@@ -144,12 +144,12 @@ export const DashboardCreateRequestSchema = z.object({
 
 // POST /api/dashboards/alerts-summary. One entry per dashboard the backend
 // could assess (an integrated alerts chart and a GADM area). The wire keeps
-// the BE's `null` for "could not be fetched" (with the reason in `errors`);
-// `lib/alerts-summary` settles it into an explicit state.
+// the BE's `null` for "could not be fetched"; `lib/alerts-summary` settles it
+// into an explicit state. The BE's per-row `errors` reasons are not read, so
+// they are left for zod to strip.
 export const DashboardAlertsResponseSchema = z.object({
   // Alert area in hectares over the week.
   integrated_alerts: z.number().nullable(),
-  errors: z.record(z.string(), z.string()).default({}),
 });
 
 export const DashboardAlertsSummaryResponseSchema = z.object({

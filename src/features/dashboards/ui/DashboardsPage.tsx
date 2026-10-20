@@ -120,9 +120,8 @@ export default function DashboardsPage() {
                       key={dashboard.id}
                       dashboard={dashboard}
                       hasNewAlerts={
-                        alertsSummary
-                          ? hasNewAlerts(alertsSummary, dashboard.id)
-                          : false
+                        !!alertsSummary &&
+                        hasNewAlerts(alertsSummary, dashboard.id)
                       }
                     />
                   ))}

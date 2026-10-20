@@ -6,6 +6,7 @@ import { useDashboardAlertsSummary } from "../hooks/useDashboardAlertsSummary";
 import { useDismissedAlertsWeek } from "../hooks/useDismissedAlertsWeek";
 import { formatAlertArea, updatableChartsLabel } from "../lib/alerts-summary";
 import { countIntegratedAlertsCharts } from "../lib/widgets";
+import { ALERT_COLORS } from "./alertColors";
 
 /**
  * The Figma "Weekly alerts strip" (Playground 4549:3571): a red notice under
@@ -36,9 +37,9 @@ export default function WeeklyAlertsStrip({
       gap="12px"
       px="16px"
       py="8px"
-      bg="#FEF2F2"
+      bg={ALERT_COLORS.bg}
       borderWidth="1px"
-      borderColor="#F8BABA"
+      borderColor={ALERT_COLORS.border}
       rounded="8px"
     >
       <Box
@@ -46,10 +47,10 @@ export default function WeeklyAlertsStrip({
         flexShrink={0}
         boxSize="8px"
         rounded="full"
-        bg="#EF4444"
+        bg={ALERT_COLORS.dot}
       />
       <Flex flex="1" minW={0} align="center" gap="12px" wrap="wrap">
-        <Text fontSize="14px" fontWeight="medium" color="#B91C1C">
+        <Text fontSize="14px" fontWeight="medium" color={ALERT_COLORS.text}>
           {formatAlertArea(areaHa)} of new integrated alerts this week
         </Text>
         <Text fontSize="13px" color="#565E7B">
@@ -65,7 +66,7 @@ export default function WeeklyAlertsStrip({
         aria-label="Dismiss alerts notice"
         size="xs"
         variant="ghost"
-        color="#B91C1C"
+        color={ALERT_COLORS.text}
         minW="28px"
         h="28px"
         _hover={{ bg: "#FEE2E2" }}
