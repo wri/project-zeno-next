@@ -32,6 +32,12 @@ interface MapSlice {
   mapRef: MapRef | null;
   /** The one boundary layer shown on the map (null = none). See `selectLayerOptions`. */
   selectAreaLayer: LayerId | null;
+  /**
+   * Opacity (0-1) of the boundary layer, set from its legend entry. Only the
+   * concession layers have one; switching layers resets it.
+   */
+  boundaryOpacity: number;
+  setBoundaryOpacity: (opacity: number) => void;
   reset: () => void;
   setMapRef: (mapRef: MapRef) => void;
   setSelectAreaLayer: (layerId: LayerId | null) => void;
@@ -143,11 +149,13 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
 ) => ({
   mapRef: null,
   selectAreaLayer: "GADM",
+  boundaryOpacity: 1,
   selectionMode: undefined,
 
   reset: () => {
     set({
       selectAreaLayer: "GADM",
+      boundaryOpacity: 1,
       layers: [],
       geoJsonRegistry: [],
       // Clear the analysis selection so a new thread (which reseeds the
@@ -172,7 +180,11 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
 
   setSelectAreaLayer: (layerId) => {
     get().clearValidationError?.();
-    set({ selectAreaLayer: layerId });
+    set({ selectAreaLayer: layerId, boundaryOpacity: 1 });
+  },
+
+  setBoundaryOpacity: (opacity) => {
+    set({ boundaryOpacity: opacity });
   },
 
   setSelectionMode: (selectionMode) => {

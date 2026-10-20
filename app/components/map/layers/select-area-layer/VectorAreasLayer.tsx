@@ -9,17 +9,26 @@ import {
   Polygon,
 } from "geojson";
 
-import { LayerId, selectLayerOptions } from "@/app/types/map";
+import {
+  CONCESSION_STYLES,
+  LayerId,
+  selectLayerOptions,
+} from "@/app/types/map";
 import { API_CONFIG } from "@/app/config/api";
 
 import useMapStore from "@/app/store/mapStore";
 import { isAreaLayer } from "@/app/store/layerManagerSlice";
 
-import { getAoiName, getSrcId, getSubtype } from "@/app/utils/areaHelpers";
+import { getFeatureName, getSrcId, getSubtype } from "@/app/utils/areaHelpers";
 
 import AreaTooltip, { HoverInfo } from "@/app/components/ui/AreaTooltip";
 import { getBoundaryFeatureDetails } from "@/app/utils/boundaryFeatureDetails";
-import { selectAreaFillPaint, selectAreaLinePaint } from "./mapStyles";
+import {
+  concessionFillPaint,
+  concessionLinePaint,
+  selectAreaFillPaint,
+  selectAreaLinePaint,
+} from "./mapStyles";
 import "@/app/theme/popup.css";
 import { publishAreaSelection } from "./publishAreaSelection";
 
@@ -46,7 +55,18 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
   const selectAreaLayerConfig = selectLayerOptions.find(
     ({ id }) => id === layerId
   );
-  const { id, url, sourceLayer, nameKeys } = selectAreaLayerConfig!;
+  const { id, url, sourceLayer } = selectAreaLayerConfig!;
+  const concessionStyle = CONCESSION_STYLES[layerId];
+  const boundaryOpacity = useMapStore((s) => s.boundaryOpacity);
+  // A concession layer is drawn in its commodity's colour, outlined only
+  // where GNW draws an outline; every other layer keeps the usual paint.
+  const fillPaint = concessionStyle
+    ? concessionFillPaint(concessionStyle, boundaryOpacity)
+    : selectAreaFillPaint;
+  const linePaint = !concessionStyle
+    ? selectAreaLinePaint
+    : concessionStyle.line &&
+      concessionLinePaint(concessionStyle.line, boundaryOpacity);
 
   const sourceId = `select-layer-source-${id}`;
   const fillLayerName = `select-layer-fill-${id}`;
@@ -86,7 +106,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
             setHoverInfo({
               lat,
               lng,
-              name: getAoiName(nameKeys, properties),
+              name: getFeatureName(layerId, properties),
               details: getBoundaryFeatureDetails(layerId, properties),
             });
           }, TOOLTIP_DEBOUNCE_MS);
@@ -120,14 +140,13 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
 
       const onClick = (e: MapMouseEvent) => {
         if (e.features && e.features.length > 0) {
-          // Depending on the layer, the name property has a different key.
-          // Using nameKeys of the layer config to find the right value.
-          const aoiName = getAoiName(nameKeys, e.features.at(-1)!.properties);
-
           const feature = e.features.at(-1);
 
           if (feature) {
             const featureProps = feature.properties;
+            // Depending on the layer, the name property has a different key;
+            // getFeatureName reads the layer config's nameKeys.
+            const aoiName = getFeatureName(layerId, featureProps);
             // A click can land before /api/metadata resolves; the area still
             // draws, just without an id (publishAreaSelection then clears).
             const dynamicSrcId = metadata
@@ -137,13 +156,21 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
               ? getSubtype(layerId, featureProps, metadata)
               : undefined;
 
+            // The src id is part of the ref: two parcels can share a name,
+            // and the registry keeps an entry per ref.
+            const featureRef = {
+              name: aoiName,
+              source: layerId,
+              srcId: dynamicSrcId,
+            };
+
             const sourceFeatures = map.querySourceFeatures(sourceId, {
               sourceLayer: sourceLayer,
               filter: ["in", "gfw_fid", feature.properties?.gfw_fid],
             });
             if (sourceFeatures.length === 1) {
               addToRegistry({
-                ref: { name: aoiName, source: layerId },
+                ref: featureRef,
                 data: sourceFeatures[0],
                 srcId: dynamicSrcId,
                 subtype: dynamicSubtype,
@@ -153,7 +180,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
                 name: aoiName,
                 type: "geojson",
                 visible: true,
-                featureRefs: [{ name: aoiName, source: layerId }],
+                featureRefs: [featureRef],
               });
             } else if (sourceFeatures.length > 1) {
               const collection: FeatureCollection<
@@ -169,7 +196,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
               const f = union(collection);
               if (f) {
                 addToRegistry({
-                  ref: { name: aoiName, source: layerId },
+                  ref: featureRef,
                   data: f,
                   srcId: dynamicSrcId,
                   subtype: dynamicSubtype,
@@ -179,7 +206,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
                   name: aoiName,
                   type: "geojson",
                   visible: true,
-                  featureRefs: [{ name: aoiName, source: layerId }],
+                  featureRefs: [featureRef],
                 });
               }
             }
@@ -229,7 +256,6 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
     fillLayerName,
     sourceId,
     sourceLayer,
-    nameKeys,
     metadata,
     addToRegistry,
     addLayer,
@@ -245,19 +271,36 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
         type="vector"
         tiles={[url]}
         promoteId="gfw_fid"
+        // Spread, not maxzoom={…?.maxzoom}: MapLibre rejects a source with
+        // maxzoom: undefined, so the other boundary layers would not draw.
+        {...(concessionStyle ? { maxzoom: concessionStyle.maxzoom } : {})}
       >
+        {/* Every <Layer> is a direct child: <Source> passes its id to each
+            child, and a fragment cannot take that prop. A concession layer
+            gets the usual hover tint on top of its fill; the events bind to
+            the fill either way. */}
         <Layer
           id={fillLayerName}
           type="fill"
           source-layer={sourceLayer}
-          paint={selectAreaFillPaint}
+          paint={fillPaint}
         />
-        <Layer
-          id={`select-layer-line-${id}`}
-          type="line"
-          source-layer={sourceLayer}
-          paint={selectAreaLinePaint}
-        />
+        {linePaint && (
+          <Layer
+            id={`select-layer-line-${id}`}
+            type="line"
+            source-layer={sourceLayer}
+            paint={linePaint}
+          />
+        )}
+        {concessionStyle && (
+          <Layer
+            id={`select-layer-hover-${id}`}
+            type="fill"
+            source-layer={sourceLayer}
+            paint={selectAreaFillPaint}
+          />
+        )}
       </Source>
       {hoverInfo && <AreaTooltip hoverInfo={hoverInfo} />}
     </>

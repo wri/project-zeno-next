@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
 /**
  * Boundaries tab of the Areas panel: boundary layers (admin areas, KBAs,
- * protected areas, indigenous lands) are shown one at a time, and showing one
+ * protected areas, indigenous lands, and the commodity concessions) are shown
+ * one at a time, and showing one
  * is NOT an area selection — it must never touch `mapStore.layers`, which is
  * what `deriveContext` reads to build `ui_context`.
  */
@@ -35,6 +36,11 @@ const NAMES = [
   "Key Biodiversity Areas",
   "Protected Areas",
   "Indigenous Lands",
+  "Logging Concessions",
+  "Mining Concessions",
+  "Oil Palm Concessions",
+  "RSPO Oil Palm Concessions",
+  "Wood Fiber Concessions",
 ];
 
 function renderList() {
@@ -65,6 +71,32 @@ describe("BoundariesList", () => {
       NAMES
     );
     expect(screen.queryByText("Custom Areas")).toBeNull();
+  });
+
+  it("groups the concession layers under Commodities", () => {
+    renderList();
+
+    const heading = screen.getByText("Commodities");
+    const logging = card("Logging Concessions");
+    const indigenous = card("Indigenous Lands");
+    // The heading sits between the boundaries and the concessions.
+    expect(
+      indigenous.compareDocumentPosition(heading) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    expect(
+      heading.compareDocumentPosition(logging) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
+  it("switches a concession layer on like any boundary layer", () => {
+    renderList();
+
+    fireEvent.click(card("Mining Concessions"));
+
+    expect(useMapStore.getState().selectAreaLayer).toBe("MINING");
+    expect(isOn("Administrative Areas")).toBe(false);
   });
 
   it("shows Administrative Areas on the map by default", () => {

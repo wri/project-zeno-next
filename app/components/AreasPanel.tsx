@@ -25,6 +25,7 @@ import { useCustomAreasListSuspense } from "@/app/hooks/useCustomAreasList";
 import { useCustomAreasCreate } from "@/app/hooks/useCustomAreasCreate";
 import type { CustomArea } from "@/app/schemas/api/custom_areas/get";
 import {
+  findRegistryEntry,
   isAreaLayer,
   type Layer,
   type GeoJsonEntry,
@@ -64,6 +65,11 @@ const AREA_TYPE_LABELS: Record<string, string> = {
   kba: "Key biodiversity areas",
   wdpa: "Protected areas",
   landmark: "Indigenous territories",
+  oil_palm: "Oil palm concessions",
+  rspo_oil_palm: "RSPO oil palm concessions",
+  logging: "Logging concessions",
+  mining: "Mining concessions",
+  wood_fiber: "Wood fiber concessions",
   custom: "User uploaded areas",
 };
 
@@ -282,9 +288,7 @@ function layerToAoiSelection(
   return {
     name: layer.name,
     aois: refs.map((ref) => {
-      const entry = registry.find(
-        (e) => e.ref.name === ref.name && e.ref.source === ref.source
-      );
+      const entry = findRegistryEntry(registry, ref);
       return {
         name: ref.name,
         src_id: entry?.srcId ?? ref.name,
@@ -348,9 +352,7 @@ function ConversationAreaCard({ layer }: { layer: Layer }) {
     }
     // Fallback: fly to the first resolvable registry geometry.
     for (const ref of layer.featureRefs ?? []) {
-      const entry = geoJsonRegistry.find(
-        (e) => e.ref.name === ref.name && e.ref.source === ref.source
-      );
+      const entry = findRegistryEntry(geoJsonRegistry, ref);
       if (entry) {
         flyToGeoJson(entry.data);
         return;
