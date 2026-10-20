@@ -3,6 +3,7 @@ import { Button, Stack, Text } from "@chakra-ui/react";
 
 import { toaster } from "@/app/components/ui/toaster";
 import { useCustomAreasListSuspense } from "@/app/hooks/useCustomAreasList";
+import { aoiFeatureRef } from "@/app/store/layerManagerSlice";
 import useMapStore from "@/app/store/mapStore";
 import { addPlaceToMap, findPlaceLayer } from "@/app/utils/addPlaceToMap";
 import {
@@ -186,7 +187,7 @@ function PlaceRow({ place }: { place: AoiSearchResult }) {
   async function handleToggle(checked: boolean) {
     if (!checked) {
       if (!layer) return;
-      removeFromRegistry({ name: aoi.name, source: aoi.source });
+      removeFromRegistry(aoiFeatureRef(aoi));
       removeLayer(layer.id);
       return;
     }

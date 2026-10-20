@@ -1,5 +1,5 @@
 import { fetchAndRegisterAoi } from "@/app/store/chat-tools/pickAoi";
-import type { Layer } from "@/app/store/layerManagerSlice";
+import { aoiFeatureRef, type Layer } from "@/app/store/layerManagerSlice";
 import useMapStore from "@/app/store/mapStore";
 import type { AOI } from "@/app/types/chat";
 import { aoiFlyBounds } from "@/app/utils/bboxUtils";
@@ -27,7 +27,7 @@ export async function addPlaceToMap(aoi: AOI): Promise<void> {
     name: aoi.name,
     type: "geojson",
     visible: true,
-    featureRefs: [{ name: aoi.name, source: aoi.source }],
+    featureRefs: [aoiFeatureRef(aoi)],
     aoiSelection: { name: aoi.name, aois: [aoi] },
   });
   removeOtherReferenceAreas(aoi.name);

@@ -19,6 +19,7 @@ vi.mock("@/app/store/chatStore", () => ({
 }));
 
 import { apiFetch } from "@/app/lib/api-client";
+import { findRegistryEntry } from "@/app/store/layerManagerSlice";
 import useMapStore from "@/app/store/mapStore";
 import { useSelectionStore } from "@/src/features/analysis";
 
@@ -250,6 +251,11 @@ describe("AreaSearchResults", () => {
       srcId: "ARG.21_1",
       subtype: "state-province",
     });
+    // The layer draws from the geometry registered for it.
+    const { layers, geoJsonRegistry } = useMapStore.getState();
+    const placeLayer = layers.find((l) => l.id === "Santa Cruz");
+    const [ref] = placeLayer?.featureRefs ?? [];
+    expect(ref && findRegistryEntry(geoJsonRegistry, ref)).toBeTruthy();
     expect(
       within(found).getByLabelText("Hide Santa Cruz from map")
     ).toBeTruthy();
@@ -270,5 +276,6 @@ describe("AreaSearchResults", () => {
     });
 
     expect(useMapStore.getState().layers).toHaveLength(0);
+    expect(useMapStore.getState().geoJsonRegistry).toHaveLength(0);
   });
 });
