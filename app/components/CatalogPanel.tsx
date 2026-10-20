@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Box, Button, Flex, IconButton, Stack, Text } from "@chakra-ui/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { CaretDownIcon, StackPlusIcon, XIcon } from "@phosphor-icons/react";
@@ -148,6 +148,27 @@ function CatalogBody({
   onClose: () => void;
 }) {
   const [query, setQuery] = useState("");
+  const pending = useRef<{ datasetId: number; index: number } | null>(null);
+  const refocus = useMemo<FocusHandoff>(
+    () => ({
+      hold: (datasetId, index) => {
+        pending.current = { datasetId, index };
+      },
+      take: (datasetId) => {
+        const target = pending.current;
+        if (target?.datasetId !== datasetId) return null;
+        pending.current = null;
+        return target.index;
+      },
+    }),
+    []
+  );
+  // A move is taken in the remounted row's layout effect, which runs before
+  // this one; clearing after every commit drops a hold whose row never
+  // remounted, so it cannot fire on some later, unrelated remount.
+  useLayoutEffect(() => {
+    pending.current = null;
+  });
 
   // Datasets with a layer on the map — the layer manager is the source of
   // truth. `useShallow` keeps re-renders stable across unrelated layer changes
@@ -219,15 +240,15 @@ function CatalogBody({
             onShowAll={() => onCategoryChange("all")}
           />
         ) : onMap.length === 0 ? (
-          <CardList cards={rest} />
+          <CardList cards={rest} refocus={refocus} />
         ) : (
           <>
             <PanelSection label="On map">
-              <CardList cards={onMap} onMap />
+              <CardList cards={onMap} onMap refocus={refocus} />
             </PanelSection>
             {rest.length > 0 && (
               <PanelSection label={categoryLabel}>
-                <CardList cards={rest} />
+                <CardList cards={rest} refocus={refocus} />
               </PanelSection>
             )}
           </>
@@ -237,21 +258,44 @@ function CatalogBody({
   );
 }
 
+/**
+ * Hands keyboard focus from a row toggled into the other list to its remounted
+ * copy. `index` is the switch's position among the row's switches (0 is the
+ * dataset's own; supporting layers follow).
+ */
+interface FocusHandoff {
+  hold: (datasetId: number, index: number) => void;
+  /** The held switch index for this dataset, once; null if none is held. */
+  take: (datasetId: number) => number | null;
+}
+
 function CardList({
   cards,
   onMap = false,
+  refocus,
 }: {
   cards: DatasetCardConfig[];
   onMap?: boolean;
+  refocus: FocusHandoff;
 }) {
   return (
     <PanelList>
       {cards.map((card) => (
-        <CatalogDatasetRow key={card.dataset_id} card={card} onMap={onMap} />
+        <CatalogDatasetRow
+          key={card.dataset_id}
+          card={card}
+          onMap={onMap}
+          refocus={refocus}
+        />
       ))}
     </PanelList>
   );
 }
+
+const rowSwitches = (group: HTMLElement | null): HTMLInputElement[] =>
+  Array.from(
+    group?.querySelectorAll<HTMLInputElement>('input[type="checkbox"]') ?? []
+  );
 
 function CatalogEmptyState({
   query,
@@ -302,11 +346,31 @@ function CatalogEmptyState({
 function CatalogDatasetRow({
   card,
   onMap,
+  refocus,
 }: {
   card: DatasetCardConfig;
   /** Decided once by the panel, which also files this row under On map. */
   onMap: boolean;
+  refocus: FocusHandoff;
 }) {
+  const groupRef = useRef<HTMLDivElement>(null);
+
+  // Turning the dataset on or off files this row under the other list, so
+  // React mounts a new copy and the focused switch goes with the old one.
+  // Note which switch had focus (only if one did: a pointer click on the row
+  // leaves focus elsewhere), and let the new copy take it back on mount.
+  function keepFocusAcrossMove() {
+    const index = rowSwitches(groupRef.current).findIndex(
+      (el) => el === document.activeElement
+    );
+    if (index >= 0) refocus.hold(card.dataset_id, index);
+  }
+
+  useLayoutEffect(() => {
+    const index = refocus.take(card.dataset_id);
+    if (index !== null) rowSwitches(groupRef.current)[index]?.focus();
+  }, [card.dataset_id, refocus]);
+
   // Ids of every layer this card can put on the map (a single-layer card
   // synthesizes its one), derived by datasetLayerId — the same formula
   // buildDatasetLayers uses — so they match the ids actually on the map.
@@ -326,6 +390,7 @@ function CatalogDatasetRow({
   const removeDatasetLayers = useMapStore((s) => s.removeDatasetLayers);
 
   function handleToggle(checked: boolean) {
+    keepFocusAcrossMove();
     if (!checked) {
       removeDatasetLayers(card.dataset_id);
       return;
@@ -344,7 +409,9 @@ function CatalogDatasetRow({
   const [supportingOpen, setSupportingOpen] = useState(true);
 
   return (
-    <>
+    // `display: contents` keeps the rows direct flex items of the list, so
+    // its gap is unchanged; the box only scopes the switch lookup.
+    <Box display="contents" ref={groupRef}>
       <DatasetRow
         dataset={card}
         img={card.img}
@@ -393,11 +460,16 @@ function CatalogDatasetRow({
                 card={card}
                 layer={layer}
                 isSelected={activeLayerIds.includes(layerId)}
+                // Swapping one supporting layer for another keeps the dataset
+                // on the map, so only turning it on from off, or off, moves it.
+                onBeforeToggle={(checked) => {
+                  if (!checked || !onMap) keepFocusAcrossMove();
+                }}
               />
             ))}
         </Stack>
       )}
-    </>
+    </Box>
   );
 }
 
@@ -407,15 +479,18 @@ function SupportingLayerRow({
   card,
   layer,
   isSelected,
+  onBeforeToggle,
 }: {
   card: DatasetCardConfig;
   layer: DatasetCardLayer;
   isSelected: boolean;
+  onBeforeToggle: (checked: boolean) => void;
 }) {
   const addLayer = useMapStore((s) => s.addLayer);
   const removeDatasetLayers = useMapStore((s) => s.removeDatasetLayers);
 
   function handleToggle(checked: boolean) {
+    onBeforeToggle(checked);
     removeDatasetLayers(card.dataset_id);
     if (checked) {
       selectDatasetCardLayer(card, layer.name).forEach(addLayer);

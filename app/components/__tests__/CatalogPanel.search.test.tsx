@@ -1,13 +1,14 @@
 // @vitest-environment happy-dom
 import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-// layerManagerSlice dynamically imports chatStore; stub it (see
-// CatalogPanel.supporting-layers.test.tsx).
+// layerManagerSlice dynamically imports chatStore; stub it, and let the import
+// settle before teardown (see CatalogPanel.supporting-layers.test.tsx).
 vi.mock("@/app/store/chatStore", () => ({
   default: { getState: () => ({ includeLayerInContext: () => {} }) },
 }));
+afterEach(() => vi.dynamicImportSettled());
 
 import DataCatalogPanel from "../CatalogPanel";
 import useMapStore from "@/app/store/mapStore";
@@ -153,5 +154,77 @@ describe("Data Catalog panel — On map section", () => {
     await type("alerts");
 
     expect(screen.queryByRole("region", { name: "On map" })).toBeNull();
+  });
+});
+
+// Pinning or unpinning moves the row to the other list, which remounts it;
+// a keyboard user must stay on the switch they just pressed.
+describe("Data Catalog panel — keyboard focus across a move", () => {
+  beforeEach(() => {
+    useMapStore.getState().reset();
+    useSidebarStore.setState({ dataCatalogOpen: true, isChatFullSize: true });
+    window.history.replaceState({}, "", "/");
+  });
+
+  const switchFor = (ariaLabel: string) =>
+    within(screen.getByLabelText(ariaLabel)).getByRole(
+      "checkbox"
+    ) as HTMLInputElement;
+
+  /** Focus a switch, then press it (a click on the focused input). */
+  async function press(ariaLabel: string) {
+    const input = switchFor(ariaLabel);
+    await act(async () => {
+      input.focus();
+      fireEvent.click(input);
+    });
+  }
+
+  it("keeps focus on the switch when pinning a dataset under On map", async () => {
+    renderPanel();
+    await press("Show Tree cover loss on map");
+
+    expect(
+      within(screen.getByRole("region", { name: "On map" })).getByText(
+        "Tree cover loss"
+      )
+    ).toBeTruthy();
+    expect(document.activeElement).toBe(
+      switchFor("Hide Tree cover loss from map")
+    );
+  });
+
+  it("keeps focus on the switch when unpinning the last dataset", async () => {
+    renderPanel();
+    await turnOn("Tree cover loss");
+    await press("Hide Tree cover loss from map");
+
+    expect(screen.queryByRole("region", { name: "On map" })).toBeNull();
+    expect(document.activeElement).toBe(
+      switchFor("Show Tree cover loss on map")
+    );
+  });
+
+  it("keeps focus on a supporting layer's switch when it puts the dataset on", async () => {
+    window.history.replaceState({}, "", "/?ff=net-flux");
+    renderPanel();
+    await press("Show LGMS LULUCF net GHG flux on map");
+
+    expect(
+      within(screen.getByRole("region", { name: "On map" })).getByText(
+        "Land GHG Monitoring System (LGMS)"
+      )
+    ).toBeTruthy();
+    expect(document.activeElement).toBe(
+      switchFor("Hide LGMS LULUCF net GHG flux from map")
+    );
+  });
+
+  it("leaves focus alone when the switch did not have it", async () => {
+    renderPanel();
+    searchBox().focus();
+    await turnOn("Tree cover loss");
+
+    expect(document.activeElement).toBe(searchBox());
   });
 });
