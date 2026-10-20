@@ -20,7 +20,7 @@ import {
 import { AreaThumbnail } from "@/app/components/AreaThumbnail";
 import type { AOISelection } from "@/app/types/chat";
 
-import { subtypeLabel } from "../lib/aoi";
+import { subtypeLabel } from "@/src/entities/aoi";
 import type { AreaPickerRow } from "../model/area-picker-rows";
 import {
   areaRowKey,

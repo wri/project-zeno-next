@@ -2,16 +2,6 @@ import { z } from "zod";
 
 import { DatasetDivergentColorsSchema } from "@/app/schemas/api/datasets/get";
 
-export const AoiSearchResultSchema = z.object({
-  source: z.string(),
-  src_id: z.string(),
-  name: z.string(),
-  subtype: z.string(),
-  bbox: z.array(z.number()).optional(),
-});
-
-export const AoiSearchResponseSchema = z.array(AoiSearchResultSchema);
-
 export const DashboardAoiSchema = z.object({
   source: z.string(),
   src_id: z.string(),
@@ -159,7 +149,6 @@ export const DashboardAlertsSummaryResponseSchema = z.object({
   dashboards: z.record(z.string(), DashboardAlertsResponseSchema),
 });
 
-export type AoiSearchResult = z.infer<typeof AoiSearchResultSchema>;
 export type DashboardAoi = z.infer<typeof DashboardAoiSchema>;
 export type Dashboard = z.infer<typeof DashboardResponseSchema>;
 export type DashboardWidget = z.infer<typeof DashboardWidgetResponseSchema>;

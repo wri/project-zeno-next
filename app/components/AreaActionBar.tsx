@@ -19,7 +19,12 @@ import { MAX_AREA_KM2, MIN_AREA_KM2 } from "@/src/entities/custom-area";
  * The strip is the only drawing UI, so closing the panel mid-draw cancels it
  * rather than leaving the map in polygon mode with no controls.
  */
-export function AreaActionBar() {
+export function AreaActionBar({
+  hideIdle = false,
+}: {
+  /** Hides Draw / Upload (e.g. while searching); a drawing still shows. */
+  hideIdle?: boolean;
+}) {
   const isDrawingMode = useMapStore((s) => s.isDrawingMode);
   const validationError = useMapStore((s) => s.validationError);
   const startDrawing = useMapStore((s) => s.startDrawing);
@@ -48,6 +53,7 @@ export function AreaActionBar() {
   if (validationError) {
     return <DrawError error={validationError} onRetry={handleDraw} />;
   }
+  if (hideIdle) return null;
 
   return (
     <Flex gap="6px" flexShrink={0}>

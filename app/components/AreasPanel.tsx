@@ -1,41 +1,26 @@
-import { Suspense, useEffect, useMemo, type ReactNode } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Flex, IconButton, Stack, Text } from "@chakra-ui/react";
 import { AnimatePresence, motion } from "framer-motion";
-import { CrosshairIcon, PolygonIcon, XIcon } from "@phosphor-icons/react";
-import { useShallow } from "zustand/react/shallow";
-import type { Feature } from "geojson";
+import { PolygonIcon, XIcon } from "@phosphor-icons/react";
 
 import {
   getCatalogColumnMotionStyle,
   getCatalogColumnPanelFlexProps,
 } from "@/app/chatPanelShared";
 import { getCatalogLeftPx } from "@/app/explorationLayout";
-import { useCustomAreasListSuspense } from "@/app/hooks/useCustomAreasList";
 import { useCustomAreasCreate } from "@/app/hooks/useCustomAreasCreate";
-import type { CustomArea } from "@/app/schemas/api/custom_areas/get";
-import {
-  findRegistryEntry,
-  isAreaLayer,
-  type Layer,
-  type GeoJsonEntry,
-} from "@/app/store/layerManagerSlice";
 import useMapStore from "@/app/store/mapStore";
 import useSidebarStore, {
   type AreasPanelFilter,
 } from "@/app/store/sidebarStore";
-import type { AOISelection } from "@/app/types/chat";
-import { areaSourceLabel } from "@/app/utils/areaSourceLabel";
-import { customAreaToFeature } from "@/src/entities/custom-area";
-import { ENTITY_KINDS, EntityCard } from "@/src/shared/ui/entity-card";
+import { ENTITY_KINDS } from "@/src/shared/ui/entity-card";
 
 import { AreaActionBar } from "./AreaActionBar";
-import { areaActionIconProps } from "./AreaCardMenu";
-import { AreaThumbnail } from "./AreaThumbnail";
-import ConversationAreaActionsMenu from "./ConversationAreaActionsMenu";
-import CustomAreaActionsMenu from "./CustomAreaActionsMenu";
+import { ConversationAreasList, MonitoredAreasList } from "./AreaLists";
+import { AreaSearchResults } from "./AreaSearchResults";
 import { BoundariesList } from "./BoundariesList";
-import { PanelEmpty, PanelList, PanelPills } from "./PanelList";
-import { Tooltip } from "./ui/tooltip";
+import { PanelEmpty, PanelPills } from "./PanelList";
+import { PanelSearchInput } from "./PanelSearchInput";
 
 /** Matches CatalogPanel compact/full-size enter & exit (slide from the left). */
 const areasPanelSlideTransition = {
@@ -73,6 +58,8 @@ const AREA_FILTERS: { id: AreasPanelFilter; label: string }[] = [
  *    show-on-map registers the geometry and adds an area layer (or removes it).
  *  - `AreaActionBar` above the chips: Draw (`startDrawing`) and Upload
  *    (`toggleUploadAreaDialog`), and the draw status / confirm strip.
+ *  - The search box: typing swaps the tabs for `AreaSearchResults` (saved
+ *    areas that match, then places from `GET /api/aois`).
  */
 export default function AreasPanel() {
   const {
@@ -106,48 +93,93 @@ export default function AreasPanel() {
         >
           <Flex {...getCatalogColumnPanelFlexProps(isChatFullSize)}>
             <AreasPanelHeader onClose={() => setAreasPanelOpen(false)} />
-            <Flex
-              flex={1}
-              minH={0}
-              minW={0}
-              flexDirection="column"
-              gap={4}
-              pt={4}
-              px={3}
-              pb={6}
-              overflow="hidden"
-            >
-              <AreaActionBar />
-              <PanelPills
-                options={AREA_FILTERS}
-                value={filter}
-                onChange={setFilter}
-              />
-              <Stack
-                gap={4}
-                flex={1}
-                minH={0}
-                minW={0}
-                pb={2}
-                css={areasListScrollStyle}
-              >
-                {filter === "boundaries" ? (
-                  <BoundariesList />
-                ) : filter === "conversation" ? (
-                  <ConversationAreasList />
-                ) : (
-                  <Suspense
-                    fallback={<PanelEmpty>Loading your areas…</PanelEmpty>}
-                  >
-                    <MonitoredAreasList />
-                  </Suspense>
-                )}
-              </Stack>
-            </Flex>
+            <AreasPanelBody
+              filter={filter}
+              onFilterChange={setFilter}
+              onClose={() => setAreasPanelOpen(false)}
+            />
           </Flex>
         </motion.div>
       )}
     </AnimatePresence>
+  );
+}
+
+/**
+ * Search, Draw / Upload, the tabs and the list. Mounted only while the panel is
+ * open, so the search query resets each time it opens (the tab persists).
+ * Typing switches to search results; clearing the box restores the tab.
+ */
+function AreasPanelBody({
+  filter,
+  onFilterChange,
+  onClose,
+}: {
+  filter: AreasPanelFilter;
+  onFilterChange: (filter: AreasPanelFilter) => void;
+  onClose: () => void;
+}) {
+  const [query, setQuery] = useState("");
+  const searching = query.trim() !== "";
+
+  return (
+    <Flex
+      flex={1}
+      minH={0}
+      minW={0}
+      flexDirection="column"
+      gap={4}
+      pt={4}
+      px={3}
+      pb={6}
+      overflow="hidden"
+    >
+      {/* One toolbar: find a place, or add your own (Draw / Upload). */}
+      <Stack
+        role="group"
+        aria-label="Find or add an area"
+        gap="6px"
+        flexShrink={0}
+      >
+        <PanelSearchInput
+          label="Search areas"
+          placeholder="Search places, e.g. Pará or Serengeti"
+          value={query}
+          onChange={setQuery}
+          onEscapeEmpty={onClose}
+        />
+        <AreaActionBar hideIdle={searching} />
+      </Stack>
+      {searching ? (
+        <AreaSearchResults query={query} />
+      ) : (
+        <>
+          <PanelPills
+            options={AREA_FILTERS}
+            value={filter}
+            onChange={onFilterChange}
+          />
+          <Stack
+            gap={4}
+            flex={1}
+            minH={0}
+            minW={0}
+            pb={2}
+            css={areasListScrollStyle}
+          >
+            {filter === "boundaries" ? (
+              <BoundariesList />
+            ) : filter === "conversation" ? (
+              <ConversationAreasList />
+            ) : (
+              <Suspense fallback={<PanelEmpty>Loading your areas…</PanelEmpty>}>
+                <MonitoredAreasList />
+              </Suspense>
+            )}
+          </Stack>
+        </>
+      )}
+    </Flex>
   );
 }
 
@@ -195,295 +227,6 @@ function AreasPanelHeader({ onClose }: { onClose: () => void }) {
       >
         <XIcon size={12} />
       </IconButton>
-    </Flex>
-  );
-}
-
-/** Display name for an area layer. */
-function getAreaTitle(layer: Layer): string {
-  return layer.aoiSelection?.name ?? layer.name;
-}
-
-/**
- * Resolve an area layer to an AOISelection for the thumbnail. Uses the layer's
- * own aoiSelection when present (admin / assistant areas); otherwise rebuilds
- * one from its geojson registry entries (custom drawn / uploaded areas).
- */
-function layerToAoiSelection(
-  layer: Layer,
-  registry: GeoJsonEntry[]
-): AOISelection | null {
-  if (layer.aoiSelection) return layer.aoiSelection;
-  const refs = layer.featureRefs ?? [];
-  if (refs.length === 0) return null;
-  return {
-    name: layer.name,
-    aois: refs.map((ref) => {
-      const entry = findRegistryEntry(registry, ref);
-      return {
-        name: ref.name,
-        src_id: entry?.srcId ?? ref.name,
-        source: ref.source,
-        subtype: entry?.subtype ?? "",
-      };
-    }),
-  };
-}
-
-function ConversationAreasList() {
-  const areaLayers = useMapStore(
-    useShallow((s) => s.layers.filter(isAreaLayer))
-  );
-
-  if (areaLayers.length === 0) {
-    return (
-      <PanelEmpty>
-        No areas selected yet. Pick one from Boundaries, upload or draw an area,
-        or ask the assistant to find one for you.
-      </PanelEmpty>
-    );
-  }
-
-  return (
-    <PanelList>
-      {areaLayers.map((layer) => (
-        <ConversationAreaCard key={layer.id} layer={layer} />
-      ))}
-    </PanelList>
-  );
-}
-
-function ConversationAreaCard({ layer }: { layer: Layer }) {
-  const setLayerVisibility = useMapStore((s) => s.setLayerVisibility);
-  const flyToGeoJson = useMapStore((s) => s.flyToGeoJson);
-  const flyToBounds = useMapStore((s) => s.flyToBounds);
-  const geoJsonRegistry = useMapStore((s) => s.geoJsonRegistry);
-
-  const isVisible = layer.visible;
-  // The resolved selection recovers `source` from the registry ref; reading
-  // `layer.aoiSelection` directly would label every hand-clicked GADM boundary
-  // (which carries none) as a custom area.
-  const aoiSelection = useMemo(
-    () => layerToAoiSelection(layer, geoJsonRegistry),
-    [layer, geoJsonRegistry]
-  );
-  const title = getAreaTitle(layer);
-
-  function handleToggle(checked: boolean) {
-    setLayerVisibility(layer.id, checked);
-  }
-
-  function handleLocate() {
-    const bbox = layer.aoiSelection?.aois[0]?.bbox;
-    if (bbox) {
-      let east = bbox[2];
-      if (east > 180) east -= 360;
-      flyToBounds([
-        [bbox[0], bbox[1]],
-        [east, bbox[3]],
-      ]);
-      return;
-    }
-    // Fallback: fly to the first resolvable registry geometry.
-    for (const ref of layer.featureRefs ?? []) {
-      const entry = findRegistryEntry(geoJsonRegistry, ref);
-      if (entry) {
-        flyToGeoJson(entry.data);
-        return;
-      }
-    }
-    if (layer.aoiSelection?.aois[0]?.geometry) {
-      flyToGeoJson(layer.aoiSelection.aois[0].geometry);
-    }
-  }
-
-  return (
-    <EntityCard
-      kind="area"
-      thumbnail={
-        aoiSelection && (
-          <AreaThumbnail aoiSelection={aoiSelection} alt={title} />
-        )
-      }
-      title={title}
-      meta={areaSourceLabel(aoiSelection?.aois[0]?.source ?? "custom")}
-      interaction={{
-        mode: "toggle",
-        checked: isVisible,
-        onChange: handleToggle,
-        dataPanel: "areas",
-      }}
-      actions={
-        <AreaCardActions
-          onLocate={handleLocate}
-          menu={<ConversationAreaActionsMenu layer={layer} />}
-        />
-      }
-    />
-  );
-}
-
-function MonitoredAreasList() {
-  const { customAreas } = useCustomAreasListSuspense();
-
-  const sorted = useMemo(() => {
-    return [...customAreas].sort(
-      (a, b) => Number(new Date(b.created_at)) - Number(new Date(a.created_at))
-    );
-  }, [customAreas]);
-
-  if (sorted.length === 0) {
-    return (
-      <PanelEmpty>
-        No saved areas yet. Upload or draw an area to save it here.
-      </PanelEmpty>
-    );
-  }
-
-  return (
-    <PanelList>
-      {sorted.map((area) => (
-        <MonitoredAreaCard key={area.id} area={area} />
-      ))}
-    </PanelList>
-  );
-}
-
-function MonitoredAreaCard({ area }: { area: CustomArea }) {
-  const addToRegistry = useMapStore((s) => s.addToRegistry);
-  const addLayer = useMapStore((s) => s.addLayer);
-  const removeLayer = useMapStore((s) => s.removeLayer);
-  const removeFromRegistry = useMapStore((s) => s.removeFromRegistry);
-  const setLayerVisibility = useMapStore((s) => s.setLayerVisibility);
-  const flyToGeoJsonWithRetry = useMapStore((s) => s.flyToGeoJsonWithRetry);
-  const layer = useMapStore(
-    useShallow((s) => s.layers.find((l) => l.id === area.id))
-  );
-
-  const isVisible = layer?.visible ?? false;
-
-  function buildFeature(): Feature {
-    return customAreaToFeature(area);
-  }
-
-  const feature = useMemo(() => customAreaToFeature(area), [area]);
-  const aoiSelection = useMemo(
-    (): AOISelection => ({
-      name: area.name,
-      aois: [
-        {
-          name: area.name,
-          src_id: area.id,
-          source: "custom",
-          subtype: "custom-area",
-        },
-      ],
-    }),
-    [area]
-  );
-
-  function handleToggle(checked: boolean) {
-    if (checked) {
-      if (!layer) {
-        // Register geometry and add a visible area layer — the layer IS the
-        // scope, so there is no separate context item.
-        const feature = buildFeature();
-        addToRegistry({
-          ref: { name: area.name, source: "custom" },
-          data: feature,
-          srcId: area.id,
-          subtype: "custom-area",
-        });
-        addLayer({
-          id: area.id,
-          name: area.name,
-          type: "geojson",
-          visible: true,
-          featureRefs: [{ name: area.name, source: "custom" }],
-        });
-        flyToGeoJsonWithRetry(feature);
-        return;
-      }
-      // Already added but hidden — just re-show it.
-      if (!layer.visible) {
-        setLayerVisibility(area.id, true);
-      }
-      return;
-    }
-    // Toggle OFF on a monitored card removes it from the map entirely.
-    // (Visibility-only hiding is available from the "In this conversation" tab.)
-    if (layer) {
-      removeFromRegistry({ name: area.name, source: "custom" });
-      removeLayer(area.id);
-    }
-  }
-
-  function handleLocate() {
-    const feature = buildFeature();
-    flyToGeoJsonWithRetry(feature);
-  }
-
-  return (
-    <EntityCard
-      kind="area"
-      thumbnail={
-        <AreaThumbnail
-          aoiSelection={aoiSelection}
-          alt={area.name}
-          geometry={feature}
-        />
-      }
-      title={area.name}
-      meta={areaSourceLabel("custom")}
-      interaction={{
-        mode: "toggle",
-        checked: isVisible,
-        onChange: handleToggle,
-        dataPanel: "areas",
-      }}
-      actions={
-        // Rename/delete act on the saved area, so the kebab must show even
-        // when the area isn't on the map; the locate button stays on-map only.
-        <AreaCardActions
-          onLocate={isVisible ? handleLocate : undefined}
-          menu={<CustomAreaActionsMenu area={area} />}
-        />
-      }
-    />
-  );
-}
-
-function AreaCardActions({
-  onLocate,
-  menu,
-}: {
-  /** Omit to hide the locate button (e.g. when the area isn't on the map). */
-  onLocate?: () => void;
-  /** Kebab actions node for the card (per-tab: conversation vs. monitored). */
-  menu: ReactNode;
-}) {
-  return (
-    <Flex align="center" gap="16px" flexShrink={0} h="16px">
-      {onLocate && (
-        <Tooltip
-          content="Center on map"
-          positioning={{ placement: "top" }}
-          showArrow
-          variant="dark"
-        >
-          <IconButton
-            aria-label="Center on map"
-            {...areaActionIconProps}
-            onClick={(e) => {
-              e.stopPropagation();
-              onLocate();
-            }}
-          >
-            <CrosshairIcon size={16} color={ENTITY_KINDS.area.color} />
-          </IconButton>
-        </Tooltip>
-      )}
-      {menu}
     </Flex>
   );
 }

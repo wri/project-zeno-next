@@ -1,8 +1,6 @@
 export const dashboardKeys = {
   all: ["dashboards"] as const,
   detail: (id: string) => ["dashboards", id] as const,
-  aois: (query: string, source: string | null) =>
-    ["dashboard-aois", query, source] as const,
   analysisTemplates: ["analysis-templates"] as const,
   // Prefix of every alerts summary below. Not under `all`: renames and moves
   // would otherwise re-run an analytics-backed request that they cannot
