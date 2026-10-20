@@ -24,6 +24,7 @@ import useViewContextStore from "../viewContextStore";
 import useAuthStore from "../authStore";
 import useAgentProfileStore from "../agentProfileStore";
 import useMapStore from "../mapStore";
+import { findRegistryEntry } from "../layerManagerSlice";
 import useInsightStore from "../insightStore";
 import { apiFetch } from "@/app/lib/api-client";
 import { agentTextLine, humanLine, ndjsonResponse } from "./stream-fixtures";
@@ -1033,6 +1034,37 @@ describe("pick_aoi stream signal → area layer and lastSentContext.aoi fold", (
     await useChatStore.getState().sendMessage("and since 2020?");
 
     expect(sentUiContext(1)?.aoi_selected).toBeUndefined();
+  });
+
+  it("keeps two same-name parcels of one selection apart", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([
+        pickAoiSelectionLine({
+          name: "Mining concessions in Riau",
+          aois: [
+            parcel("101", { geometry: square(0) }),
+            parcel("102", { geometry: square(5) }),
+          ],
+        }),
+      ])
+    );
+
+    await useChatStore.getState().sendMessage("mining concessions in Riau");
+    await vi.waitFor(() =>
+      expect(
+        useMapStore
+          .getState()
+          .layers.some((l) => l.id === "Mining concessions in Riau")
+      ).toBe(true)
+    );
+
+    const { layers, geoJsonRegistry } = useMapStore.getState();
+    const layer = layers.find((l) => l.id === "Mining concessions in Riau")!;
+    const resolved = (layer.featureRefs ?? []).map(
+      (ref) => findRegistryEntry(geoJsonRegistry, ref)?.data
+    );
+    expect(geoJsonRegistry).toHaveLength(2);
+    expect(resolved).toEqual([square(0), square(5)]);
   });
 });
 

@@ -123,7 +123,7 @@ export function useAoiActions(
   }, [analysisStatus]);
 
   if (!target?.areaName) return null;
-  const { areaName, source, layerId } = target;
+  const { areaName, source, srcId, layerId } = target;
   // Same gate as the View Analysis nudge: view-only datasets have no analytics
   // endpoint, and the catalogue withholds analyses a source can't run.
   const canViewAnalysis =
@@ -138,7 +138,8 @@ export function useAoiActions(
    * with `ref.source` set to the map layer id ("GADM"), while the selection it
    * derives alongside it lowercases that into `source` ("gadm"). Callers must
    * therefore look the entry up loosely and reuse its own `ref` for anything
-   * that matches strictly (`removeFromRegistry` does).
+   * that matches strictly (`removeFromRegistry` does). The src id must
+   * match too: same-name parcels each keep their own entry.
    */
   const registryEntry = () =>
     useMapStore
@@ -146,7 +147,8 @@ export function useAoiActions(
       .geoJsonRegistry.find(
         (e) =>
           e.ref.name === areaName &&
-          e.ref.source.toLowerCase() === source.toLowerCase()
+          e.ref.source.toLowerCase() === source.toLowerCase() &&
+          e.srcId === srcId
       );
 
   const removeFromMap = () => {

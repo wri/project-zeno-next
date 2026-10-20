@@ -8,7 +8,7 @@ import {
 import useMapStore from "../mapStore";
 import { fetchGeometry } from "@/app/utils/geometryClient";
 import { unionAoiBboxes } from "@/app/utils/bboxUtils";
-import { GeoJsonEntry } from "../layerManagerSlice";
+import { aoiFeatureRef, GeoJsonEntry } from "../layerManagerSlice";
 import { selectLayerOptions } from "@/app/types/map";
 
 const GLOBAL_LAYER_ID = "Global Layer";
@@ -74,7 +74,7 @@ async function fetchAndRegisterAoi(
   }
 
   addToRegistry({
-    ref: { name: aoi.name, source: aoi.source },
+    ref: aoiFeatureRef(aoi),
     data: geoJsonData,
     srcId: aoi.src_id,
     subtype: aoi.subtype,
@@ -190,10 +190,7 @@ export async function pickAoiTool(
     const successfulAois = aois.filter(
       (_, idx) => results[idx].status === "fulfilled"
     );
-    const successfulRefs = successfulAois.map((aoi) => ({
-      name: aoi.name,
-      source: aoi.source,
-    }));
+    const successfulRefs = successfulAois.map(aoiFeatureRef);
     const installed: AOISelection | undefined =
       successfulAois.length > 0
         ? { name: selectionName, aois: successfulAois }

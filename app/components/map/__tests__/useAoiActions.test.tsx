@@ -363,8 +363,9 @@ describe("useAoiActions", () => {
       geoJsonRegistry: [
         {
           // Registered with the map's layer id casing, not the selection's.
-          ref: { name: "Paraná, Brazil", source: "GADM" },
+          ref: { name: "Paraná, Brazil", source: "GADM", srcId: "BRA.16_1" },
           data: { type: "Feature", properties: {}, geometry: polygon },
+          srcId: "BRA.16_1",
         },
       ],
     });
@@ -374,6 +375,40 @@ describe("useAoiActions", () => {
 
     expect(createAreaAsync).toHaveBeenCalledWith({
       name: "Paraná, Brazil",
+      geometries: [polygon],
+    });
+  });
+
+  it("saves this parcel's geometry when another parcel shares its name", async () => {
+    const other = {
+      ...polygon,
+      coordinates: [
+        [
+          [1, 1],
+          [2, 1],
+          [2, 2],
+          [1, 1],
+        ],
+      ],
+    };
+    const parcel = (srcId: string, geometry: typeof polygon) => ({
+      ref: { name: "Mining concession, IDN", source: "MINING", srcId },
+      data: { type: "Feature" as const, properties: {}, geometry },
+      srcId,
+    });
+    useMapStore.setState({
+      geoJsonRegistry: [parcel("101", other), parcel("102", polygon)],
+    });
+    const { result } = render({
+      areaName: "Mining concession, IDN",
+      source: "MINING",
+      srcId: "102",
+    });
+
+    await act(() => result.current!.saveArea());
+
+    expect(createAreaAsync).toHaveBeenCalledWith({
+      name: "Mining concession, IDN",
       geometries: [polygon],
     });
   });
@@ -428,8 +463,9 @@ describe("useAoiActions", () => {
           // "GADM", the map layer id, is what VectorAreasLayer actually
           // registers; the selection carries the lowercased "gadm". Using the
           // production casing here is the point of this fixture.
-          ref: { name: "Paraná, Brazil", source: "GADM" },
+          ref: { name: "Paraná, Brazil", source: "GADM", srcId: "BRA.16_1" },
           data: { type: "Feature", properties: {}, geometry: polygon },
+          srcId: "BRA.16_1",
         },
       ],
     });
