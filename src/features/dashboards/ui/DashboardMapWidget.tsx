@@ -50,6 +50,7 @@ export default function DashboardMapWidget({
   bboxOverride,
   tall,
   fill,
+  stretch,
 }: {
   layer: MapWidgetLayer;
   /** The dashboard's (single) area — outline, label + default viewport fit. */
@@ -60,6 +61,12 @@ export default function DashboardMapWidget({
   tall?: boolean;
   /** Fills its container (the full-screen dialog) and allows scroll-zoom. */
   fill?: boolean;
+  /**
+   * Fills its container's height, never under 280px, without the dialog's
+   * scroll-zoom: the alerts widget's map column, whose height the list
+   * beside it sets.
+   */
+  stretch?: boolean;
 }) {
   const mapRef = useRef<MapRef>(null);
 
@@ -135,7 +142,12 @@ export default function DashboardMapWidget({
   return (
     <Box
       ref={containerRef}
-      h={fill ? "100%" : { base: "280px", md: tall ? "520px" : "360px" }}
+      h={
+        fill || stretch
+          ? "100%"
+          : { base: "280px", md: tall ? "520px" : "360px" }
+      }
+      minH={stretch ? "280px" : undefined}
       rounded="md"
       overflow="hidden"
       borderWidth="1px"

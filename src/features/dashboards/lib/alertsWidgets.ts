@@ -77,12 +77,7 @@ export interface AlertsList {
   rows: AlertDay[];
 }
 
-export type AlertsChip =
-  | "new-week"
-  | "last-day"
-  | "last-3-days"
-  | "last-week"
-  | "custom";
+export type AlertsChip = "new-week" | "last-week" | "custom";
 
 export type AlertsConfidence = "all" | "high" | "highest";
 
@@ -145,11 +140,11 @@ export function confidenceLabel(confidence: AlertsConfidence): string {
 
 const DEFAULT_ALERTS_DAYS = 30;
 
-/** The integrated alerts catalogue entry's `start_date`: no alert is older. */
-const ALERTS_DATASET_START = "2023-12-01";
-
-/** The backend refuses a window of more than this many days. */
-const MAX_CUSTOM_DAYS = 365;
+/**
+ * How far back the widget looks from the latest alert day: the headline's
+ * "alerts since" period and the furthest a custom range may start.
+ */
+const SINCE_DAYS = 14;
 
 /**
  * Parses an alerts widget's config into a renderable spec, or null when it
@@ -234,7 +229,7 @@ export function initialWindow(days: number, today: string): DateRange {
 /**
  * The inclusive range a chip stands for, counted back from the list's
  * `anchor` (the latest alert day), never from today or the window's end: the
- * newest alert day is what "last day" means to someone reading the list. A
+ * newest alert week is what "last week" means to someone reading the list. A
  * custom range is clamped to the anchor and ordered.
  */
 export function chipRange(
@@ -246,10 +241,6 @@ export function chipRange(
   switch (chip) {
     case "new-week":
       return { ...list.newWeek };
-    case "last-day":
-      return { start: anchor, end: anchor };
-    case "last-3-days":
-      return { start: shiftIsoDate(anchor, -2), end: anchor };
     case "last-week":
       return { start: shiftIsoDate(anchor, -6), end: anchor };
     case "custom": {
@@ -262,14 +253,28 @@ export function chipRange(
 }
 
 /**
- * The earliest start a custom range may have: the dataset's first day, or
- * the day that makes the range ending on `anchor` exactly `MAX_CUSTOM_DAYS`
- * long, whichever is later. The inputs' `min` and the handler's check both
- * read this, so the widget can never ask for a window the backend refuses.
+ * The two weeks to the latest alert day, inclusive: the period the headline
+ * counts "alerts since", and the bounds of a custom range (its inputs' `min`
+ * and `max`, and the check behind them).
  */
-export function customStartMin(anchor: string): string {
-  const yearBack = shiftIsoDate(anchor, -(MAX_CUSTOM_DAYS - 1));
-  return yearBack > ALERTS_DATASET_START ? yearBack : ALERTS_DATASET_START;
+export function sinceRange(anchor: string): DateRange {
+  return { start: shiftIsoDate(anchor, -(SINCE_DAYS - 1)), end: anchor };
+}
+
+/**
+ * Why a custom range cannot be taken, or nothing when it can: a bound
+ * `outside` the two weeks the widget covers (what a date input reports while
+ * a year is still being typed, so it is ignored without comment), or an
+ * `inverted` range, its end before its start (which the inputs say so about).
+ */
+export function customRangeProblem(
+  range: DateRange,
+  anchor: string
+): "outside" | "inverted" | undefined {
+  const since = sinceRange(anchor);
+  const inside = (iso: string) => iso >= since.start && iso <= since.end;
+  if (!inside(range.start) || !inside(range.end)) return "outside";
+  return range.end < range.start ? "inverted" : undefined;
 }
 
 /** Whether `range` reaches outside the window the rows were fetched for. */
@@ -325,7 +330,7 @@ export function rowsSummary(
   };
 }
 
-/** The "New this week" chip's hectares: the new rows, in the shown tier. */
+/** The headline's "new this week" hectares: the new rows, in the shown tier. */
 export function newWeekHa(
   rows: readonly AlertDay[],
   confidence: AlertsConfidence
@@ -336,6 +341,34 @@ export function newWeekHa(
   ).ha;
 }
 
+/**
+ * The headline over the list (the design's "Summary headline"): the new
+ * week's hectares with the week it covers, and the hectares of the two weeks
+ * to the latest alert day. Both in the shown tier. `countedToLatest` is
+ * whether that day is a real alert day (the window had alerts) rather than
+ * the window's end standing in for one.
+ */
+export interface AlertsHeadline {
+  newWeek: { ha: number; range: DateRange };
+  since: { ha: number; range: DateRange };
+  countedToLatest: boolean;
+}
+
+export function alertsHeadline(
+  list: AlertsList,
+  confidence: AlertsConfidence
+): AlertsHeadline {
+  const since = sinceRange(list.anchor);
+  return {
+    newWeek: { ha: newWeekHa(list.rows, confidence), range: list.newWeek },
+    since: {
+      ha: rowsSummary(rowsInRange(list.rows, since), confidence).ha,
+      range: since,
+    },
+    countedToLatest: list.latest !== undefined,
+  };
+}
+
 // ── Formatting ─────────────────────────────────────────────────────────────
 
 /** "26 Sep 2026" — the table and explainer form. */
@@ -343,9 +376,28 @@ export function formatAlertDate(iso: string): string {
   return format(parseISO(iso), "d MMM yyyy");
 }
 
-/** "SEP 28, 2026" — the badge row's `LATEST` form. */
-export function formatLatest(iso: string): string {
-  return format(parseISO(iso), "MMM d, yyyy").toUpperCase();
+/** "7 Oct" — the headline's "alerts since" day. */
+export function formatSinceDay(iso: string): string {
+  return format(parseISO(iso), "d MMM");
+}
+
+/**
+ * "11 – 17 OCT 2026", "28 SEP – 4 OCT 2026", "28 DEC 2025 – 3 JAN 2026" —
+ * the headline's mono sublabel, naming each part of the date only where the
+ * two ends differ in it; a single day is "16 OCT 2026".
+ */
+export function formatRangeCaps(range: DateRange): string {
+  const start = parseISO(range.start);
+  const end = parseISO(range.end);
+  const endText = format(end, "d MMM yyyy");
+  if (range.start === range.end) return endText.toUpperCase();
+  const startText =
+    format(start, "yyyy") !== format(end, "yyyy")
+      ? format(start, "d MMM yyyy")
+      : format(start, "MMM") !== format(end, "MMM")
+        ? format(start, "d MMM")
+        : format(start, "d");
+  return `${startText} – ${endText}`.toUpperCase();
 }
 
 // ── Download ───────────────────────────────────────────────────────────────

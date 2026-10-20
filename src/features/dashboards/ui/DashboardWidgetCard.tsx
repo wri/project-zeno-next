@@ -24,7 +24,10 @@ import WidgetMessage from "@/app/components/WidgetMessage";
 import AnalysisParametersToggle, {
   AnalysisParamsChips,
 } from "@/app/components/widgets/AnalysisParameters";
-import { buildChips } from "@/app/components/widgets/analysis-params-utils";
+import {
+  buildChips,
+  type ParamChipData,
+} from "@/app/components/widgets/analysis-params-utils";
 import { toaster } from "@/app/components/ui/toaster";
 import type { InsightWidget } from "@/app/types/chat";
 import type { MapAreaAoi, MapWidgetLayer } from "../lib/mapWidgets";
@@ -65,6 +68,7 @@ export default function DashboardWidgetCard({
   intro,
   body,
   footer,
+  paramChips,
   onArmDrag,
   onToggleSize,
   onRename,
@@ -74,6 +78,12 @@ export default function DashboardWidgetCard({
   title: string;
   /** The insight card to render. */
   card?: InsightWidget;
+  /**
+   * The params row's chips for a card with no insight to derive them from
+   * (the alerts widget names its area, dataset and confidence tier this
+   * way); an insight `card` brings its own.
+   */
+  paramChips?: ParamChipData[];
   /** The map layer to render for `widget_type: "map"` cells. */
   map?: MapWidgetLayer;
   /** The dashboard's area — outline, label + viewport fit for map cells. */
@@ -136,7 +146,9 @@ export default function DashboardWidgetCard({
   // the prop is authoritative again. Runs before paint — no flash, no effect.
   if (pending !== null && title.trim() === pending) setPending(null);
   const displayTitle = pending ?? title;
-  const chips = card?.analysisParams ? buildChips(card.analysisParams) : [];
+  const chips = card?.analysisParams
+    ? buildChips(card.analysisParams)
+    : (paramChips ?? []);
 
   const commitRename = () => {
     const next = (draft ?? "").trim();

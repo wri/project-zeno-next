@@ -12,8 +12,8 @@ import { describe, expect, it, vi } from "vitest";
 import { toAlertsList } from "../../api/alerts";
 import { ALERTS_LIST_WIRE } from "../../api/__tests__/fixtures";
 import {
+  alertsHeadline,
   chipRange,
-  newWeekHa,
   rowsInRange,
   visibleRows,
   type AlertsChip,
@@ -51,11 +51,13 @@ function propsFor(
     view: readyView(range),
     isFetching: false,
     rows: visibleRows(rowsInRange(list.rows, range), confidence),
-    newWeekHa: newWeekHa(list.rows, confidence),
+    headline: alertsHeadline(list, confidence),
     chip,
     confidence,
     landFilter: "any",
     custom,
+    mapPane: <div data-testid="map-pane" />,
+    sideBySide: true,
     onChip: vi.fn<ListProps["onChip"]>(),
     onConfidence: vi.fn<ListProps["onConfidence"]>(),
     onLandFilter: vi.fn<ListProps["onLandFilter"]>(),
@@ -88,21 +90,21 @@ const UNAVAILABLE =
 
 const dropdown = (name: string) => screen.getByRole("button", { name });
 
-/**
- * The half-width "More" pill. happy-dom applies its base `display: none`
- * but never matches the container query that shows it, so it is hidden
- * here (and a hidden element has no accessible name, hence the label
- * query); the menu it opens is not.
- */
-const morePill = (name = "More periods") =>
-  screen.getByLabelText(name, { selector: "button" });
+const kpi = (name: string) => screen.getByRole("group", { name }).textContent;
 
 describe("DashboardAlertsList", () => {
-  it("shows the new week's days with NEW badges, hectares on the pill and totals in the footer", () => {
+  it("shows the headline figures, the new week's days with NEW badges, and totals in the footer", () => {
     renderList();
 
-    const newPill = screen.getByRole("button", { name: /New this week/ });
-    expect(newPill.textContent).toContain("50.8 ha");
+    // The new week's hectares with the week it covers; the two weeks to the
+    // latest alert day, said to be counted to it.
+    expect(kpi("New this week")).toBe(
+      "50.8ha new this weekDATED 4 – 10 OCT 2026"
+    );
+    expect(kpi("Alerts since")).toBe(
+      "71ha of alerts since 3 Oct3 – 16 OCT 2026 · COUNTED TO LATEST UPDATE"
+    );
+    const newPill = screen.getByRole("button", { name: "New this week" });
     expect(newPill.getAttribute("aria-pressed")).toBe("true");
     expect(
       screen.getByText(
@@ -137,6 +139,14 @@ describe("DashboardAlertsList", () => {
       screen.getByText("5 alert days · 50.8 ha in this period")
     ).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Next page" })).toBeNull();
+    // The map pane the container passes in sits in the same card.
+    expect(screen.getByTestId("map-pane")).toBeTruthy();
+  });
+
+  it("gives the headline figures in the shown tier", () => {
+    renderList(propsFor("new-week", "highest"));
+    expect(kpi("New this week")).toContain("9.4ha new this week");
+    expect(kpi("Alerts since")).toContain("14ha of alerts since 3 Oct");
   });
 
   it("names only the tiers a day had alerts in", () => {
@@ -147,8 +157,15 @@ describe("DashboardAlertsList", () => {
     expect(cellsOf(rows[3])).toEqual(["", "14 Oct 2026", "Highest", "1.6"]);
   });
 
-  it("reports chip choices up, without filtering itself", () => {
+  it("offers New this week, Last week and Custom, and reports chip choices up without filtering itself", () => {
     const props = renderList();
+    expect(
+      screen
+        .getAllByRole("button", { pressed: false })
+        .concat(screen.getAllByRole("button", { pressed: true }))
+        .map((pill) => pill.textContent)
+        .sort()
+    ).toEqual(["Custom", "Last week", "New this week"]);
     fireEvent.click(screen.getByRole("button", { name: "Last week" }));
     expect(props.onChip).toHaveBeenCalledWith("last-week");
     // The rows are the container's; this pane did not change them.
@@ -235,7 +252,7 @@ describe("DashboardAlertsList", () => {
     expect(rowsOf()).toHaveLength(1 + 10);
   });
 
-  it("opens the custom dates from the Custom pill and reports a changed bound", async () => {
+  it("opens the Start and End dates from the Custom pill, bounded to the two weeks and to each other, and reports a changed bound", async () => {
     const props = renderList(
       propsFor("custom", "all", { start: "2026-10-10", end: "2026-10-16" })
     );
@@ -243,16 +260,50 @@ describe("DashboardAlertsList", () => {
     fireEvent.click(screen.getByRole("button", { name: "Custom" }));
     expect(props.onChip).toHaveBeenCalledWith("custom");
 
-    const from = await screen.findByLabelText("Custom period start");
-    expect(from.getAttribute("value")).toBe("2026-10-10");
-    expect(from.getAttribute("max")).toBe("2026-10-16");
-    // A year back from the data's last day: the longest window the backend takes.
-    expect(from.getAttribute("min")).toBe("2025-10-17");
-    fireEvent.change(from, { target: { value: "2026-10-01" } });
+    const start = await screen.findByLabelText("Custom period start");
+    const end = screen.getByLabelText("Custom period end");
+    expect(screen.getByText("Start")).toBeTruthy();
+    expect(screen.getByText("End")).toBeTruthy();
+    expect(start.getAttribute("value")).toBe("2026-10-10");
+    // Two weeks back from the data's last day, and no later than the end.
+    expect(start.getAttribute("min")).toBe("2026-10-03");
+    expect(start.getAttribute("max")).toBe("2026-10-16");
+    // No earlier than the start, and no later than the data's last day.
+    expect(end.getAttribute("min")).toBe("2026-10-10");
+    expect(end.getAttribute("max")).toBe("2026-10-16");
+
+    fireEvent.change(start, { target: { value: "2026-10-05" } });
     expect(props.onCustomChange).toHaveBeenCalledWith({
-      start: "2026-10-01",
+      start: "2026-10-05",
       end: "2026-10-16",
     });
+  });
+
+  it("refuses an end before the start, saying so, and ignores a bound outside the two weeks", async () => {
+    const props = renderList(
+      propsFor("custom", "all", { start: "2026-10-10", end: "2026-10-16" })
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Custom" }));
+    const start = await screen.findByLabelText("Custom period start");
+    const end = screen.getByLabelText("Custom period end");
+
+    fireEvent.change(end, { target: { value: "2026-10-08" } });
+    expect(props.onCustomChange).not.toHaveBeenCalled();
+    expect(screen.getByText("End must be on or after start.")).toBeTruthy();
+
+    fireEvent.change(end, { target: { value: "2026-10-12" } });
+    expect(props.onCustomChange).toHaveBeenLastCalledWith({
+      start: "2026-10-10",
+      end: "2026-10-12",
+    });
+    expect(screen.queryByText("End must be on or after start.")).toBeNull();
+
+    // A year still being typed, and a start past the two weeks: ignored
+    // without comment.
+    fireEvent.change(start, { target: { value: "0002-10-05" } });
+    fireEvent.change(start, { target: { value: "2026-10-02" } });
+    expect(props.onCustomChange).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText("End must be on or after start.")).toBeNull();
   });
 
   it("says when the period has no alerts", () => {
@@ -262,9 +313,10 @@ describe("DashboardAlertsList", () => {
   });
 
   it("shows a loading state before the first response", () => {
-    renderList({ view: { kind: "loading" }, rows: [], newWeekHa: 0 });
+    renderList({ view: { kind: "loading" }, rows: [], headline: undefined });
     expect(screen.getByLabelText("Loading alerts")).toBeTruthy();
-    for (const name of [/New this week/, "Last day", "Custom"]) {
+    expect(screen.queryByRole("group", { name: "New this week" })).toBeNull();
+    for (const name of ["New this week", "Last week", "Custom"]) {
       expect(
         screen.getByRole("button", { name }).hasAttribute("disabled")
       ).toBe(true);
@@ -279,6 +331,7 @@ describe("DashboardAlertsList", () => {
         failure: { kind: "unavailable", detail: UNAVAILABLE },
       },
       rows: [],
+      headline: undefined,
     });
     expect(screen.getByRole("alert").textContent).toContain(UNAVAILABLE);
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
@@ -292,6 +345,7 @@ describe("DashboardAlertsList", () => {
         failure: { kind: "rejected", detail: "Area type not supported" },
       },
       rows: [],
+      headline: undefined,
     });
     expect(screen.getByRole("alert").textContent).toContain(
       "Area type not supported"
@@ -313,30 +367,6 @@ describe("DashboardAlertsList", () => {
     cleanup();
     renderList({ rows: [] });
     expect(dropdown("Download").hasAttribute("disabled")).toBe(true);
-  });
-
-  it("folds Last day, Last 3 days and Custom into More, which names the chosen one", async () => {
-    const props = renderList(propsFor("last-week"));
-    // The full-width pills are still in the DOM: the width's CSS shows one set.
-    expect(screen.getByRole("button", { name: "Last day" })).toBeTruthy();
-    expect(morePill().textContent).toBe("More");
-    await chooseFromMenu(morePill(), "Last 3 days");
-    expect(props.onChip).toHaveBeenCalledWith("last-3-days");
-
-    cleanup();
-    renderList(propsFor("last-3-days"));
-    expect(morePill("More periods: Last 3 days").textContent).toBe(
-      "Last 3 days"
-    );
-  });
-
-  it("opens the Custom dates from the More menu as from the Custom pill", async () => {
-    const props = renderList(
-      propsFor("last-week", "all", chipRange("last-week", list))
-    );
-    await chooseFromMenu(morePill(), "Custom");
-    expect(props.onChip).toHaveBeenCalledWith("custom");
-    expect(await screen.findByLabelText("Custom period start")).toBeTruthy();
   });
 
   it("shows a failed fetch above the rows it still holds", () => {

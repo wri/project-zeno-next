@@ -3,18 +3,21 @@ import { describe, expect, it } from "vitest";
 import {
   alertsCsv,
   alertsCsvFilename,
+  alertsHeadline,
   alertsMapLayer,
   alertsWidgetSpec,
   chipRange,
   LAND_FILTERS,
   confidenceLabel,
-  customStartMin,
+  customRangeProblem,
   formatAlertDate,
   formatHa,
-  formatLatest,
+  formatRangeCaps,
+  formatSinceDay,
   initialWindow,
   needsWiderWindow,
   newWeekHa,
+  sinceRange,
   rowsInRange,
   rowsSummary,
   rowArea,
@@ -233,14 +236,6 @@ describe("chipRange", () => {
       start: "2026-10-04",
       end: "2026-10-10",
     });
-    expect(chipRange("last-day", list)).toEqual({
-      start: "2026-10-16",
-      end: "2026-10-16",
-    });
-    expect(chipRange("last-3-days", list)).toEqual({
-      start: "2026-10-14",
-      end: "2026-10-16",
-    });
     expect(chipRange("last-week", list)).toEqual({
       start: "2026-10-10",
       end: "2026-10-16",
@@ -249,11 +244,10 @@ describe("chipRange", () => {
 
   it("counts back from the anchor, however far it lags the window or today", () => {
     const lagging = { ...list, anchor: "2026-10-12" };
-    expect(chipRange("last-day", lagging)).toEqual({
-      start: "2026-10-12",
+    expect(chipRange("last-week", lagging)).toEqual({
+      start: "2026-10-06",
       end: "2026-10-12",
     });
-    expect(chipRange("last-week", lagging).start).toBe("2026-10-06");
     // A custom range reaching past the anchor stops at it.
     expect(
       chipRange("custom", lagging, { start: "2026-10-10", end: "2026-10-16" })
@@ -280,15 +274,47 @@ describe("chipRange", () => {
   });
 });
 
-describe("customStartMin", () => {
-  it("is a year back from the data's last day, inclusive of both ends", () => {
-    expect(customStartMin("2026-10-16")).toBe("2025-10-17");
-    expect(customStartMin("2024-12-01")).toBe("2023-12-03");
+describe("sinceRange", () => {
+  it("is the two weeks to the data's last day, inclusive of both ends", () => {
+    expect(sinceRange("2026-10-16")).toEqual({
+      start: "2026-10-03",
+      end: "2026-10-16",
+    });
+    expect(sinceRange("2026-01-05")).toEqual({
+      start: "2025-12-23",
+      end: "2026-01-05",
+    });
+  });
+});
+
+describe("customRangeProblem", () => {
+  const anchor = "2026-10-16";
+
+  it("takes a range inside the two weeks, in order", () => {
+    expect(
+      customRangeProblem({ start: "2026-10-03", end: "2026-10-16" }, anchor)
+    ).toBeUndefined();
+    expect(
+      customRangeProblem({ start: "2026-10-10", end: "2026-10-10" }, anchor)
+    ).toBeUndefined();
   });
 
-  it("never reaches before the dataset's first day", () => {
-    expect(customStartMin("2024-06-01")).toBe("2023-12-01");
-    expect(customStartMin("2023-12-01")).toBe("2023-12-01");
+  it("names a bound outside the two weeks, as a date input reports mid-typing", () => {
+    expect(
+      customRangeProblem({ start: "2026-10-02", end: "2026-10-16" }, anchor)
+    ).toBe("outside");
+    expect(
+      customRangeProblem({ start: "2026-10-10", end: "2026-10-17" }, anchor)
+    ).toBe("outside");
+    expect(
+      customRangeProblem({ start: "0002-10-10", end: "2026-10-16" }, anchor)
+    ).toBe("outside");
+  });
+
+  it("names an end before the start", () => {
+    expect(
+      customRangeProblem({ start: "2026-10-12", end: "2026-10-10" }, anchor)
+    ).toBe("inverted");
   });
 });
 
@@ -390,11 +416,69 @@ describe("rows", () => {
     expect(rowsSummary([], "all")).toEqual({ days: 0, ha: 0 });
   });
 
-  it("sums the new rows for the New this week chip, in the shown tier", () => {
+  it("sums the new rows for the headline's new week, in the shown tier", () => {
     expect(newWeekHa(rows, "all")).toBe(19.5);
     expect(newWeekHa(rows, "high")).toBe(16.5);
     expect(newWeekHa(rows, "highest")).toBe(3);
     expect(newWeekHa([], "all")).toBe(0);
+  });
+});
+
+describe("alertsHeadline", () => {
+  const full: AlertsList = {
+    latest: "2026-10-16",
+    anchor: "2026-10-16",
+    window: { start: "2026-09-16", end: "2026-10-19" },
+    newWeek: { start: "2026-10-04", end: "2026-10-10" },
+    rows: [
+      day({
+        date: "2026-10-16",
+        highHa: 4,
+        highestHa: 1,
+        totalHa: 5,
+        isNew: false,
+      }),
+      day({ date: "2026-10-09", highHa: 6, highestHa: 1.5, totalHa: 7.5 }),
+      day({
+        date: "2026-10-03",
+        highHa: 2,
+        highestHa: 0.5,
+        totalHa: 2.5,
+        isNew: false,
+      }),
+      // The day before the two weeks: counted nowhere.
+      day({
+        date: "2026-10-02",
+        highHa: 9,
+        highestHa: 1,
+        totalHa: 10,
+        isNew: false,
+      }),
+    ],
+  };
+
+  it("gives the new week and the two weeks to the latest day, in the shown tier", () => {
+    expect(alertsHeadline(full, "all")).toEqual({
+      newWeek: { ha: 7.5, range: { start: "2026-10-04", end: "2026-10-10" } },
+      since: { ha: 15, range: { start: "2026-10-03", end: "2026-10-16" } },
+      countedToLatest: true,
+    });
+    expect(alertsHeadline(full, "highest").since.ha).toBe(3);
+    expect(alertsHeadline(full, "high").newWeek.ha).toBe(6);
+  });
+
+  it("counts back from the window's end, and says so, when the window had no alerts", () => {
+    const empty: AlertsList = {
+      ...full,
+      latest: undefined,
+      anchor: "2026-10-19",
+      rows: [],
+    };
+    expect(alertsHeadline(empty, "all")).toEqual({
+      newWeek: { ha: 0, range: full.newWeek },
+      since: { ha: 0, range: { start: "2026-10-06", end: "2026-10-19" } },
+      countedToLatest: false,
+    });
   });
 });
 
@@ -463,11 +547,25 @@ describe("download", () => {
 });
 
 describe("formatting", () => {
-  it("formats dates per the design's two forms", () => {
+  it("formats dates per the design's forms", () => {
     expect(formatAlertDate("2026-09-26")).toBe("26 Sep 2026");
     expect(formatAlertDate("2026-10-05")).toBe("5 Oct 2026");
-    expect(formatLatest("2026-09-28")).toBe("SEP 28, 2026");
-    expect(formatLatest("2026-10-05")).toBe("OCT 5, 2026");
+    expect(formatSinceDay("2026-10-03")).toBe("3 Oct");
+  });
+
+  it("names a period's ends only where they differ, in caps", () => {
+    expect(formatRangeCaps({ start: "2026-10-11", end: "2026-10-17" })).toBe(
+      "11 – 17 OCT 2026"
+    );
+    expect(formatRangeCaps({ start: "2026-09-28", end: "2026-10-04" })).toBe(
+      "28 SEP – 4 OCT 2026"
+    );
+    expect(formatRangeCaps({ start: "2025-12-28", end: "2026-01-03" })).toBe(
+      "28 DEC 2025 – 3 JAN 2026"
+    );
+    expect(formatRangeCaps({ start: "2026-10-16", end: "2026-10-16" })).toBe(
+      "16 OCT 2026"
+    );
   });
 
   it("formats hectares to one decimal with a sliver floor", () => {

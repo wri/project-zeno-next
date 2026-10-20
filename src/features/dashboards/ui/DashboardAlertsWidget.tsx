@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Box, Flex, Text } from "@chakra-ui/react";
+import { Box } from "@chakra-ui/react";
 import { useQuery } from "@tanstack/react-query";
 
-import { ParamChip } from "@/app/components/ui/ParamChip";
-import AnalysisParametersToggle from "@/app/components/widgets/AnalysisParameters";
+import {
+  buildChips,
+  type ParamChipData,
+} from "@/app/components/widgets/analysis-params-utils";
 import { downloadCsv } from "@/src/shared/lib/csv";
 import { todayIso, type DateRange } from "@/src/shared/lib/iso-date";
 import { fetchAlertsList, type AlertsListError } from "../api/alerts";
@@ -12,16 +14,15 @@ import { dashboardKeys } from "../hooks/dashboardKeys";
 import {
   alertsCsv,
   alertsCsvFilename,
+  alertsHeadline,
   alertsMapLayer,
   alertsWidgetSpec,
   chipRange,
   confidenceLabel,
-  customStartMin,
-  formatLatest,
   initialWindow,
   needsWiderWindow,
-  newWeekHa,
   rowsInRange,
+  sinceRange,
   visibleRows,
   widenedWindow,
   type AlertsChip,
@@ -35,17 +36,15 @@ import DashboardAlertsList, {
 } from "./DashboardAlertsList";
 import DashboardAlertsMapPane from "./DashboardAlertsMapPane";
 import DashboardWidgetCard from "./DashboardWidgetCard";
-import { TWO_COLUMN_QUERY } from "./gridLayout";
 
 /** A list stays fresh for a few hours: the data moves once a day. */
 const ALERTS_STALE_MS = 3 * 60 * 60 * 1000;
 
 /**
- * How long a custom range must stand before the map redraws for it and the
- * backend is asked for a wider window. A date input commits on every
- * keystroke, and the dates on the way to "01/08/2026" ("01/09/2026", with
- * last month's digits still in place) are complete dates of their own; each
- * would be a tile reload and an analytics job.
+ * How long a custom range must stand before the map redraws for it. A date
+ * input commits on every keystroke, and the dates on the way to
+ * "01/08/2026" ("01/09/2026", with last month's digits still in place) are
+ * complete dates of their own; each would be a tile reload.
  */
 const CUSTOM_SETTLE_MS = 400;
 
@@ -66,10 +65,13 @@ interface CardProps {
  * map's tiles — so both always show the same period.
  *
  * One fetch per view: the widget asks for its `days` window once, and the
- * chips filter the cached rows. A custom range reaching outside that window
- * or an Intersects land filter asks again, and then the rows on show stay
- * while the new list loads. Chips, confidence, land filter and the params
- * toggle are view state, never persisted.
+ * chips filter the cached rows. The widget looks two weeks back from the
+ * latest alert day (the headline's "since" period, the furthest a custom
+ * range reaches), so when the data lags today by more than the window
+ * covers it asks once more for a window reaching that far; an Intersects
+ * land filter asks again too, and then the rows on show stay while the new
+ * list loads. Chips, confidence, land filter and the params toggle are view
+ * state, never persisted.
  *
  * The config is parsed once (`alertsWidgetSpec`); a config that cannot be
  * rendered shows the shell with a placeholder, like a broken map widget.
@@ -116,11 +118,10 @@ function AlertsCard({
   const [landFilter, setLandFilter] = useState<AlertsLandFilter>("any");
   const [custom, setCustom] = useState<DateRange>();
   // The custom range once the typing has paused: the list filters off
-  // `custom` at once, the map and the wider fetch follow this one.
+  // `custom` at once, the map follows this one.
   const [settledCustom, setSettledCustom] = useState<DateRange>();
-  const [paramsShown, setParamsShown] = useState(false);
   // The window asked of the backend. It starts as the widget's `days` ending
-  // today and only ever widens, for a custom range that reaches outside it.
+  // today and only ever widens, to reach two weeks before the latest alert day.
   const [requestWindow, setRequestWindow] = useState<DateRange>(() =>
     initialWindow(spec.days, todayIso())
   );
@@ -170,34 +171,46 @@ function AlertsCard({
     setChip(next);
   };
 
+  // The list pane has already judged the range (inside the two weeks, in
+  // order), so it is taken as it comes.
   const changeCustom = (next: DateRange) => {
-    if (!list) return;
-    // A date input reports every keystroke, so a year being typed passes
-    // through "0002…" before "2026…": a bound outside the data (or beyond
-    // the window the backend accepts) is left alone until it is inside.
-    const min = customStartMin(list.anchor);
-    const inData = (iso: string) => iso >= min && iso <= list.anchor;
-    if (!inData(next.start) || !inData(next.end)) return;
     setCustom(next);
     setChip("custom");
   };
 
-  // Once the typing has paused: the map follows the settled range, and a
-  // range reaching outside the fetched window widens the request (the rows
-  // already held filter to it at once; the one fetch asks for where the
-  // user ended up).
+  // Once the typing has paused, the map follows the custom range.
   useEffect(() => {
     if (custom === settledCustom) return;
-    const timer = setTimeout(() => {
-      setSettledCustom(custom);
-      if (!list || !custom) return;
-      const settled = chipRange("custom", list, custom);
-      if (needsWiderWindow(settled, list.window)) {
-        setRequestWindow((window) => widenedWindow(settled, window));
-      }
-    }, CUSTOM_SETTLE_MS);
+    const timer = setTimeout(() => setSettledCustom(custom), CUSTOM_SETTLE_MS);
     return () => clearTimeout(timer);
-  }, [custom, settledCustom, list]);
+  }, [custom, settledCustom]);
+
+  // A list whose window stops short of two weeks before its latest alert
+  // day (the data lags today by more than the window covers) is asked for
+  // again, wider; the rows already held stay on show meanwhile. Reconciled
+  // during render, like `held`: once the request reaches that far the
+  // widened window is the same object, and nothing is set.
+  if (list) {
+    const since = sinceRange(list.anchor);
+    if (needsWiderWindow(since, list.window)) {
+      const wider = widenedWindow(since, requestWindow);
+      if (wider !== requestWindow) setRequestWindow(wider);
+    }
+  }
+
+  // The params row, as an analysis card's: the area and dataset chips every
+  // chart carries, and the tier on show.
+  const paramChips = useMemo<ParamChipData[]>(
+    () => [
+      ...buildChips({ areas: [aoi.name], dataset: "Integrated alerts" }),
+      {
+        label: "CONFIDENCE",
+        value: confidenceLabel(confidence),
+        colorScheme: "purple",
+      },
+    ],
+    [aoi.name, confidence]
+  );
 
   // The rows as the table shows them: the chip's period and the tier applied
   // here, the land filter by the fetch.
@@ -212,6 +225,7 @@ function AlertsCard({
   return (
     <DashboardWidgetCard
       title={spec.title}
+      paramChips={paramChips}
       removeMode="widget"
       isOwner={isOwner}
       isDouble={isDouble}
@@ -220,104 +234,32 @@ function AlertsCard({
       onRename={onRename}
       onRemove={onRemove}
       body={
-        <>
-          {/* Badge row, as an analysis card's params row: the toggle, the
-              badges once shown, and the latest alert day on the right (no
-              label when the window has no alerts). A rule above it only:
-              the panes below carry their own borders. */}
-          <Box px="8px" pb="8px">
-            <Flex
-              borderTopWidth="1px"
-              borderColor="rgba(19,22,25,0.05)"
-              pt="4px"
-              align="center"
-              gap="4px"
-              wrap="wrap"
-            >
-              <AnalysisParametersToggle
-                expanded={paramsShown}
-                onToggle={() => setParamsShown((shown) => !shown)}
+        <Box px="8px" pb="8px">
+          <DashboardAlertsList
+            view={view}
+            isFetching={query.isFetching && !!list}
+            rows={rows}
+            headline={list ? alertsHeadline(list, confidence) : undefined}
+            chip={chip}
+            confidence={confidence}
+            landFilter={landFilter}
+            custom={custom}
+            sideBySide={isDouble}
+            mapPane={
+              <DashboardAlertsMapPane
+                title={spec.title}
+                layer={alertsMapLayer(spec, landFilter, settledRange)}
+                aoi={areaAoi}
               />
-              {paramsShown && (
-                <>
-                  <ParamChip
-                    label="DATASET"
-                    value="Integrated alerts"
-                    colorScheme="blue"
-                    bg="white"
-                    maxValueWidth="20ch"
-                  />
-                  <ParamChip
-                    label="CONFIDENCE"
-                    value={confidenceLabel(confidence)}
-                    colorScheme="blue"
-                    bg="white"
-                  />
-                </>
-              )}
-              <Box flex="1" />
-              {list?.latest && (
-                <Text
-                  fontFamily="mono"
-                  fontSize="10px"
-                  lineHeight="16px"
-                  color="#565E7B"
-                  whiteSpace="nowrap"
-                >
-                  LATEST {formatLatest(list.latest)}
-                </Text>
-              )}
-            </Flex>
-          </Box>
-
-          {/* The two panes: side by side across a full-width card in a
-              two-column grid, stacked otherwise (a single card, or a grid
-              too narrow for two columns). */}
-          <Box px="8px" pb="8px">
-            <Flex
-              direction="column"
-              gap="12px"
-              align="stretch"
-              css={
-                isDouble
-                  ? {
-                      [TWO_COLUMN_QUERY]: {
-                        flexDirection: "row",
-                        alignItems: "flex-start",
-                      },
-                    }
-                  : undefined
-              }
-            >
-              <Box flex="1 1 0" minW={0}>
-                <DashboardAlertsList
-                  view={view}
-                  isFetching={query.isFetching && !!list}
-                  rows={rows}
-                  newWeekHa={list ? newWeekHa(list.rows, confidence) : 0}
-                  chip={chip}
-                  confidence={confidence}
-                  landFilter={landFilter}
-                  custom={custom}
-                  onChip={selectChip}
-                  onConfidence={setConfidence}
-                  onLandFilter={setLandFilter}
-                  onCustomChange={changeCustom}
-                  onDownloadCsv={saveCsv}
-                  onRetry={() => query.refetch()}
-                />
-              </Box>
-              <Box flex="1 1 0" minW={0}>
-                <DashboardAlertsMapPane
-                  title={spec.title}
-                  layer={alertsMapLayer(spec, landFilter, settledRange)}
-                  aoi={areaAoi}
-                  tall={isDouble}
-                />
-              </Box>
-            </Flex>
-          </Box>
-        </>
+            }
+            onChip={selectChip}
+            onConfidence={setConfidence}
+            onLandFilter={setLandFilter}
+            onCustomChange={changeCustom}
+            onDownloadCsv={saveCsv}
+            onRetry={() => query.refetch()}
+          />
+        </Box>
       }
     />
   );
