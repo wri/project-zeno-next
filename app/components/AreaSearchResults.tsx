@@ -3,9 +3,12 @@ import { Button, Stack, Text } from "@chakra-ui/react";
 
 import { toaster } from "@/app/components/ui/toaster";
 import { useCustomAreasListSuspense } from "@/app/hooks/useCustomAreasList";
-import { aoiFeatureRef } from "@/app/store/layerManagerSlice";
 import useMapStore from "@/app/store/mapStore";
-import { addPlaceToMap, findPlaceLayer } from "@/app/utils/addPlaceToMap";
+import {
+  addPlaceToMap,
+  findPlaceLayer,
+  removePlaceFromMap,
+} from "@/app/utils/addPlaceToMap";
 import {
   AOI_SEARCH_DEBOUNCE_MS,
   AOI_SEARCH_MIN_CHARS,
@@ -180,15 +183,18 @@ function PlaceRow({ place }: { place: AoiSearchResult }) {
   const aoi = useMemo(() => placeToAoi(place), [place]);
   const aoiSelection = useMemo(() => ({ name: aoi.name, aois: [aoi] }), [aoi]);
   const layer = useMapStore((s) => findPlaceLayer(s.layers, place));
-  const removeLayer = useMapStore((s) => s.removeLayer);
-  const removeFromRegistry = useMapStore((s) => s.removeFromRegistry);
+  const setLayerVisibility = useMapStore((s) => s.setLayerVisibility);
   const [adding, setAdding] = useState(false);
+  // A place hidden from "In this conversation" is still on the map, but off.
+  const isVisible = !!layer?.visible;
 
   async function handleToggle(checked: boolean) {
     if (!checked) {
-      if (!layer) return;
-      removeFromRegistry(aoiFeatureRef(aoi));
-      removeLayer(layer.id);
+      if (layer) removePlaceFromMap(layer, aoi);
+      return;
+    }
+    if (layer) {
+      setLayerVisibility(layer.id, true);
       return;
     }
     setAdding(true);
@@ -214,7 +220,7 @@ function PlaceRow({ place }: { place: AoiSearchResult }) {
       meta={placeMeta(place)}
       interaction={{
         mode: "toggle",
-        checked: !!layer || adding,
+        checked: isVisible || adding,
         onChange: (checked) => void handleToggle(checked),
         status: adding ? "Adding…" : undefined,
         disabled: adding,

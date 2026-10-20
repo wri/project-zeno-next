@@ -9,7 +9,7 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 
 vi.mock("@/app/lib/api-client", () => ({ apiFetch: vi.fn() }));
 // layerManagerSlice lazily imports chatStore to fold layer changes into the
@@ -273,6 +273,101 @@ describe("AreaSearchResults", () => {
     await waitFor(() => expect(reserve().checked).toBe(true));
     await act(async () => {
       fireEvent.click(reserve());
+    });
+
+    expect(useMapStore.getState().layers).toHaveLength(0);
+    expect(useMapStore.getState().geoJsonRegistry).toHaveLength(0);
+  });
+  it("clears the analysis selection when its place comes off the map", async () => {
+    renderResults("santa");
+    const found = await places();
+    const argentina = () =>
+      within(found).getAllByRole("checkbox")[0] as HTMLInputElement;
+
+    await act(async () => {
+      fireEvent.click(argentina());
+    });
+    await waitFor(() => expect(argentina().checked).toBe(true));
+    await act(async () => {
+      fireEvent.click(argentina());
+    });
+
+    expect(useMapStore.getState().analysisSelection).toBeNull();
+    expect(useSelectionStore.getState().selection).toBeNull();
+  });
+
+  it("shows a hidden place again instead of removing it", async () => {
+    renderResults("santa");
+    const found = await places();
+    const argentina = () =>
+      within(found).getAllByRole("checkbox")[0] as HTMLInputElement;
+
+    await act(async () => {
+      fireEvent.click(argentina());
+    });
+    await waitFor(() => expect(argentina().checked).toBe(true));
+    act(() => useMapStore.getState().setLayerVisibility("Santa Cruz", false));
+    expect(argentina().checked).toBe(false);
+
+    await act(async () => {
+      fireEvent.click(argentina());
+    });
+
+    expect(useMapStore.getState().layers).toMatchObject([
+      { id: "Santa Cruz", visible: true },
+    ]);
+  });
+
+  it("flies to the geometry when a place has no bbox", async () => {
+    const original = useMapStore.getState().flyToGeoJsonWithRetry;
+    const flyToGeoJsonWithRetry = vi.fn();
+    useMapStore.setState({ flyToGeoJsonWithRetry });
+    onTestFinished(() =>
+      useMapStore.setState({ flyToGeoJsonWithRetry: original })
+    );
+    renderResults("santa");
+    const found = await places();
+
+    const reserve = within(found).getAllByRole("checkbox")[2];
+    await act(async () => {
+      fireEvent.click(reserve);
+    });
+
+    await waitFor(() =>
+      expect(flyToGeoJsonWithRetry).toHaveBeenCalledWith({
+        type: "FeatureCollection",
+        features: [],
+      })
+    );
+  });
+
+  it("recognises a place already picked from the boundary layer", async () => {
+    // Boundary clicks key the ref by the map layer id ("GADM") and carry no
+    // aoiSelection.
+    const ref = { name: "Santa Cruz", source: "GADM", srcId: "ARG.21_1" };
+    const { addToRegistry, addLayer } = useMapStore.getState();
+    addToRegistry({
+      ref,
+      data: { type: "FeatureCollection", features: [] },
+      srcId: "ARG.21_1",
+    });
+    addLayer({
+      id: "Santa Cruz",
+      name: "Santa Cruz",
+      type: "geojson",
+      visible: true,
+      featureRefs: [ref],
+    });
+    renderResults("santa");
+    const found = await places();
+    const [argentina, bolivia] = within(found).getAllByRole(
+      "checkbox"
+    ) as HTMLInputElement[];
+    expect(argentina.checked).toBe(true);
+    expect(bolivia.checked).toBe(false);
+
+    await act(async () => {
+      fireEvent.click(argentina);
     });
 
     expect(useMapStore.getState().layers).toHaveLength(0);
