@@ -2,6 +2,7 @@ import { format } from "date-fns";
 
 import { DATASET_BY_ID } from "@/app/constants/datasets";
 import {
+  findRegistryEntry,
   isAreaLayer,
   type GeoJsonEntry,
   type Layer,
@@ -138,9 +139,7 @@ function buildAoiSelected(
   // Manual area: reconstruct from the registry entry of the first feature ref.
   const ref = layer.featureRefs?.[0];
   if (!ref) return undefined;
-  const entry = registry.find(
-    (e) => e.ref.name === ref.name && e.ref.source === ref.source
-  );
+  const entry = findRegistryEntry(registry, ref);
   if (!entry) return undefined;
 
   const isGadm = entry.ref.source === "GADM";

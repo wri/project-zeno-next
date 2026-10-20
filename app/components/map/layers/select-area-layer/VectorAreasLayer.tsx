@@ -156,13 +156,21 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
               ? getSubtype(layerId, featureProps, metadata)
               : undefined;
 
+            // The src id is part of the ref: two parcels can share a name,
+            // and the registry keeps an entry per ref.
+            const featureRef = {
+              name: aoiName,
+              source: layerId,
+              srcId: dynamicSrcId,
+            };
+
             const sourceFeatures = map.querySourceFeatures(sourceId, {
               sourceLayer: sourceLayer,
               filter: ["in", "gfw_fid", feature.properties?.gfw_fid],
             });
             if (sourceFeatures.length === 1) {
               addToRegistry({
-                ref: { name: aoiName, source: layerId },
+                ref: featureRef,
                 data: sourceFeatures[0],
                 srcId: dynamicSrcId,
                 subtype: dynamicSubtype,
@@ -172,7 +180,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
                 name: aoiName,
                 type: "geojson",
                 visible: true,
-                featureRefs: [{ name: aoiName, source: layerId }],
+                featureRefs: [featureRef],
               });
             } else if (sourceFeatures.length > 1) {
               const collection: FeatureCollection<
@@ -188,7 +196,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
               const f = union(collection);
               if (f) {
                 addToRegistry({
-                  ref: { name: aoiName, source: layerId },
+                  ref: featureRef,
                   data: f,
                   srcId: dynamicSrcId,
                   subtype: dynamicSubtype,
@@ -198,7 +206,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
                   name: aoiName,
                   type: "geojson",
                   visible: true,
-                  featureRefs: [{ name: aoiName, source: layerId }],
+                  featureRefs: [featureRef],
                 });
               }
             }
