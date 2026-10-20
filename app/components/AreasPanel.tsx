@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useMemo, type ReactNode } from "react";
-import { Box, Flex, IconButton, Stack, Text } from "@chakra-ui/react";
+import { Flex, IconButton, Stack, Text } from "@chakra-ui/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { CrosshairIcon, PolygonIcon, XIcon } from "@phosphor-icons/react";
 import { useShallow } from "zustand/react/shallow";
@@ -28,11 +28,11 @@ import { areaSourceLabel } from "@/app/utils/areaSourceLabel";
 import { customAreaToFeature } from "@/src/entities/custom-area";
 import { ENTITY_KINDS, EntityCard } from "@/src/shared/ui/entity-card";
 
+import { AreaActionBar } from "./AreaActionBar";
 import { areaActionIconProps } from "./AreaCardMenu";
 import { AreaThumbnail } from "./AreaThumbnail";
 import ConversationAreaActionsMenu from "./ConversationAreaActionsMenu";
 import CustomAreaActionsMenu from "./CustomAreaActionsMenu";
-import { AreaToolbarButtons } from "./AreaToolbarButtons";
 import { BoundariesList } from "./BoundariesList";
 import { PanelEmpty, PanelList, PanelPills } from "./PanelList";
 import { Tooltip } from "./ui/tooltip";
@@ -71,8 +71,8 @@ const AREA_FILTERS: { id: AreasPanelFilter; label: string }[] = [
  *    controls the layer's `visible` flag via `mapStore.setLayerVisibility`.
  *  - "My areas" — `useCustomAreasListSuspense().customAreas`. Toggling
  *    show-on-map registers the geometry and adds an area layer (or removes it).
- *  - Header actions delegate to existing `mapStore` actions: upload
- *    (`toggleUploadAreaDialog`), draw (`startDrawing`).
+ *  - `AreaActionBar` above the chips: Draw (`startDrawing`) and Upload
+ *    (`toggleUploadAreaDialog`), and the draw status / confirm strip.
  */
 export default function AreasPanel() {
   const {
@@ -117,6 +117,7 @@ export default function AreasPanel() {
               pb={6}
               overflow="hidden"
             >
+              <AreaActionBar />
               <PanelPills
                 options={AREA_FILTERS}
                 value={filter}
@@ -181,25 +182,19 @@ function AreasPanelHeader({ onClose }: { onClose: () => void }) {
           Areas
         </Text>
       </Flex>
-      <Flex alignItems="center" gap="12px">
-        <AreaToolbarButtons />
-
-        <Box w="1px" h="16px" bg="#E0E2E5" flexShrink={0} />
-
-        <IconButton
-          aria-label="Close areas panel"
-          variant="ghost"
-          size="2xs"
-          p={0}
-          minW="16px"
-          h="16px"
-          w="16px"
-          color="#656E7B"
-          onClick={onClose}
-        >
-          <XIcon size={12} />
-        </IconButton>
-      </Flex>
+      <IconButton
+        aria-label="Close areas panel"
+        variant="ghost"
+        size="2xs"
+        p={0}
+        minW="16px"
+        h="16px"
+        w="16px"
+        color="#656E7B"
+        onClick={onClose}
+      >
+        <XIcon size={12} />
+      </IconButton>
     </Flex>
   );
 }
