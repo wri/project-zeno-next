@@ -1,5 +1,4 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
-import type { DatasetInfo } from "@/app/types/chat";
 import {
   Box,
   Card,
@@ -18,7 +17,7 @@ import { MagnifyingGlassIcon } from "@phosphor-icons/react";
 import { ChatContextType, ChatContextOptions } from "./ContextButton";
 import { DatePicker, DatePickerProps } from "./DatePicker";
 import useChatStore from "../store/chatStore";
-import { DatasetCard } from "./DatasetCard";
+import { DatasetRow } from "./DatasetRow";
 
 // Constants for navigation and dummy content
 const CONTEXT_NAV = (Object.keys(ChatContextOptions) as ChatContextType[])
@@ -98,38 +97,31 @@ function LayerCardList({
   const enabledFlags = useEnabledFlags();
   const visibleCards = filterDatasetsByFeatureFlag(cards, enabledFlags);
 
-  function handleToggle(card: DatasetCardConfig & { img?: string }) {
-    const isSelected = layers.some((l) => l.datasetId === card.dataset_id);
+  function handleToggle(card: DatasetCardConfig, checked: boolean) {
     // Single-dataset selection: clear any existing dataset layers, then add the
-    // clicked one — unless it was already selected, in which case this is a
-    // toggle-off. The visible layer IS the scope (no separate context item).
+    // clicked one when switching it on. The visible layer IS the scope (no
+    // separate context item).
     removeDatasetLayers();
-    if (!isSelected) {
+    if (checked) {
       datasetCardLayers(card).forEach(addLayer);
     }
   }
 
   return (
-    <Stack minH={0} overflowY="auto">
-      {visibleCards.map((card) => {
-        const isSelected = layers.some((l) => l.datasetId === card.dataset_id);
-        return (
-          // flexShrink={0} pins the card height in the scrollable list so the
-          // 80px thumbnail stays square instead of being squished on overflow.
-          // No type label in the context menu — everything here is a layer,
-          // except view-only layers which keep their "VIEW ONLY" badge.
-          <Box key={card.dataset_name} flexShrink={0}>
-            <DatasetCard
-              dataset={card as unknown as DatasetInfo}
-              img={card.img ?? "/globe.svg"}
-              selected={isSelected}
-              onClick={() => handleToggle(card)}
-              label={card.viewOnly ? "VIEW ONLY" : ""}
-              {...(card.viewOnly ? { labelColor: "#656E7B" } : {})}
-            />
-          </Box>
-        );
-      })}
+    <Stack gap="6px" minH={0} overflowY="auto">
+      {visibleCards.map((card) => (
+        <DatasetRow
+          key={card.dataset_name}
+          dataset={card}
+          img={card.img}
+          viewOnly={card.viewOnly}
+          interaction={{
+            mode: "toggle",
+            checked: layers.some((l) => l.datasetId === card.dataset_id),
+            onChange: (checked) => handleToggle(card, checked),
+          }}
+        />
+      ))}
     </Stack>
   );
 }

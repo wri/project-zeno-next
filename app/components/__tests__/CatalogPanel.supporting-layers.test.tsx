@@ -8,7 +8,7 @@
  */
 import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // layerManagerSlice dynamically imports chatStore to fold layer add/remove
 // into `lastSentContext`; stub it so the store round-trip doesn't depend on
@@ -16,6 +16,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/app/store/chatStore", () => ({
   default: { getState: () => ({ includeLayerInContext: () => {} }) },
 }));
+
+// That import is fire-and-forget, so the last toggle's can still be pending
+// when the file finishes; settle it first or the environment teardown throws
+// and `pnpm test` exits 1 with every test passing.
+afterEach(() => vi.dynamicImportSettled());
 
 import DataCatalogPanel from "../CatalogPanel";
 import { DATASET_CARDS } from "@/app/constants/datasets";
@@ -105,16 +110,6 @@ describe("Data Catalog panel — LGMS supporting layers", () => {
   });
 });
 
-/** The card root: the nearest ancestor that also holds the show-on-map switch. */
-function cardFor(title: string): HTMLElement {
-  let el: HTMLElement | null = screen.getByText(title);
-  while (el && !el.querySelector('input[type="checkbox"]')) {
-    el = el.parentElement;
-  }
-  if (!el) throw new Error(`No card found for ${title}`);
-  return el;
-}
-
 describe("Data Catalog panel — view-only datasets", () => {
   beforeEach(() => {
     useMapStore.getState().reset();
@@ -124,17 +119,71 @@ describe("Data Catalog panel — view-only datasets", () => {
     setFlags("ifl");
   });
 
-  // View-only datasets (no analytics endpoint) are still datasets: the card
-  // keeps the DATA type label, and VIEW ONLY is a separate header badge.
-  it("labels a view-only card DATA and badges it VIEW ONLY; analysable cards get no badge", () => {
+  it("badges a view-only row VIEW ONLY; analysable rows get no badge", () => {
     renderPanel();
 
-    const viewOnly = cardFor("Intact Forest Landscapes");
-    expect(viewOnly.textContent).toContain("DATA");
+    const viewOnly = rowFor("Intact Forest Landscapes");
     expect(viewOnly.textContent).toContain("VIEW ONLY");
 
-    const analysable = cardFor("Tree cover loss");
-    expect(analysable.textContent).toContain("DATA");
+    const analysable = rowFor("Tree cover loss");
     expect(analysable.textContent).not.toContain("VIEW ONLY");
   });
 });
+
+describe("Data Catalog panel — compact rows", () => {
+  beforeEach(() => {
+    useMapStore.getState().reset();
+    useSidebarStore.setState({ dataCatalogOpen: true, isChatFullSize: true });
+    setFlags();
+  });
+
+  it("clicking a row's text adds the dataset to the map, clicking again removes it", async () => {
+    renderPanel();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText("Tree cover loss"));
+    });
+    expect(useMapStore.getState().layers.map((l) => l.id)).toContain(
+      "dataset-4"
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByText("Tree cover loss"));
+    });
+    expect(useMapStore.getState().layers).toHaveLength(0);
+  });
+
+  it("opening dataset info does not toggle the layer", async () => {
+    renderPanel();
+
+    await act(async () => {
+      fireEvent.click(
+        screen.getByLabelText("Show dataset info: Tree cover loss")
+      );
+    });
+
+    expect(useMapStore.getState().layers).toHaveLength(0);
+  });
+
+  // Visibility and opacity live in the legend; the catalogue only adds and
+  // removes datasets.
+  it("shows no per-layer opacity controls once a dataset is on", async () => {
+    renderPanel();
+
+    await act(async () => {
+      fireEvent.click(switchFor("Show Tree cover loss on map"));
+    });
+
+    expect(screen.queryByLabelText(/opacity/i)).toBeNull();
+  });
+});
+
+/** The row root: the nearest ancestor that also holds the show-on-map switch. */
+function rowFor(title: string): HTMLElement {
+  let el: HTMLElement | null = screen.getByText(title);
+  while (el && !el.querySelector('input[type="checkbox"]')) {
+    el = el.parentElement;
+  }
+  if (!el) throw new Error(`No row found for ${title}`);
+  return el;
+}
