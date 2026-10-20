@@ -8,7 +8,7 @@
  */
 import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // layerManagerSlice dynamically imports chatStore to fold layer add/remove
 // into `lastSentContext`; stub it so the store round-trip doesn't depend on
@@ -16,6 +16,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/app/store/chatStore", () => ({
   default: { getState: () => ({ includeLayerInContext: () => {} }) },
 }));
+
+// That import is fire-and-forget, so the last toggle's can still be pending
+// when the file finishes; settle it first or the environment teardown throws
+// and `pnpm test` exits 1 with every test passing.
+afterEach(() => vi.dynamicImportSettled());
 
 import DataCatalogPanel from "../CatalogPanel";
 import { DATASET_CARDS } from "@/app/constants/datasets";
