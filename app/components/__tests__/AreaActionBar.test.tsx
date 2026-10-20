@@ -25,7 +25,7 @@ function pending(name: string | null): PendingDrawnArea {
 }
 
 function renderBar() {
-  render(
+  return render(
     <QueryClientProvider client={new QueryClient()}>
       <ChakraProvider value={defaultSystem}>
         <AreaActionBar />
@@ -158,5 +158,46 @@ describe("AreaActionBar", () => {
     fireEvent.click(button("Redraw"));
 
     expect(actions.startDrawing).toHaveBeenCalledOnce();
+  });
+
+  it("locks the strip while a save is in flight, so it can't save twice", async () => {
+    let resolve!: (v: unknown) => void;
+    actions.confirmDrawing.mockImplementation(
+      () => new Promise((r) => (resolve = r))
+    );
+    useMapStore.setState({
+      isDrawingMode: true,
+      pendingDrawnArea: pending("Nakuru County, Kenya"),
+    });
+    renderBar();
+
+    await act(async () => {
+      fireEvent.click(button("Save area"));
+    });
+    for (const name of ["Save area", "Redraw", "Cancel"]) {
+      expect((button(name) as HTMLButtonElement).disabled).toBe(true);
+    }
+    fireEvent.click(button("Save area"));
+    expect(actions.confirmDrawing).toHaveBeenCalledOnce();
+
+    await act(async () => resolve(undefined));
+    expect((button("Save area") as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it("cancels the drawing when the panel closes mid-draw", () => {
+    useMapStore.setState({ isDrawingMode: true });
+    const { unmount } = renderBar();
+
+    unmount();
+
+    expect(actions.cancelDrawing).toHaveBeenCalledOnce();
+  });
+
+  it("leaves the map alone when the panel closes while not drawing", () => {
+    const { unmount } = renderBar();
+
+    unmount();
+
+    expect(actions.cancelDrawing).not.toHaveBeenCalled();
   });
 });
