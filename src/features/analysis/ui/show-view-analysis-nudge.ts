@@ -57,15 +57,21 @@ export function showViewAnalysisNudge(selection: AreaSelection): boolean {
   // The key is every input accepting would act on, not just the AOI: the card
   // runs its own stored window, so leaving the dates out would let a re-run
   // short-circuit on a stale payload and analyse the previous period after the
-  // user changed the pinned range.
+  // user changed the pinned range. Likewise the area is its id, not its name:
+  // unnamed concession parcels share one ("Mining concession, IDN").
   const pending = useChatStore
     .getState()
     .messages.find(
       (m) =>
         m.type === "view-analysis-nudge" && !m.viewAnalysisSuggestion?.accepted
     );
+  const pendingArea = pending?.viewAnalysisSuggestion?.area;
   if (
-    pending?.viewAnalysisSuggestion?.area.name === selection.name &&
+    pending?.viewAnalysisSuggestion &&
+    pendingArea?.name === selection.name &&
+    pendingArea.source === selection.source &&
+    pendingArea.srcId === selection.srcId &&
+    pendingArea.subtype === selection.subtype &&
     pending.viewAnalysisSuggestion.datasetId === datasetId &&
     pending.viewAnalysisSuggestion.startDate === startDate &&
     pending.viewAnalysisSuggestion.endDate === endDate
