@@ -5,7 +5,6 @@ import {
   toLayerEntries,
 } from "../datasetLayerContext";
 import type { DatasetInfo } from "@/app/types/chat";
-import { CONTEXT_LAYER_METADATA } from "@/app/constants/datasets";
 
 const BASE_DATASET: DatasetInfo = {
   dataset_id: 4,
@@ -117,20 +116,17 @@ describe("getDatasetLayerContextProps — raster branch", () => {
   });
 });
 
-describe("getDatasetLayerContextProps — frontend-styled context layers", () => {
+describe("getDatasetLayerContextProps — SBTN context layers", () => {
   it.each(["natural_forest", "natural_lands"])(
-    "replaces the backend %s tiles with the frontend's single-class styling",
+    "draws %s from the backend's styled tiles",
     (name) => {
+      const tileUrl = "/raster/collections/natural-lands-v-1-1/x.png";
       const props = getDatasetLayerContextProps({
         ...BASE_DATASET,
         context_layer: name,
-        context_layers: [
-          { name, tile_url: "/raster/collections/natural-lands-v-1-1/x.png" },
-        ],
+        context_layers: [{ name, tile_url: tileUrl }],
       });
-      expect(props.contextLayer?.tileUrl).toBe(
-        CONTEXT_LAYER_METADATA[name].tile_url
-      );
+      expect(props.contextLayer?.tileUrl).toBe(tileUrl);
     }
   );
 });

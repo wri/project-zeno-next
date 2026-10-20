@@ -1,7 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import { CONTEXT_LAYER_METADATA } from "@/app/constants/datasets";
-
 import { mapWidgetLayer, mapWidgetViewportBbox } from "../mapWidgets";
 
 const datasetConfig = (overrides: Record<string, unknown> = {}) => ({
@@ -50,7 +48,7 @@ describe("mapWidgetLayer — dataset configs", () => {
     expect(layer?.contextLayerName).toBe("driver");
   });
 
-  it("uses the frontend's styling for SBTN natural sub-layers", () => {
+  it("draws SBTN natural sub-layers from the backend's tiles", () => {
     const layer = mapWidgetLayer(
       datasetConfig({
         context_layer: "natural_lands",
@@ -59,12 +57,10 @@ describe("mapWidgetLayer — dataset configs", () => {
         ],
       })
     );
-    expect(layer?.contextTileUrl).toBe(
-      CONTEXT_LAYER_METADATA.natural_lands.tile_url
-    );
+    expect(layer?.contextTileUrl).toBe("/raster/natural-lands.png");
   });
 
-  it("draws natural forest from the frontend's single-class tiles", () => {
+  it("draws natural forest from the backend's tiles", () => {
     const layer = mapWidgetLayer(
       datasetConfig({
         context_layer: "natural_forest",
@@ -73,9 +69,7 @@ describe("mapWidgetLayer — dataset configs", () => {
         ],
       })
     );
-    expect(layer?.contextTileUrl).toBe(
-      CONTEXT_LAYER_METADATA.natural_forest.tile_url
-    );
+    expect(layer?.contextTileUrl).toBe("/raster/natural-lands.png");
     expect(layer?.contextLayerName).toBe("natural_forest");
   });
 

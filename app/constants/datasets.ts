@@ -143,11 +143,6 @@ export type ContextLayerMetadata = {
   dataset_name: string;
   context_layer: string | null;
   description: string;
-  /**
-   * Replaces the backend's tile URL for this sub-layer, when the frontend
-   * styles it differently (see resolveContextTileUrl).
-   */
-  tile_url?: string;
   legend: DatasetLegendConfig;
   vectorStyle?: VectorStyleSpec;
 };
@@ -216,41 +211,26 @@ const SBTN_NATURAL_CLASSES = [
 ];
 
 /**
- * A context sub-layer drawing `values` of the SBTN raster in a single `color`,
- * with a one-swatch legend. Its tile URL replaces the backend's, which paints
- * all ten natural classes; the tile server leaves values missing from the
- * colormap transparent, so everything else drops out.
- *
- * TODO: a stopgap until the backend styles these tiles itself; see
- * resolveContextTileUrl in datasetLayerContext.ts.
+ * A context sub-layer of the SBTN raster with a one-swatch legend. The backend
+ * serves its tiles already painted in that single `color`, so the legend must
+ * stay in step with the catalog's colormap for the layer.
  */
 function sbtnSingleClassLayer({
   title,
   label,
   color,
-  values,
   info,
 }: {
   title: string;
   label: string;
   color: string;
-  values: number[];
   info: string;
 }): ContextLayerMetadata {
-  const rgba = [1, 3, 5].map((i) => parseInt(color.slice(i, i + 2), 16));
-  const colormap = Object.fromEntries(values.map((v) => [v, [...rgba, 255]]));
-  const query = [
-    `colormap=${encodeURIComponent(JSON.stringify(colormap))}`,
-    "assets=asset",
-    `expression=${encodeURIComponent("asset*(asset<12)*(asset>1)")}`,
-    "asset_as_band=True",
-  ].join("&");
   return {
     dataset_id: 3,
     dataset_name: "SBTN Natural Lands Map",
     context_layer: null,
     description: SBTN_NATURAL_LANDS_DESCRIPTION,
-    tile_url: `${EOAPI_HOST}/raster/collections/natural-lands-v-1-1/tiles/WebMercatorQuad/{z}/{x}/{y}.png?${query}`,
     legend: {
       title,
       color,
@@ -326,7 +306,6 @@ export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
     title: SBTN_NATURAL_LANDS_TITLE,
     label: "Natural lands",
     color: "#A8DDB5",
-    values: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
     info: 'Alerts are restricted to natural lands in the SBTN Natural Lands Map (2020 baseline). "Natural" means an ecosystem that substantially resembles what would be found without major human impact, including regenerated and secondary ones; plantations, cropland and built areas are excluded.',
   }),
   // Sub-layer rendered beneath Tree cover loss when the agent restricts it to
@@ -337,7 +316,6 @@ export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
     title: "SBTN Natural forest (2020)",
     label: "Natural forest",
     color: SBTN_NATURAL_CLASSES[0].color,
-    values: [2, 5, 8, 9],
     info: "Tree cover loss is restricted to natural forest in the SBTN Natural Lands Map (2020 baseline): natural forests, natural peat forests, mangroves and wet natural forests. Covers loss from 2021 onward; no canopy cover threshold applies.",
   }),
 };
