@@ -13,8 +13,11 @@ import {
 } from "@chakra-ui/react";
 import { CaretLeftIcon, CaretRightIcon } from "@phosphor-icons/react";
 
+import { useDashboardAlertsSummary } from "../hooks/useDashboardAlertsSummary";
+import { hasNewAlerts } from "../lib/alerts-summary";
 import { byRecentlyUpdated, paginate } from "../lib/pagination";
 import DashboardCard from "./DashboardCard";
+import DashboardsAlertsOverview from "./DashboardsAlertsOverview";
 import { NewDashboardScreen } from "./NewDashboardScreen";
 import { useDashboards } from "./dashboardQueries";
 
@@ -48,6 +51,16 @@ export default function DashboardsPage() {
     [dashboards]
   );
 
+  // One summary for every dashboard the user has, not just the page on show:
+  // the "n of m" line counts across all of them, and the list endpoint has
+  // already returned them all.
+  const dashboardIds = useMemo(() => ordered.map((d) => d.id), [ordered]);
+  const {
+    data: alertsSummary,
+    dataUpdatedAt: alertsCheckedAt,
+    isPlaceholderData: alertsHeldOver,
+  } = useDashboardAlertsSummary(dashboardIds);
+
   // `page` is the clamped result, not `requestedPage`, because a delete can
   // shrink the list out from under the held page number.
   const { items, page, totalPages } = paginate(
@@ -61,9 +74,18 @@ export default function DashboardsPage() {
       <Container maxW={CONTAINER_MAX_WIDTH}>
         <Flex direction="column" gap={12}>
           <Box>
-            <Heading as="h1" size="lg" fontWeight="normal" mb={6}>
-              My dashboards
-            </Heading>
+            <Box mb={6}>
+              <Heading as="h1" size="lg" fontWeight="normal" mb={0}>
+                My dashboards
+              </Heading>
+              {ordered.length > 0 && (
+                <DashboardsAlertsOverview
+                  summary={alertsSummary}
+                  dashboardIds={dashboardIds}
+                  checkedAt={alertsHeldOver ? undefined : alertsCheckedAt}
+                />
+              )}
+            </Box>
             {isLoading ? (
               <Flex align="center" gap={2} color="fg.muted">
                 <Spinner size="sm" /> Loading dashboards...
@@ -94,7 +116,15 @@ export default function DashboardsPage() {
                   gap={`${GRID_GAP}px`}
                 >
                   {items.map((dashboard) => (
-                    <DashboardCard key={dashboard.id} dashboard={dashboard} />
+                    <DashboardCard
+                      key={dashboard.id}
+                      dashboard={dashboard}
+                      hasNewAlerts={
+                        alertsSummary
+                          ? hasNewAlerts(alertsSummary, dashboard.id)
+                          : false
+                      }
+                    />
                   ))}
                 </Grid>
 
