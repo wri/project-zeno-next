@@ -132,6 +132,23 @@ export const DashboardCreateRequestSchema = z.object({
   aois: z.array(DashboardAoiSchema).min(1).max(1),
 });
 
+// POST /api/dashboards/alerts-summary. One entry per dashboard the backend
+// could assess (an integrated alerts chart and a GADM area). The wire keeps
+// the BE's `null` for "could not be fetched" (with the reason in `errors`);
+// `lib/alerts-summary` settles it into an explicit state.
+export const DashboardAlertsResponseSchema = z.object({
+  // Alert area in hectares over the week.
+  integrated_alerts: z.number().nullable(),
+  errors: z.record(z.string(), z.string()).default({}),
+});
+
+export const DashboardAlertsSummaryResponseSchema = z.object({
+  // Inclusive ISO dates of the latest full alert week (Sunday to Saturday).
+  start_date: z.string(),
+  end_date: z.string(),
+  dashboards: z.record(z.string(), DashboardAlertsResponseSchema),
+});
+
 export type DashboardAoi = z.infer<typeof DashboardAoiSchema>;
 export type Dashboard = z.infer<typeof DashboardResponseSchema>;
 export type DashboardWidget = z.infer<typeof DashboardWidgetResponseSchema>;
@@ -146,4 +163,7 @@ export type SectionFromTemplateResponse = z.infer<
 export type DashboardInsight = z.infer<typeof DashboardInsightSchema>;
 export type DashboardCreateRequest = z.infer<
   typeof DashboardCreateRequestSchema
+>;
+export type DashboardAlertsSummaryResponse = z.infer<
+  typeof DashboardAlertsSummaryResponseSchema
 >;

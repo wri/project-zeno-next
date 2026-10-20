@@ -352,6 +352,33 @@ export function findCuratedWidgetForDataset(
 }
 
 /**
+ * Integrated alerts in the dataset catalogue (`app/constants/datasets.ts`);
+ * the backend's alerts summary keys its "has an integrated alerts chart"
+ * rule on the same id.
+ */
+export const INTEGRATED_ALERTS_DATASET_ID = 11;
+
+/**
+ * How many charts across the widgets were computed from integrated alerts
+ * and so can be brought up to date: the chart-level rule the backend applies
+ * when deciding which dashboards its alerts summary covers. Same caveat as
+ * `findCuratedWidgetForDataset`: charts persisted before `dataset_id`
+ * existed are not counted.
+ */
+export function countIntegratedAlertsCharts(
+  widgets: readonly DashboardWidget[]
+): number {
+  return widgets.reduce(
+    (count, widget) =>
+      count +
+      (widget.insight?.charts ?? []).filter(
+        (chart) => chart.dataset_id === INTEGRATED_ALERTS_DATASET_ID
+      ).length,
+    0
+  );
+}
+
+/**
  * Whether the dashboard page shows the widget grid rather than the empty-state
  * hero: whether the grid has anything to render. That is asked of the grid's
  * own grouping, so the two cannot disagree — an owner's empty section counts

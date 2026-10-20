@@ -1,8 +1,7 @@
 import { Button, Flex, Text } from "@chakra-ui/react";
 import { SelectionPlusIcon, UploadSimpleIcon } from "@phosphor-icons/react";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
-import { useCustomAreasCreate } from "@/app/hooks/useCustomAreasCreate";
 import type { DrawAreaSlice } from "@/app/store/drawAreaSlice";
 import useMapStore from "@/app/store/mapStore";
 import type { FeatureRef } from "@/app/store/layerManagerSlice";
@@ -16,6 +15,9 @@ import { MAX_AREA_KM2, MIN_AREA_KM2 } from "@/src/entities/custom-area";
  * small or too large ends the drawing and shows why in the same strip. This
  * replaces the map's old "Drawing AOI" banner and validation toast. Picking an area on the map is done
  * from the Boundaries tab (show a boundary layer, then click a feature).
+ *
+ * The strip is the only drawing UI, so closing the panel mid-draw cancels it
+ * rather than leaving the map in polygon mode with no controls.
  */
 export function AreaActionBar({
   hideIdle = false,
@@ -28,6 +30,14 @@ export function AreaActionBar({
   const startDrawing = useMapStore((s) => s.startDrawing);
   const setSelectionMode = useMapStore((s) => s.setSelectionMode);
   const toggleUploadAreaDialog = useMapStore((s) => s.toggleUploadAreaDialog);
+
+  useEffect(
+    () => () => {
+      const { isDrawingMode, cancelDrawing } = useMapStore.getState();
+      if (isDrawingMode) cancelDrawing();
+    },
+    []
+  );
 
   function handleDraw() {
     startDrawing();
@@ -117,9 +127,11 @@ function DrawingStatus({ onRedraw }: { onRedraw: () => void }) {
   const addLayer = useMapStore((s) => s.addLayer);
   const addToRegistry = useMapStore((s) => s.addToRegistry);
   const flyToGeoJson = useMapStore((s) => s.flyToGeoJson);
-  const { isCreating } = useCustomAreasCreate();
+  const [saving, setSaving] = useState(false);
 
   async function handleSave() {
+    if (saving) return;
+    setSaving(true);
     try {
       const result = await confirmDrawing();
       if (!result) return;
@@ -153,6 +165,8 @@ function DrawingStatus({ onRedraw }: { onRedraw: () => void }) {
       flyToGeoJson(feat);
     } catch (error) {
       console.error("Failed to confirm drawn area:", error);
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -182,19 +196,25 @@ function DrawingStatus({ onRedraw }: { onRedraw: () => void }) {
         {...stripButtonProps}
         variant="ghost"
         color="#656E7B"
+        disabled={saving}
         onClick={cancelDrawing}
       >
         Cancel
       </Button>
       {pending && (
         <>
-          <Button {...stripButtonProps} variant="outline" onClick={onRedraw}>
+          <Button
+            {...stripButtonProps}
+            variant="outline"
+            disabled={saving}
+            onClick={onRedraw}
+          >
             Redraw
           </Button>
           <Button
             {...stripButtonProps}
             colorPalette="primary"
-            disabled={naming || isCreating}
+            disabled={naming || saving}
             onClick={handleSave}
           >
             Save area

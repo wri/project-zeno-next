@@ -1,5 +1,6 @@
 import {
   AnalysisTemplateListSchema,
+  DashboardAlertsSummaryResponseSchema,
   DashboardCreateRequestSchema,
   DashboardListResponseSchema,
   DashboardResponseSchema,
@@ -12,6 +13,7 @@ import {
 import type { AoiSearchResult } from "@/src/entities/aoi";
 import { readJson } from "./http";
 import { apiFetch } from "@/app/lib/api-client";
+import { toAlertsSummary, type AlertsSummary } from "../lib/alerts-summary";
 import { aoiToDashboardCreateRequest } from "../lib/aoi";
 
 export async function listDashboards(): Promise<Dashboard[]> {
@@ -36,6 +38,52 @@ export async function listAnalysisTemplates(): Promise<AnalysisTemplate[]> {
     headers: { "Content-Type": "application/json" },
   });
   return AnalysisTemplateListSchema.parse(data);
+}
+
+/** The backend rejects a summary request for more ids than this. */
+export const ALERTS_SUMMARY_MAX_IDS = 50;
+
+// Integrated alerts over the latest alert week (the backend's default period)
+// for the given dashboards, settled into `AlertsSummary`. Which dashboards the
+// backend reports is documented on the wire schema. A list past the 50-id cap
+// goes out as several requests merged into one. Only the first leaves the
+// week to the backend; the rest ask for that week explicitly, because the
+// default falls back to the calendar week when the latest-alert-date lookup
+// fails, and two requests defaulting separately could each get a different
+// week under the one label.
+export async function fetchDashboardAlertsSummary(
+  dashboardIds: string[]
+): Promise<AlertsSummary> {
+  if (dashboardIds.length === 0) {
+    throw new Error("fetchDashboardAlertsSummary needs at least one id");
+  }
+  const chunks: string[][] = [];
+  for (let i = 0; i < dashboardIds.length; i += ALERTS_SUMMARY_MAX_IDS) {
+    chunks.push(dashboardIds.slice(i, i + ALERTS_SUMMARY_MAX_IDS));
+  }
+  const request = async (
+    ids: string[],
+    week?: { start_date: string; end_date: string }
+  ) => {
+    const data = await readJson<unknown>("/api/dashboards/alerts-summary", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dashboard_ids: ids, ...week }),
+    });
+    return DashboardAlertsSummaryResponseSchema.parse(data);
+  };
+  const [firstIds, ...restIds] = chunks;
+  const first = await request(firstIds);
+  const week = { start_date: first.start_date, end_date: first.end_date };
+  const rest = await Promise.all(restIds.map((ids) => request(ids, week)));
+  return toAlertsSummary({
+    ...week,
+    dashboards: Object.assign(
+      {},
+      first.dashboards,
+      ...rest.map((r) => r.dashboards)
+    ),
+  });
 }
 
 export async function createDashboard(

@@ -20,8 +20,10 @@ import type { Dashboard } from "../api/schemas";
 import type { SectionMovePatch } from "../model/dashboard-sections";
 import type { WidgetMovePatch } from "../model/widget-move";
 import { dashboardKeys } from "../hooks/dashboardKeys";
+import { invalidateAlertsSummaries } from "../hooks/useDashboardAlertsSummary";
 
 export { dashboardKeys } from "../hooks/dashboardKeys";
+export { invalidateAlertsSummaries } from "../hooks/useDashboardAlertsSummary";
 export { useDashboards } from "../hooks/useDashboards";
 
 export function useDashboard(id: string) {
@@ -121,13 +123,19 @@ export function useDeleteDashboard() {
 // Shared optimistic-update plumbing for the widget and section mutations:
 // snapshot the cached dashboard, apply `apply` to it, roll back on error and
 // refetch on settle (the server is the position/config authority). `onError`
-// runs after the rollback, on the mutation rather than the caller's
-// component, so it still runs when the change unmounted that component.
+// runs after the rollback and `onSuccess` once the server accepted the write,
+// both on the mutation rather than the caller's component, so they still run
+// when the change unmounted that component.
+export interface OptimisticMutationCallbacks<TVars> {
+  onError?: (error: Error) => void;
+  onSuccess?: (vars: TVars) => void;
+}
+
 export function useOptimisticDashboardMutation<TVars>(
   dashboardId: string,
   mutationFn: (vars: TVars) => Promise<unknown>,
   apply: (dashboard: Dashboard, vars: TVars) => Dashboard,
-  onError?: (error: Error) => void
+  { onError, onSuccess }: OptimisticMutationCallbacks<TVars> = {}
 ) {
   const queryClient = useQueryClient();
   const key = dashboardKeys.detail(dashboardId);
@@ -146,6 +154,11 @@ export function useOptimisticDashboardMutation<TVars>(
       if (context?.previous) queryClient.setQueryData(key, context.previous);
       onError?.(err);
     },
+    // A block body, so a callback that returns a promise does not hold the
+    // mutation pending until it settles.
+    onSuccess: (_data, vars) => {
+      onSuccess?.(vars);
+    },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: key });
     },
@@ -155,12 +168,18 @@ export function useOptimisticDashboardMutation<TVars>(
 function useOptimisticWidgetMutation<TVars>(
   dashboardId: string,
   mutationFn: (vars: TVars) => Promise<unknown>,
-  apply: (widgets: Dashboard["widgets"], vars: TVars) => Dashboard["widgets"]
+  apply: (widgets: Dashboard["widgets"], vars: TVars) => Dashboard["widgets"],
+  callbacks?: OptimisticMutationCallbacks<TVars>
 ) {
-  return useOptimisticDashboardMutation(dashboardId, mutationFn, (d, vars) => ({
-    ...d,
-    widgets: apply(d.widgets, vars),
-  }));
+  return useOptimisticDashboardMutation(
+    dashboardId,
+    mutationFn,
+    (d, vars) => ({
+      ...d,
+      widgets: apply(d.widgets, vars),
+    }),
+    callbacks
+  );
 }
 
 // Mirrors the PATCH's three-valued grouping: a string moves the widget into
@@ -213,6 +232,11 @@ export function useAddInsightWidget(dashboardId: string) {
       insightId: string;
       config?: Record<string, unknown>;
     }) => addInsightWidget(dashboardId, insightId, config),
+    // Not awaited: the summary refetch is analytics-backed, and the add
+    // control must not wait on it.
+    onSuccess: () => {
+      invalidateAlertsSummaries(queryClient);
+    },
     // Return the invalidation promise so the mutation stays `pending` until the
     // detail refetch lands. This add is not optimistic — `added` only flips once
     // the refetch reflects the new widget — so without this the button/switch
@@ -242,10 +266,17 @@ export function useAddTextWidget(dashboardId: string) {
 }
 
 export function useDeleteWidget(dashboardId: string) {
+  const queryClient = useQueryClient();
+
   return useOptimisticWidgetMutation(
     dashboardId,
     (widgetId: string) => deleteWidget(dashboardId, widgetId),
-    (widgets, widgetId) => widgets.filter((w) => w.id !== widgetId)
+    (widgets, widgetId) => widgets.filter((w) => w.id !== widgetId),
+    {
+      onSuccess: () => {
+        invalidateAlertsSummaries(queryClient);
+      },
+    }
   );
 }
 

@@ -7,6 +7,11 @@ import type { MapState } from "./mapStore";
 export interface FeatureRef {
   name: string;
   source: string;
+  // Part of the identity wherever the area has one: names are display labels
+  // and repeat across concession parcels (RSPO parcels share a company,
+  // unnamed ones fall back to "Mining concession, IDN"). Drawn and uploaded
+  // areas have none and are identified by name.
+  srcId?: string;
 }
 
 export interface GeoJsonEntry {
@@ -17,14 +22,25 @@ export interface GeoJsonEntry {
 }
 
 /**
- * Look up a registry entry by its feature ref (exact name + source match —
- * refs and entries are created from the same objects at registration time).
+ * Whether two refs name the same area: exact name, source and src id (refs
+ * and entries are created from the same objects at registration time, so an
+ * id-less ref only ever matches an id-less entry).
  */
+export const sameFeatureRef = (a: FeatureRef, b: FeatureRef): boolean =>
+  a.name === b.name && a.source === b.source && a.srcId === b.srcId;
+
+/** The ref an agent-picked or card AOI is registered under. */
+export const aoiFeatureRef = (aoi: {
+  name: string;
+  source: string;
+  src_id?: string;
+}): FeatureRef => ({ name: aoi.name, source: aoi.source, srcId: aoi.src_id });
+
+/** Look up a registry entry by its feature ref (see `sameFeatureRef`). */
 export const findRegistryEntry = (
   registry: GeoJsonEntry[],
   ref: FeatureRef
-): GeoJsonEntry | undefined =>
-  registry.find((e) => e.ref.name === ref.name && e.ref.source === ref.source);
+): GeoJsonEntry | undefined => registry.find((e) => sameFeatureRef(e.ref, ref));
 
 export type LayerType = "raster" | "geojson" | "vector";
 
@@ -171,10 +187,7 @@ export const createLayerManagerSlice: StateCreator<
     set((state) => ({
       geoJsonRegistry: [
         ...state.geoJsonRegistry.filter(
-          (e) =>
-            !(
-              e.ref.name === entry.ref.name && e.ref.source === entry.ref.source
-            )
+          (e) => !sameFeatureRef(e.ref, entry.ref)
         ),
         entry,
       ],
@@ -183,7 +196,7 @@ export const createLayerManagerSlice: StateCreator<
   removeFromRegistry: (ref) => {
     set((state) => ({
       geoJsonRegistry: state.geoJsonRegistry.filter(
-        (e) => !(e.ref.name === ref.name && e.ref.source === ref.source)
+        (e) => !sameFeatureRef(e.ref, ref)
       ),
     }));
   },

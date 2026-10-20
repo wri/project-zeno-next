@@ -33,8 +33,13 @@ export function showAnalysisCta(selection: AnalysisSelection): boolean {
 
   const datasetId = datasetLayer.datasetId!;
   // Same rule as the View Analysis nudge and the AOI menu: don't offer an
-  // analysis the backend can't compute for this kind of area.
-  if (!isAnalysableForSource(datasetId, selection.source)) return false;
+  // analysis the backend can't compute for this kind of area. A nudge still
+  // pending from an earlier area goes too: accepting it sends its prompt with
+  // the current map context, i.e. this area, which the backend would refuse.
+  if (!isAnalysableForSource(datasetId, selection.source)) {
+    useChatStore.getState().clearPendingAnalyseNudge();
+    return false;
+  }
   // Prefer the canonical catalogue name — it matches what sendMessage puts in
   // ui_context.dataset_selected — and fall back to the layer's display name.
   const datasetName =

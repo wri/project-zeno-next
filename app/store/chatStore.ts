@@ -40,7 +40,10 @@ import { pullDataTool } from "./chat-tools/pullData";
 import { showImageryTool } from "./chat-tools/showImagery";
 import { isImageryTool } from "@/app/utils/imagery";
 import { queryClient } from "@/app/lib/query-client";
-import { dashboardKeys } from "@/src/features/dashboards/ui/dashboardQueries";
+import {
+  dashboardKeys,
+  invalidateAlertsSummaries,
+} from "@/src/features/dashboards/ui/dashboardQueries";
 import {
   showApiError,
   showError,
@@ -99,6 +102,7 @@ interface ChatActions {
   removeMessage: (messageId: string) => void;
   upsertProfileAsk: (type: ProfileAskType) => void;
   upsertAnalyseNudge: (suggestion: AnalyseSuggestion) => void;
+  clearPendingAnalyseNudge: () => void;
   acceptAnalyseNudge: (messageId: string) => void;
   upsertViewAnalysisNudge: (suggestion: ViewAnalysisSuggestion) => void;
   acceptViewAnalysisNudge: (messageId: string) => void;
@@ -310,6 +314,11 @@ async function processStreamMessage(
   ) {
     queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
   }
+  // Only dashboard_updated can add a chart, so only it can change which
+  // dashboards the alerts summary reports.
+  if (streamMessage.msg_type === "dashboard_updated") {
+    invalidateAlertsSummaries(queryClient);
+  }
 
   // A dashboard write also surfaces a synthetic assistant line plus a
   // navigation card in the thread — the stream carries only the dashboard's
@@ -486,17 +495,21 @@ async function processStreamMessage(
     ) {
       // The agent picked this AOI itself — fold it into the last-sent context
       // so it isn't echoed back as a "new" selection on the next user message.
-      const aoi = (streamMessage.aoi_selection?.aois?.[0] ??
-        streamMessage.aoi) as
-        | { name?: string; source?: string; src_id?: string }
-        | undefined;
-      const aoiName = streamMessage.aoi_selection?.name ?? aoi?.name;
-      if (aoiName)
-        useChatStore
-          .getState()
-          .foldSentContext({ aoi: aoiContextKey(aoiName, aoi) });
+      // Deferred until pickAoiTool installs the area layer, and keyed from
+      // that layer's selection, not the stream's: deriveContext reads the
+      // layer, which keeps only the areas whose geometry loaded and is named
+      // by selectionLabel. Keyed from the stream, a failed first fetch (or a
+      // display_name) would make the next send re-announce the area as a
+      // single aoi_selected, replacing the agent's multi-area selection.
       // Non-blocking: geometry fetch can be slow; don't stall stream
-      void Promise.resolve().then(() => pickAoiTool(streamMessage, addMessage));
+      void Promise.resolve()
+        .then(() => pickAoiTool(streamMessage, addMessage))
+        .then((installed) => {
+          if (!installed) return;
+          useChatStore.getState().foldSentContext({
+            aoi: aoiContextKey(installed.name, installed.aois[0]),
+          });
+        });
       return;
     }
     // Handling for pick_dataset tool
@@ -638,6 +651,21 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         newMessage,
       ],
     }));
+  },
+
+  // Withdraws the pending analyse nudge, keeping accepted ones as history.
+  clearPendingAnalyseNudge: () => {
+    set((state) =>
+      state.messages.some(
+        (m) => m.type === "analyse-nudge" && !m.analyseSuggestion?.accepted
+      )
+        ? {
+            messages: state.messages.filter(
+              (m) => m.type !== "analyse-nudge" || m.analyseSuggestion?.accepted
+            ),
+          }
+        : state
+    );
   },
 
   acceptAnalyseNudge: (messageId) => {

@@ -6,8 +6,16 @@ import type { Dashboard } from "../api/schemas";
 import { updatedLabel } from "../lib/dates";
 import DashboardActionsMenu from "./DashboardActionsMenu";
 import { HERO_GRID_IMAGE } from "./heroGrid";
+import NewAlertsBadge from "./NewAlertsBadge";
 
-export default function DashboardCard({ dashboard }: { dashboard: Dashboard }) {
+export default function DashboardCard({
+  dashboard,
+  hasNewAlerts,
+}: {
+  dashboard: Dashboard;
+  /** Whether the area had integrated alerts in the latest full alert week. */
+  hasNewAlerts: boolean;
+}) {
   const primaryAoi = dashboard.aois[0];
 
   return (
@@ -46,10 +54,11 @@ export default function DashboardCard({ dashboard }: { dashboard: Dashboard }) {
           <Flex
             flex="1"
             direction="column"
-            justify="flex-end"
             gap={2}
             p={5}
-            pt={16}
+            // Text starts 48px down per the Figma cards list, just under the
+            // 24px actions menu that sits at the 20px top padding.
+            pt="48px"
           >
             {primaryAoi && (
               <Flex align="center" gap={2} color="primary.solid" fontSize="xs">
@@ -70,6 +79,13 @@ export default function DashboardCard({ dashboard }: { dashboard: Dashboard }) {
               {!dashboard.is_public && <LockIcon size={16} />}
               <Text>{updatedLabel(dashboard.updated_at)}</Text>
             </Flex>
+            {/* Pinned to the card's bottom-left per the Figma cards list, away
+                from the top-aligned text. */}
+            {hasNewAlerts && (
+              <Box mt="auto" pt={2} alignSelf="flex-start">
+                <NewAlertsBadge />
+              </Box>
+            )}
           </Flex>
         </Link>
       </ChakraLink>
