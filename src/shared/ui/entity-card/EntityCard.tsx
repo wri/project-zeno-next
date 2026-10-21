@@ -135,7 +135,7 @@ export function EntityCard({
       p="6px"
       bg="#FFFFFF"
       border={toggle?.checked ? "2px solid" : "1px solid"}
-      borderColor={toggle?.checked ? "primary.solid" : "rgba(19, 22, 25, 0.3)"}
+      borderColor={toggle?.checked ? "primary.solid" : "border.emphasized"}
       borderRadius="4px"
       cursor={clickable ? "pointer" : undefined}
       transition="border-color 0.16s ease, background-color 0.16s ease"
