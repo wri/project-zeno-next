@@ -20,7 +20,17 @@ import {
 } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import { WHATS_NEW_OPEN_EVENT } from "@/app/hooks/useWhatsNew";
-import { WHATS_NEW_FEATURES as FEATURES } from "./whatsNewFeatures";
+import useChatStore from "@/app/store/chatStore";
+import useMapStore from "@/app/store/mapStore";
+import useSidebarStore from "@/app/store/sidebarStore";
+import { isAppRoute, mapTabHref } from "@/app/utils/threadNavigation";
+import { usePathname, useRouter } from "@/src/shared/lib/router";
+import { TREE_COVER_LOSS_DATASET_ID } from "@/app/constants/datasets";
+import {
+  WHATS_NEW_FEATURES as FEATURES,
+  type BoundaryAction,
+  type WhatsNewAction,
+} from "./whatsNewFeatures";
 
 // Older keys cleaned up on mount. The active key lives in useWhatsNew; bump both
 // in lockstep to re-surface "What's new" for everyone (see WHATS_NEW_STORAGE_KEY).
@@ -29,6 +39,7 @@ const LEGACY_STORAGE_KEYS = [
   "whats-new-v2-dismissed",
   "whats-new-v3-dismissed",
   "whats-new-v4-dismissed",
+  "whats-new-v5-dismissed",
 ];
 
 const ANNOUNCEMENT = {
@@ -39,17 +50,52 @@ const ANNOUNCEMENT = {
     "https://www.globalforestwatch.org/blog/data-and-tools/gfw-now-global-nature-watch/?utm_medium=notification&utm_source=homepage&utm_campaign=gnwannoucement",
 };
 
-const FEATURE_IMAGES: Record<number, string> = {
-  1: "/whats_new/dashboards.png",
-  2: "/whats_new/organise_dashboards.png",
-  3: "/whats_new/satellite.png",
-  4: "/whats_new/wri_sources.png",
-};
+// Tree cover loss, the map's default dataset, fades to this under a boundary
+// layer shown from here so the boundaries read over it.
+const TREE_COVER_LOSS_OPACITY = 0.3;
+
+/** Shows the action's boundary layer over faded tree cover loss, framed on its area. */
+function applyBoundary(action: BoundaryAction) {
+  const map = useMapStore.getState();
+  map.setSelectAreaLayer(action.layerId);
+  // The dataset's own layer, as its legend opacity slider sets it.
+  map.layers
+    .filter(
+      (l) => l.datasetId === TREE_COVER_LOSS_DATASET_ID && !l.parentLayerId
+    )
+    .forEach((l) => map.setLayerOpacity(l.id, TREE_COVER_LOSS_OPACITY));
+  map.flyToBounds(action.bounds);
+}
+
+// Stops the boundary action waiting for a map to load, if any, so a newer
+// click replaces it rather than both running.
+let stopWaitingForMap = () => {};
+
+/** Opens Boundaries and applies the action now on a loaded map, or once one loads. */
+function showBoundary(action: BoundaryAction, onMap: boolean) {
+  useSidebarStore.getState().openAreasPanel("boundaries");
+  stopWaitingForMap();
+  const { mapRef } = useMapStore.getState();
+  if (onMap && mapRef) {
+    applyBoundary(action);
+    return;
+  }
+  // Wait for the next map to load: framing needs it, and a new chat's map
+  // resets the store and adds its default dataset first. A map's ref isn't
+  // cleared when it unmounts, so only a new ref means a map has loaded.
+  stopWaitingForMap = useMapStore.subscribe((state) => {
+    if (!state.mapRef || state.mapRef === mapRef) return;
+    stopWaitingForMap();
+    applyBoundary(action);
+  });
+}
 
 const WhatsNewModal = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [announcementOpen, setAnnouncementOpen] = useState(true);
   const [expandedStep, setExpandedStep] = useState(1);
+  const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     LEGACY_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
@@ -62,6 +108,21 @@ const WhatsNewModal = () => {
   }, []);
 
   const dismiss = () => setIsOpen(false);
+
+  const runAction = (action: WhatsNewAction) => {
+    dismiss();
+    if (action.kind === "prompt") {
+      // The new-thread page sends ?prompt= as its first message, so the
+      // example runs in a chat of its own.
+      router.push(`/app?${new URLSearchParams({ prompt: action.prompt })}`);
+      return;
+    }
+    const onMap = isAppRoute(pathname);
+    showBoundary(action, onMap);
+    if (!onMap) {
+      router.push(mapTabHref(useChatStore.getState().currentThreadId));
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -224,7 +285,7 @@ const WhatsNewModal = () => {
           {/* Feature accordion */}
           {FEATURES.map((feature) => {
             const isExpanded = expandedStep === feature.step;
-            const image = FEATURE_IMAGES[feature.step];
+            const { image, action } = feature;
 
             return (
               <Box key={feature.step} borderBottom="1px solid #e0e2e5">
@@ -312,6 +373,18 @@ const WhatsNewModal = () => {
                     >
                       {feature.description}
                     </Text>
+                    {action && (
+                      <Button
+                        mt={4}
+                        size="sm"
+                        variant="outline"
+                        colorPalette="primary"
+                        fontFamily="'IBM Plex Sans', sans-serif"
+                        onClick={() => runAction(action)}
+                      >
+                        {action.label}
+                      </Button>
+                    )}
                   </Box>
                 )}
               </Box>
