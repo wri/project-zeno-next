@@ -19,7 +19,7 @@ const ARROW_CLASS = "entity-card-arrow";
 
 /**
  * How the card responds to the user.
- * - `static`: it only shows (chat cards).
+ * - `static`: it only shows (chat cards), with the heavier chat-card outline.
  * - `toggle`: a switch; a click anywhere on the row flips it.
  * - `link`: a button stretched over the whole card (e.g. open a dashboard);
  *   the actions and (i) stay separate controls above it.
@@ -101,6 +101,12 @@ export function EntityCard({
   const link = interaction.mode === "link" ? interaction : null;
   const toggleable = !!toggle && !toggle.disabled;
   const clickable = toggleable || !!link;
+  // A static card sits in chat beside the AREA and ANALYSIS cards (InfoCard),
+  // so it takes their outline; panel and picker rows keep the lighter token.
+  const restingBorder =
+    interaction.mode === "static"
+      ? "rgba(19, 22, 25, 0.3)"
+      : "border.emphasized";
 
   /** True for a click on the row itself — not on a child control or a portal. */
   function isRowClick(e: MouseEvent<HTMLDivElement>): boolean {
@@ -139,7 +145,7 @@ export function EntityCard({
       p="6px"
       bg="#FFFFFF"
       border={toggle?.checked ? "2px solid" : "1px solid"}
-      borderColor={toggle?.checked ? "primary.solid" : "border.emphasized"}
+      borderColor={toggle?.checked ? "primary.solid" : restingBorder}
       borderRadius="4px"
       cursor={clickable ? "pointer" : undefined}
       transition="border-color 0.16s ease, background-color 0.16s ease"
