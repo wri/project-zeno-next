@@ -321,7 +321,9 @@ function PageHeader() {
                   color="#394048"
                   _hover={{ bg: "#E0E2E5" }}
                   _focusVisible={focusRing}
-                  aria-label={`Account menu (${userEmail || "signed in"})`}
+                  // No email in the label: GTM click triggers read aria-label,
+                  // and personal data must not reach GA4. The tooltip shows it.
+                  aria-label="Account menu"
                 >
                   <UserIcon size={16} />
                   {/* Front door: renders only while the profile is incomplete. */}
