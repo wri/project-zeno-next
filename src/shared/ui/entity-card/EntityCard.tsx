@@ -122,7 +122,11 @@ export function EntityCard({
   const eyebrow: EyebrowSpec | null = verification
     ? VERIFICATION_EYEBROW[verification]
     : showKind
-      ? kindSpec
+      ? {
+          label: kindSpec.label,
+          color: kindSpec.color,
+          Icon: kindSpec.plainEyebrow ? undefined : KindIcon,
+        }
       : null;
 
   return (
