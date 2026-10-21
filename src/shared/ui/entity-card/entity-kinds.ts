@@ -25,6 +25,8 @@ export interface EntityKindSpec {
   tint: string;
   /** Glyph for a thumbnail with nothing better to show, and for panel headers. */
   Icon: Icon;
+  /** Leaves `Icon` off the chat-card eyebrow, so the label stands alone. */
+  plainEyebrow?: boolean;
 }
 
 export const ENTITY_KINDS: Record<EntityKind, EntityKindSpec> = {
@@ -39,6 +41,7 @@ export const ENTITY_KINDS: Record<EntityKind, EntityKindSpec> = {
     color: "#1AA915",
     tint: "rgba(26, 169, 21, 0.06)",
     Icon: StackSimpleIcon,
+    plainEyebrow: true,
   },
   analysis: {
     label: "ANALYSIS",

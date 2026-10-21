@@ -67,6 +67,18 @@ describe("EntityCard — content", () => {
     expect(screen.queryByText("AREA")).toBeNull();
   });
 
+  it("drops the glyph from the DATA eyebrow only", () => {
+    const eyebrowGlyph = (label: string) =>
+      screen.getByText(label).parentElement?.querySelector("svg");
+
+    const { unmount } = renderCard({ kind: "dataset", showKind: true });
+    expect(eyebrowGlyph("DATA")).toBeNull();
+    unmount();
+
+    renderCard({ showKind: true });
+    expect(eyebrowGlyph("AREA")).toBeTruthy();
+  });
+
   it("gives an analysis one merged eyebrow for kind and verification, on every surface", () => {
     const { unmount } = renderCard({
       kind: "analysis",
