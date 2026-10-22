@@ -76,13 +76,16 @@ function showBoundary(action: BoundaryAction, onMap: boolean) {
   useSidebarStore.getState().openAreasPanel("boundaries");
   stopWaitingForMap();
   const { mapRef } = useMapStore.getState();
-  if (onMap && mapRef) {
+  // A map's ref isn't cleared when it unmounts, so just back on the map the
+  // store can still hold the old one while the new map loads. Only a map
+  // whose container is still on the page is the one on screen.
+  if (onMap && mapRef?.getMap().getContainer().isConnected) {
     applyBoundary(action);
     return;
   }
   // Wait for the next map to load: framing needs it, and a new chat's map
-  // resets the store and adds its default dataset first. A map's ref isn't
-  // cleared when it unmounts, so only a new ref means a map has loaded.
+  // resets the store and adds its default dataset first. Only a new ref
+  // means a map has loaded.
   stopWaitingForMap = useMapStore.subscribe((state) => {
     if (!state.mapRef || state.mapRef === mapRef) return;
     stopWaitingForMap();

@@ -78,9 +78,23 @@ async function runAction(feature: WhatsNewFeature) {
 const panelOpen = () =>
   screen.queryByRole("button", { name: "Close what's new" }) !== null;
 
-// Stand-ins for loaded maps; the store only compares their identity here.
-const firstMap = {} as MapRef;
-const nextMap = {} as MapRef;
+/**
+ * A stand-in for a loaded map's ref. Only its identity and whether its
+ * container is on the page matter here: the store keeps a map's ref after
+ * the map unmounts, and the container leaves the page with it.
+ */
+function loadedMap({ onPage }: { onPage: boolean }): MapRef {
+  const container = document.createElement("div");
+  if (onPage) document.body.append(container);
+  return {
+    getMap: () => ({ getContainer: () => container }),
+  } as unknown as MapRef;
+}
+
+const firstMap = loadedMap({ onPage: true });
+const nextMap = loadedMap({ onPage: true });
+// Left in the store by a map that has since unmounted.
+const unmountedMap = loadedMap({ onPage: false });
 
 const opacityOf = (id: string) =>
   useMapStore.getState().layers.find((l) => l.id === id)?.opacity;
@@ -179,11 +193,31 @@ describe("WhatsNewModal actions", () => {
     expect(flyToBounds).toHaveBeenCalledWith(boundary.bounds);
   });
 
-  it("replaces an action still waiting for the map with a newer click", async () => {
+  it("waits for the new map on returning to the map while it loads", async () => {
+    useMapStore.setState({ mapRef: unmountedMap });
+    await openPanel("/app");
+
+    await runAction(boundaryFeature);
+
+    expect(flyToBounds).not.toHaveBeenCalled();
+    expect(useMapStore.getState().selectAreaLayer).toBe("GADM");
+
+    act(() => useMapStore.setState({ mapRef: nextMap }));
+
+    expect(useMapStore.getState().selectAreaLayer).toBe(boundary.layerId);
+    expect(flyToBounds).toHaveBeenCalledWith(boundary.bounds);
+  });
+
+  it("keeps waiting for the new map when clicked again before it loads", async () => {
+    useMapStore.setState({ mapRef: unmountedMap });
     await openPanel("/dashboards");
     await runAction(boundaryFeature);
+    // The first click went to the map, whose new map is still loading.
+    router.pathname = "/app";
     await act(async () => openWhatsNew());
     await runAction(boundaryFeature);
+
+    expect(flyToBounds).not.toHaveBeenCalled();
 
     act(() => useMapStore.setState({ mapRef: nextMap }));
 
