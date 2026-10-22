@@ -197,7 +197,17 @@ describe("DashboardAlertsWidget", () => {
     expect(kpi("Alerts since")).toBe(
       "105.7ha of alerts since 17 Sep17 SEP – 16 OCT 2026"
     );
-    expect(screen.getByText("LATEST ALERT DETECTED 16 OCT 2026")).toBeTruthy();
+    // The latest alert date sits at the right of the card's params row,
+    // level with Show params, outside the list's white card.
+    const paramsRow = screen.getByRole("button", {
+      name: "Show params",
+    }).parentElement!;
+    expect(
+      within(paramsRow).getByText("LATEST ALERT DETECTED 16 OCT 2026")
+    ).toBeTruthy();
+    expect(
+      within(paramsRow).getByRole("img", { name: "About the alerts data" })
+    ).toBeTruthy();
     // No pane header: the map lines up with the list; its full-screen
     // control is inside the map.
     expect(screen.queryByText(/· map/)).toBeNull();

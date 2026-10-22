@@ -432,13 +432,12 @@ describe("alertsHeadline", () => {
     expect(alertsHeadline(full, "all")).toEqual({
       newWeek: { ha: 12.5, range: { start: "2026-10-10", end: "2026-10-16" } },
       since: { ha: 15, range: { start: "2026-09-17", end: "2026-10-16" } },
-      latestAlertDate: "2026-10-16",
     });
     expect(alertsHeadline(full, "highest").since.ha).toBe(3);
     expect(alertsHeadline(full, "high").newWeek.ha).toBe(10);
   });
 
-  it("counts back from the anchor, with no latest alert date, when the backend could not read it", () => {
+  it("counts back from the anchor when the backend could not read the latest alert date", () => {
     const empty: AlertsList = {
       ...full,
       latestAlertDate: undefined,

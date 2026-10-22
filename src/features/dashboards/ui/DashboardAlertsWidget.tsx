@@ -30,6 +30,7 @@ import {
   type AlertsWidgetSpec,
 } from "../lib/alertsWidgets";
 import DashboardAlertsList, {
+  LatestAlertDetected,
   type AlertsListView,
 } from "./DashboardAlertsList";
 import DashboardAlertsMapPane from "./DashboardAlertsMapPane";
@@ -221,6 +222,11 @@ function AlertsCard({
     <DashboardWidgetCard
       title={spec.title}
       paramChips={paramChips}
+      paramsAside={
+        list?.latestAlertDate ? (
+          <LatestAlertDetected date={list.latestAlertDate} />
+        ) : undefined
+      }
       removeMode="widget"
       isOwner={isOwner}
       isDouble={isDouble}

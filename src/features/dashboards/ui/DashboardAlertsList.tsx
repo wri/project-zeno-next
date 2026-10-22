@@ -42,7 +42,7 @@ import { TWO_COLUMN_QUERY } from "./gridLayout";
 const PAGE_SIZE = 10;
 
 const CHIP_LABELS: Record<AlertsChip, string> = {
-  "new-week": "New this week",
+  "new-week": "New alerts",
   "last-30-days": "Last 30 days",
   custom: "Custom",
 };
@@ -211,12 +211,9 @@ function Kpi({
   );
 }
 
-/**
- * The headline over the list: the new week and the 30 days to the latest
- * alert date, and, at the right, that date in the dashboards list's words.
- */
+/** The headline over the list: the new week and the 30 days to the latest alert date. */
 function Headline({ headline }: { headline: AlertsHeadline }) {
-  const { newWeek, since, latestAlertDate } = headline;
+  const { newWeek, since } = headline;
   return (
     <Flex py="4px" align="stretch" wrap="wrap" rowGap="8px">
       <Kpi
@@ -236,23 +233,29 @@ function Headline({ headline }: { headline: AlertsHeadline }) {
         tone="since"
         px="24px"
       />
-      {latestAlertDate && (
-        <Flex align="center" gap="4px" ml="auto" color="#565E7B">
-          <InfoTooltip about="the alerts data" size={14}>
-            Alerts are dated by when they were detected and reach Global Nature
-            Watch a few days after that.
-          </InfoTooltip>
-          <Text
-            fontFamily="mono"
-            fontSize="10px"
-            lineHeight="14px"
-            whiteSpace="nowrap"
-          >
-            LATEST ALERT DETECTED{" "}
-            {formatAlertDate(latestAlertDate).toUpperCase()}
-          </Text>
-        </Flex>
-      )}
+    </Flex>
+  );
+}
+
+/**
+ * The latest alert date every pill counts back from, in the dashboards
+ * list's words, for the card's params row.
+ */
+export function LatestAlertDetected({ date }: { date: string }) {
+  return (
+    <Flex align="center" gap="4px" color="#565E7B">
+      <InfoTooltip about="the alerts data" size={14}>
+        Alerts are dated by when they were detected and reach Global Nature
+        Watch a few days after that.
+      </InfoTooltip>
+      <Text
+        fontFamily="mono"
+        fontSize="10px"
+        lineHeight="16px"
+        whiteSpace="nowrap"
+      >
+        LATEST ALERT DETECTED {formatAlertDate(date).toUpperCase()}
+      </Text>
     </Flex>
   );
 }

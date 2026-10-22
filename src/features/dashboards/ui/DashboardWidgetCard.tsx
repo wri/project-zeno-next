@@ -69,6 +69,7 @@ export default function DashboardWidgetCard({
   body,
   footer,
   paramChips,
+  paramsAside,
   onArmDrag,
   onToggleSize,
   onRename,
@@ -84,6 +85,11 @@ export default function DashboardWidgetCard({
    * way); an insight `card` brings its own.
    */
   paramChips?: ParamChipData[];
+  /**
+   * Rendered at the right of the params row, level with "Show params" (the
+   * alerts widget's latest alert date).
+   */
+  paramsAside?: React.ReactNode;
   /** The map layer to render for `widget_type: "map"` cells. */
   map?: MapWidgetLayer;
   /** The dashboard's area — outline, label + viewport fit for map cells. */
@@ -305,11 +311,14 @@ export default function DashboardWidgetCard({
             borderColor="rgba(19,22,25,0.05)"
             pt="4px"
             align="center"
+            gap="8px"
+            wrap="wrap"
           >
             <AnalysisParametersToggle
               expanded={paramsExpanded}
               onToggle={() => setParamsExpanded((v) => !v)}
             />
+            {paramsAside && <Box ml="auto">{paramsAside}</Box>}
           </Flex>
           {paramsExpanded && (
             <Box pt="8px">

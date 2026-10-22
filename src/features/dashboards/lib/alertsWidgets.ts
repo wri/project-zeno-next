@@ -74,7 +74,7 @@ export interface AlertsList {
   /**
    * The 7 days ending on the latest alert date, the week the dashboards list
    * counts (a calendar week when the backend could not read that date); the
-   * "New this week" range.
+   * "New alerts" range.
    */
   newWeek: DateRange;
   /** Newest first. */
@@ -326,13 +326,11 @@ export function newWeekHa(
 /**
  * The headline over the list (the design's "Summary headline"): the new
  * week's hectares with the week it covers, and the hectares of the 30 days
- * to the latest alert date, both in the shown tier; and that date, which
- * both periods end on, when the backend could read it.
+ * to the latest alert date. Both in the shown tier.
  */
 export interface AlertsHeadline {
   newWeek: { ha: number; range: DateRange };
   since: { ha: number; range: DateRange };
-  latestAlertDate?: string;
 }
 
 export function alertsHeadline(
@@ -346,7 +344,6 @@ export function alertsHeadline(
       ha: rowsSummary(rowsInRange(list.rows, since), confidence).ha,
       range: since,
     },
-    latestAlertDate: list.latestAlertDate,
   };
 }
 

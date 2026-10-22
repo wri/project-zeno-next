@@ -96,19 +96,17 @@ describe("DashboardAlertsList", () => {
   it("shows the headline figures, the new week's days with NEW badges, and totals in the footer", () => {
     renderList();
 
-    // The new week's hectares with the days it covers, the 30 days to the
-    // latest alert date, and that date in the dashboards list's words.
+    // The new week's hectares with the days it covers, and the 30 days to
+    // the latest alert date.
     expect(kpi("New this week")).toBe(
       "35.7ha new this weekDETECTED 10 – 16 OCT 2026"
     );
     expect(kpi("Alerts since")).toBe(
       "105.7ha of alerts since 17 Sep17 SEP – 16 OCT 2026"
     );
-    expect(screen.getByText("LATEST ALERT DETECTED 16 OCT 2026")).toBeTruthy();
-    expect(
-      screen.getByRole("img", { name: "About the alerts data" })
-    ).toBeTruthy();
-    const newPill = screen.getByRole("button", { name: "New this week" });
+    // The latest alert date sits in the card's params row, not in here.
+    expect(screen.queryByText(/LATEST ALERT DETECTED/)).toBeNull();
+    const newPill = screen.getByRole("button", { name: "New alerts" });
     expect(newPill.getAttribute("aria-pressed")).toBe("true");
     expect(
       screen.getByText(
@@ -153,13 +151,6 @@ describe("DashboardAlertsList", () => {
     expect(kpi("Alerts since")).toContain("20.7ha of alerts since 17 Sep");
   });
 
-  it("leaves out the latest alert line when the backend could not read the date", () => {
-    renderList({
-      headline: { ...alertsHeadline(list, "all"), latestAlertDate: undefined },
-    });
-    expect(screen.queryByText(/LATEST ALERT DETECTED/)).toBeNull();
-  });
-
   it("names only the tiers a day had alerts in", () => {
     renderList();
     const rows = rowsOf();
@@ -168,7 +159,7 @@ describe("DashboardAlertsList", () => {
     expect(cellsOf(rows[3])).toEqual(["NEW", "14 Oct 2026", "Highest", "1.6"]);
   });
 
-  it("offers New this week, Last 30 days and Custom, and reports chip choices up without filtering itself", () => {
+  it("offers New alerts, Last 30 days and Custom, and reports chip choices up without filtering itself", () => {
     const props = renderList();
     expect(
       screen
@@ -176,7 +167,7 @@ describe("DashboardAlertsList", () => {
         .concat(screen.getAllByRole("button", { pressed: true }))
         .map((pill) => pill.textContent)
         .sort()
-    ).toEqual(["Custom", "Last 30 days", "New this week"]);
+    ).toEqual(["Custom", "Last 30 days", "New alerts"]);
     fireEvent.click(screen.getByRole("button", { name: "Last 30 days" }));
     expect(props.onChip).toHaveBeenCalledWith("last-30-days");
     // The rows are the container's; this pane did not change them.
@@ -325,7 +316,7 @@ describe("DashboardAlertsList", () => {
     renderList({ view: { kind: "loading" }, rows: [], headline: undefined });
     expect(screen.getByLabelText("Loading alerts")).toBeTruthy();
     expect(screen.queryByRole("group", { name: "New this week" })).toBeNull();
-    for (const name of ["New this week", "Last 30 days", "Custom"]) {
+    for (const name of ["New alerts", "Last 30 days", "Custom"]) {
       expect(
         screen.getByRole("button", { name }).hasAttribute("disabled")
       ).toBe(true);
