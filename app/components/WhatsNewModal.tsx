@@ -117,6 +117,10 @@ const WhatsNewModal = () => {
       router.push(`/app?${new URLSearchParams({ prompt: action.prompt })}`);
       return;
     }
+    if (action.kind === "link") {
+      router.push(action.href);
+      return;
+    }
     const onMap = isAppRoute(pathname);
     showBoundary(action, onMap);
     if (!onMap) {

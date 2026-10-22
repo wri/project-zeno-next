@@ -2,8 +2,8 @@
 /**
  * The What's new panel's "try it" buttons: a boundary action shows its layer
  * over faded tree cover loss and frames an area (waiting for the map when it
- * isn't loaded), a prompt action asks the assistant in a new chat. Either
- * closes the panel.
+ * isn't loaded), a prompt action asks the assistant in a new chat, a link
+ * action opens its page. Each closes the panel.
  */
 import { ChakraProvider } from "@chakra-ui/react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
@@ -19,6 +19,7 @@ import useSidebarStore from "@/app/store/sidebarStore";
 import {
   WHATS_NEW_FEATURES,
   type BoundaryAction,
+  type LinkAction,
   type PromptAction,
   type WhatsNewFeature,
 } from "../whatsNewFeatures";
@@ -41,6 +42,8 @@ const promptFeature = WHATS_NEW_FEATURES.find(
   (f) => f.action?.kind === "prompt"
 )!;
 const prompt = promptFeature.action as PromptAction;
+const linkFeature = WHATS_NEW_FEATURES.find((f) => f.action?.kind === "link")!;
+const link = linkFeature.action as LinkAction;
 
 async function openPanel(pathname = "/app") {
   router.pathname = pathname;
@@ -196,6 +199,15 @@ describe("WhatsNewModal actions", () => {
     const url = new URL(router.push.mock.calls[0][0], "http://localhost");
     expect(url.pathname).toBe("/app");
     expect(url.searchParams.get("prompt")).toBe(prompt.prompt);
+    expect(panelOpen()).toBe(false);
+  });
+
+  it("opens a link action's page", async () => {
+    await openPanel("/app/threads/t1");
+
+    await runAction(linkFeature);
+
+    expect(router.push).toHaveBeenCalledWith(link.href);
     expect(panelOpen()).toBe(false);
   });
 });

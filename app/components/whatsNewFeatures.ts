@@ -21,7 +21,14 @@ export interface PromptAction {
   prompt: string;
 }
 
-export type WhatsNewAction = BoundaryAction | PromptAction;
+export interface LinkAction {
+  kind: "link";
+  label: string;
+  /** An in-app path */
+  href: string;
+}
+
+export type WhatsNewAction = BoundaryAction | PromptAction | LinkAction;
 
 export interface WhatsNewFeature {
   step: number;
@@ -78,6 +85,11 @@ export const WHATS_NEW_FEATURES: WhatsNewFeature[] = [
     step: 4,
     title: "Weekly alerts on your dashboards",
     description:
-      "Your dashboards now flag new integrated alerts each week. The dashboards list marks the ones with new alerts and a banner on the dashboard shows how many hectares were detected. Ask the assistant to create or update charts to see the latest alerts.",
+      "Each week, your dashboards now flag new integrated alerts. Check the Dashboards page to see which ones have them, then open a dashboard to see how many hectares were detected. Ask the assistant to create or update charts with the latest alerts.",
+    action: {
+      kind: "link",
+      label: "Go to dashboards",
+      href: "/dashboards",
+    },
   },
 ];
