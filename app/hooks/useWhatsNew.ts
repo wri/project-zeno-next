@@ -2,7 +2,7 @@ import { useSyncExternalStore } from "react";
 
 // Bump the version (and add the old key to WhatsNewModal's LEGACY_STORAGE_KEYS)
 // to re-surface "What's new" for everyone.
-export const WHATS_NEW_STORAGE_KEY = "whats-new-v5-dismissed";
+export const WHATS_NEW_STORAGE_KEY = "whats-new-v6-dismissed";
 export const WHATS_NEW_OPEN_EVENT = "gnw-whats-new-open";
 const WHATS_NEW_READ_EVENT = "gnw-whats-new-dismissed";
 
