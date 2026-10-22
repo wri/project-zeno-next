@@ -479,7 +479,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     tile_url:
       "https://tiles.globalforestwatch.org/gfw_integrated_dist_alerts/latest/dynamic/{z}/{x}/{y}.png?render_type=true_color",
     legend: {
-      title: "Integrated Deforestation Alerts",
+      title: "Integrated Disturbance Alerts",
       color: "#C92A6D",
       items: [
         { label: "Low confidence", color: "#EDA4C2" },
