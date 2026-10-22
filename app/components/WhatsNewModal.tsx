@@ -19,6 +19,7 @@ import {
   XIcon,
 } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
+import { usePromptQuota } from "@/app/hooks/usePromptQuota";
 import { WHATS_NEW_OPEN_EVENT } from "@/app/hooks/useWhatsNew";
 import useChatStore from "@/app/store/chatStore";
 import useMapStore from "@/app/store/mapStore";
@@ -99,6 +100,13 @@ const WhatsNewModal = () => {
   const [expandedStep, setExpandedStep] = useState(1);
   const router = useRouter();
   const pathname = usePathname();
+  const isStreaming = useChatStore((s) => s.isLoading);
+  const { promptsExhausted } = usePromptQuota();
+  // A prompt button sends its example, so it takes the chat input's guards.
+  // While a turn streams, /app's new-thread page is already mounted and skips
+  // the example, and elsewhere the live turn keeps writing into the new chat;
+  // with no prompts left the send just fails.
+  const promptsDisabled = isStreaming || promptsExhausted;
 
   useEffect(() => {
     LEGACY_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
@@ -387,6 +395,7 @@ const WhatsNewModal = () => {
                         variant="outline"
                         colorPalette="primary"
                         fontFamily="'IBM Plex Sans', sans-serif"
+                        disabled={action.kind === "prompt" && promptsDisabled}
                         onClick={() => runAction(action)}
                       >
                         {action.label}

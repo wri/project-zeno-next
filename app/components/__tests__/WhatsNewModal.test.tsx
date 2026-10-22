@@ -2,8 +2,9 @@
 /**
  * The What's new panel's "try it" buttons: a boundary action shows its layer
  * over faded tree cover loss and frames an area (waiting for the map when it
- * isn't loaded), a prompt action asks the assistant in a new chat, a link
- * action opens its page. Each closes the panel.
+ * isn't loaded), a prompt action asks the assistant in a new chat (but not
+ * while a response streams or the user is out of prompts), a link action
+ * opens its page. Each closes the panel.
  */
 import { ChakraProvider } from "@chakra-ui/react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
@@ -13,6 +14,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import system from "@/app/theme";
 import { TREE_COVER_LOSS_DATASET_ID } from "@/app/constants/datasets";
 import { openWhatsNew } from "@/app/hooks/useWhatsNew";
+import useAuthStore from "@/app/store/authStore";
 import useChatStore from "@/app/store/chatStore";
 import useMapStore from "@/app/store/mapStore";
 import useSidebarStore from "@/app/store/sidebarStore";
@@ -96,6 +98,9 @@ const nextMap = loadedMap({ onPage: true });
 // Left in the store by a map that has since unmounted.
 const unmountedMap = loadedMap({ onPage: false });
 
+const button = (name: string) =>
+  screen.getByRole("button", { name }) as HTMLButtonElement;
+
 const opacityOf = (id: string) =>
   useMapStore.getState().layers.find((l) => l.id === id)?.opacity;
 
@@ -105,7 +110,8 @@ describe("WhatsNewModal actions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
-    useChatStore.setState({ currentThreadId: null });
+    useChatStore.setState({ currentThreadId: null, isLoading: false });
+    useAuthStore.setState({ usedPrompts: 0, totalPrompts: 10 });
     useMapStore.setState({
       mapRef: firstMap,
       selectAreaLayer: "GADM",
@@ -234,6 +240,35 @@ describe("WhatsNewModal actions", () => {
     expect(url.pathname).toBe("/app");
     expect(url.searchParams.get("prompt")).toBe(prompt.prompt);
     expect(panelOpen()).toBe(false);
+  });
+
+  it.each([
+    [
+      "a response is streaming",
+      () => useChatStore.setState({ isLoading: true }),
+    ],
+    [
+      "the user is out of prompts",
+      () => useAuthStore.setState({ usedPrompts: 10, totalPrompts: 10 }),
+    ],
+  ])("disables the prompt button while %s", async (_, setUp) => {
+    setUp();
+    await openPanel("/app");
+
+    await runAction(promptFeature);
+
+    expect(button(prompt.label).disabled).toBe(true);
+    expect(router.push).not.toHaveBeenCalled();
+    expect(panelOpen()).toBe(true);
+  });
+
+  it("keeps the other buttons enabled while a response is streaming", async () => {
+    useChatStore.setState({ isLoading: true });
+    await openPanel("/app");
+
+    await runAction(linkFeature);
+
+    expect(router.push).toHaveBeenCalledWith(link.href);
   });
 
   it("opens a link action's page", async () => {
