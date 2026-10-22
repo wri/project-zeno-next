@@ -34,8 +34,6 @@ export interface AlertsWidgetSpec {
   /** Card header: `config.title` override, else the default label. */
   title: string;
   aoi: AlertsAoi;
-  /** The window fetched per view; chips filter inside it. */
-  days: number;
   /** The alerts tile layer of the map pane (`config.dataset`, as a map widget's). */
   layer: MapWidgetLayer;
   /**
@@ -53,31 +51,37 @@ export interface AlertDay {
   highHa: number;
   highestHa: number;
   totalHa: number;
-  /** Inside the latest full alert week (the backend's rule, never recomputed here). */
+  /** Inside the new week (the backend's rule, never recomputed here). */
   isNew: boolean;
 }
 
 /** `POST /api/alerts/list`, normalised by `api/alerts.ts::toAlertsList`. */
 export interface AlertsList {
   /**
-   * The latest alert day in the window across every tier (the badge row's
-   * "LATEST" label); absent when the window has no alerts at all.
+   * The newest alert detection in the whole dataset, as the dashboards list
+   * reports it ("Latest alert detected"); absent when the backend could not
+   * read it.
    */
-  latest?: string;
+  latestAlertDate?: string;
   /**
    * The day every chip counts back from and the last day a custom range may
-   * reach: `latest`, or the window's end when the window has no alerts.
+   * reach: `latestAlertDate`, else the area's latest alert day in the
+   * window, else the window's end.
    */
   anchor: string;
   /** The window the rows cover — the request's dates after the backend clamped them. */
   window: DateRange;
-  /** The latest full alert week (Sunday to Saturday); the "New this week" range. */
+  /**
+   * The 7 days ending on the latest alert date, the week the dashboards list
+   * counts (a calendar week when the backend could not read that date); the
+   * "New this week" range.
+   */
   newWeek: DateRange;
   /** Newest first. */
   rows: AlertDay[];
 }
 
-export type AlertsChip = "new-week" | "last-week" | "custom";
+export type AlertsChip = "new-week" | "last-30-days" | "custom";
 
 export type AlertsConfidence = "all" | "high" | "highest";
 
@@ -137,13 +141,12 @@ export function confidenceLabel(confidence: AlertsConfidence): string {
     : TIERS[confidence].name;
 }
 
-const DEFAULT_ALERTS_DAYS = 30;
-
 /**
- * How far back the widget looks from the latest alert day: the headline's
- * "alerts since" period and the furthest a custom range may start.
+ * How far back the widget looks from the latest alert date: the Last 30
+ * days pill, the headline's "alerts since" period and the furthest a custom
+ * range may start.
  */
-const SINCE_DAYS = 14;
+const SINCE_DAYS = 30;
 
 /**
  * Parses an alerts widget's config into a renderable spec, or null when it
@@ -184,15 +187,9 @@ export function alertsWidgetSpec(
     if (overlay?.contextTileUrl) overlays[name] = overlay;
   }
 
-  const days =
-    typeof a.days === "number" && Number.isInteger(a.days) && a.days > 0
-      ? a.days
-      : DEFAULT_ALERTS_DAYS;
-
   return {
     title: str(config.title) ?? `Integrated alerts in ${name}`,
     aoi: { source, srcId, subtype, name },
-    days,
     layer,
     overlays,
   };
@@ -215,19 +212,9 @@ export function alertsMapLayer(
 // ── Dates ──────────────────────────────────────────────────────────────────
 
 /**
- * The window the widget asks for before any response exists: the backend's
- * own arithmetic, `start = end - days` (31 inclusive days for 30, as the
- * template builder's period), ending today. The backend clamps the end to
- * its data; from then on the response's own `window` is the truth.
- */
-export function initialWindow(days: number, today: string): DateRange {
-  return { start: shiftIsoDate(today, -days), end: today };
-}
-
-/**
  * The inclusive range a chip stands for, counted back from the list's
- * `anchor` (the latest alert day), never from today or the window's end: the
- * newest alert week is what "last week" means to someone reading the list. A
+ * `anchor` (the latest alert date), never from today: alerts arrive days
+ * after they are detected, so the days before today are not yet quiet. A
  * custom range is clamped to the anchor and ordered.
  */
 export function chipRange(
@@ -239,8 +226,8 @@ export function chipRange(
   switch (chip) {
     case "new-week":
       return { ...list.newWeek };
-    case "last-week":
-      return { start: shiftIsoDate(anchor, -6), end: anchor };
+    case "last-30-days":
+      return sinceRange(anchor);
     case "custom": {
       const end = custom && custom.end < anchor ? custom.end : anchor;
       const wanted = custom?.start ?? end;
@@ -251,9 +238,9 @@ export function chipRange(
 }
 
 /**
- * The two weeks to the latest alert day, inclusive: the period the headline
- * counts "alerts since", and the bounds of a custom range (its inputs' `min`
- * and `max`, and the check behind them).
+ * The 30 days to the latest alert date, inclusive: the Last 30 days pill,
+ * the period the headline counts "alerts since", and the bounds of a custom
+ * range (its inputs' `min` and `max`, and the check behind them).
  */
 export function sinceRange(anchor: string): DateRange {
   return { start: shiftIsoDate(anchor, -(SINCE_DAYS - 1)), end: anchor };
@@ -261,7 +248,7 @@ export function sinceRange(anchor: string): DateRange {
 
 /**
  * Why a custom range cannot be taken, or nothing when it can: a bound
- * `outside` the two weeks the widget covers (what a date input reports while
+ * `outside` the 30 days the widget covers (what a date input reports while
  * a year is still being typed, so it is ignored without comment), or an
  * `inverted` range, its end before its start (which the inputs say so about).
  */
@@ -338,15 +325,14 @@ export function newWeekHa(
 
 /**
  * The headline over the list (the design's "Summary headline"): the new
- * week's hectares with the week it covers, and the hectares of the two weeks
- * to the latest alert day. Both in the shown tier. `countedToLatest` is
- * whether that day is a real alert day (the window had alerts) rather than
- * the window's end standing in for one.
+ * week's hectares with the week it covers, and the hectares of the 30 days
+ * to the latest alert date, both in the shown tier; and that date, which
+ * both periods end on, when the backend could read it.
  */
 export interface AlertsHeadline {
   newWeek: { ha: number; range: DateRange };
   since: { ha: number; range: DateRange };
-  countedToLatest: boolean;
+  latestAlertDate?: string;
 }
 
 export function alertsHeadline(
@@ -360,7 +346,7 @@ export function alertsHeadline(
       ha: rowsSummary(rowsInRange(list.rows, since), confidence).ha,
       range: since,
     },
-    countedToLatest: list.latest !== undefined,
+    latestAlertDate: list.latestAlertDate,
   };
 }
 

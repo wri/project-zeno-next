@@ -15,6 +15,7 @@ import { CaretDownIcon } from "@phosphor-icons/react";
 import InsightCaption from "@/app/components/InsightCaption";
 import DownloadMenu from "@/app/components/widgets/DownloadMenu";
 import type { DateRange } from "@/src/shared/lib/iso-date";
+import { InfoTooltip } from "@/src/shared/ui/InfoTooltip";
 import { Pill } from "@/src/shared/ui/Pill";
 import { isRetryable, type AlertsListError } from "../api/alerts";
 import {
@@ -42,12 +43,12 @@ const PAGE_SIZE = 10;
 
 const CHIP_LABELS: Record<AlertsChip, string> = {
   "new-week": "New this week",
-  "last-week": "Last week",
+  "last-30-days": "Last 30 days",
   custom: "Custom",
 };
 
 /** The preset period pills, in the toolbar's order; Custom follows them. */
-const PILLS: Exclude<AlertsChip, "custom">[] = ["new-week", "last-week"];
+const PILLS: Exclude<AlertsChip, "custom">[] = ["new-week", "last-30-days"];
 
 const CONFIDENCES: AlertsConfidence[] = ["all", "high", "highest"];
 
@@ -88,7 +89,7 @@ export type AlertsListView =
       kind: "ready";
       /** The period the rows cover. */
       range: DateRange;
-      /** The last day a custom range may reach (the latest alert day); bounds the custom inputs. */
+      /** The last day a custom range may reach (the latest alert date); bounds the custom inputs. */
       anchor: string;
       failure?: AlertsFailure;
     };
@@ -210,16 +211,19 @@ function Kpi({
   );
 }
 
-/** The headline over the list: the new week and the two weeks to the latest alert day. */
+/**
+ * The headline over the list: the new week and the 30 days to the latest
+ * alert date, and, at the right, that date in the dashboards list's words.
+ */
 function Headline({ headline }: { headline: AlertsHeadline }) {
-  const { newWeek, since, countedToLatest } = headline;
+  const { newWeek, since, latestAlertDate } = headline;
   return (
     <Flex py="4px" align="stretch" wrap="wrap" rowGap="8px">
       <Kpi
         name="New this week"
         ha={newWeek.ha}
         label="ha new this week"
-        period={`DATED ${formatRangeCaps(newWeek.range)}`}
+        period={`DETECTED ${formatRangeCaps(newWeek.range)}`}
         tone="new"
         pr="24px"
       />
@@ -228,13 +232,27 @@ function Headline({ headline }: { headline: AlertsHeadline }) {
         name="Alerts since"
         ha={since.ha}
         label={`ha of alerts since ${formatSinceDay(since.range.start)}`}
-        period={
-          formatRangeCaps(since.range) +
-          (countedToLatest ? " · COUNTED TO LATEST UPDATE" : "")
-        }
+        period={formatRangeCaps(since.range)}
         tone="since"
         px="24px"
       />
+      {latestAlertDate && (
+        <Flex align="center" gap="4px" ml="auto" color="#565E7B">
+          <InfoTooltip about="the alerts data" size={14}>
+            Alerts are dated by when they were detected and reach Global Nature
+            Watch a few days after that.
+          </InfoTooltip>
+          <Text
+            fontFamily="mono"
+            fontSize="10px"
+            lineHeight="14px"
+            whiteSpace="nowrap"
+          >
+            LATEST ALERT DETECTED{" "}
+            {formatAlertDate(latestAlertDate).toUpperCase()}
+          </Text>
+        </Flex>
+      )}
     </Flex>
   );
 }
@@ -346,7 +364,7 @@ const pagerArrowProps = {
  * the date-range state it shares with the map pane, and passes the pane in.
  *
  * The custom dates are the one input this pane judges itself: a bound
- * outside the two weeks the widget covers is ignored (a date input reports
+ * outside the 30 days the widget covers is ignored (a date input reports
  * every keystroke, so a year passes through "0002"), and an end before the
  * start is refused with a line saying so; only a range that holds goes up.
  */
@@ -612,7 +630,7 @@ export default function DashboardAlertsList({
             <FailureNotice failure={view.failure} onRetry={onRetry} />
           ) : rows.length === 0 ? (
             <Text fontSize="14px" color="fg.muted" py="8px">
-              No alerts in this period.
+              No alerts detected in this period.
             </Text>
           ) : (
             <Box

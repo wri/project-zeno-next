@@ -2,17 +2,17 @@ import type { AlertsListWire } from "../alerts";
 
 /**
  * A `POST /api/alerts/list` response shaped exactly as project-zeno sends it
- * (PZB-1468): the widget's window for Guarapuava, whose latest alert day
- * (`data_to`, 16 Oct) is three days before the window's end (19 Oct, the
- * clamped request end), rows newest first, the latest full alert week flagged
- * `new`, one day with no high-confidence area. Shared by the API, list and
- * widget tests.
+ * (PZB-1468) for a request without dates: the 30 days to the dataset's
+ * latest alert date (16 Oct) for Guarapuava, rows newest first, the 7 days
+ * ending on that date flagged `new`, one day with no high-confidence area
+ * and one with no highest. Shared by the API, list and widget tests.
  */
 export const ALERTS_LIST_WIRE: AlertsListWire = {
   data_to: "2026-10-16",
+  latest_alert_date: "2026-10-16",
   start_date: "2026-09-16",
-  end_date: "2026-10-19",
-  new_week: { start_date: "2026-10-04", end_date: "2026-10-10" },
+  end_date: "2026-10-16",
+  new_week: { start_date: "2026-10-10", end_date: "2026-10-16" },
   total_area_ha: 105.7,
   rows: [
     {
@@ -20,28 +20,28 @@ export const ALERTS_LIST_WIRE: AlertsListWire = {
       high_ha: 4.2,
       highest_ha: 0.8,
       total_ha: 5.0,
-      new: false,
+      new: true,
     },
     {
       alert_date: "2026-10-15",
       high_ha: 2.1,
       highest_ha: 0,
       total_ha: 2.1,
-      new: false,
+      new: true,
     },
     {
       alert_date: "2026-10-14",
       high_ha: 0,
       highest_ha: 1.6,
       total_ha: 1.6,
-      new: false,
+      new: true,
     },
     {
       alert_date: "2026-10-12",
       high_ha: 9.3,
       highest_ha: 2.2,
       total_ha: 11.5,
-      new: false,
+      new: true,
     },
     {
       alert_date: "2026-10-10",
@@ -55,28 +55,28 @@ export const ALERTS_LIST_WIRE: AlertsListWire = {
       high_ha: 6.4,
       highest_ha: 1.1,
       total_ha: 7.5,
-      new: true,
+      new: false,
     },
     {
       alert_date: "2026-10-07",
       high_ha: 3.3,
       highest_ha: 0.6,
       total_ha: 3.9,
-      new: true,
+      new: false,
     },
     {
       alert_date: "2026-10-05",
       high_ha: 18.0,
       highest_ha: 4.4,
       total_ha: 22.4,
-      new: true,
+      new: false,
     },
     {
       alert_date: "2026-10-04",
       high_ha: 1.2,
       highest_ha: 0.3,
       total_ha: 1.5,
-      new: true,
+      new: false,
     },
     {
       alert_date: "2026-10-01",

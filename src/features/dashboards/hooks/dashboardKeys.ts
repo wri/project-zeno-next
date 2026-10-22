@@ -13,15 +13,20 @@ export const dashboardKeys = {
   // `ids` sorted by the caller, so one set of dashboards shares one entry.
   alertsSummary: (ids: readonly string[]) =>
     ["dashboard-alerts-summary", ids] as const,
-  // One live alerts list per area, fetched window and land filter (the alerts widget).
-  alerts: (aoi: AlertsAoi, range: DateRange, landFilter: AlertsLandFilter) =>
+  // One live alerts list per area, fetched window and land filter (the
+  // alerts widget); no window is the backend's default.
+  alerts: (
+    aoi: AlertsAoi,
+    range: DateRange | undefined,
+    landFilter: AlertsLandFilter
+  ) =>
     [
       "dashboard-alerts",
       aoi.source,
       aoi.srcId,
       aoi.subtype,
-      range.start,
-      range.end,
+      range?.start ?? null,
+      range?.end ?? null,
       landFilter,
     ] as const,
   // A mutation key, not a query key: lets any mounted card see a template

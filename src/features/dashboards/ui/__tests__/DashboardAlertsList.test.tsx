@@ -96,19 +96,23 @@ describe("DashboardAlertsList", () => {
   it("shows the headline figures, the new week's days with NEW badges, and totals in the footer", () => {
     renderList();
 
-    // The new week's hectares with the week it covers; the two weeks to the
-    // latest alert day, said to be counted to it.
+    // The new week's hectares with the days it covers, the 30 days to the
+    // latest alert date, and that date in the dashboards list's words.
     expect(kpi("New this week")).toBe(
-      "50.8ha new this weekDATED 4 – 10 OCT 2026"
+      "35.7ha new this weekDETECTED 10 – 16 OCT 2026"
     );
     expect(kpi("Alerts since")).toBe(
-      "71ha of alerts since 3 Oct3 – 16 OCT 2026 · COUNTED TO LATEST UPDATE"
+      "105.7ha of alerts since 17 Sep17 SEP – 16 OCT 2026"
     );
+    expect(screen.getByText("LATEST ALERT DETECTED 16 OCT 2026")).toBeTruthy();
+    expect(
+      screen.getByRole("img", { name: "About the alerts data" })
+    ).toBeTruthy();
     const newPill = screen.getByRole("button", { name: "New this week" });
     expect(newPill.getAttribute("aria-pressed")).toBe("true");
     expect(
       screen.getByText(
-        /Alert days from 4 Oct 2026 to 10 Oct 2026, newest first/
+        /Alert days from 10 Oct 2026 to 16 Oct 2026, newest first/
       )
     ).toBeTruthy();
 
@@ -123,20 +127,20 @@ describe("DashboardAlertsList", () => {
     expect(rows).toHaveLength(1 + 5);
     expect(cellsOf(rows[1])).toEqual([
       "NEW",
+      "16 Oct 2026",
+      "High · Highest",
+      "5",
+    ]);
+    expect(cellsOf(rows[5])).toEqual([
+      "NEW",
       "10 Oct 2026",
       "High · Highest",
       "15.5",
     ]);
-    expect(cellsOf(rows[5])).toEqual([
-      "NEW",
-      "4 Oct 2026",
-      "High · Highest",
-      "1.5",
-    ]);
     expect(screen.getAllByText("NEW")).toHaveLength(5);
 
     expect(
-      screen.getByText("5 alert days · 50.8 ha in this period")
+      screen.getByText("5 alert days · 35.7 ha in this period")
     ).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Next page" })).toBeNull();
     // The map pane the container passes in sits in the same card.
@@ -145,19 +149,26 @@ describe("DashboardAlertsList", () => {
 
   it("gives the headline figures in the shown tier", () => {
     renderList(propsFor("new-week", "highest"));
-    expect(kpi("New this week")).toContain("9.4ha new this week");
-    expect(kpi("Alerts since")).toContain("14ha of alerts since 3 Oct");
+    expect(kpi("New this week")).toContain("7.6ha new this week");
+    expect(kpi("Alerts since")).toContain("20.7ha of alerts since 17 Sep");
+  });
+
+  it("leaves out the latest alert line when the backend could not read the date", () => {
+    renderList({
+      headline: { ...alertsHeadline(list, "all"), latestAlertDate: undefined },
+    });
+    expect(screen.queryByText(/LATEST ALERT DETECTED/)).toBeNull();
   });
 
   it("names only the tiers a day had alerts in", () => {
-    renderList(propsFor("last-week"));
+    renderList();
     const rows = rowsOf();
     // 15 Oct had no highest-confidence area, 14 Oct no high.
-    expect(cellsOf(rows[2])).toEqual(["", "15 Oct 2026", "High", "2.1"]);
-    expect(cellsOf(rows[3])).toEqual(["", "14 Oct 2026", "Highest", "1.6"]);
+    expect(cellsOf(rows[2])).toEqual(["NEW", "15 Oct 2026", "High", "2.1"]);
+    expect(cellsOf(rows[3])).toEqual(["NEW", "14 Oct 2026", "Highest", "1.6"]);
   });
 
-  it("offers New this week, Last week and Custom, and reports chip choices up without filtering itself", () => {
+  it("offers New this week, Last 30 days and Custom, and reports chip choices up without filtering itself", () => {
     const props = renderList();
     expect(
       screen
@@ -165,9 +176,9 @@ describe("DashboardAlertsList", () => {
         .concat(screen.getAllByRole("button", { pressed: true }))
         .map((pill) => pill.textContent)
         .sort()
-    ).toEqual(["Custom", "Last week", "New this week"]);
-    fireEvent.click(screen.getByRole("button", { name: "Last week" }));
-    expect(props.onChip).toHaveBeenCalledWith("last-week");
+    ).toEqual(["Custom", "Last 30 days", "New this week"]);
+    fireEvent.click(screen.getByRole("button", { name: "Last 30 days" }));
+    expect(props.onChip).toHaveBeenCalledWith("last-30-days");
     // The rows are the container's; this pane did not change them.
     expect(rowsOf()).toHaveLength(1 + 5);
   });
@@ -189,7 +200,7 @@ describe("DashboardAlertsList", () => {
 
   it("shows a single tier in the cells, dropping the days with none, and names the land filter", () => {
     renderList({
-      ...propsFor("last-week", "highest"),
+      ...propsFor("new-week", "highest"),
       landFilter: "natural_lands",
     });
     expect(
@@ -224,9 +235,7 @@ describe("DashboardAlertsList", () => {
   });
 
   it("pages at ten rows with numbered pages", () => {
-    renderList(
-      propsFor("custom", "all", { start: "2026-09-01", end: "2026-10-16" })
-    );
+    renderList(propsFor("last-30-days"));
     expect(rowsOf()).toHaveLength(1 + 10);
     expect(
       screen.getByText(
@@ -252,7 +261,7 @@ describe("DashboardAlertsList", () => {
     expect(rowsOf()).toHaveLength(1 + 10);
   });
 
-  it("opens the Start and End dates from the Custom pill, bounded to the two weeks and to each other, and reports a changed bound", async () => {
+  it("opens the Start and End dates from the Custom pill, bounded to the 30 days and to each other, and reports a changed bound", async () => {
     const props = renderList(
       propsFor("custom", "all", { start: "2026-10-10", end: "2026-10-16" })
     );
@@ -265,10 +274,10 @@ describe("DashboardAlertsList", () => {
     expect(screen.getByText("Start")).toBeTruthy();
     expect(screen.getByText("End")).toBeTruthy();
     expect(start.getAttribute("value")).toBe("2026-10-10");
-    // Two weeks back from the data's last day, and no later than the end.
-    expect(start.getAttribute("min")).toBe("2026-10-03");
+    // 30 days back from the latest alert date, and no later than the end.
+    expect(start.getAttribute("min")).toBe("2026-09-17");
     expect(start.getAttribute("max")).toBe("2026-10-16");
-    // No earlier than the start, and no later than the data's last day.
+    // No earlier than the start, and no later than the latest alert date.
     expect(end.getAttribute("min")).toBe("2026-10-10");
     expect(end.getAttribute("max")).toBe("2026-10-16");
 
@@ -279,7 +288,7 @@ describe("DashboardAlertsList", () => {
     });
   });
 
-  it("refuses an end before the start, saying so, and ignores a bound outside the two weeks", async () => {
+  it("refuses an end before the start, saying so, and ignores a bound outside the 30 days", async () => {
     const props = renderList(
       propsFor("custom", "all", { start: "2026-10-10", end: "2026-10-16" })
     );
@@ -298,17 +307,17 @@ describe("DashboardAlertsList", () => {
     });
     expect(screen.queryByText("End must be on or after start.")).toBeNull();
 
-    // A year still being typed, and a start past the two weeks: ignored
+    // A year still being typed, and a start past the 30 days: ignored
     // without comment.
     fireEvent.change(start, { target: { value: "0002-10-05" } });
-    fireEvent.change(start, { target: { value: "2026-10-02" } });
+    fireEvent.change(start, { target: { value: "2026-09-16" } });
     expect(props.onCustomChange).toHaveBeenCalledTimes(1);
     expect(screen.queryByText("End must be on or after start.")).toBeNull();
   });
 
   it("says when the period has no alerts", () => {
     renderList({ rows: [] });
-    expect(screen.getByText("No alerts in this period.")).toBeTruthy();
+    expect(screen.getByText("No alerts detected in this period.")).toBeTruthy();
     expect(screen.getByText("0 alert days · 0 ha in this period")).toBeTruthy();
   });
 
@@ -316,7 +325,7 @@ describe("DashboardAlertsList", () => {
     renderList({ view: { kind: "loading" }, rows: [], headline: undefined });
     expect(screen.getByLabelText("Loading alerts")).toBeTruthy();
     expect(screen.queryByRole("group", { name: "New this week" })).toBeNull();
-    for (const name of ["New this week", "Last week", "Custom"]) {
+    for (const name of ["New this week", "Last 30 days", "Custom"]) {
       expect(
         screen.getByRole("button", { name }).hasAttribute("disabled")
       ).toBe(true);
@@ -360,7 +369,7 @@ describe("DashboardAlertsList", () => {
   });
 
   it("offers the rows on show as a CSV download, nothing when there are none", async () => {
-    const props = renderList(propsFor("last-week"));
+    const props = renderList(propsFor("last-30-days"));
     await chooseFromMenu(dropdown("Download"), "Data (CSV)");
     expect(props.onDownloadCsv).toHaveBeenCalledTimes(1);
 

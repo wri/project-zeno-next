@@ -7,7 +7,7 @@ import {
   type ParamChipData,
 } from "@/app/components/widgets/analysis-params-utils";
 import { downloadCsv } from "@/src/shared/lib/csv";
-import { todayIso, type DateRange } from "@/src/shared/lib/iso-date";
+import type { DateRange } from "@/src/shared/lib/iso-date";
 import { fetchAlertsList, type AlertsListError } from "../api/alerts";
 import type { Dashboard, DashboardWidget } from "../api/schemas";
 import { dashboardKeys } from "../hooks/dashboardKeys";
@@ -19,7 +19,6 @@ import {
   alertsWidgetSpec,
   chipRange,
   confidenceLabel,
-  initialWindow,
   rowsInRange,
   sinceRange,
   visibleRows,
@@ -63,14 +62,15 @@ interface CardProps {
  * share one date range — a chip or custom range in the list re-dates the
  * map's tiles — so both always show the same period.
  *
- * One fetch per view: the widget asks for its `days` window once, and the
- * chips filter the cached rows. The widget looks two weeks back from the
- * latest alert day (the headline's "since" period, the furthest a custom
- * range reaches), so when the data lags today by more than the window
- * covers it asks once more for a window reaching that far; an Intersects
- * land filter asks again too, and then the rows on show stay while the new
- * list loads. Chips, confidence, land filter and the params toggle are view
- * state, never persisted.
+ * One fetch per view: the widget asks for the backend's default window, the
+ * 30 days to the latest alert date, and the chips filter the cached rows.
+ * The widget looks 30 days back from that date (the Last 30 days pill, the
+ * headline's "since" period, the furthest a custom range reaches), so when
+ * the window falls short of it (the backend could not read the date and
+ * counted from today) it asks once more for a window reaching that far; an
+ * Intersects land filter asks again too, and then the rows on show stay
+ * while the new list loads. Chips, confidence, land filter and the params
+ * toggle are view state, never persisted.
  *
  * The config is parsed once (`alertsWidgetSpec`); a config that cannot be
  * rendered shows the shell with a placeholder, like a broken map widget.
@@ -119,11 +119,9 @@ function AlertsCard({
   // The custom range once the typing has paused: the list filters off
   // `custom` at once, the map follows this one.
   const [settledCustom, setSettledCustom] = useState<DateRange>();
-  // The window asked of the backend. It starts as the widget's `days` ending
-  // today and only ever widens, to reach two weeks before the latest alert day.
-  const [requestWindow, setRequestWindow] = useState<DateRange>(() =>
-    initialWindow(spec.days, todayIso())
-  );
+  // The window asked of the backend: none at first (its default), then only
+  // ever wider, to reach 30 days before the latest alert date.
+  const [requestWindow, setRequestWindow] = useState<DateRange>();
 
   const { aoi } = spec;
   const query = useQuery<AlertsList, AlertsListError>({
@@ -160,17 +158,17 @@ function AlertsCard({
 
   const selectChip = (next: AlertsChip) => {
     if (!list) return;
-    // The custom dates open on the last week, the widest preset, so there
-    // is something to adjust from.
+    // The custom dates open on the period on show, so there is something to
+    // adjust from.
     if (next === "custom" && !custom) {
-      const opening = chipRange("last-week", list);
+      const opening = chipRange(chip, list);
       setCustom(opening);
       setSettledCustom(opening);
     }
     setChip(next);
   };
 
-  // The list pane has already judged the range (inside the two weeks, in
+  // The list pane has already judged the range (inside the 30 days, in
   // order), so it is taken as it comes.
   const changeCustom = (next: DateRange) => {
     setCustom(next);
@@ -184,14 +182,15 @@ function AlertsCard({
     return () => clearTimeout(timer);
   }, [custom, settledCustom]);
 
-  // A list whose window stops short of two weeks before its latest alert
-  // day (the data lags today by more than the window covers) is asked for
+  // A list whose window stops short of 30 days before its anchor (the
+  // backend counted from today, and the area's alerts lag it) is asked for
   // again, wider; the rows already held stay on show meanwhile. Reconciled
   // during render, like `held`: once the request reaches that far the
   // widened window is the same object, and nothing is set.
   if (list) {
-    const wider = widenedWindow(sinceRange(list.anchor), requestWindow);
-    if (wider !== requestWindow) setRequestWindow(wider);
+    const fetched = requestWindow ?? list.window;
+    const wider = widenedWindow(sinceRange(list.anchor), fetched);
+    if (wider !== fetched) setRequestWindow(wider);
   }
 
   // The params row, as an analysis card's: the area and dataset chips every

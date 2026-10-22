@@ -55,8 +55,6 @@ import {
 } from "../../api/__tests__/fixtures";
 import type { DashboardWidget } from "../../api/schemas";
 import { downloadCsv } from "@/src/shared/lib/csv";
-import { todayIso } from "@/src/shared/lib/iso-date";
-import { initialWindow } from "../../lib/alertsWidgets";
 import DashboardAlertsWidget from "../DashboardAlertsWidget";
 import { chooseFromMenu } from "./chakraMenu";
 
@@ -89,14 +87,17 @@ const aoi = {
 };
 
 /**
- * A list whose data lags: its latest alert day (20 Sep) is four days into a
- * window starting 16 Sep, so two weeks before it (7 Sep) lies outside the
- * window — the one case the widget asks for a wider one.
+ * A list from a backend that could not read the latest alert date: it
+ * counted the window and the calendar week back from today (23 Sep), and
+ * the area's latest alert (18 Sep) lags it, so 30 days before that alert
+ * (20 Aug) lies outside the window — the one case the widget asks for a
+ * wider one.
  */
 const LAGGING_WIRE = {
-  data_to: "2026-09-20",
-  start_date: "2026-09-16",
-  end_date: "2026-10-19",
+  data_to: "2026-09-18",
+  latest_alert_date: null,
+  start_date: "2026-08-24",
+  end_date: "2026-09-23",
   new_week: { start_date: "2026-09-13", end_date: "2026-09-19" },
   total_area_ha: 3,
   rows: [
@@ -111,15 +112,15 @@ const LAGGING_WIRE = {
 };
 const LAGGING = toAlertsList(LAGGING_WIRE);
 
-/** The lagging list fetched again from 7 Sep: one more day in the extra week. */
+/** The lagging list fetched again from 20 Aug: one more day in the extra days. */
 const LAGGING_WIDER = toAlertsList({
   ...LAGGING_WIRE,
-  start_date: "2026-09-07",
+  start_date: "2026-08-20",
   total_area_ha: 7,
   rows: [
     ...LAGGING_WIRE.rows,
     {
-      alert_date: "2026-09-10",
+      alert_date: "2026-08-21",
       high_ha: 3,
       highest_ha: 1,
       total_ha: 4,
@@ -128,7 +129,7 @@ const LAGGING_WIDER = toAlertsList({
   ],
 });
 
-const NEW_WEEK_FOOTER = "5 alert days · 50.8 ha in this period";
+const NEW_WEEK_FOOTER = "5 alert days · 35.7 ha in this period";
 const LAGGING_FOOTER = "1 alert day · 3 ha in this period";
 
 function renderWidget(
@@ -179,33 +180,32 @@ describe("DashboardAlertsWidget", () => {
     mockedFetch.mockReset();
   });
 
-  it("fetches the widget's window once and shows the new week in the headline and both panes", async () => {
+  it("fetches the backend's window once and shows the new week in the headline and both panes", async () => {
     mockedFetch.mockResolvedValue(toAlertsList(ALERTS_LIST_WIRE));
     renderWidget();
 
     expect(screen.getByText("Integrated alerts in Guarapuava")).toBeTruthy();
     await screen.findByText(NEW_WEEK_FOOTER);
 
+    // No dates: the backend's default is the 30 days to the latest alert
+    // date, all the widget shows.
     expect(mockedFetch).toHaveBeenCalledTimes(1);
-    expect(mockedFetch).toHaveBeenCalledWith(
-      aoi,
-      initialWindow(30, todayIso()),
-      "any"
-    );
+    expect(mockedFetch).toHaveBeenCalledWith(aoi, undefined, "any");
     expect(kpi("New this week")).toBe(
-      "50.8ha new this weekDATED 4 – 10 OCT 2026"
+      "35.7ha new this weekDETECTED 10 – 16 OCT 2026"
     );
     expect(kpi("Alerts since")).toBe(
-      "71ha of alerts since 3 Oct3 – 16 OCT 2026 · COUNTED TO LATEST UPDATE"
+      "105.7ha of alerts since 17 Sep17 SEP – 16 OCT 2026"
     );
+    expect(screen.getByText("LATEST ALERT DETECTED 16 OCT 2026")).toBeTruthy();
     // No pane header: the map lines up with the list; its full-screen
     // control is inside the map.
     expect(screen.queryByText(/· map/)).toBeNull();
     expect(
       screen.getByRole("button", { name: "View map full screen" })
     ).toBeTruthy();
-    expect(mapPane().dataset.start).toBe("2026-10-04");
-    expect(mapPane().dataset.end).toBe("2026-10-10");
+    expect(mapPane().dataset.start).toBe("2026-10-10");
+    expect(mapPane().dataset.end).toBe("2026-10-16");
     expect(mapPane().dataset.context).toBe("");
   });
 
@@ -230,25 +230,26 @@ describe("DashboardAlertsWidget", () => {
     renderWidget();
     await screen.findByText(NEW_WEEK_FOOTER);
 
-    // "Last week" ends on the latest alert day (16 Oct), not the window's
-    // end (19 Oct) and not today.
-    fireEvent.click(screen.getByRole("button", { name: "Last week" }));
+    // "Last 30 days" ends on the latest alert date (16 Oct), not today.
+    fireEvent.click(screen.getByRole("button", { name: "Last 30 days" }));
     expect(
-      screen.getByText("5 alert days · 35.7 ha in this period")
+      screen.getByText(
+        "Showing 1–10 of 14 alert days · 105.7 ha in this period"
+      )
     ).toBeTruthy();
     expect(
-      screen.getByText(/Alert days from 10 Oct 2026 to 16 Oct 2026/)
+      screen.getByText(/Alert days from 17 Sep 2026 to 16 Oct 2026/)
     ).toBeTruthy();
-    expect(mapPane().dataset.start).toBe("2026-10-10");
+    expect(mapPane().dataset.start).toBe("2026-09-17");
     expect(mapPane().dataset.end).toBe("2026-10-16");
 
     // The tier changes the cells, the headline and the chip.
     await chooseFromDropdown("Confidence: All", "High");
     expect(
-      screen.getByText("4 alert days · 28.1 ha in this period")
+      screen.getByText("Showing 1–10 of 13 alert days · 85 ha in this period")
     ).toBeTruthy();
-    expect(kpi("New this week")).toContain("41.4ha new this week");
-    expect(kpi("Alerts since")).toContain("57ha of alerts since 3 Oct");
+    expect(kpi("New this week")).toContain("28.1ha new this week");
+    expect(kpi("Alerts since")).toContain("85ha of alerts since 17 Sep");
     expect(
       screen.getByRole("button", { name: "Confidence: High" })
     ).toBeTruthy();
@@ -261,7 +262,7 @@ describe("DashboardAlertsWidget", () => {
   it("asks again with the land filter, holding the rows meanwhile, and overlays natural lands", async () => {
     const narrowed = toAlertsList({
       ...ALERTS_LIST_WIRE,
-      rows: ALERTS_LIST_WIRE.rows.slice(4, 6),
+      rows: ALERTS_LIST_WIRE.rows.slice(3, 5),
     });
     let resolveNarrowed: (list: typeof narrowed) => void = () => {};
     mockedFetch
@@ -285,11 +286,11 @@ describe("DashboardAlertsWidget", () => {
     ).toBeTruthy();
     expect(mapPane().dataset.context).toBe("natural_lands");
     expect(
-      screen.getByText(/to 10 Oct 2026, on natural lands, newest first/)
+      screen.getByText(/to 16 Oct 2026, on natural lands, newest first/)
     ).toBeTruthy();
 
     resolveNarrowed(narrowed);
-    await screen.findByText("2 alert days · 23 ha in this period");
+    await screen.findByText("2 alert days · 27 ha in this period");
 
     // Natural forests: its own overlay, from the snapshot's entry.
     mockedFetch.mockResolvedValueOnce(narrowed);
@@ -311,7 +312,6 @@ describe("DashboardAlertsWidget", () => {
     renderWidget();
     await screen.findByText(NEW_WEEK_FOOTER);
 
-    fireEvent.click(screen.getByRole("button", { name: "Last week" }));
     await chooseFromDropdown("Confidence: All", "Highest");
     await chooseFromDropdown("Download", "Data (CSV)");
 
@@ -322,35 +322,44 @@ describe("DashboardAlertsWidget", () => {
     );
     expect(csv.split("\n")).toEqual([
       "alert_date,confidence,high_ha,highest_ha,total_ha,new",
-      "2026-10-16,Highest,4.2,0.8,5,false",
-      "2026-10-14,Highest,0,1.6,1.6,false",
-      "2026-10-12,Highest,9.3,2.2,11.5,false",
+      "2026-10-16,Highest,4.2,0.8,5,true",
+      "2026-10-14,Highest,0,1.6,1.6,true",
+      "2026-10-12,Highest,9.3,2.2,11.5,true",
       "2026-10-10,Highest,12.5,3,15.5,true",
     ]);
   });
 
-  it("counts back from the window's end, without claiming a latest update, when the window has no alerts", async () => {
+  it("counts back from the window's end, with no latest alert line, when neither the dataset's nor the area's latest date is known", async () => {
     mockedFetch.mockResolvedValue(
-      toAlertsList({ ...ALERTS_LIST_WIRE, data_to: null, rows: [] })
+      toAlertsList({
+        ...ALERTS_LIST_WIRE,
+        latest_alert_date: null,
+        data_to: null,
+        end_date: "2026-10-19",
+        new_week: { start_date: "2026-10-11", end_date: "2026-10-17" },
+        rows: [],
+      })
     );
     renderWidget();
-    await screen.findByText("No alerts in this period.");
+    await screen.findByText("No alerts detected in this period.");
 
     expect(kpi("Alerts since")).toBe(
-      "0ha of alerts since 6 Oct6 – 19 OCT 2026"
+      "0ha of alerts since 20 Sep20 SEP – 19 OCT 2026"
     );
-    fireEvent.click(screen.getByRole("button", { name: "Last week" }));
+    expect(screen.queryByText(/LATEST ALERT DETECTED/)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Last 30 days" }));
     expect(
-      screen.getByText(/Alert days from 13 Oct 2026 to 19 Oct 2026/)
+      screen.getByText(/Alert days from 20 Sep 2026 to 19 Oct 2026/)
     ).toBeTruthy();
-    expect(mapPane().dataset.start).toBe("2026-10-13");
+    expect(mapPane().dataset.start).toBe("2026-09-20");
     expect(mapPane().dataset.end).toBe("2026-10-19");
     const start = await openCustomStart();
-    expect(start.getAttribute("min")).toBe("2026-10-06");
+    expect(start.getAttribute("min")).toBe("2026-09-20");
     expect(start.getAttribute("max")).toBe("2026-10-19");
+    expect(mockedFetch).toHaveBeenCalledTimes(1);
   });
 
-  it("asks once more for a window reaching two weeks before the latest alert day when the data lags, keeping the rows on show", async () => {
+  it("asks once more for a window reaching 30 days before the area's latest alert when the backend counted from today, keeping the rows on show", async () => {
     let resolveWider: (list: typeof LAGGING_WIDER) => void = () => {};
     mockedFetch
       .mockResolvedValueOnce(LAGGING)
@@ -361,20 +370,21 @@ describe("DashboardAlertsWidget", () => {
     await screen.findByText(LAGGING_FOOTER);
 
     await waitFor(() => expect(mockedFetch).toHaveBeenCalledTimes(2));
+    expect(mockedFetch.mock.calls[0][1]).toBeUndefined();
     expect(mockedFetch.mock.calls[1][1]).toEqual({
-      start: "2026-09-07",
-      end: initialWindow(30, todayIso()).end,
+      start: "2026-08-20",
+      end: "2026-09-23",
     });
     // The rows already held stay on show, dimmed, while the wider window loads.
     const table = screen.getByRole("table", { name: "Alert days" });
     expect(table.closest("[aria-busy='true']")).toBeTruthy();
     expect(kpi("Alerts since")).toBe(
-      "3ha of alerts since 7 Sep7 – 20 SEP 2026 · COUNTED TO LATEST UPDATE"
+      "3ha of alerts since 20 Aug20 AUG – 18 SEP 2026"
     );
 
     resolveWider(LAGGING_WIDER);
     await waitFor(() =>
-      expect(kpi("Alerts since")).toContain("7ha of alerts since 7 Sep")
+      expect(kpi("Alerts since")).toContain("7ha of alerts since 20 Aug")
     );
     expect(screen.getByText(LAGGING_FOOTER)).toBeTruthy();
     expect(table.closest("[aria-busy='true']")).toBeNull();
@@ -405,7 +415,8 @@ describe("DashboardAlertsWidget", () => {
     await screen.findByText(NEW_WEEK_FOOTER);
     const start = await openCustomStart();
 
-    // Typing "07/10/2026" over "10/10/2026" passes through complete dates
+    // The dates open on the period on show, the new week. Typing
+    // "07/10/2026" over "10/10/2026" passes through complete dates
     // of their own first; the list follows each, the map the last.
     fireEvent.change(start, { target: { value: "2026-10-03" } });
     fireEvent.change(start, { target: { value: "2026-10-05" } });
@@ -419,7 +430,7 @@ describe("DashboardAlertsWidget", () => {
     expect(mockedFetch).toHaveBeenCalledTimes(1);
   });
 
-  it("ignores a bound outside the two weeks to the latest alert day, and refuses an end before the start", async () => {
+  it("ignores a bound outside the 30 days to the latest alert date, and refuses an end before the start", async () => {
     mockedFetch.mockResolvedValue(toAlertsList(ALERTS_LIST_WIRE));
     renderWidget();
     await screen.findByText(NEW_WEEK_FOOTER);
@@ -432,14 +443,14 @@ describe("DashboardAlertsWidget", () => {
     expect(screen.getByText(explainer)).toBeTruthy();
     fireEvent.change(end, { target: { value: "2027-01-01" } });
     expect(screen.getByText(explainer)).toBeTruthy();
-    // Two weeks before the data's last day is as far as the widget looks.
-    expect(start.getAttribute("min")).toBe("2026-10-03");
-    fireEvent.change(start, { target: { value: "2026-10-02" } });
+    // 30 days before the latest alert date is as far as the widget looks.
+    expect(start.getAttribute("min")).toBe("2026-09-17");
+    fireEvent.change(start, { target: { value: "2026-09-16" } });
     expect(screen.getByText(explainer)).toBeTruthy();
     expect(mapPane().dataset.start).toBe("2026-10-10");
-    fireEvent.change(start, { target: { value: "2026-10-03" } });
+    fireEvent.change(start, { target: { value: "2026-09-17" } });
     expect(
-      screen.getByText(/Alert days from 3 Oct 2026 to 16 Oct 2026/)
+      screen.getByText(/Alert days from 17 Sep 2026 to 16 Oct 2026/)
     ).toBeTruthy();
 
     // An end before the start is refused, and said to be.
@@ -483,13 +494,13 @@ describe("DashboardAlertsWidget", () => {
     fireEvent.click(within(alert).getByRole("button", { name: "Retry" }));
 
     await waitFor(() =>
-      expect(kpi("Alerts since")).toContain("7ha of alerts since 7 Sep")
+      expect(kpi("Alerts since")).toContain("7ha of alerts since 20 Aug")
     );
     expect(screen.queryByRole("alert")).toBeNull();
     expect(mockedFetch).toHaveBeenCalledTimes(3);
     // Both the failed and the retried call asked for the widened window.
     expect(mockedFetch.mock.calls[2][1]).toEqual(mockedFetch.mock.calls[1][1]);
-    expect(mockedFetch.mock.calls[2][1].start).toBe("2026-09-07");
+    expect(mockedFetch.mock.calls[2][1]?.start).toBe("2026-08-20");
   });
 
   it("offers no Retry for an area the backend does not cover", async () => {

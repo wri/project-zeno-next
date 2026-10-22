@@ -14,7 +14,6 @@ import {
   formatHa,
   formatRangeCaps,
   formatSinceDay,
-  initialWindow,
   needsWiderWindow,
   newWeekHa,
   sinceRange,
@@ -64,7 +63,7 @@ const day = (overrides: Partial<AlertDay> = {}): AlertDay => ({
 
 const list: Pick<AlertsList, "anchor" | "newWeek"> = {
   anchor: "2026-10-16",
-  newWeek: { start: "2026-10-04", end: "2026-10-10" },
+  newWeek: { start: "2026-10-10", end: "2026-10-16" },
 };
 
 describe("alertsWidgetSpec", () => {
@@ -78,7 +77,6 @@ describe("alertsWidgetSpec", () => {
         subtype: "district",
         name: "Guarapuava",
       },
-      days: 30,
       layer: {
         kind: "dataset",
         tileUrl: ALERTS_TILE_URL,
@@ -104,14 +102,6 @@ describe("alertsWidgetSpec", () => {
     expect(spec?.title).toBe("Integrated alerts in Paraná");
   });
 
-  it("defaults days to 30 when absent or not a positive integer", () => {
-    for (const days of [undefined, 0, -3, 2.5, "30", null]) {
-      const c = config();
-      (c.alerts as Record<string, unknown>).days = days;
-      expect(alertsWidgetSpec(c)?.days).toBe(30);
-    }
-  });
-
   it("returns null when the area identity is incomplete", () => {
     for (const key of ["source", "src_id", "subtype"]) {
       const c = config();
@@ -133,19 +123,6 @@ describe("alertsWidgetSpec", () => {
   it("keeps the widget title override out of the map layer's title", () => {
     const spec = alertsWidgetSpec({ ...config(), title: "Renamed" });
     expect(spec?.layer.title).toBe("Integrated alerts");
-  });
-});
-
-describe("date arithmetic", () => {
-  it("builds the initial window as the backend does, `end - days` to today", () => {
-    expect(initialWindow(30, "2026-10-16")).toEqual({
-      start: "2026-09-16",
-      end: "2026-10-16",
-    });
-    expect(initialWindow(1, "2026-10-16")).toEqual({
-      start: "2026-10-15",
-      end: "2026-10-16",
-    });
   });
 });
 
@@ -231,21 +208,21 @@ describe("land filters", () => {
 });
 
 describe("chipRange", () => {
-  it("counts every chip back from the data's last day", () => {
+  it("takes the new week as the backend sent it and counts 30 days back from the latest alert date", () => {
     expect(chipRange("new-week", list)).toEqual({
-      start: "2026-10-04",
-      end: "2026-10-10",
-    });
-    expect(chipRange("last-week", list)).toEqual({
       start: "2026-10-10",
+      end: "2026-10-16",
+    });
+    expect(chipRange("last-30-days", list)).toEqual({
+      start: "2026-09-17",
       end: "2026-10-16",
     });
   });
 
   it("counts back from the anchor, however far it lags the window or today", () => {
     const lagging = { ...list, anchor: "2026-10-12" };
-    expect(chipRange("last-week", lagging)).toEqual({
-      start: "2026-10-06",
+    expect(chipRange("last-30-days", lagging)).toEqual({
+      start: "2026-09-13",
       end: "2026-10-12",
     });
     // A custom range reaching past the anchor stops at it.
@@ -275,13 +252,13 @@ describe("chipRange", () => {
 });
 
 describe("sinceRange", () => {
-  it("is the two weeks to the data's last day, inclusive of both ends", () => {
+  it("is the 30 days to the latest alert date, inclusive of both ends", () => {
     expect(sinceRange("2026-10-16")).toEqual({
-      start: "2026-10-03",
+      start: "2026-09-17",
       end: "2026-10-16",
     });
     expect(sinceRange("2026-01-05")).toEqual({
-      start: "2025-12-23",
+      start: "2025-12-07",
       end: "2026-01-05",
     });
   });
@@ -290,18 +267,18 @@ describe("sinceRange", () => {
 describe("customRangeProblem", () => {
   const anchor = "2026-10-16";
 
-  it("takes a range inside the two weeks, in order", () => {
+  it("takes a range inside the 30 days, in order", () => {
     expect(
-      customRangeProblem({ start: "2026-10-03", end: "2026-10-16" }, anchor)
+      customRangeProblem({ start: "2026-09-17", end: "2026-10-16" }, anchor)
     ).toBeUndefined();
     expect(
       customRangeProblem({ start: "2026-10-10", end: "2026-10-10" }, anchor)
     ).toBeUndefined();
   });
 
-  it("names a bound outside the two weeks, as a date input reports mid-typing", () => {
+  it("names a bound outside the 30 days, as a date input reports mid-typing", () => {
     expect(
-      customRangeProblem({ start: "2026-10-02", end: "2026-10-16" }, anchor)
+      customRangeProblem({ start: "2026-09-16", end: "2026-10-16" }, anchor)
     ).toBe("outside");
     expect(
       customRangeProblem({ start: "2026-10-10", end: "2026-10-17" }, anchor)
@@ -426,29 +403,23 @@ describe("rows", () => {
 
 describe("alertsHeadline", () => {
   const full: AlertsList = {
-    latest: "2026-10-16",
+    latestAlertDate: "2026-10-16",
     anchor: "2026-10-16",
-    window: { start: "2026-09-16", end: "2026-10-19" },
-    newWeek: { start: "2026-10-04", end: "2026-10-10" },
+    window: { start: "2026-09-16", end: "2026-10-16" },
+    newWeek: { start: "2026-10-10", end: "2026-10-16" },
     rows: [
+      day({ date: "2026-10-16", highHa: 4, highestHa: 1, totalHa: 5 }),
+      day({ date: "2026-10-12", highHa: 6, highestHa: 1.5, totalHa: 7.5 }),
       day({
-        date: "2026-10-16",
-        highHa: 4,
-        highestHa: 1,
-        totalHa: 5,
-        isNew: false,
-      }),
-      day({ date: "2026-10-09", highHa: 6, highestHa: 1.5, totalHa: 7.5 }),
-      day({
-        date: "2026-10-03",
+        date: "2026-09-17",
         highHa: 2,
         highestHa: 0.5,
         totalHa: 2.5,
         isNew: false,
       }),
-      // The day before the two weeks: counted nowhere.
+      // The day before the 30 days: counted nowhere.
       day({
-        date: "2026-10-02",
+        date: "2026-09-16",
         highHa: 9,
         highestHa: 1,
         totalHa: 10,
@@ -457,27 +428,26 @@ describe("alertsHeadline", () => {
     ],
   };
 
-  it("gives the new week and the two weeks to the latest day, in the shown tier", () => {
+  it("gives the new week and the 30 days to the latest alert date, in the shown tier", () => {
     expect(alertsHeadline(full, "all")).toEqual({
-      newWeek: { ha: 7.5, range: { start: "2026-10-04", end: "2026-10-10" } },
-      since: { ha: 15, range: { start: "2026-10-03", end: "2026-10-16" } },
-      countedToLatest: true,
+      newWeek: { ha: 12.5, range: { start: "2026-10-10", end: "2026-10-16" } },
+      since: { ha: 15, range: { start: "2026-09-17", end: "2026-10-16" } },
+      latestAlertDate: "2026-10-16",
     });
     expect(alertsHeadline(full, "highest").since.ha).toBe(3);
-    expect(alertsHeadline(full, "high").newWeek.ha).toBe(6);
+    expect(alertsHeadline(full, "high").newWeek.ha).toBe(10);
   });
 
-  it("counts back from the window's end, and says so, when the window had no alerts", () => {
+  it("counts back from the anchor, with no latest alert date, when the backend could not read it", () => {
     const empty: AlertsList = {
       ...full,
-      latest: undefined,
+      latestAlertDate: undefined,
       anchor: "2026-10-19",
       rows: [],
     };
     expect(alertsHeadline(empty, "all")).toEqual({
       newWeek: { ha: 0, range: full.newWeek },
-      since: { ha: 0, range: { start: "2026-10-06", end: "2026-10-19" } },
-      countedToLatest: false,
+      since: { ha: 0, range: { start: "2026-09-20", end: "2026-10-19" } },
     });
   });
 });

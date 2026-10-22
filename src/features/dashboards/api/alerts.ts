@@ -33,9 +33,12 @@ const AlertsListRowSchema = z.object({
 });
 
 export const AlertsListResponseSchema = z.object({
-  // The latest alert day the analytics API returned for the window, across
-  // every tier; null when the window returned no rows.
+  // The area's latest alert day in the window, across every tier; null when
+  // the window returned no rows.
   data_to: z.string().nullable(),
+  // The dataset's latest alert date, which the default window and the new
+  // week end on; null when the backend could not read it.
+  latest_alert_date: z.string().nullable(),
   start_date: z.string(),
   end_date: z.string(),
   new_week: WireDateRangeSchema,
@@ -47,12 +50,12 @@ export const AlertsListResponseSchema = z.object({
 export type AlertsListWire = z.infer<typeof AlertsListResponseSchema>;
 
 export function toAlertsList(wire: AlertsListWire): AlertsList {
-  const latest = wire.data_to ?? undefined;
+  const latestAlertDate = wire.latest_alert_date ?? undefined;
   return {
-    latest,
-    // Without alerts there is no latest day to count back from, so the chips
-    // count back from the window's end instead.
-    anchor: latest ?? wire.end_date,
+    latestAlertDate,
+    // Without the dataset's date the chips count back from the area's latest
+    // alert, and without alerts from the window's end.
+    anchor: latestAlertDate ?? wire.data_to ?? wire.end_date,
     window: { start: wire.start_date, end: wire.end_date },
     newWeek: { start: wire.new_week.start_date, end: wire.new_week.end_date },
     rows: wire.rows.map((row) => ({
@@ -107,12 +110,13 @@ export function toAlertsListError(error: unknown): AlertsListError {
 }
 
 /**
- * `landFilter` restricts the rows to alerts on that land class (the
- * Intersects dropdown); the wire has no key for "any", so it is left out.
+ * Without a `range` the backend picks the window: the 30 days to the latest
+ * alert date. `landFilter` restricts the rows to alerts on that land class
+ * (the Intersects dropdown); the wire has no key for "any", so it is left out.
  */
 export async function fetchAlertsList(
   aoi: AlertsAoi,
-  range: DateRange,
+  range: DateRange | undefined,
   landFilter: AlertsLandFilter
 ): Promise<AlertsList> {
   try {
@@ -123,8 +127,7 @@ export async function fetchAlertsList(
         source: aoi.source,
         src_id: aoi.srcId,
         subtype: aoi.subtype,
-        start_date: range.start,
-        end_date: range.end,
+        ...(range ? { start_date: range.start, end_date: range.end } : {}),
         ...(landFilter === "any" ? {} : { land_filter: landFilter }),
       }),
     });

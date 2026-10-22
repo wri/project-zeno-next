@@ -38,18 +38,22 @@ describe("AlertsListResponseSchema", () => {
     );
   });
 
-  it("takes a null data_to (a window without alerts) but not a missing one", () => {
-    expect(
-      AlertsListResponseSchema.parse({ ...ALERTS_LIST_WIRE, data_to: null })
-        .data_to
-    ).toBeNull();
-    expect(() =>
-      AlertsListResponseSchema.parse({
-        ...ALERTS_LIST_WIRE,
-        data_to: undefined,
-      })
-    ).toThrow();
-  });
+  it.each(["data_to", "latest_alert_date"] as const)(
+    "takes a null %s but not a missing one",
+    (key) => {
+      expect(
+        AlertsListResponseSchema.parse({ ...ALERTS_LIST_WIRE, [key]: null })[
+          key
+        ]
+      ).toBeNull();
+      expect(() =>
+        AlertsListResponseSchema.parse({
+          ...ALERTS_LIST_WIRE,
+          [key]: undefined,
+        })
+      ).toThrow();
+    }
+  );
 
   it("rejects a response missing its rows", () => {
     expect(() =>
@@ -61,33 +65,46 @@ describe("AlertsListResponseSchema", () => {
 describe("toAlertsList", () => {
   it("normalises the wire shape and keeps rows newest first", () => {
     const list = toAlertsList(ALERTS_LIST_WIRE);
-    expect(list.latest).toBe("2026-10-16");
-    // The chips count back from the latest alert day, not the window's end.
+    expect(list.latestAlertDate).toBe("2026-10-16");
     expect(list.anchor).toBe("2026-10-16");
-    expect(list.window).toEqual({ start: "2026-09-16", end: "2026-10-19" });
-    expect(list.newWeek).toEqual({ start: "2026-10-04", end: "2026-10-10" });
+    expect(list.window).toEqual({ start: "2026-09-16", end: "2026-10-16" });
+    expect(list.newWeek).toEqual({ start: "2026-10-10", end: "2026-10-16" });
     expect(list.rows).toHaveLength(14);
     expect(list.rows[0]).toEqual({
       date: "2026-10-16",
       highHa: 4.2,
       highestHa: 0.8,
       totalHa: 5.0,
-      isNew: false,
+      isNew: true,
     });
     expect(list.rows.filter((r) => r.isNew).map((r) => r.date)).toEqual([
+      "2026-10-16",
+      "2026-10-15",
+      "2026-10-14",
+      "2026-10-12",
       "2026-10-10",
-      "2026-10-09",
-      "2026-10-07",
-      "2026-10-05",
-      "2026-10-04",
     ]);
   });
 
-  it("anchors a window without alerts on its end, with no latest day", () => {
-    const list = toAlertsList({ ...ALERTS_LIST_WIRE, data_to: null, rows: [] });
-    expect(list.latest).toBeUndefined();
-    expect(list.anchor).toBe("2026-10-19");
-    expect(list.rows).toEqual([]);
+  it("anchors on the dataset's latest alert date, not the area's", () => {
+    // A quiet area: its last alert is days before the dataset's.
+    const list = toAlertsList({ ...ALERTS_LIST_WIRE, data_to: "2026-10-12" });
+    expect(list.anchor).toBe("2026-10-16");
+  });
+
+  it("without the dataset's date, anchors on the area's latest alert, else the window's end", () => {
+    const counted = {
+      ...ALERTS_LIST_WIRE,
+      latest_alert_date: null,
+      end_date: "2026-10-19",
+    };
+    const area = toAlertsList(counted);
+    expect(area.latestAlertDate).toBeUndefined();
+    expect(area.anchor).toBe("2026-10-16");
+
+    const empty = toAlertsList({ ...counted, data_to: null, rows: [] });
+    expect(empty.anchor).toBe("2026-10-19");
+    expect(empty.rows).toEqual([]);
   });
 });
 
@@ -113,6 +130,16 @@ describe("fetchAlertsList", () => {
       end_date: "2026-10-16",
     });
     expect(list.rows).toHaveLength(14);
+  });
+
+  it("leaves the dates to the backend without a range", async () => {
+    mockedFetch.mockResolvedValue(jsonResponse(200, ALERTS_LIST_WIRE));
+    await fetchAlertsList(aoi, undefined, "any");
+    expect(JSON.parse(mockedFetch.mock.calls[0][1]?.body as string)).toEqual({
+      source: "gadm",
+      src_id: "BRA.16.137_2",
+      subtype: "district",
+    });
   });
 
   it('sends the land filter unless it is "any"', async () => {
