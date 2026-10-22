@@ -37,7 +37,7 @@ export const WHATS_NEW_FEATURES: WhatsNewFeature[] = [
     step: 1,
     title: "Analyse concession areas",
     description:
-      "Logging, mining, oil palm, RSPO oil palm and wood fiber concessions are now under Boundaries in the Areas panel. Show a layer, click a concession on the map to select it, and ask the assistant to analyse it.",
+      "Logging, mining, oil palm, RSPO oil palm and wood fiber concessions are now under 'Boundaries' in the 'Areas' panel. Show a concession layer, zoom in, click a concession on the map to select it, and ask the AI-assistant to analyze it.",
     action: {
       kind: "boundary",
       label: "Show oil palm concessions",
@@ -78,6 +78,6 @@ export const WHATS_NEW_FEATURES: WhatsNewFeature[] = [
     step: 4,
     title: "Weekly alerts on your dashboards",
     description:
-      "Your dashboards now flag new integrated alerts each week. The dashboards list marks the ones with new alerts, and a banner on the dashboard shows how many hectares were detected and which charts you can update.",
+      "Your dashboards now flag new integrated alerts each week. The dashboards list marks the ones with new alerts and a banner on the dashboard shows how many hectares were detected. Ask the assistant to create or update charts to see the latest alerts.",
   },
 ];
