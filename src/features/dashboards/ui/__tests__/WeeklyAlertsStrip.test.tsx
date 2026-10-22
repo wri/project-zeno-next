@@ -77,7 +77,7 @@ describe("WeeklyAlertsStrip", () => {
     renderStrip();
 
     expect(
-      await screen.findByText("1,458 ha of new integrated alerts this week")
+      await screen.findByText("1,458 ha of new integrated alerts")
     ).toBeTruthy();
     expect(screen.getByRole("status").textContent).toContain(
       "· 2 charts can be updated. Ask the assistant to update a chart"
@@ -92,13 +92,13 @@ describe("WeeklyAlertsStrip", () => {
 
     renderStrip(dashboard("d1", 0));
 
-    await screen.findByText("12 ha of new integrated alerts this week");
+    await screen.findByText("12 ha of new integrated alerts");
     expect(screen.getByRole("status").textContent).toContain(
       "· Charts can be updated. Ask the assistant to update a chart"
     );
   });
 
-  it("renders nothing for a dashboard without alerts this week", async () => {
+  it("renders nothing for a dashboard without alerts in the summary's period", async () => {
     vi.mocked(fetchDashboardAlertsSummary).mockResolvedValue(summaryWith({}));
 
     const { container } = renderStrip();
@@ -115,7 +115,7 @@ describe("WeeklyAlertsStrip", () => {
     );
 
     const first = renderStrip();
-    await screen.findByText("12 ha of new integrated alerts this week");
+    await screen.findByText("12 ha of new integrated alerts");
     fireEvent.click(
       screen.getByRole("button", { name: "Dismiss alerts notice" })
     );
@@ -141,7 +141,7 @@ describe("WeeklyAlertsStrip", () => {
     renderStrip();
 
     expect(
-      await screen.findByText("12 ha of new integrated alerts this week")
+      await screen.findByText("12 ha of new integrated alerts")
     ).toBeTruthy();
   });
 });
