@@ -1,10 +1,10 @@
 import { Box, Flex, Text } from "@chakra-ui/react";
 
 /**
- * "New alerts this week": the Figma Badge (sm, pill colour, dot, error) a
- * dashboard card carries when its area had integrated alerts in the latest
- * full alert week. One badge per dashboard whatever the alert sources; the
- * dashboard itself tells them apart.
+ * "New alerts": the Figma Badge (sm, pill colour, dot, error) a dashboard
+ * card carries when its area had integrated alerts in the summary's week.
+ * One badge per dashboard whatever the alert sources; the dashboard itself
+ * tells them apart.
  */
 export default function NewAlertsBadge() {
   return (
@@ -33,7 +33,7 @@ export default function NewAlertsBadge() {
         color="#B91C1C"
         whiteSpace="nowrap"
       >
-        New alerts this week
+        New alerts
       </Text>
     </Flex>
   );

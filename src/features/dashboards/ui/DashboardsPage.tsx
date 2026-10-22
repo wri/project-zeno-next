@@ -14,6 +14,7 @@ import {
 import { CaretLeftIcon, CaretRightIcon } from "@phosphor-icons/react";
 
 import { useDashboardAlertsSummary } from "../hooks/useDashboardAlertsSummary";
+import { useIntegratedAlertsFreshness } from "../hooks/useIntegratedAlertsFreshness";
 import { hasNewAlerts } from "../lib/alerts-summary";
 import { byRecentlyUpdated, paginate } from "../lib/pagination";
 import DashboardCard from "./DashboardCard";
@@ -55,11 +56,10 @@ export default function DashboardsPage() {
   // the "n of m" line counts across all of them, and the list endpoint has
   // already returned them all.
   const dashboardIds = useMemo(() => ordered.map((d) => d.id), [ordered]);
-  const {
-    data: alertsSummary,
-    dataUpdatedAt: alertsCheckedAt,
-    isPlaceholderData: alertsHeldOver,
-  } = useDashboardAlertsSummary(dashboardIds);
+  const { data: alertsSummary } = useDashboardAlertsSummary(dashboardIds);
+  const { data: alertsFreshness } = useIntegratedAlertsFreshness(
+    dashboardIds.length > 0
+  );
 
   // `page` is the clamped result, not `requestedPage`, because a delete can
   // shrink the list out from under the held page number.
@@ -82,7 +82,7 @@ export default function DashboardsPage() {
                 <DashboardsAlertsOverview
                   summary={alertsSummary}
                   dashboardIds={dashboardIds}
-                  checkedAt={alertsHeldOver ? undefined : alertsCheckedAt}
+                  freshness={alertsFreshness}
                 />
               )}
             </Box>

@@ -1,6 +1,9 @@
-import { format, parseISO } from "date-fns";
+import { format, isValid, parseISO } from "date-fns";
 
-import type { DashboardAlertsSummaryResponse } from "../api/schemas";
+import type {
+  DashboardAlertsSummaryResponse,
+  IntegratedAlertsLatestResponse,
+} from "../api/schemas";
 
 /**
  * The alerts summary as the dashboards pages consume it, settled once from
@@ -99,23 +102,59 @@ export function formatAlertArea(areaHa: number): string {
   return `${WHOLE_HA.format(areaHa)} ha`;
 }
 
-const CHECKED_DATE = new Intl.DateTimeFormat("en-US", {
-  timeZone: "UTC",
-  month: "short",
-  day: "numeric",
-  year: "numeric",
-});
-const CHECKED_TIME = new Intl.DateTimeFormat("en-US", {
-  timeZone: "UTC",
-  hour: "2-digit",
-  minute: "2-digit",
-  hourCycle: "h23",
-});
+/**
+ * How current the integrated alerts data is, settled once from the analytics
+ * API by `toAlertsFreshness`. Alerts are dated by detection and reach a
+ * release a few days later, so the release is always the later date.
+ */
+export interface AlertsFreshness {
+  /** ISO date of the newest alert detection in the data. */
+  latestAlertDate: string;
+  /** ISO date of the release the analytics API serves. */
+  updatedOn: string;
+}
 
-/** "Oct 9, 2026 · 14:00 UTC", the design's timestamp shape, from epoch ms. */
-export function formatCheckedAt(epochMs: number): string {
-  const date = new Date(epochMs);
-  return `${CHECKED_DATE.format(date)} · ${CHECKED_TIME.format(date)} UTC`;
+/**
+ * The one place the analytics API's latest response is interpreted. The
+ * release date is read from its version ("v20261018" is 2026-10-18). Any
+ * other version throws, so a scheme change cannot print a wrong date.
+ */
+export function toAlertsFreshness(
+  wire: IntegratedAlertsLatestResponse
+): AlertsFreshness {
+  const { alert_date, version } = wire.data;
+  const release = /^v(\d{4})(\d{2})(\d{2})$/.exec(version);
+  const updatedOn = release && `${release[1]}-${release[2]}-${release[3]}`;
+  if (!updatedOn || !isValid(parseISO(updatedOn))) {
+    throw new Error(`Unexpected integrated alerts version: ${version}`);
+  }
+  return { latestAlertDate: alert_date, updatedOn };
+}
+
+/**
+ * True when no alert in the data was detected on or after the week's first
+ * day, so a count of zero would be a false all clear rather than a quiet week.
+ */
+export function awaitingWeekData(
+  weekStart: string,
+  freshness: AlertsFreshness
+): boolean {
+  return freshness.latestAlertDate < weekStart;
+}
+
+/**
+ * "Latest alert detected Oct 16, 2026 · updated Oct 18", with the release's
+ * year only when it differs from the detection's.
+ */
+export function formatFreshness({
+  latestAlertDate,
+  updatedOn,
+}: AlertsFreshness): string {
+  const detected = parseISO(latestAlertDate);
+  const updated = parseISO(updatedOn);
+  const updatedFormat =
+    detected.getFullYear() === updated.getFullYear() ? "MMM d" : "MMM d, yyyy";
+  return `Latest alert detected ${format(detected, "MMM d, yyyy")} · updated ${format(updated, updatedFormat)}`;
 }
 
 /**

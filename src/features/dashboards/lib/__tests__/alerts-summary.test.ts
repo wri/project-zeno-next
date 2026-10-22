@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 
+import { IntegratedAlertsLatestResponseSchema } from "../../api/schemas";
 import {
+  awaitingWeekData,
   countWithNewAlerts,
   formatAlertArea,
-  formatCheckedAt,
+  formatFreshness,
   formatWeekRange,
   hasNewAlerts,
+  toAlertsFreshness,
   toAlertsSummary,
   updatableChartsLabel,
 } from "../alerts-summary";
@@ -99,14 +102,76 @@ describe("formatAlertArea", () => {
   });
 });
 
-describe("formatCheckedAt", () => {
-  it("prints the UTC date and 24-hour time the design shows", () => {
-    expect(formatCheckedAt(Date.UTC(2026, 9, 9, 14, 0))).toBe(
-      "Oct 9, 2026 · 14:00 UTC"
+describe("toAlertsFreshness", () => {
+  // Through the schema, since it owns the alert_date check.
+  const latest = (alert_date: string, version: string) =>
+    toAlertsFreshness(
+      IntegratedAlertsLatestResponseSchema.parse({
+        data: { alert_date, version },
+      })
     );
-    expect(formatCheckedAt(Date.UTC(2026, 0, 1, 0, 5))).toBe(
-      "Jan 1, 2026 · 00:05 UTC"
-    );
+
+  it("reads the detection date and the release date from its version", () => {
+    // The analytics API's response on 2026-10-22.
+    expect(latest("2026-10-16", "v20261018")).toEqual({
+      latestAlertDate: "2026-10-16",
+      updatedOn: "2026-10-18",
+    });
+  });
+
+  it.each([["20261018"], ["v2026-10-18"], ["v20261018.1"], ["v20260230"]])(
+    "throws on a version that is not a release date: %s",
+    (version) => {
+      expect(() => latest("2026-10-16", version)).toThrow(
+        `Unexpected integrated alerts version: ${version}`
+      );
+    }
+  );
+
+  it.each([["20261016"], ["2026-10-16T00:00:00"], ["2026-02-30"]])(
+    "rejects an alert date that is not a calendar date: %s",
+    (alertDate) => {
+      expect(() => latest(alertDate, "v20261018")).toThrow();
+    }
+  );
+});
+
+describe("awaitingWeekData", () => {
+  it.each([
+    ["2026-10-16", true],
+    ["2026-10-17", true],
+    ["2026-10-18", false],
+    ["2026-10-20", false],
+  ])(
+    "week from 2026-10-18, detections up to %s: %s",
+    (latestAlertDate, expected) => {
+      expect(
+        awaitingWeekData("2026-10-18", {
+          latestAlertDate,
+          updatedOn: "2026-10-21",
+        })
+      ).toBe(expected);
+    }
+  );
+});
+
+describe("formatFreshness", () => {
+  it("prints both dates, the release without its year", () => {
+    expect(
+      formatFreshness({
+        latestAlertDate: "2026-10-16",
+        updatedOn: "2026-10-18",
+      })
+    ).toBe("Latest alert detected Oct 16, 2026 · updated Oct 18");
+  });
+
+  it("gives the release its year when it falls in the next one", () => {
+    expect(
+      formatFreshness({
+        latestAlertDate: "2026-12-30",
+        updatedOn: "2027-01-01",
+      })
+    ).toBe("Latest alert detected Dec 30, 2026 · updated Jan 1, 2027");
   });
 });
 
