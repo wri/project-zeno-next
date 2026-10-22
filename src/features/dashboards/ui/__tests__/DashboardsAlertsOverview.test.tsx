@@ -27,6 +27,7 @@ const renderOverview = (
         summary={summary}
         dashboardIds={["a", "b", "c", "d"]}
         freshness={freshness}
+        loading={false}
         {...props}
       />
     </ChakraProvider>
@@ -52,7 +53,7 @@ describe("DashboardsAlertsOverview", () => {
     ).toBeTruthy();
   });
 
-  it("shows the count without dates while they load or when they failed", () => {
+  it("shows the count without dates when they failed", () => {
     renderOverview({ freshness: undefined });
 
     expect(
@@ -74,7 +75,18 @@ describe("DashboardsAlertsOverview", () => {
     ).toBeTruthy();
   });
 
-  it("holds its height, silently, while the summary loads", () => {
+  it("shimmers while the summary or the dates load", () => {
+    const { container } = renderOverview({
+      summary: undefined,
+      freshness: undefined,
+      loading: true,
+    });
+
+    expect(container.textContent).toBe("");
+    expect(container.querySelectorAll(".chakra-skeleton")).toHaveLength(2);
+  });
+
+  it("holds its height, silently, when the summary failed", () => {
     const { container } = renderOverview({ summary: undefined });
 
     expect(container.textContent).toBe("");

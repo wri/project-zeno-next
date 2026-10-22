@@ -1,5 +1,12 @@
 import { Link } from "@/src/shared/lib/router";
-import { Box, Flex, Heading, Link as ChakraLink, Text } from "@chakra-ui/react";
+import {
+  Box,
+  Flex,
+  Heading,
+  Link as ChakraLink,
+  Skeleton,
+  Text,
+} from "@chakra-ui/react";
 import { LockIcon, PolygonIcon } from "@phosphor-icons/react";
 
 import type { Dashboard } from "../api/schemas";
@@ -10,9 +17,15 @@ import NewAlertsBadge from "./NewAlertsBadge";
 
 export default function DashboardCard({
   dashboard,
+  alertsLoading,
   hasNewAlerts,
 }: {
   dashboard: Dashboard;
+  /**
+   * The alerts summary is still on its way: the badge slot shimmers so a
+   * card without one yet does not read as a card without alerts.
+   */
+  alertsLoading: boolean;
   /** Whether the area had integrated alerts in the summary's period. */
   hasNewAlerts: boolean;
 }) {
@@ -81,9 +94,17 @@ export default function DashboardCard({
             </Flex>
             {/* Pinned to the card's bottom-left per the Figma cards list, away
                 from the top-aligned text. */}
-            {hasNewAlerts && (
+            {(alertsLoading || hasNewAlerts) && (
               <Box mt="auto" pt={2} alignSelf="flex-start">
-                <NewAlertsBadge />
+                {alertsLoading ? (
+                  // Wrapping the badge sizes the shimmer to it; Chakra hides
+                  // the wrapped text, from screen readers too.
+                  <Skeleton loading>
+                    <NewAlertsBadge />
+                  </Skeleton>
+                ) : (
+                  <NewAlertsBadge />
+                )}
               </Box>
             )}
           </Flex>
