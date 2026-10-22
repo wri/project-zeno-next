@@ -12,22 +12,23 @@ import { LockIcon, PolygonIcon } from "@phosphor-icons/react";
 import type { Dashboard } from "../api/schemas";
 import { updatedLabel } from "../lib/dates";
 import DashboardActionsMenu from "./DashboardActionsMenu";
-import { HERO_GRID_IMAGE } from "./heroGrid";
+import { CARD_BODY_PROPS, CARD_FRAME_PROPS } from "./cardFrame";
 import NewAlertsBadge from "./NewAlertsBadge";
+
+/**
+ * The card's alerts badge: `"new"` when the area had integrated alerts in the
+ * summary's period, `"loading"` while the summary is still on its way (the
+ * badge slot shimmers so a card without one yet does not read as a card
+ * without alerts).
+ */
+export type CardAlerts = "loading" | "new" | "none";
 
 export default function DashboardCard({
   dashboard,
-  alertsLoading,
-  hasNewAlerts,
+  alerts,
 }: {
   dashboard: Dashboard;
-  /**
-   * The alerts summary is still on its way: the badge slot shimmers so a
-   * card without one yet does not read as a card without alerts.
-   */
-  alertsLoading: boolean;
-  /** Whether the area had integrated alerts in the summary's period. */
-  hasNewAlerts: boolean;
+  alerts: CardAlerts;
 }) {
   const primaryAoi = dashboard.aois[0];
 
@@ -42,14 +43,7 @@ export default function DashboardCard({
         alignItems="stretch"
         textAlign="left"
         flex="1"
-        minH="308px"
-        bg="white"
-        backgroundImage={HERO_GRID_IMAGE}
-        borderWidth="1px"
-        borderColor="border"
-        borderTopWidth="2px"
-        borderTopColor="primary.solid"
-        borderRadius="sm"
+        {...CARD_FRAME_PROPS}
         overflow="hidden"
         transition="border-color 0.16s ease, box-shadow 0.16s ease"
         _hover={{
@@ -64,15 +58,7 @@ export default function DashboardCard({
         }}
       >
         <Link href={`/dashboards/${dashboard.id}`}>
-          <Flex
-            flex="1"
-            direction="column"
-            gap={2}
-            p={5}
-            // Text starts 48px down per the Figma cards list, just under the
-            // 24px actions menu that sits at the 20px top padding.
-            pt="48px"
-          >
+          <Flex flex="1" {...CARD_BODY_PROPS}>
             {primaryAoi && (
               <Flex align="center" gap={2} color="primary.solid" fontSize="xs">
                 <PolygonIcon size={16} />
@@ -94,9 +80,9 @@ export default function DashboardCard({
             </Flex>
             {/* Pinned to the card's bottom-left per the Figma cards list, away
                 from the top-aligned text. */}
-            {(alertsLoading || hasNewAlerts) && (
+            {alerts !== "none" && (
               <Box mt="auto" pt={2} alignSelf="flex-start">
-                {alertsLoading ? (
+                {alerts === "loading" ? (
                   // Wrapping the badge sizes the shimmer to it; Chakra hides
                   // the wrapped text, from screen readers too.
                   <Skeleton loading>

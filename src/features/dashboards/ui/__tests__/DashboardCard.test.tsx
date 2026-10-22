@@ -4,7 +4,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import type { Dashboard } from "../../api/schemas";
-import DashboardCard from "../DashboardCard";
+import DashboardCard, { type CardAlerts } from "../DashboardCard";
 
 vi.mock("@/src/shared/lib/router", async (importOriginal) => ({
   ...(await importOriginal<object>()),
@@ -26,33 +26,29 @@ const dashboard: Dashboard = {
   widgets: [],
 };
 
-const renderCard = (alertsLoading: boolean, hasNewAlerts: boolean) =>
+const renderCard = (alerts: CardAlerts) =>
   render(
     <ChakraProvider value={defaultSystem}>
-      <DashboardCard
-        dashboard={dashboard}
-        alertsLoading={alertsLoading}
-        hasNewAlerts={hasNewAlerts}
-      />
+      <DashboardCard dashboard={dashboard} alerts={alerts} />
     </ChakraProvider>
   );
 
 describe("DashboardCard alerts badge", () => {
   it("shimmers in the badge slot while the summary loads", () => {
-    const { container } = renderCard(true, false);
+    const { container } = renderCard("loading");
 
     expect(container.querySelector(".chakra-skeleton")).not.toBeNull();
   });
 
   it("shows the badge once the summary has alerts for the area", () => {
-    const { container } = renderCard(false, true);
+    const { container } = renderCard("new");
 
     expect(screen.getByText("New alerts")).toBeTruthy();
     expect(container.querySelector(".chakra-skeleton")).toBeNull();
   });
 
   it("leaves the slot empty once the summary has none", () => {
-    const { container } = renderCard(false, false);
+    const { container } = renderCard("none");
 
     expect(screen.queryByText("New alerts")).toBeNull();
     expect(container.querySelector(".chakra-skeleton")).toBeNull();

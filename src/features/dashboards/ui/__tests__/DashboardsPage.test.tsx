@@ -21,12 +21,12 @@ vi.mock("../DashboardsAlertsOverview", () => ({ default: () => null }));
 vi.mock("../DashboardCard", () => ({
   default: ({
     dashboard,
-    alertsLoading,
+    alerts,
   }: {
     dashboard: Dashboard;
-    alertsLoading: boolean;
+    alerts: string;
   }) => (
-    <div data-testid="dashboard-card" data-alerts-loading={alertsLoading}>
+    <div data-testid="dashboard-card" data-alerts={alerts}>
       {dashboard.name}
     </div>
   ),
@@ -117,7 +117,7 @@ describe("DashboardsPage reveal", () => {
 
     expect(skeletons()).toHaveLength(0);
     expect(cards()).toHaveLength(2);
-    expect(cards()[0].getAttribute("data-alerts-loading")).toBe("true");
+    expect(cards()[0].getAttribute("data-alerts")).toBe("loading");
   });
 
   it("shows the cards at once when the alerts have settled, failed or not", () => {

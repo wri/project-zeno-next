@@ -17,7 +17,7 @@ import { useDashboardAlertsSummary } from "../hooks/useDashboardAlertsSummary";
 import { useIntegratedAlertsFreshness } from "../hooks/useIntegratedAlertsFreshness";
 import { hasNewAlerts } from "../lib/alerts-summary";
 import { byRecentlyUpdated, paginate } from "../lib/pagination";
-import DashboardCard from "./DashboardCard";
+import DashboardCard, { type CardAlerts } from "./DashboardCard";
 import DashboardCardSkeleton from "./DashboardCardSkeleton";
 import DashboardsAlertsOverview from "./DashboardsAlertsOverview";
 import { NewDashboardScreen } from "./NewDashboardScreen";
@@ -76,10 +76,14 @@ export default function DashboardsPage() {
     useDashboardAlertsSummary(dashboardIds);
   const { data: alertsFreshness, isLoading: freshnessLoading } =
     useIntegratedAlertsFreshness();
+  const alertsPending = alertsLoading || freshnessLoading;
   const alertsWaitOver = useElapsed(ALERTS_WAIT_MS);
   // A failed request settles like a loaded one, so errors never hold the page.
-  const showCardSkeletons =
-    isLoading || ((alertsLoading || freshnessLoading) && !alertsWaitOver);
+  const showCardSkeletons = isLoading || (alertsPending && !alertsWaitOver);
+  const cardAlerts = (id: string): CardAlerts => {
+    if (alertsLoading) return "loading";
+    return alertsSummary && hasNewAlerts(alertsSummary, id) ? "new" : "none";
+  };
 
   // `page` is the clamped result, not `requestedPage`, because a delete can
   // shrink the list out from under the held page number.
@@ -103,7 +107,7 @@ export default function DashboardsPage() {
                   summary={alertsSummary}
                   dashboardIds={dashboardIds}
                   freshness={alertsFreshness}
-                  loading={isLoading || alertsLoading || freshnessLoading}
+                  loading={isLoading || alertsPending}
                 />
               )}
             </Box>
@@ -147,12 +151,7 @@ export default function DashboardsPage() {
                         <DashboardCard
                           key={dashboard.id}
                           dashboard={dashboard}
-                          alertsLoading={alertsLoading}
-                          hasNewAlerts={
-                            alertsSummary
-                              ? hasNewAlerts(alertsSummary, dashboard.id)
-                              : false
-                          }
+                          alerts={cardAlerts(dashboard.id)}
                         />
                       ))}
                 </Grid>
