@@ -57,9 +57,7 @@ export default function DashboardsPage() {
   // already returned them all.
   const dashboardIds = useMemo(() => ordered.map((d) => d.id), [ordered]);
   const { data: alertsSummary } = useDashboardAlertsSummary(dashboardIds);
-  const { data: alertsFreshness } = useIntegratedAlertsFreshness(
-    dashboardIds.length > 0
-  );
+  const { data: alertsFreshness } = useIntegratedAlertsFreshness();
 
   // `page` is the clamped result, not `requestedPage`, because a delete can
   // shrink the list out from under the held page number.

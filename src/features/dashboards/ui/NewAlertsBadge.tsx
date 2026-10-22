@@ -2,7 +2,7 @@ import { Box, Flex, Text } from "@chakra-ui/react";
 
 /**
  * "New alerts": the Figma Badge (sm, pill colour, dot, error) a dashboard
- * card carries when its area had integrated alerts in the summary's week.
+ * card carries when its area had integrated alerts in the summary's period.
  * One badge per dashboard whatever the alert sources; the dashboard itself
  * tells them apart.
  */

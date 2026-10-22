@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import { IntegratedAlertsLatestResponseSchema } from "../../api/schemas";
 import {
-  awaitingWeekData,
+  awaitingPeriodData,
   countWithNewAlerts,
   formatAlertArea,
   formatFreshness,
-  formatWeekRange,
+  formatPeriodRange,
   hasNewAlerts,
   toAlertsFreshness,
   toAlertsSummary,
@@ -27,7 +27,7 @@ const wire = {
 };
 
 describe("toAlertsSummary", () => {
-  it("settles the wire into the week, the assessed count and the areas with alerts", () => {
+  it("settles the wire into the period, the assessed count and the areas with alerts", () => {
     expect(toAlertsSummary(wire)).toEqual({
       startDate: "2026-10-05",
       endDate: "2026-10-11",
@@ -58,7 +58,7 @@ describe("toAlertsSummary", () => {
 describe("new alerts", () => {
   const summary = toAlertsSummary(wire);
 
-  it("flags only the dashboards whose week carried alerts", () => {
+  it("flags only the dashboards whose period carried alerts", () => {
     expect(hasNewAlerts(summary, "parana")).toBe(true);
     expect(hasNewAlerts(summary, "quiet")).toBe(false);
     expect(hasNewAlerts(summary, "broken")).toBe(false);
@@ -72,17 +72,19 @@ describe("new alerts", () => {
   });
 });
 
-describe("formatWeekRange", () => {
-  it("collapses a week inside one month", () => {
-    expect(formatWeekRange("2026-10-05", "2026-10-11")).toBe("Oct 5–11");
+describe("formatPeriodRange", () => {
+  it("collapses a period inside one month", () => {
+    expect(formatPeriodRange("2026-10-05", "2026-10-11")).toBe("Oct 5–11");
   });
 
-  it("names both months when the week crosses one", () => {
-    expect(formatWeekRange("2026-10-26", "2026-11-01")).toBe("Oct 26 – Nov 1");
+  it("names both months when the period crosses one", () => {
+    expect(formatPeriodRange("2026-10-26", "2026-11-01")).toBe(
+      "Oct 26 – Nov 1"
+    );
   });
 
-  it("names both years when the week crosses a year end", () => {
-    expect(formatWeekRange("2025-12-28", "2026-01-03")).toBe(
+  it("names both years when the period crosses a year end", () => {
+    expect(formatPeriodRange("2025-12-28", "2026-01-03")).toBe(
       "Dec 28, 2025 – Jan 3, 2026"
     );
   });
@@ -136,17 +138,17 @@ describe("toAlertsFreshness", () => {
   );
 });
 
-describe("awaitingWeekData", () => {
+describe("awaitingPeriodData", () => {
   it.each([
     ["2026-10-16", true],
     ["2026-10-17", true],
     ["2026-10-18", false],
     ["2026-10-20", false],
   ])(
-    "week from 2026-10-18, detections up to %s: %s",
+    "period from 2026-10-18, detections up to %s: %s",
     (latestAlertDate, expected) => {
       expect(
-        awaitingWeekData("2026-10-18", {
+        awaitingPeriodData("2026-10-18", {
           latestAlertDate,
           updatedOn: "2026-10-21",
         })

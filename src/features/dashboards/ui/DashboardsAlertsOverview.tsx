@@ -2,10 +2,10 @@ import { Box, Flex, Text } from "@chakra-ui/react";
 
 import { InfoTooltip } from "@/src/shared/ui/InfoTooltip";
 import {
-  awaitingWeekData,
+  awaitingPeriodData,
   countWithNewAlerts,
   formatFreshness,
-  formatWeekRange,
+  formatPeriodRange,
   type AlertsFreshness,
   type AlertsSummary,
 } from "../lib/alerts-summary";
@@ -41,7 +41,7 @@ export default function DashboardsAlertsOverview({
   }
 
   const total = dashboardIds.length;
-  const week = formatWeekRange(summary.startDate, summary.endDate);
+  const period = formatPeriodRange(summary.startDate, summary.endDate);
 
   return (
     <Flex
@@ -53,11 +53,11 @@ export default function DashboardsAlertsOverview({
       wrap="wrap"
     >
       <Text fontSize="14px" lineHeight={LINE_HEIGHT} color="#656E7B">
-        {freshness && awaitingWeekData(summary.startDate, freshness)
-          ? `No alerts detected ${week} yet`
+        {freshness && awaitingPeriodData(summary.startDate, freshness)
+          ? `No alerts detected ${period} yet`
           : `${countWithNewAlerts(summary, dashboardIds)} of ${total} ${
               total === 1 ? "dashboard has" : "dashboards have"
-            } new alerts detected ${week}`}
+            } new alerts detected ${period}`}
       </Text>
       {freshness && (
         <Flex align="center" gap="4px" color="#656E7B">

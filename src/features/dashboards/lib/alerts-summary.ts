@@ -8,21 +8,21 @@ import type {
 /**
  * The alerts summary as the dashboards pages consume it, settled once from
  * the wire by `toAlertsSummary`: which dashboards had alerts, how much, for
- * which week. A dashboard the backend did not assess, could not fetch
+ * which period. A dashboard the backend did not assess, could not fetch
  * (`integrated_alerts: null`) or found quiet is simply absent from
  * `newAlertAreaHa`; nothing downstream tells those apart.
  */
 export interface AlertsSummary {
-  /** Inclusive ISO dates of the week the summary covers. */
+  /** Inclusive ISO dates of the period the summary covers. */
   startDate: string;
   endDate: string;
   /**
-   * Dashboards whose alert total the backend obtained, quiet weeks (0 ha)
+   * Dashboards whose alert total the backend obtained, quiet periods (0 ha)
    * included. A `null` total is not an assessment, so a response of only
    * failures counts none.
    */
   assessedCount: number;
-  /** Alert area in hectares by dashboard id, for the dashboards whose week carried alerts. */
+  /** Alert area in hectares by dashboard id, for the dashboards whose period carried alerts. */
   newAlertAreaHa: Record<string, number>;
 }
 
@@ -48,7 +48,7 @@ export function toAlertsSummary(
 }
 
 /**
- * "New" is the backend's rule: alert dates inside the summary's week, not
+ * "New" is the backend's rule: alert dates inside the summary's period, not
  * the date the alerts reached GNW.
  */
 export function hasNewAlerts(
@@ -71,10 +71,10 @@ export function countWithNewAlerts(
 }
 
 /**
- * The week as the design writes it: "Oct 5–11" within one month, "Oct 26 –
- * Nov 1" across months, and with years when the week straddles a year end.
+ * The period as the design writes it: "Oct 5–11" within one month, "Oct 26 –
+ * Nov 1" across months, and with years when the period straddles a year end.
  */
-export function formatWeekRange(startIso: string, endIso: string): string {
+export function formatPeriodRange(startIso: string, endIso: string): string {
   const start = parseISO(startIso);
   const end = parseISO(endIso);
   if (start.getFullYear() !== end.getFullYear()) {
@@ -132,14 +132,14 @@ export function toAlertsFreshness(
 }
 
 /**
- * True when no alert in the data was detected on or after the week's first
- * day, so a count of zero would be a false all clear rather than a quiet week.
+ * True when no alert in the data was detected on or after the period's first
+ * day, so a count of zero would be a false all clear rather than a quiet period.
  */
-export function awaitingWeekData(
-  weekStart: string,
+export function awaitingPeriodData(
+  periodStart: string,
   freshness: AlertsFreshness
 ): boolean {
-  return freshness.latestAlertDate < weekStart;
+  return freshness.latestAlertDate < periodStart;
 }
 
 /**
