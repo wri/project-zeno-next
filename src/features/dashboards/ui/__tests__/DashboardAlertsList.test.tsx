@@ -98,8 +98,8 @@ describe("DashboardAlertsList", () => {
 
     // The new week's hectares with the days it covers, and the 30 days to
     // the latest alert date.
-    expect(kpi("New this week")).toBe(
-      "35.7ha new this weekDETECTED 10 – 16 OCT 2026"
+    expect(kpi("New alerts")).toBe(
+      "35.7ha of new alertsDETECTED 10 – 16 OCT 2026"
     );
     expect(kpi("Alerts since")).toBe(
       "105.7ha of alerts since 17 Sep17 SEP – 16 OCT 2026"
@@ -147,7 +147,7 @@ describe("DashboardAlertsList", () => {
 
   it("gives the headline figures in the shown tier", () => {
     renderList(propsFor("new-week", "highest"));
-    expect(kpi("New this week")).toContain("7.6ha new this week");
+    expect(kpi("New alerts")).toContain("7.6ha of new alerts");
     expect(kpi("Alerts since")).toContain("20.7ha of alerts since 17 Sep");
   });
 
@@ -315,7 +315,7 @@ describe("DashboardAlertsList", () => {
   it("shows a loading state before the first response", () => {
     renderList({ view: { kind: "loading" }, rows: [], headline: undefined });
     expect(screen.getByLabelText("Loading alerts")).toBeTruthy();
-    expect(screen.queryByRole("group", { name: "New this week" })).toBeNull();
+    expect(screen.queryByRole("group", { name: "New alerts" })).toBeNull();
     for (const name of ["New alerts", "Last 30 days", "Custom"]) {
       expect(
         screen.getByRole("button", { name }).hasAttribute("disabled")

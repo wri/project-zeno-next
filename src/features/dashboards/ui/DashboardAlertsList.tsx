@@ -217,9 +217,9 @@ function Headline({ headline }: { headline: AlertsHeadline }) {
   return (
     <Flex py="4px" align="stretch" wrap="wrap" rowGap="8px">
       <Kpi
-        name="New this week"
+        name="New alerts"
         ha={newWeek.ha}
-        label="ha new this week"
+        label="ha of new alerts"
         period={`DETECTED ${formatRangeCaps(newWeek.range)}`}
         tone="new"
         pr="24px"

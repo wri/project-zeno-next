@@ -191,8 +191,8 @@ describe("DashboardAlertsWidget", () => {
     // date, all the widget shows.
     expect(mockedFetch).toHaveBeenCalledTimes(1);
     expect(mockedFetch).toHaveBeenCalledWith(aoi, undefined, "any");
-    expect(kpi("New this week")).toBe(
-      "35.7ha new this weekDETECTED 10 – 16 OCT 2026"
+    expect(kpi("New alerts")).toBe(
+      "35.7ha of new alertsDETECTED 10 – 16 OCT 2026"
     );
     expect(kpi("Alerts since")).toBe(
       "105.7ha of alerts since 17 Sep17 SEP – 16 OCT 2026"
@@ -258,7 +258,7 @@ describe("DashboardAlertsWidget", () => {
     expect(
       screen.getByText("Showing 1–10 of 13 alert days · 85 ha in this period")
     ).toBeTruthy();
-    expect(kpi("New this week")).toContain("28.1ha new this week");
+    expect(kpi("New alerts")).toContain("28.1ha of new alerts");
     expect(kpi("Alerts since")).toContain("85ha of alerts since 17 Sep");
     expect(
       screen.getByRole("button", { name: "Confidence: High" })

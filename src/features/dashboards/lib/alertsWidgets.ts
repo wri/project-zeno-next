@@ -312,7 +312,7 @@ export function rowsSummary(
   };
 }
 
-/** The headline's "new this week" hectares: the new rows, in the shown tier. */
+/** The headline's "new alerts" hectares: the new rows, in the shown tier. */
 export function newWeekHa(
   rows: readonly AlertDay[],
   confidence: AlertsConfidence
