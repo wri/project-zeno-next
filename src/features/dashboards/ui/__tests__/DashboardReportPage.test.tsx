@@ -73,6 +73,10 @@ const renderPage = (data: Dashboard = dashboard) => {
 describe("DashboardReportPage", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    // A map stand-in a failed assertion left behind would stall later tests.
+    document
+      .querySelectorAll("[data-print-ready]")
+      .forEach((element) => element.remove());
   });
 
   it("heads the document with the name, a calendar date and the area", () => {
@@ -126,7 +130,6 @@ describe("DashboardReportPage", () => {
     expect(screen.getByText("Loading maps…")).toBeTruthy();
     map.setAttribute("data-print-ready", "true");
     await waitFor(() => expect(print).toHaveBeenCalledTimes(1));
-    map.remove();
   });
 
   it("footers each printed page with the dashboard name and page numbers", () => {

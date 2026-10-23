@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Box,
   Button,
@@ -10,9 +10,9 @@ import {
 } from "@chakra-ui/react";
 import { ArrowLeftIcon, PrinterIcon } from "@phosphor-icons/react";
 
+import { useDocumentTitle } from "@/app/hooks/useDocumentTitle";
 import { Link, useParams } from "@/src/shared/lib/router";
 import { updatedOnLabel } from "../lib/dates";
-import { hasDashboardContent } from "../lib/widgets";
 import { useDashboard } from "./dashboardQueries";
 import {
   DASHBOARD_ACTION_PROPS,
@@ -24,23 +24,51 @@ import DashboardWidgetsGrid from "./DashboardWidgetsGrid";
 /** The printout's page margin; the paper column is sized against it. */
 const PAGE_MARGIN = "12mm";
 
+/** Letter's long edge, the narrower of the two paper sizes in use (A4: 297mm). */
+const LETTER_LONG_EDGE = "279.4mm";
+
 /**
- * The document column: the printable width of Letter landscape at
- * `PAGE_MARGIN` (255mm, about 965px; A4 is wider). Landscape, because the
- * dashboard's grid needs the room: single cards side by side, double ones
- * across the row, as on screen. The page lays out at this width on screen
- * too, so printing never reflows it. Charts and maps size themselves in JS,
- * which doesn't run for the print layout, so a wider screen layout would
+ * The document column: the printable width of Letter landscape, which A4
+ * exceeds. Landscape, because the dashboard's grid needs the room: single
+ * cards side by side, double ones across the row, as on screen. The page lays
+ * out at this width on screen too (CSS millimetres are exact there, so about
+ * 965px), so printing never reflows it. Charts and maps size themselves in
+ * JS, which doesn't run for the print layout, so a wider screen layout would
  * print at its screen width and run off the page. For the same reason it
  * never narrows to a small viewport; the page scrolls instead.
  */
-const PAPER_WIDTH = "960px";
+const PAPER_WIDTH = `calc(${LETTER_LONG_EDGE} - 2 * ${PAGE_MARGIN})`;
 
 /** How long Save as PDF waits for the maps before printing regardless. */
 const MAP_WAIT_MS = 20_000;
 
 const mapsStillDrawing = () =>
   document.querySelector(`[${PRINT_READY_ATTR}="false"]`) !== null;
+
+/**
+ * Resolves once no export map is still drawing, or after `timeoutMs`: a tile
+ * server that never answers must not hold the PDF hostage.
+ */
+const mapsDrawn = (timeoutMs: number) => {
+  let observer: MutationObserver | undefined;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  return new Promise<void>((resolve) => {
+    observer = new MutationObserver(() => {
+      if (!mapsStillDrawing()) resolve();
+    });
+    observer.observe(document.body, {
+      subtree: true,
+      attributes: true,
+      attributeFilter: [PRINT_READY_ATTR],
+    });
+    timer = setTimeout(resolve, timeoutMs);
+    // A map that finished before the observer attached never mutates again.
+    if (!mapsStillDrawing()) resolve();
+  }).finally(() => {
+    observer?.disconnect();
+    clearTimeout(timer);
+  });
+};
 
 /** A CSS string literal, for the dashboard name in the page footer. */
 const cssString = (value: string) => `"${value.replace(/[\\"]/g, "\\$&")}"`;
@@ -69,61 +97,58 @@ const pageCss = (name: string | undefined) => `@page {
 }`;
 
 /**
+ * Opens the browser's print dialog once every map on the page has drawn:
+ * their areas and tiles load asynchronously, and printing sooner saves the
+ * world view or blank tiles. Its own component, so the wait never re-renders
+ * the document.
+ */
+function SaveAsPdfButton({ disabled }: { disabled: boolean }) {
+  const [waitingForMaps, setWaitingForMaps] = useState(false);
+  // Leaving the page mid-wait must not print whatever replaced it.
+  const mounted = useRef(false);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+
+  const saveAsPdf = async () => {
+    if (mapsStillDrawing()) {
+      setWaitingForMaps(true);
+      await mapsDrawn(MAP_WAIT_MS);
+      if (!mounted.current) return;
+      setWaitingForMaps(false);
+    }
+    window.print();
+  };
+
+  return (
+    <Button
+      {...DASHBOARD_ACTION_PROPS}
+      disabled={disabled}
+      loading={waitingForMaps}
+      loadingText="Loading maps…"
+      onClick={saveAsPdf}
+    >
+      <PrinterIcon size={16} />
+      Save as PDF
+    </Button>
+  );
+}
+
+/**
  * The dashboard's export: a standalone page at `/dashboards/[id]/report` that
  * renders the widgets as a read-only document, on screen as it will print.
  * "Save as PDF" is the browser's print dialog, and the action bar leaves
- * itself off the printout.
- *
- * It never prints on its own, and Save as PDF waits for the maps: their
- * areas and tiles load asynchronously, and printing sooner saves the world
- * view or blank tiles.
+ * itself off the printout. The page never prints on its own.
  */
 export default function DashboardReportPage() {
   const params = useParams<{ id: string }>();
   const dashboardId = params?.id ?? "";
   const { data: dashboard, isLoading, isError } = useDashboard(dashboardId);
-  const name = dashboard?.name;
-  const [waitingForMaps, setWaitingForMaps] = useState(false);
-
-  const saveAsPdf = () => {
-    if (mapsStillDrawing()) setWaitingForMaps(true);
-    else window.print();
-  };
-
-  useEffect(() => {
-    if (!waitingForMaps) return;
-    let printed = false;
-    const printOnce = () => {
-      if (printed) return;
-      printed = true;
-      setWaitingForMaps(false);
-      window.print();
-    };
-    const observer = new MutationObserver(() => {
-      if (!mapsStillDrawing()) printOnce();
-    });
-    observer.observe(document.body, {
-      subtree: true,
-      attributes: true,
-      attributeFilter: [PRINT_READY_ATTR],
-    });
-    // A tile server that never answers must not hold the PDF hostage.
-    const timer = setTimeout(printOnce, MAP_WAIT_MS);
-    return () => {
-      observer.disconnect();
-      clearTimeout(timer);
-    };
-  }, [waitingForMaps]);
-
-  useEffect(() => {
-    // The print dialog offers the document title as the PDF's file name.
-    if (!name) return;
-    const previous = document.title;
-    document.title = name;
-    return () => {
-      document.title = previous;
-    };
-  }, [name]);
+  // The print dialog offers the document title as the PDF's file name.
+  useDocumentTitle(dashboard?.name);
 
   return (
     <Box
@@ -134,7 +159,7 @@ export default function DashboardReportPage() {
       // chips and pills are backgrounds, which browsers drop by default.
       css={{ printColorAdjust: "exact", WebkitPrintColorAdjust: "exact" }}
     >
-      <style>{pageCss(name)}</style>
+      <style>{pageCss(dashboard?.name)}</style>
 
       <Flex
         justify="space-between"
@@ -155,16 +180,7 @@ export default function DashboardReportPage() {
             Back to dashboard
           </Link>
         </ChakraLink>
-        <Button
-          {...DASHBOARD_ACTION_PROPS}
-          disabled={!dashboard}
-          loading={waitingForMaps}
-          loadingText="Loading maps…"
-          onClick={saveAsPdf}
-        >
-          <PrinterIcon size={16} />
-          Save as PDF
-        </Button>
+        <SaveAsPdfButton disabled={!dashboard} />
       </Flex>
 
       {/* The sheet: paper-white with the page margin on screen; on paper the
@@ -214,10 +230,9 @@ export default function DashboardReportPage() {
                 )}
               </Box>
 
-              {hasDashboardContent(dashboard, {
-                isOwner: false,
-                pendingCount: 0,
-              }) ? (
+              {/* Print shows a viewer's grouping with nothing pending (see
+                  DashboardWidgetsGrid), so only a widget can fill the page. */}
+              {dashboard.widgets.length > 0 ? (
                 <DashboardWidgetsGrid dashboard={dashboard} print />
               ) : (
                 <Text color="fg.muted" py={12}>

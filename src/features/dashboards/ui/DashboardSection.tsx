@@ -170,11 +170,10 @@ export default function DashboardSection({
       {template && <TemplateBanner template={template} print={print} />}
       <Flex
         flexDir="column"
-        px="24px"
-        pt={section ? "16px" : "24px"}
-        pb="24px"
+        px={print ? 0 : "24px"}
+        pt={print ? 0 : section ? "16px" : "24px"}
+        pb={print ? 0 : "24px"}
         gap="16px"
-        {...(print && { px: 0, pt: 0, pb: 0 })}
       >
         {section && (
           <Flex
@@ -185,8 +184,9 @@ export default function DashboardSection({
             borderBottom={collapsed ? "none" : "1px solid"}
             borderColor="#E0E2E5"
             pb={collapsed ? 0 : "12px"}
-            {...(print &&
-              (template ? { pt: "12px" } : { ...PRINT_RULE, pt: "16px" }))}
+            // A template section's banner carries the rule instead.
+            {...(print && !template && PRINT_RULE)}
+            pt={print ? (template ? "12px" : "16px") : undefined}
             css={print ? PRINT_HEADING_CSS : undefined}
           >
             <Flex align="center" gap="4px" minW={0}>

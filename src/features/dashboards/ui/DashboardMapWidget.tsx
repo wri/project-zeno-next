@@ -136,7 +136,7 @@ export default function DashboardMapWidget({
     return () => {
       map.off("idle", done);
     };
-  }, [print, loaded, boundsSettled, bounds]);
+  }, [print, loaded, boundsSettled]);
 
   // Re-centre the area whenever the card resizes (size toggle, grid reflow,
   // window resize). The observer only sees the container; the latest fit
@@ -159,7 +159,7 @@ export default function DashboardMapWidget({
   return (
     <Box
       ref={containerRef}
-      {...(print && { [PRINT_READY_ATTR]: String(drawn) })}
+      {...{ [PRINT_READY_ATTR]: print ? String(drawn) : undefined }}
       h={fill ? "100%" : { base: "280px", md: tall ? "520px" : "360px" }}
       rounded="md"
       overflow="hidden"
