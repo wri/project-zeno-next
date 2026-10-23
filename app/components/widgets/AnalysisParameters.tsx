@@ -33,7 +33,14 @@ export default function AnalysisParametersToggle({
 }
 
 /** Chips panel rendered below the header row when expanded */
-export function AnalysisParamsChips({ chips }: { chips: ParamChipData[] }) {
+export function AnalysisParamsChips({
+  chips,
+  maxValueWidth,
+}: {
+  chips: ParamChipData[];
+  /** Passed to each chip; "none" shows full values (print has no tooltips). */
+  maxValueWidth?: string;
+}) {
   return (
     <Flex gap={1.5} flexWrap="wrap">
       {chips.map((chip, idx) => (
@@ -44,6 +51,7 @@ export function AnalysisParamsChips({ chips }: { chips: ParamChipData[] }) {
           colorScheme={chip.colorScheme}
           highlightValue={chip.highlightValue}
           tooltip={chip.tooltip}
+          maxValueWidth={maxValueWidth}
         />
       ))}
     </Flex>

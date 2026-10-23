@@ -13,14 +13,12 @@ import {
 import {
   ArrowsOutIcon,
   ArrowsOutLineHorizontalIcon,
-  ChartBarIcon,
   ChatTeardropDotsIcon,
   DotsSixVerticalIcon,
   PencilSimpleIcon,
   XIcon,
 } from "@phosphor-icons/react";
 
-import WidgetMessage from "@/app/components/WidgetMessage";
 import AnalysisParametersToggle, {
   AnalysisParamsChips,
 } from "@/app/components/widgets/AnalysisParameters";
@@ -32,7 +30,16 @@ import { toaster } from "@/app/components/ui/toaster";
 import type { InsightWidget } from "@/app/types/chat";
 import type { MapAreaAoi, MapWidgetLayer } from "../lib/mapWidgets";
 import DashboardMapFullscreenDialog from "./DashboardMapFullscreenDialog";
-import DashboardMapWidget from "./DashboardMapWidget";
+import DashboardWidgetBody from "./DashboardWidgetBody";
+
+/** The 14px widget title, shared with the export's document. */
+export const WIDGET_TITLE_PROPS = {
+  fontSize: "14px",
+  fontWeight: "medium",
+  lineHeight: "16px",
+  color: "#172B7A",
+  wordBreak: "break-word",
+} as const;
 
 /**
  * One dashboard card — the Figma "Analysis" container: a light-blue shell
@@ -226,11 +233,7 @@ export default function DashboardWidgetCard({
           <Text
             flex="1"
             minW={0}
-            fontSize="14px"
-            fontWeight="medium"
-            lineHeight="16px"
-            color="#172B7A"
-            wordBreak="break-word"
+            {...WIDGET_TITLE_PROPS}
             pl={isOwner ? 0 : "8px"}
           >
             {displayTitle}
@@ -330,34 +333,15 @@ export default function DashboardWidgetCard({
 
       {intro}
 
-      {placeholder ? (
-        <Flex
-          flex="1"
-          minH="160px"
-          align="center"
-          justify="center"
-          direction="column"
-          gap={2}
-          color="fg.muted"
-          px={6}
-          textAlign="center"
-        >
-          <ChartBarIcon size={24} />
-          <Text fontSize="sm">{placeholder}</Text>
-        </Flex>
-      ) : map ? (
-        <Box px="8px" pb="8px" flex="1" minW={0}>
-          <DashboardMapWidget
-            layer={map}
-            aoi={aoi}
-            bboxOverride={viewportBbox}
-            tall={isDouble}
-          />
-        </Box>
-      ) : card ? (
-        <Box px="8px" pb="8px" flex="1" minW={0}>
-          <WidgetMessage widget={card} inWorkspace fullWidth={isDouble} />
-        </Box>
+      {placeholder || map || card ? (
+        <DashboardWidgetBody
+          card={card}
+          map={map}
+          aoi={aoi}
+          viewportBbox={viewportBbox}
+          placeholder={placeholder}
+          isDouble={isDouble}
+        />
       ) : (
         body
       )}

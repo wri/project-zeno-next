@@ -35,6 +35,13 @@ const BASEMAP_STYLE = "devseed/cmazl5ws500bz01scaa27dqi4";
 const AOI_COLORS = aoiBoundaryColors("light");
 
 /**
+ * Set on an export map's container: "false" while it is still fitting its area
+ * or loading tiles, "true" once it has drawn everything it will draw. The
+ * report page waits on it before opening the print dialog.
+ */
+export const PRINT_READY_ATTR = "data-print-ready";
+
+/**
  * The map body of a `widget_type: "map"` dashboard card. Self-contained per
  * the handoff: renders the config's resolved `tile_url` directly (context
  * sub-layer beneath it), outlines the dashboard's area, and fits the
@@ -51,6 +58,7 @@ export default function DashboardMapWidget({
   tall,
   fill,
   stretch,
+  print = false,
 }: {
   layer: MapWidgetLayer;
   /** The dashboard's (single) area — outline, label + default viewport fit. */
@@ -67,6 +75,8 @@ export default function DashboardMapWidget({
    * beside it sets.
    */
   stretch?: boolean;
+  /** The export rendering (see `DashboardWidgetsGrid`). */
+  print?: boolean;
 }) {
   const mapRef = useRef<MapRef>(null);
 
@@ -85,7 +95,7 @@ export default function DashboardMapWidget({
 
   // The area geometry — shared across the dashboard's map widgets via the
   // query cache; geometries are immutable, so never refetch.
-  const { data: geometry } = useQuery({
+  const { data: geometry, isFetched: geometryFetched } = useQuery({
     queryKey: ["aoi-geometry", aoi?.source, aoi?.src_id],
     queryFn: () => fetchGeometry(aoi!.source, aoi!.src_id),
     enabled: !!aoi,
@@ -121,6 +131,24 @@ export default function DashboardMapWidget({
   // completes last (the effect covers late bounds, onLoad covers late maps).
   useEffect(fitToBounds, [bounds]);
 
+  // An export map is drawn once it knows its bounds (or that it has none) and
+  // then goes idle: every tile loaded or failed. Printing any earlier saves
+  // the world view, or blank tiles.
+  const [loaded, setLoaded] = useState(false);
+  const [drawn, setDrawn] = useState(false);
+  const boundsSettled = !aoi || geometryFetched;
+  useEffect(() => {
+    const map = mapRef.current?.getMap();
+    if (!print || !loaded || !boundsSettled || !map) return;
+    const done = () => setDrawn(true);
+    map.once("idle", done);
+    // An already idle map fires no further idle event until it repaints.
+    map.triggerRepaint();
+    return () => {
+      map.off("idle", done);
+    };
+  }, [print, loaded, boundsSettled]);
+
   // Re-centre the area whenever the card resizes (size toggle, grid reflow,
   // window resize). The observer only sees the container; the latest fit
   // callback rides in a ref so we never re-observe.
@@ -139,9 +167,21 @@ export default function DashboardMapWidget({
     return () => observer.disconnect();
   }, []);
 
-  return (
+  const legend = (
+    <DashboardMapLegend
+      layer={layer}
+      opacity={opacity}
+      onOpacityChange={(target, value) =>
+        setOpacity((prev) => ({ ...prev, [target]: value }))
+      }
+      print={print}
+    />
+  );
+
+  const map = (
     <Box
       ref={containerRef}
+      {...{ [PRINT_READY_ATTR]: print ? String(drawn) : undefined }}
       h={
         fill || stretch
           ? "100%"
@@ -157,16 +197,30 @@ export default function DashboardMapWidget({
         ref={mapRef}
         style={{ width: "100%", height: "100%" }}
         initialViewState={{ longitude: 0, latitude: 0, zoom: 1 }}
-        onLoad={fitToBounds}
+        onLoad={() => {
+          setLoaded(true);
+          fitToBounds();
+        }}
         // No scroll-zoom in the page: the widget must not trap the wheel.
         // Pan/double-click zoom remain available; full screen allows it.
         scrollZoom={!!fill}
+        // A report map is a picture of the area: moving it after it is drawn
+        // would load new tiles that Save as PDF no longer waits for.
+        interactive={!print}
         dragRotate={false}
         attributionControl={false}
+        // Printing snapshots the WebGL canvas, which is blank without a
+        // preserved drawing buffer. Only the export's maps pay its GPU cost;
+        // the option is read once, when the map is created.
+        canvasContextAttributes={
+          print ? { preserveDrawingBuffer: true } : undefined
+        }
       >
         {/* Bottom-left so the legend can occupy the design's bottom-right
             slot; the attribution stacks beneath the zoom buttons. */}
-        <NavigationControl position="bottom-left" showCompass={false} />
+        {!print && (
+          <NavigationControl position="bottom-left" showCompass={false} />
+        )}
         <AttributionControl compact position="bottom-left" />
         <Source
           id="widget-basemap"
@@ -265,24 +319,32 @@ export default function DashboardMapWidget({
           </Marker>
         )}
         {/* Non-map children render as DOM overlays inside the map container
-            (same pattern as the explorer's Map.tsx). */}
-        <Box
-          position="absolute"
-          bottom="8px"
-          right="8px"
-          zIndex={1}
-          w="300px"
-          maxW="calc(100% - 16px)"
-        >
-          <DashboardMapLegend
-            layer={layer}
-            opacity={opacity}
-            onOpacityChange={(target, value) =>
-              setOpacity((prev) => ({ ...prev, [target]: value }))
-            }
-          />
-        </Box>
+            (same pattern as the explorer's Map.tsx). On paper the legend
+            goes below the map instead, where it is not clipped. */}
+        {!print && (
+          <Box
+            position="absolute"
+            bottom="8px"
+            right="8px"
+            zIndex={1}
+            w="300px"
+            maxW="calc(100% - 16px)"
+          >
+            {legend}
+          </Box>
+        )}
       </MapGl>
     </Box>
+  );
+
+  return print ? (
+    <>
+      {map}
+      <Box pt="8px" w="300px" maxW="100%">
+        {legend}
+      </Box>
+    </>
+  ) : (
+    map
   );
 }

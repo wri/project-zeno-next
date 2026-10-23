@@ -530,6 +530,20 @@ describe("DashboardAlertsWidget", () => {
     expect(screen.queryByLabelText("Remove from dashboard")).toBeNull();
   });
 
+  it("prints its title and a pointer to the dashboard, fetching nothing", () => {
+    renderWidget({ print: true });
+
+    expect(screen.getByText("Integrated alerts in Guarapuava")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Live integrated alerts: open the dashboard to see the list and map."
+      )
+    ).toBeTruthy();
+    expect(mockedFetch).not.toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: "New alerts" })).toBeNull();
+    expect(screen.queryByTestId("map-widget")).toBeNull();
+  });
+
   it("shows a placeholder, and fetches nothing, for a config it cannot render", () => {
     renderWidget({
       widget: { ...widget, config: { alerts: { aoi: { source: "gadm" } } } },

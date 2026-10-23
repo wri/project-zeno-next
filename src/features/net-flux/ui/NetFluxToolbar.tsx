@@ -66,6 +66,7 @@ export function NetFluxToolbar({
   siblings: siblingsProp,
   groupKey: groupKeyProp,
   showDivider = true,
+  print = false,
 }: {
   widget: InsightWidget;
   /** The roll-ups to choose between, default detail first. */
@@ -73,6 +74,11 @@ export function NetFluxToolbar({
   /** Key the DETAIL choice is stored under; required alongside `siblings`. */
   groupKey?: string;
   showDivider?: boolean;
+  /**
+   * The export prints every roll-up, so DETAIL names this chart's own detail
+   * and offers no other, rather than following the group's choice.
+   */
+  print?: boolean;
 }) {
   const insights = useInsightStore((s) => s.insights);
   const siblings = siblingsProp ?? netFluxSiblings(insights, widget);
@@ -87,12 +93,12 @@ export function NetFluxToolbar({
         {siblings.length > 1 && (
           <Pill
             label="DETAIL"
-            value={detailValue(selected ?? widget)}
-            options={siblings.map((w) => ({
+            value={detailValue(print ? widget : (selected ?? widget))}
+            options={(print ? [widget] : siblings).map((w) => ({
               value: detailValue(w),
               label: netFluxWidgetDetailPillLabel(w),
             }))}
-            onSelect={select}
+            onSelect={print ? () => {} : select}
             minW="160px"
             info={<DetailInfo />}
           />
