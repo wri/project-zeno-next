@@ -53,6 +53,10 @@ export const routes: RouteObject[] = [
         errorElement: <RouteError />,
         children: [
           { index: true, ...page(() => import("@/app/(home)/page")) },
+          {
+            path: "accuracy-benchmarks",
+            ...page(() => import("@/app/accuracy-benchmarks/page")),
+          },
           { path: "amazonia", ...page(() => import("@/app/amazonia/page")) },
           {
             // The chat layout owns the map; child pages render nothing, so the
