@@ -1,20 +1,18 @@
-import { chartBatchKey } from "@/src/entities/insight";
 import type { InsightWidget } from "@/app/types/chat";
 import { isNetFluxWidget } from "./net-flux-variants";
 
 /**
  * The three LGMS time-series charts arrive as separate charts of one analysis,
- * grouped by `chartBatchKey`'s `{insightId}-chart-{n}` id prefix. That shared
- * prefix ties the Full detail / Category / Summary roll-ups together without
- * the frontend having to match on titles.
+ * grouped by their shared `insightId`. That ties the Full detail / Category /
+ * Summary roll-ups together without the frontend having to match on titles.
  *
- * Returns null when the widget isn't one of these charts, or when its id
- * doesn't follow that shape (an insight rehydrated from history, say) — in
- * which case it simply has no siblings and behaves as its own entry.
+ * Returns null when the widget isn't one of these charts, or belongs to no
+ * persisted insight — in which case it simply has no siblings and behaves as
+ * its own entry.
  */
 export function netFluxGroupKey(widget: InsightWidget): string | null {
   if (!isNetFluxWidget(widget)) return null;
-  return chartBatchKey(widget.id);
+  return widget.insightId ?? null;
 }
 
 /** "Full Detail" → "Full detail": the design prints the detail in sentence case. */
@@ -153,11 +151,9 @@ export function netFluxWidgetDetailPillLabel(widget: InsightWidget): string {
  * The net-flux roll-ups among the charts of ONE analysis, default detail
  * first (`orderSiblings`).
  *
- * The sibling functions above group by `chartBatchKey`, which only parses the
- * `{insightId}-chart-{n}` ids `RestAnalysisGateway` mints. Dashboard widgets
- * and stored insights carry the backend chart UUID instead, so grouping is
- * unavailable there — but those callers already hold exactly one analysis's
- * charts, which makes the grouping step unnecessary rather than impossible.
+ * The sibling functions above group the map workspace's charts by
+ * `insightId`. The dashboard module and the Analyses pane already hold
+ * exactly one analysis's charts, which makes that grouping step unnecessary.
  */
 export function netFluxRollups(cards: InsightWidget[]): InsightWidget[] {
   return orderSiblings(cards.filter(isNetFluxWidget));

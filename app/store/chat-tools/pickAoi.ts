@@ -7,8 +7,8 @@ import {
 } from "@/app/types/chat";
 import useMapStore from "../mapStore";
 import { fetchGeometry } from "@/app/utils/geometryClient";
-import { unionAoiBboxes } from "@/app/utils/bboxUtils";
-import { GeoJsonEntry } from "../layerManagerSlice";
+import { aoiFlyBounds } from "@/app/utils/bboxUtils";
+import { aoiFeatureRef, GeoJsonEntry } from "../layerManagerSlice";
 import { selectLayerOptions } from "@/app/types/map";
 
 const GLOBAL_LAYER_ID = "Global Layer";
@@ -34,12 +34,30 @@ export function isGlobalQuery(name: string): boolean {
 }
 
 /**
+ * The label of a picked selection: its layer id, name and context chip.
+ *
+ * A concession picked on the map is stored under its cleaned backend name;
+ * `display_name` keeps the label it was picked by, so a replayed selection
+ * named after that one area shows the same label as when it was picked.
+ */
+export function selectionLabel(
+  aoiSelection: AOISelection | undefined,
+  aois: AOI[]
+): string {
+  const first = aois[0];
+  if (first?.display_name && aoiSelection?.name === first.name) {
+    return first.display_name;
+  }
+  return aoiSelection?.name ?? (first?.name || "Unknown");
+}
+
+/**
  * Fetch geometry for a single AOI and add it to the layer manager
  * Returns the raw geometry data (FeatureCollection or Feature) for combined
  * bounds computation.
  * @param selectionName - The name of the selection of AOIs. Used in multi-area selection.
  */
-async function fetchAndRegisterAoi(
+export async function fetchAndRegisterAoi(
   aoi: AOI,
   addToRegistry: (entry: GeoJsonEntry) => void
 ): Promise<FeatureCollection | Feature> {
@@ -56,7 +74,7 @@ async function fetchAndRegisterAoi(
   }
 
   addToRegistry({
-    ref: { name: aoi.name, source: aoi.source },
+    ref: aoiFeatureRef(aoi),
     data: geoJsonData,
     srcId: aoi.src_id,
     subtype: aoi.subtype,
@@ -65,10 +83,15 @@ async function fetchAndRegisterAoi(
   return geoJsonData;
 }
 
+/**
+ * Resolves to the selection installed on the area layer, which can be fewer
+ * areas than were picked (geometry fetches fail per area) and is labelled by
+ * `selectionLabel`, or `undefined` when no layer was added.
+ */
 export async function pickAoiTool(
   streamMessage: StreamMessage,
   addMessage: (message: Omit<ChatMessage, "id">) => void
-) {
+): Promise<AOISelection | undefined> {
   console.log(
     "[pickAoi] called with:",
     JSON.stringify(
@@ -86,8 +109,7 @@ export async function pickAoiTool(
     const aois: AOI[] =
       aoiSelection?.aois ??
       (streamMessage.aoi ? [streamMessage.aoi as AOI] : []);
-    const selectionName: string =
-      aoiSelection?.name ?? (aois[0]?.name || "Unknown");
+    const selectionName = selectionLabel(aoiSelection, aois);
 
     // Global query: render a vector tile layer instead of fetching per-country GeoJSON
     if (isGlobalQuery(selectionName)) {
@@ -114,6 +136,7 @@ export async function pickAoiTool(
       // stable GLOBAL_LAYER_ID constant so re-adding a global selection
       // replaces the existing layer instead of stacking duplicates.
       // The visible layer IS the scope — no separate context item.
+      const globalSelection = aoiSelection ?? { name: selectionName, aois };
       addLayer({
         id: GLOBAL_LAYER_ID,
         name: selectionName,
@@ -122,7 +145,7 @@ export async function pickAoiTool(
         tileUrl: gadm.url,
         sourceLayer: gadm.sourceLayer,
         selectionName,
-        aoiSelection: aoiSelection ?? { name: selectionName, aois },
+        aoiSelection: globalSelection,
       });
 
       flyToGeoJsonWithRetry(worldBbox);
@@ -130,11 +153,11 @@ export async function pickAoiTool(
       addMessage({
         type: "area-card",
         message: "",
-        aoiSelection: aoiSelection ?? { name: selectionName, aois },
+        aoiSelection: globalSelection,
         timestamp: streamMessage.timestamp,
       });
 
-      return;
+      return globalSelection;
     }
 
     if (aois.length === 0) {
@@ -167,15 +190,16 @@ export async function pickAoiTool(
     const successfulAois = aois.filter(
       (_, idx) => results[idx].status === "fulfilled"
     );
-    const successfulRefs = successfulAois.map((aoi) => ({
-      name: aoi.name,
-      source: aoi.source,
-    }));
+    const successfulRefs = successfulAois.map(aoiFeatureRef);
+    const installed: AOISelection | undefined =
+      successfulAois.length > 0
+        ? { name: selectionName, aois: successfulAois }
+        : undefined;
 
     // The visible layer IS the scope — no separate context item. The layer id
     // is the selection name, so re-picking the same selection replaces it
     // rather than stacking a duplicate; differently-named selections stack.
-    if (successfulRefs.length > 0) {
+    if (installed) {
       addLayer({
         id: selectionName,
         name: selectionName,
@@ -183,7 +207,7 @@ export async function pickAoiTool(
         visible: true,
         featureRefs: successfulRefs,
         selectionName,
-        aoiSelection: { name: selectionName, aois: successfulAois },
+        aoiSelection: installed,
       });
     }
 
@@ -195,32 +219,20 @@ export async function pickAoiTool(
     // Fly to the combined bounds using backend-provided bbox values.
     // Using aoi.bbox directly preserves dateline-crossing extents (west > east),
     // which fitBounds handles natively. Turf bbox would wrap around the world instead.
-    const unionBbox = unionAoiBboxes(successfulAois);
-    if (unionBbox) {
-      const [west, south, north] = [unionBbox[0], unionBbox[1], unionBbox[3]];
-      let east = unionBbox[2];
-      // flyToBounds (and mapStore's fitBounds wrapper) expects east <= 180;
-      // subtract 360 to re-wrap when the union crossed the antimeridian.
-      if (east > 180) east -= 360;
-      console.log("[pickAoi] calling flyToBounds:", typeof flyToBounds, [
-        [west, south],
-        [east, north],
-      ]);
-      flyToBounds([
-        [west, south],
-        [east, north],
-      ]);
+    const bounds = aoiFlyBounds(successfulAois);
+    if (bounds) {
+      flyToBounds(bounds);
     } else if (allGeoData.length > 0) {
       flyToGeoJsonWithRetry(allGeoData[0]);
     }
 
     // Only show the area card if at least one AOI rendered successfully,
     // and only include the successful AOIs in the card.
-    if (successfulAois.length > 0) {
+    if (installed) {
       addMessage({
         type: "area-card",
         message: "",
-        aoiSelection: { name: selectionName, aois: successfulAois },
+        aoiSelection: installed,
         timestamp: streamMessage.timestamp,
       });
     }
@@ -235,6 +247,7 @@ export async function pickAoiTool(
     } else if (failures.length === aois.length) {
       throw new Error("Failed to fetch geometry for all selected areas");
     }
+    return installed;
   } catch (error) {
     console.error("Error processing pick_aoi artifact:", error);
 
@@ -245,5 +258,6 @@ export async function pickAoiTool(
       }. Error: ${error instanceof Error ? error.message : "Unknown error"}`,
       timestamp: streamMessage.timestamp,
     });
+    return undefined;
   }
 }

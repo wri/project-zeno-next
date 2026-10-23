@@ -1,4 +1,6 @@
-import type { AoiSearchResult, DashboardCreateRequest } from "../api/schemas";
+import type { AoiSearchResult } from "@/src/entities/aoi";
+
+import type { DashboardCreateRequest } from "../api/schemas";
 
 export const AOI_SOURCE_OPTIONS = [
   { label: "All categories", source: null },
@@ -23,11 +25,6 @@ const SOURCE_LABELS: Record<AoiSource, string> = {
 
 export function sourceLabel(source: string): string {
   return SOURCE_LABELS[source as AoiSource] ?? source;
-}
-
-export function subtypeLabel(subtype: string): string {
-  const words = subtype.replace(/[-_]+/g, " ").trim();
-  return words ? words.charAt(0).toUpperCase() + words.slice(1) : "";
 }
 
 export function aoiToDashboardCreateRequest(

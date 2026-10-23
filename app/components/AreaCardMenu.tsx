@@ -2,13 +2,12 @@ import type { ReactNode } from "react";
 import { IconButton, Menu, Portal } from "@chakra-ui/react";
 import { DotsThreeVerticalIcon } from "@phosphor-icons/react";
 
-/** Accent shared by the Areas panel card actions and labels. */
-export const AREA_LABEL_COLOR = "#2D6BE4";
+import { ENTITY_KINDS } from "@/src/shared/ui/entity-card";
 
 /** Compact 16px icon styling shared by the area card title actions. */
 export const areaActionIconProps = {
   variant: "ghost" as const,
-  color: AREA_LABEL_COLOR,
+  color: ENTITY_KINDS.area.color,
   boxSize: "16px",
   minW: "16px",
   maxW: "16px",
@@ -28,7 +27,7 @@ export const areaActionIconProps = {
  * portalled content, and the z-index override in one place — Chakra's default
  * dropdown z-index (1000) paints behind the exploration panel column
  * (CATALOG_COLUMN_Z_INDEX = 1095), so menus opening over the panel must sit
- * above it (same workaround as AreaToolbarButtons).
+ * above it.
  */
 export function AreaCardMenu({
   label,
@@ -47,7 +46,7 @@ export function AreaCardMenu({
           {...areaActionIconProps}
           onClick={(e) => e.stopPropagation()}
         >
-          <DotsThreeVerticalIcon size={16} color={AREA_LABEL_COLOR} />
+          <DotsThreeVerticalIcon size={16} color={ENTITY_KINDS.area.color} />
         </IconButton>
       </Menu.Trigger>
       <Portal>

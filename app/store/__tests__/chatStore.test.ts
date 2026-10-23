@@ -24,7 +24,12 @@ import useViewContextStore from "../viewContextStore";
 import useAuthStore from "../authStore";
 import useAgentProfileStore from "../agentProfileStore";
 import useMapStore from "../mapStore";
+import { findRegistryEntry } from "../layerManagerSlice";
+import useInsightStore from "../insightStore";
 import { apiFetch } from "@/app/lib/api-client";
+import { queryClient } from "@/app/lib/query-client";
+import { dashboardKeys } from "@/src/features/dashboards/ui/dashboardQueries";
+import { agentTextLine, humanLine, ndjsonResponse } from "./stream-fixtures";
 import { deriveContext } from "@/app/utils/messageContext";
 import type {
   AnalyseSuggestion,
@@ -135,6 +140,7 @@ describe("chatStore cancellation", () => {
 
 describe("chatStore view_context", () => {
   beforeEach(() => {
+    // reset() also clears insightStore.
     useChatStore.getState().reset();
     useViewContextStore.setState({ viewContext: null });
     vi.mocked(apiFetch).mockReset();
@@ -149,6 +155,9 @@ describe("chatStore view_context", () => {
 
   afterEach(() => {
     useViewContextStore.setState({ viewContext: null });
+    // Runs even when an assertion fails, so a fake map never leaks into later
+    // describes (mapStore.reset() would call flyTo on it).
+    useMapStore.setState({ mapRef: null });
     vi.clearAllMocks();
   });
 
@@ -177,6 +186,46 @@ describe("chatStore view_context", () => {
     await useChatStore.getState().sendMessage("hello");
 
     expect(sentBody()).not.toHaveProperty("view_context");
+  });
+
+  it("enriches the map surface with live viewport + visible and focused insights", async () => {
+    useViewContextStore.getState().setViewContext({ page: "map" });
+    useInsightStore.getState().addInsights([
+      {
+        type: "bar",
+        title: "t",
+        description: "d",
+        data: [],
+        xAxis: "x",
+        yAxis: "y",
+        id: "i1-chart-0",
+        insightId: "i1",
+        chartPosition: 0,
+      },
+    ]);
+    useInsightStore.getState().setFocusedWidgetId("i1-chart-0");
+    useMapStore.setState({
+      mapRef: {
+        getMap: () => ({
+          getBounds: () => ({
+            getWest: () => -73.9876,
+            getSouth: () => 40.7661,
+            getEast: () => -73.9397,
+            getNorth: () => 40.8002,
+          }),
+          getZoom: () => 5,
+        }),
+      } as unknown as ReturnType<typeof useMapStore.getState>["mapRef"],
+    });
+
+    await useChatStore.getState().sendMessage("what's in this chart?");
+
+    expect(sentBody().view_context).toEqual({
+      page: "map",
+      viewport: { bbox: [-73.9876, 40.7661, -73.9397, 40.8002], zoom: 5 },
+      visible_insights: ["i1"],
+      focused_insight: { id: "i1", chart_position: 0 },
+    });
   });
 });
 
@@ -707,31 +756,6 @@ function dashboardWriteLine(
   });
 }
 
-/** A Response-like object that streams the given NDJSON lines, then ends. */
-function ndjsonResponse(lines: string[]): Response {
-  const encoder = new TextEncoder();
-  let delivered = false;
-  const reader = {
-    read: () => {
-      if (delivered) {
-        return Promise.resolve({ done: true, value: undefined });
-      }
-      delivered = true;
-      return Promise.resolve({
-        done: false,
-        value: encoder.encode(lines.join("\n") + "\n"),
-      });
-    },
-    releaseLock: () => {},
-    cancel: () => Promise.resolve(),
-  };
-  return {
-    ok: true,
-    headers: new Headers(),
-    body: { getReader: () => reader },
-  } as unknown as Response;
-}
-
 function dashboardCards() {
   return useChatStore
     .getState()
@@ -756,6 +780,21 @@ describe("dashboard_updated stream signal → dashboard-card message", () => {
       dashboardId: "dash-1",
       dashboardName: "Paraná",
     });
+  });
+
+  it("marks cached alerts summaries stale: the write may have added a chart", async () => {
+    const summaryKey = dashboardKeys.alertsSummary(["dash-1"]);
+    queryClient.setQueryData(summaryKey, {});
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([
+        dashboardWriteLine("dash-1", "Paraná", "add_to_dashboard"),
+      ])
+    );
+
+    await useChatStore.getState().sendMessage("add it to my dashboard");
+
+    expect(queryClient.getQueryState(summaryKey)?.isInvalidated).toBe(true);
+    queryClient.removeQueries({ queryKey: summaryKey });
   });
 
   it("announces a create with an assistant message ahead of the card", async () => {
@@ -913,6 +952,143 @@ describe("pick_dataset stream signal → lastSentContext.dataset fold", () => {
   });
 });
 
+// --- pick_aoi stream signal → area layer + lastSentContext.aoi fold -------
+
+/** One NDJSON line for a resolved pick_aoi turn with a multi-area selection. */
+function pickAoiSelectionLine(aoiSelection: {
+  name: string;
+  aois: Record<string, unknown>[];
+}): string {
+  return JSON.stringify({
+    node: "tools",
+    timestamp: "2026-07-30T00:00:00.500Z",
+    update: JSON.stringify({
+      aoi_selection: aoiSelection,
+      messages: [
+        {
+          lc: 1,
+          type: "constructor",
+          id: ["x"],
+          kwargs: {
+            content: `Selected ${aoiSelection.name}`,
+            type: "tool",
+            name: "pick_aoi",
+            id: "m-pick-aoi",
+            response_metadata: {},
+          },
+        },
+      ],
+    }),
+  });
+}
+
+/** A one-square FeatureCollection, offset so each parcel's geometry differs. */
+const square = (x: number) => ({
+  type: "FeatureCollection",
+  features: [
+    {
+      type: "Feature",
+      properties: {},
+      geometry: {
+        type: "Polygon",
+        coordinates: [
+          [
+            [x, 0],
+            [x + 1, 0],
+            [x + 1, 1],
+            [x, 0],
+          ],
+        ],
+      },
+    },
+  ],
+});
+
+const parcel = (srcId: string, extra: Record<string, unknown> = {}) => ({
+  name: "Mining concession, IDN",
+  source: "mining",
+  src_id: srcId,
+  subtype: "mining-concession",
+  ...extra,
+});
+
+/** The ui_context of the nth POST /api/chat, or undefined when none was sent. */
+const sentUiContext = (n: number) => {
+  const chatCalls = vi
+    .mocked(apiFetch)
+    .mock.calls.filter(([path]) => path === "/api/chat");
+  const body = JSON.parse(String(chatCalls[n][1]!.body));
+  return body.ui_context as Record<string, unknown> | undefined;
+};
+
+describe("pick_aoi stream signal → area layer and lastSentContext.aoi fold", () => {
+  beforeEach(() => {
+    useChatStore.getState().reset();
+    useMapStore.getState().reset();
+    vi.mocked(apiFetch).mockReset();
+  });
+
+  it("doesn't re-announce the agent's selection when its first area's geometry failed", async () => {
+    // The layer keeps only the areas whose geometry loaded, so its first area
+    // (and the aoi key deriveContext computes from it) is parcel 102, not the
+    // stream's first, 101.
+    vi.mocked(apiFetch).mockImplementation((path) =>
+      Promise.resolve(
+        String(path).startsWith("/api/geometry/")
+          ? ({ ok: false, status: 404, statusText: "Not Found" } as Response)
+          : ndjsonResponse([
+              pickAoiSelectionLine({
+                name: "Mining concessions in Riau",
+                aois: [parcel("101"), parcel("102", { geometry: square(0) })],
+              }),
+              agentTextLine("Two parcels."),
+            ])
+      )
+    );
+
+    await useChatStore.getState().sendMessage("mining concessions in Riau");
+    await vi.waitFor(() =>
+      expect(useChatStore.getState().lastSentContext.aoi).toBe(
+        "Mining concessions in Riau|mining:102"
+      )
+    );
+    await useChatStore.getState().sendMessage("and since 2020?");
+
+    expect(sentUiContext(1)?.aoi_selected).toBeUndefined();
+  });
+
+  it("keeps two same-name parcels of one selection apart", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([
+        pickAoiSelectionLine({
+          name: "Mining concessions in Riau",
+          aois: [
+            parcel("101", { geometry: square(0) }),
+            parcel("102", { geometry: square(5) }),
+          ],
+        }),
+      ])
+    );
+
+    await useChatStore.getState().sendMessage("mining concessions in Riau");
+    await vi.waitFor(() =>
+      expect(
+        useMapStore
+          .getState()
+          .layers.some((l) => l.id === "Mining concessions in Riau")
+      ).toBe(true)
+    );
+
+    const { layers, geoJsonRegistry } = useMapStore.getState();
+    const layer = layers.find((l) => l.id === "Mining concessions in Riau")!;
+    const resolved = (layer.featureRefs ?? []).map(
+      (ref) => findRegistryEntry(geoJsonRegistry, ref)?.data
+    );
+    expect(geoJsonRegistry).toHaveLength(2);
+    expect(resolved).toEqual([square(0), square(5)]);
+  });
+});
+
 // --- nudge state → "nudge" chat message -----------------------------------
 
 /**
@@ -935,54 +1111,6 @@ function toolNudgeLine(tool: string, nudge: Nudge): string {
             type: "tool",
             name: tool,
             id: `m-${tool}`,
-            response_metadata: {},
-          },
-        },
-      ],
-    }),
-  });
-}
-
-/** One NDJSON line for a plain assistant text turn. */
-function agentTextLine(text: string): string {
-  return JSON.stringify({
-    node: "agent",
-    timestamp: "2026-07-30T00:00:01.000Z",
-    update: JSON.stringify({
-      messages: [
-        {
-          lc: 1,
-          type: "constructor",
-          id: ["x"],
-          kwargs: {
-            content: text,
-            type: "ai",
-            id: "m-ai",
-            response_metadata: {},
-            tool_calls: [],
-            invalid_tool_calls: [],
-          },
-        },
-      ],
-    }),
-  });
-}
-
-/** One NDJSON line for a replayed human turn (fetchThread only). */
-function humanLine(text: string): string {
-  return JSON.stringify({
-    node: "agent",
-    timestamp: "2026-07-30T00:00:00.000Z",
-    update: JSON.stringify({
-      messages: [
-        {
-          lc: 1,
-          type: "constructor",
-          id: ["x"],
-          kwargs: {
-            content: text,
-            type: "human",
-            id: "m-human",
             response_metadata: {},
           },
         },
@@ -1110,5 +1238,317 @@ describe("nudge stream state → nudge chat message", () => {
 
     expect(nudgeMessages()).toHaveLength(1);
     expect(nudgeMessages()[0].nudge).toEqual(aoiNudge);
+  });
+});
+
+/** One NDJSON line for a pick_aoi result that names an area but carries no geometry. */
+function pickAoiLine(aoi: {
+  name: string;
+  source: string;
+  src_id: string;
+  subtype: string;
+}): string {
+  return JSON.stringify({
+    node: "tools",
+    timestamp: "2026-07-30T00:00:00.500Z",
+    update: JSON.stringify({
+      aoi_selection: { name: aoi.name, aois: [aoi] },
+      messages: [
+        {
+          lc: 1,
+          type: "constructor",
+          id: ["x"],
+          kwargs: {
+            content: `Selected ${aoi.name}`,
+            type: "tool",
+            name: "pick_aoi",
+            id: "m-pick-aoi",
+            response_metadata: {},
+          },
+        },
+      ],
+    }),
+  });
+}
+
+/** The line the backend emits when a stream update fails (src/api/services/chat.py). */
+function errorNodeLine(): string {
+  return JSON.stringify({
+    node: "error",
+    update: JSON.stringify({
+      error: true,
+      message: "boom",
+      error_type: "ValueError",
+      type: "stream_processing_error",
+    }),
+  });
+}
+
+// --- completedAnswers: the "a live answer finished" signal ---------------
+
+describe("chatStore.completedAnswers", () => {
+  beforeEach(() => {
+    useChatStore.getState().reset();
+    vi.mocked(apiFetch).mockReset();
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const completed = () => useChatStore.getState().completedAnswers;
+
+  it("starts at 0 and is zeroed by reset()", () => {
+    expect(completed()).toBe(0);
+    useChatStore.setState({ completedAnswers: 3 });
+    useChatStore.getState().reset();
+    expect(completed()).toBe(0);
+  });
+
+  it("counts a turn that ends in an assistant reply", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([agentTextLine("Pará lost 1.2 Mha.")])
+    );
+    await useChatStore.getState().sendMessage("How much has Pará lost?");
+    expect(completed()).toBe(1);
+    // Signalled after the turn has fully settled.
+    expect(useChatStore.getState().isLoading).toBe(false);
+  });
+
+  it("counts a narrated answer (two assistant messages) once", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([
+        agentTextLine("Let me look that up."),
+        agentTextLine("Pará lost 1.2 Mha."),
+      ])
+    );
+    await useChatStore.getState().sendMessage("How much has Pará lost?");
+    expect(completed()).toBe(1);
+  });
+
+  it("counts each answered turn", async () => {
+    vi.mocked(apiFetch).mockImplementation(() =>
+      Promise.resolve(ndjsonResponse([agentTextLine("An answer.")]))
+    );
+    await useChatStore.getState().sendMessage("one");
+    await useChatStore.getState().sendMessage("two");
+    expect(completed()).toBe(2);
+  });
+
+  it("doesn't count a clarification (the turn ends in a nudge)", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([
+        toolNudgeLine("pick_aoi", aoiNudge),
+        agentTextLine("Which Puri did you mean?"),
+      ])
+    );
+    await useChatStore.getState().sendMessage("search for areas named puri");
+    expect(completed()).toBe(0);
+  });
+
+  it("doesn't count a turn with a server-side timeout error", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([
+        agentTextLine("Working on it."),
+        errorToolLine("timeout", "Request timed out."),
+      ])
+    );
+    await useChatStore.getState().sendMessage("hello");
+    expect(
+      useChatStore.getState().messages.some((m) => m.type === "error")
+    ).toBe(true);
+    expect(completed()).toBe(0);
+  });
+
+  it("counts an answer whose map display failed (a client-side tool error)", async () => {
+    // pick_aoi's geometry fetch fails, so the handler adds an error message,
+    // but the agent's answer is complete.
+    vi.mocked(apiFetch).mockImplementation((path) =>
+      Promise.resolve(
+        String(path).startsWith("/api/geometry/")
+          ? ({ ok: false, status: 404, statusText: "Not Found" } as Response)
+          : ndjsonResponse([
+              pickAoiLine({
+                name: "Pará, Brazil",
+                source: "gadm",
+                src_id: "BRA.14_1",
+                subtype: "state-province",
+              }),
+              agentTextLine("Pará lost 1.2 Mha."),
+            ])
+      )
+    );
+    await useChatStore.getState().sendMessage("How much has Pará lost?");
+    await vi.waitFor(() =>
+      expect(
+        useChatStore
+          .getState()
+          .messages.some(
+            (m) =>
+              m.type === "error" &&
+              m.message.startsWith("AOI tool executed but failed")
+          )
+      ).toBe(true)
+    );
+    expect(completed()).toBe(1);
+  });
+
+  it("doesn't count a turn the backend's error node interrupted", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([agentTextLine("Pará lost 1.2 Mha."), errorNodeLine()])
+    );
+    await useChatStore.getState().sendMessage("How much has Pará lost?");
+    expect(completed()).toBe(0);
+  });
+
+  it("doesn't count a turn with no assistant reply", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(ndjsonResponse([]));
+    await useChatStore.getState().sendMessage("hello");
+    expect(completed()).toBe(0);
+  });
+
+  it("doesn't count a turn the user stopped", async () => {
+    vi.mocked(apiFetch).mockImplementation((_path, init) =>
+      Promise.resolve(makeAbortableResponse(init!.signal as AbortSignal))
+    );
+    const promise = useChatStore.getState().sendMessage("hello");
+    useChatStore.getState().cancelRequest();
+    await promise;
+    expect(completed()).toBe(0);
+  });
+
+  it("doesn't count a rejected request (e.g. quota exhausted)", async () => {
+    vi.mocked(apiFetch).mockResolvedValue({
+      ok: false,
+      status: 429,
+    } as Response);
+    await useChatStore.getState().sendMessage("hello");
+    expect(completed()).toBe(0);
+  });
+
+  it("doesn't count a turn whose thread was reset mid-stream", async () => {
+    let finish: (value: Response) => void = () => {};
+    vi.mocked(apiFetch).mockReturnValue(
+      new Promise<Response>((resolve) => {
+        finish = resolve;
+      })
+    );
+    const promise = useChatStore.getState().sendMessage("hello");
+    useChatStore.getState().reset();
+    finish(ndjsonResponse([agentTextLine("An answer.")]));
+    await promise;
+    expect(completed()).toBe(0);
+  });
+
+  it("is never touched by fetchThread, however many answers the thread holds", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([
+        humanLine("How much has Pará lost?"),
+        agentTextLine("Pará lost 1.2 Mha."),
+        humanLine("And Amazonas?"),
+        agentTextLine("Amazonas lost 0.8 Mha."),
+      ])
+    );
+    await useChatStore.getState().fetchThread("thread-1");
+    expect(
+      useChatStore.getState().messages.filter((m) => m.type === "assistant")
+    ).toHaveLength(2);
+    expect(completed()).toBe(0);
+  });
+});
+
+describe("chatStore transient messages and the profile card", () => {
+  beforeEach(() => {
+    useChatStore.getState().reset();
+    vi.mocked(apiFetch).mockReset();
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const cards = () =>
+    useChatStore.getState().messages.filter((m) => m.type === "profile-prompt");
+
+  it("upsertProfileAsk appends one transient card that carries no data", () => {
+    useChatStore.getState().addMessage({ type: "assistant", message: "A" });
+    useChatStore.getState().upsertProfileAsk("profile-prompt");
+
+    const last = useChatStore.getState().messages.at(-1)!;
+    expect(last).toMatchObject({
+      type: "profile-prompt",
+      message: "",
+      transient: true,
+    });
+    expect(Object.keys(last).sort()).toEqual(
+      ["id", "message", "timestamp", "transient", "type"].sort()
+    );
+  });
+
+  it("keeps a single card: a new ask replaces the one still showing", () => {
+    useChatStore.getState().upsertProfileAsk("profile-prompt");
+    const first = cards()[0].id;
+    useChatStore.getState().addMessage({ type: "assistant", message: "A" });
+    useChatStore.getState().upsertProfileAsk("profile-prompt");
+
+    expect(cards()).toHaveLength(1);
+    expect(cards()[0].id).not.toBe(first);
+    expect(useChatStore.getState().messages.at(-1)?.type).toBe(
+      "profile-prompt"
+    );
+  });
+
+  it("keeps one profile ask: the banner and the card replace each other", () => {
+    const types = () =>
+      useChatStore
+        .getState()
+        .messages.filter((m) => m.transient)
+        .map((m) => m.type);
+    useChatStore.getState().addMessage({ type: "assistant", message: "A" });
+
+    useChatStore.getState().upsertProfileAsk("profile-nudge");
+    expect(types()).toEqual(["profile-nudge"]);
+    expect(useChatStore.getState().messages.at(-1)).toMatchObject({
+      type: "profile-nudge",
+      message: "",
+      transient: true,
+    });
+
+    useChatStore.getState().upsertProfileAsk("profile-prompt");
+    expect(types()).toEqual(["profile-prompt"]);
+
+    useChatStore.getState().upsertProfileAsk("profile-nudge");
+    expect(types()).toEqual(["profile-nudge"]);
+  });
+
+  it("removes one message by id and leaves the rest", () => {
+    useChatStore.getState().addMessage({ type: "assistant", message: "A" });
+    useChatStore.getState().upsertProfileAsk("profile-prompt");
+    const before = useChatStore.getState().messages;
+    const cardId = before.at(-1)!.id;
+
+    useChatStore.getState().removeMessage(cardId);
+
+    const after = useChatStore.getState().messages;
+    expect(after).toHaveLength(before.length - 1);
+    expect(after.some((m) => m.id === cardId)).toBe(false);
+    expect(after.at(-1)?.message).toBe("A");
+  });
+
+  it("drops transient messages, the unanswered card among them, when the next question is sent", async () => {
+    useChatStore.getState().addMessage({ type: "assistant", message: "A" });
+    useChatStore.getState().upsertProfileAsk("profile-prompt");
+    useChatStore
+      .getState()
+      .addMessage({ type: "warning", message: "W", transient: true });
+    vi.mocked(apiFetch).mockResolvedValue(ndjsonResponse([agentTextLine("B")]));
+
+    await useChatStore.getState().sendMessage("next question");
+
+    const messages = useChatStore.getState().messages;
+    expect(messages.some((m) => m.transient)).toBe(false);
+    expect(messages.map((m) => m.message)).toEqual(
+      expect.arrayContaining(["A", "next question", "B"])
+    );
   });
 });

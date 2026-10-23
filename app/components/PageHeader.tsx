@@ -34,6 +34,10 @@ import { usePathname } from "@/src/shared/lib/router";
 import { useLogout } from "@/app/hooks/useLogout";
 import { openWhatsNew, useWhatsNewUnread } from "@/app/hooks/useWhatsNew";
 import { mapTabHref } from "@/app/utils/threadNavigation";
+import {
+  ProfileReminderDot,
+  ProfileReminderMenuItem,
+} from "@/src/features/front-door";
 
 const isPrototype = import.meta.env.NEXT_PUBLIC_PROTOTYPE_MODE === "true";
 const DISCLAIMER_STORAGE_KEY = "gnw_disclaimer_dismissed_v2";
@@ -290,7 +294,7 @@ function PageHeader() {
                 w="12px"
                 h="12px"
                 borderRadius="full"
-                bg="#2495E0"
+                bg="notification"
                 border="2px solid white"
               />
             </IconButton>
@@ -317,9 +321,15 @@ function PageHeader() {
                   color="#394048"
                   _hover={{ bg: "#E0E2E5" }}
                   _focusVisible={focusRing}
-                  aria-label={`Account menu (${userEmail || "signed in"})`}
+                  // No email in the label: GTM click triggers read aria-label,
+                  // and personal data must not reach GA4. The tooltip shows it.
+                  aria-label="Account menu"
                 >
                   <UserIcon size={16} />
+                  {/* Front door: renders only while the profile is incomplete. */}
+                  <Box position="absolute" top="0" right="0" display="flex">
+                    <ProfileReminderDot />
+                  </Box>
                 </IconButton>
               </Menu.Trigger>
             </Tooltip>
@@ -329,12 +339,16 @@ function PageHeader() {
                   minW="220px"
                   css={{ "& a": { cursor: "pointer" } }}
                 >
-                  <Menu.Item value="dashboard" asChild>
-                    <Link href="/dashboard">
-                      <GearSixIcon />
-                      Settings
-                    </Link>
-                  </Menu.Item>
+                  <ProfileReminderMenuItem
+                    fallback={
+                      <Menu.Item value="dashboard" asChild>
+                        <Link href="/dashboard">
+                          <GearSixIcon />
+                          User Profile
+                        </Link>
+                      </Menu.Item>
+                    }
+                  />
                   <Menu.Separator />
                   <Menu.Item
                     value="logout"

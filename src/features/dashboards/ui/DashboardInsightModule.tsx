@@ -87,10 +87,8 @@ export default function DashboardInsightModule({
   const vm = insightModule(widget, { areaName: areaAoi?.name });
   const showSummary = vm.summaryShown && vm.summaryText.length > 0;
   const allChartIds = vm.allCharts.map((c) => c.id);
-  // The widget's charts are one analysis by construction, and they carry
-  // backend UUIDs rather than the `{insightId}-chart-{n}` ids the workspace
-  // groups by — so the roll-ups are found within this module and keyed on the
-  // widget (see `netFluxRollups`).
+  // The widget's charts are one analysis by construction, so the roll-ups are
+  // found within this module and keyed on the widget (see `netFluxRollups`).
   const rollups = useMemo(() => netFluxRollups(vm.cards), [vm.cards]);
   const { selected } = useNetFluxDetail(widget.id, rollups);
   const cards = useMemo(

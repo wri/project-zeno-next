@@ -1,9 +1,18 @@
 export const dashboardKeys = {
   all: ["dashboards"] as const,
   detail: (id: string) => ["dashboards", id] as const,
-  aois: (query: string, source: string | null) =>
-    ["dashboard-aois", query, source] as const,
   analysisTemplates: ["analysis-templates"] as const,
+  // Prefix of every alerts summary below. Not under `all`: renames and moves
+  // would otherwise re-run an analytics-backed request that they cannot
+  // change. Writes that can add or remove a chart invalidate it instead
+  // (`invalidateAlertsSummaries`).
+  alertsSummaries: ["dashboard-alerts-summary"] as const,
+  // `ids` sorted by the caller, so one set of dashboards shares one entry.
+  alertsSummary: (ids: readonly string[]) =>
+    ["dashboard-alerts-summary", ids] as const,
+  // The dataset's own dates, the same for every user and dashboard, so no
+  // dashboard write invalidates them.
+  alertsFreshness: ["integrated-alerts-freshness"] as const,
   // A mutation key, not a query key: lets any mounted card see a template
   // request that is still in flight for this dashboard.
   applyTemplate: (dashboardId: string) =>

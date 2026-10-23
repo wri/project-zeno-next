@@ -300,7 +300,7 @@ function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
         mt="2"
         pt="2"
       >
-        {/* Offline mirror: real form with mock config, no API/auth. */}
+        {/* Offline gallery of the front door's components, no API/auth. */}
         <Link
           as={NextLink}
           href="/onboarding-debug"
@@ -312,7 +312,7 @@ function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
           gap="1"
         >
           <UserPlusIcon size={10} />
-          Go to Onboarding debugger →
+          User onboarding and profile →
         </Link>
         <Link
           as={NextLink}

@@ -4,9 +4,11 @@ import {
   aoiSearchResultToDashboardAoi,
   customAreaToDashboardAoi,
   isValidDashboardAreaSelection,
+} from "../dashboard-area";
+import {
   REFERENCE_AOI_SOURCES,
   REFERENCE_AOI_SOURCE_LABELS,
-} from "../dashboard-area";
+} from "@/src/entities/aoi";
 
 describe("dashboard-area mappers", () => {
   it("maps each reference source to a valid dashboard AOI payload", () => {

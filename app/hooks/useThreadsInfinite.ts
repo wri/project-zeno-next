@@ -65,7 +65,7 @@ async function fetchThreadsPage(cursor?: string): Promise<ThreadsPage> {
   return { threads, nextCursor };
 }
 
-export function useThreadsInfinite() {
+export function useThreadsInfinite({ enabled = true } = {}) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   const query = useInfiniteQuery<ThreadsPage>({
@@ -73,7 +73,7 @@ export function useThreadsInfinite() {
     queryFn: ({ pageParam }) => fetchThreadsPage(pageParam as string),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && enabled,
   });
 
   const threads = useMemo(

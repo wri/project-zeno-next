@@ -272,7 +272,9 @@ export const createDrawAreaSlice: StateCreator<
       result = await createAreaFn(requestData);
     }
 
-    get().endDrawing();
+    // Only end the session this save belongs to: a Redraw or Cancel while the
+    // request was in flight has already moved on.
+    if (get().pendingDrawnArea === pending) get().endDrawing();
     return result;
   },
 

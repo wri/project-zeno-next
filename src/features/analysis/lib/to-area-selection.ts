@@ -1,5 +1,5 @@
-import { getAoiName, getSrcId, getSubtype } from "@/app/utils/areaHelpers";
-import { LayerId, selectLayerOptions } from "@/app/types/map";
+import { getFeatureName, getSrcId, getSubtype } from "@/app/utils/areaHelpers";
+import { LayerId } from "@/app/types/map";
 import type { AreaSelection } from "../model/area-selection";
 
 /** Metadata the backend supplies for resolving ids/subtypes per layer. */
@@ -19,11 +19,8 @@ export function toAreaSelection(
   properties: Record<string, unknown>,
   metadata: SelectionMetadata
 ): AreaSelection {
-  const config = selectLayerOptions.find((option) => option.id === layerId);
-  const nameKeys = config?.nameKeys ?? [];
-
   return {
-    name: getAoiName(nameKeys, properties as Record<string, string>),
+    name: getFeatureName(layerId, properties),
     source: layerId.toLowerCase(),
     srcId: getSrcId(layerId, properties, metadata),
     subtype: getSubtype(layerId, properties, metadata),

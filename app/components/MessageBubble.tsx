@@ -37,6 +37,10 @@ import ChatNudge from "./ChatNudge";
 import AnalyseNudge from "./AnalyseNudge";
 import { ViewAnalysisNudge } from "@/src/features/analysis";
 import { CreateDashboardNudge } from "@/src/features/dashboards";
+import {
+  ProfileNudgeMessage,
+  ProfilePromptMessage,
+} from "@/src/features/front-door";
 import BlogCitation from "./BlogCitation";
 import BlogCitationsList from "./BlogCitationsList";
 import {
@@ -310,6 +314,24 @@ function MessageBubble({
     return (
       <Box mt={2} mb={2}>
         <CreateDashboardNudge suggestion={message.createDashboardSuggestion} />
+      </Box>
+    );
+  }
+
+  // Front door: the in-chat profile card and the later banner leading to it
+  // (client-only, never replayed).
+  if (message.type === "profile-prompt") {
+    return (
+      <Box my={2}>
+        <ProfilePromptMessage messageId={message.id} />
+      </Box>
+    );
+  }
+
+  if (message.type === "profile-nudge") {
+    return (
+      <Box my={2}>
+        <ProfileNudgeMessage messageId={message.id} />
       </Box>
     );
   }

@@ -225,6 +225,26 @@ describe("showViewAnalysisNudge", () => {
     });
   });
 
+  it("re-offers for a different parcel that shares the previous one's name", () => {
+    seedLayer(TCL_ID, "Tree cover loss");
+    const parcel = (srcId: string): AreaSelection => ({
+      name: "Mining concession, IDN",
+      source: "mining",
+      srcId,
+    });
+    showViewAnalysisNudge(parcel("101"));
+    const firstId = viewNudges()[0].id;
+
+    showViewAnalysisNudge(parcel("102"));
+
+    // Accepting runs the suggestion's stored area, so keeping the first
+    // nudge would analyse parcel 101 while 102 is selected.
+    const nudges = viewNudges();
+    expect(nudges).toHaveLength(1);
+    expect(nudges[0].id).not.toBe(firstId);
+    expect(nudges[0].viewAnalysisSuggestion?.area.srcId).toBe("102");
+  });
+
   it("nudges for a protected area when its dataset covers that source", () => {
     seedLayer(TCL_ID, "Tree cover loss");
 

@@ -22,6 +22,8 @@ const selection: AnalysisSelection = {
 
 // Tree cover loss in the dataset catalogue (DATASET_BY_ID)
 const TCL_ID = 4;
+// Tree cover — upstream takes its areas by id, so never a custom area.
+const TREE_COVER_ID = 7;
 // Intact Forest Landscapes — contextual, view-only, never analysable.
 const IFL_ID = 101;
 
@@ -150,6 +152,58 @@ describe("showAnalysisCta", () => {
     const nudges = analyseNudges();
     expect(nudges).toHaveLength(2);
     expect(nudges[1].analyseSuggestion?.accepted).toBeUndefined();
+  });
+
+  it("does not nudge for an area whose source the dataset's analysis doesn't cover", () => {
+    seedLayers([
+      datasetLayer({
+        id: `dataset-${TREE_COVER_ID}`,
+        name: "Tree cover",
+        datasetId: TREE_COVER_ID,
+      }),
+    ]);
+    const drawn: AnalysisSelection = {
+      name: "My drawn area",
+      source: "custom",
+      srcId: "3f2b",
+      subtype: "custom-area",
+    };
+
+    expect(showAnalysisCta(drawn)).toBe(false);
+    expect(analyseNudges()).toHaveLength(0);
+    // ...while an administrative area still gets it.
+    expect(showAnalysisCta(selection)).toBe(true);
+  });
+
+  it("withdraws the pending nudge when the next area's source isn't covered, keeping accepted ones", () => {
+    // Accepting a nudge sends its prompt with the *current* map context, so a
+    // nudge left over from a GADM area would ask for tree cover on the
+    // concession the user has since clicked, which the backend refuses.
+    seedLayers([
+      datasetLayer({
+        id: `dataset-${TREE_COVER_ID}`,
+        name: "Tree cover",
+        datasetId: TREE_COVER_ID,
+      }),
+    ]);
+    showAnalysisCta({ name: "Acre, Brazil", source: "gadm" });
+    useChatStore.getState().acceptAnalyseNudge(analyseNudges()[0].id);
+    showAnalysisCta(selection);
+    expect(analyseNudges()).toHaveLength(2);
+
+    const concession: AnalysisSelection = {
+      name: "Mining concession, IDN",
+      source: "mining",
+      srcId: "101",
+    };
+    expect(showAnalysisCta(concession)).toBe(false);
+
+    const nudges = analyseNudges();
+    expect(nudges).toHaveLength(1);
+    expect(nudges[0].analyseSuggestion).toMatchObject({
+      areaName: "Acre, Brazil",
+      accepted: true,
+    });
   });
 
   it("does nothing when no dataset is active (analysis stays gated)", () => {
