@@ -10,14 +10,14 @@ import {
   Text,
 } from "@chakra-ui/react";
 import { XIcon } from "@phosphor-icons/react";
-import { DatasetInfo } from "@/app/types/chat";
+import type { DatasetDetails } from "@/app/types/chat";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkBreaks from "remark-breaks";
 
 interface DatasetInfoModalProps {
   isOpen: boolean;
   onClose: () => void;
-  dataset: DatasetInfo;
+  dataset: DatasetDetails;
 }
 
 /**

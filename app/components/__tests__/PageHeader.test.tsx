@@ -82,9 +82,7 @@ describe("PageHeader", () => {
     expect(screen.getByText("PREVIEW")).toBeTruthy();
     expect(screen.getByRole("link", { name: "Map" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Dashboards" })).toBeTruthy();
-    expect(
-      screen.getByRole("button", { name: /account menu.*user@example.com/i })
-    ).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Account menu" })).toBeTruthy();
   });
 
   it.each([
@@ -137,6 +135,13 @@ describe("PageHeader account menu", () => {
 
     const tooltip = await screen.findByRole("tooltip");
     expect(tooltip.textContent).toBe("user@example.com");
+  });
+
+  it("keeps the user's email out of the avatar's accessible name", () => {
+    // GTM click triggers read aria-label; personal data must not reach GA4.
+    renderHeader("/app");
+
+    expect(avatar().getAttribute("aria-label")).toBe("Account menu");
   });
 
   it("lists only User Profile and Logout, without repeating the email", async () => {
@@ -245,7 +250,7 @@ describe("PageHeader prompt meter", () => {
 
     const meter = screen.getByTestId("prompt-quota-meter");
     const whatsNew = screen.getByRole("button", { name: /what's new/i });
-    const avatar = screen.getByRole("button", { name: /user@example.com/ });
+    const avatar = screen.getByRole("button", { name: "Account menu" });
 
     // Unread updates: the What's new dot is showing.
     expect(screen.getByTestId("whats-new-header-dot")).toBeTruthy();
@@ -267,7 +272,7 @@ describe("PageHeader profile reminder (front door)", () => {
   /** Opens the account menu; resolves with its items' labels. */
   async function openAccountMenu() {
     await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: /user@example.com/ }));
+      fireEvent.click(screen.getByRole("button", { name: "Account menu" }));
     });
     const items = await screen.findAllByRole("menuitem");
     return items.map((el) => el.textContent?.trim());

@@ -4,6 +4,8 @@ import type { InsightWidget } from "@/app/types/chat";
 
 const w = (id: string): InsightWidget => ({
   id,
+  // A `chartId`-shaped id belongs to a persisted insight; anything else doesn't.
+  insightId: /^(.+)-chart-\d+$/.exec(id)?.[1],
   type: "bar",
   title: id,
   description: "",
@@ -39,7 +41,7 @@ describe("orderInsightsForPager", () => {
     ]);
   });
 
-  it("treats widgets without the chart-id shape as their own batch", () => {
+  it("treats widgets of no persisted insight as their own batch", () => {
     // Unchanged newest-first behaviour for dataset cards and rehydrated history.
     const out = orderInsightsForPager([w("legacy-a"), w("legacy-b")]);
     expect(out.map((x) => x.id)).toEqual(["legacy-b", "legacy-a"]);

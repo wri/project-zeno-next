@@ -2,16 +2,6 @@ import { z } from "zod";
 
 import { DatasetDivergentColorsSchema } from "@/app/schemas/api/datasets/get";
 
-export const AoiSearchResultSchema = z.object({
-  source: z.string(),
-  src_id: z.string(),
-  name: z.string(),
-  subtype: z.string(),
-  bbox: z.array(z.number()).optional(),
-});
-
-export const AoiSearchResponseSchema = z.array(AoiSearchResultSchema);
-
 export const DashboardAoiSchema = z.object({
   source: z.string(),
   src_id: z.string(),
@@ -142,7 +132,31 @@ export const DashboardCreateRequestSchema = z.object({
   aois: z.array(DashboardAoiSchema).min(1).max(1),
 });
 
-export type AoiSearchResult = z.infer<typeof AoiSearchResultSchema>;
+// POST /api/dashboards/alerts-summary. One entry per dashboard the backend
+// could assess (an integrated alerts chart and a GADM area). The wire keeps
+// the BE's `null` for "could not be fetched" (with the reason in `errors`);
+// `lib/alerts-summary` settles it into an explicit state.
+export const DashboardAlertsResponseSchema = z.object({
+  // Alert area in hectares over the period.
+  integrated_alerts: z.number().nullable(),
+  errors: z.record(z.string(), z.string()).default({}),
+});
+
+export const DashboardAlertsSummaryResponseSchema = z.object({
+  // Inclusive ISO dates of the period counted: by default the 7 days ending
+  // on the latest alert date, or the latest full Sunday-to-Saturday week when
+  // that date is unavailable.
+  start_date: z.string(),
+  end_date: z.string(),
+  dashboards: z.record(z.string(), DashboardAlertsResponseSchema),
+});
+
+// GET /v0/land_change/integrated_alerts/latest on the analytics API, not the
+// GNW backend; `lib/alerts-summary` reads the release date from `version`.
+export const IntegratedAlertsLatestResponseSchema = z.object({
+  data: z.object({ alert_date: z.iso.date(), version: z.string() }),
+});
+
 export type DashboardAoi = z.infer<typeof DashboardAoiSchema>;
 export type Dashboard = z.infer<typeof DashboardResponseSchema>;
 export type DashboardWidget = z.infer<typeof DashboardWidgetResponseSchema>;
@@ -157,4 +171,10 @@ export type SectionFromTemplateResponse = z.infer<
 export type DashboardInsight = z.infer<typeof DashboardInsightSchema>;
 export type DashboardCreateRequest = z.infer<
   typeof DashboardCreateRequestSchema
+>;
+export type DashboardAlertsSummaryResponse = z.infer<
+  typeof DashboardAlertsSummaryResponseSchema
+>;
+export type IntegratedAlertsLatestResponse = z.infer<
+  typeof IntegratedAlertsLatestResponseSchema
 >;

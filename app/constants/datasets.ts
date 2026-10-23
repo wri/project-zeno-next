@@ -28,32 +28,33 @@ export type DatasetLegendConfig = {
 
 /**
  * Thematic groupings used to filter the Data Catalog panel.
- * `all` and `in-conversation` are virtual (not assigned per card).
+ * `all` is virtual (not assigned per card). Datasets on the map are pinned in
+ * the panel's own "On map" section rather than a category.
  */
 export type DatasetCategoryId =
   | "all"
-  | "in-conversation"
   | "land-use"
   | "disturbance"
   | "wildfires"
   | "ghg-fluxes"
   | "forests";
 
-export const DATASET_CATEGORIES: { id: DatasetCategoryId; label: string }[] = [
-  { id: "all", label: "All datasets" },
-  { id: "in-conversation", label: "In this conversation" },
-  { id: "forests", label: "Forests" },
-  { id: "land-use", label: "Land use" },
-  { id: "disturbance", label: "Disturbance" },
-  { id: "wildfires", label: "Wildfires" },
-  { id: "ghg-fluxes", label: "GHG fluxes" },
-];
+/** Chip labels, in display order. Exhaustive, so a label lookup is total. */
+export const DATASET_CATEGORY_LABELS: Record<DatasetCategoryId, string> = {
+  all: "All datasets",
+  forests: "Forests",
+  "land-use": "Land use",
+  disturbance: "Disturbance",
+  wildfires: "Wildfires",
+  "ghg-fluxes": "GHG fluxes",
+};
+
+export const DATASET_CATEGORIES = (
+  Object.keys(DATASET_CATEGORY_LABELS) as DatasetCategoryId[]
+).map((id) => ({ id, label: DATASET_CATEGORY_LABELS[id] }));
 
 /** Categories assigned to dataset cards (excludes virtual ones above). */
-export type AssignableDatasetCategoryId = Exclude<
-  DatasetCategoryId,
-  "all" | "in-conversation"
->;
+export type AssignableDatasetCategoryId = Exclude<DatasetCategoryId, "all">;
 
 /**
  * One of a dataset card's primary data layers — only one is on the map at a
@@ -348,6 +349,9 @@ export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
  */
 export const NET_FLUX_FEATURE_FLAG = "net-flux";
 
+/** The Tree cover loss card, the map's default dataset. */
+export const TREE_COVER_LOSS_DATASET_ID = 4;
+
 /** Same URL the backend hands back as the `primary_forest` context layer. */
 const PRIMARY_FOREST_TILE_URL =
   "https://tiles.globalforestwatch.org/umd_regional_primary_forest_2001/v201901/uint16/{z}/{x}/{y}.png";
@@ -478,7 +482,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     tile_url:
       "https://tiles.globalforestwatch.org/gfw_integrated_dist_alerts/latest/dynamic/{z}/{x}/{y}.png?render_type=true_color",
     legend: {
-      title: "Integrated Deforestation Alerts",
+      title: "Integrated Disturbance Alerts",
       color: "#C92A6D",
       items: [
         { label: "Low confidence", color: "#EDA4C2" },
@@ -610,7 +614,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     legend: CONTEXT_LAYER_METADATA.primary_forest.legend,
   },
   {
-    dataset_id: 4,
+    dataset_id: TREE_COVER_LOSS_DATASET_ID,
     dataset_name: "Tree cover loss",
     data_layer: "Tree cover loss",
     context_layer: null,

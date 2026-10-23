@@ -1,10 +1,9 @@
-import useMapStore from "@/app/store/mapStore";
 import type { LayerId } from "@/app/types/map";
 import {
   toAreaSelection,
   type SelectionMetadata,
 } from "@/app/utils/areaHelpers";
-import { useSelectionStore } from "@/src/features/analysis";
+import { publishAnalysisSelection } from "@/app/utils/referenceArea";
 
 export interface PublishAreaSelectionInput {
   layerId: LayerId;
@@ -27,16 +26,7 @@ export function publishAreaSelection({
   featureProps,
   metadata,
 }: PublishAreaSelectionInput): void {
-  const selection = metadata
-    ? toAreaSelection(layerId, featureProps ?? {}, metadata)
-    : null;
-
-  if (!selection?.srcId) {
-    useMapStore.getState().clearAnalysis();
-    useSelectionStore.getState().clear();
-    return;
-  }
-
-  useMapStore.getState().setAnalysis(selection);
-  useSelectionStore.getState().select(selection);
+  publishAnalysisSelection(
+    metadata ? toAreaSelection(layerId, featureProps ?? {}, metadata) : null
+  );
 }

@@ -27,6 +27,8 @@ import useMapStore from "../mapStore";
 import { findRegistryEntry } from "../layerManagerSlice";
 import useInsightStore from "../insightStore";
 import { apiFetch } from "@/app/lib/api-client";
+import { queryClient } from "@/app/lib/query-client";
+import { dashboardKeys } from "@/src/features/dashboards/ui/dashboardQueries";
 import { agentTextLine, humanLine, ndjsonResponse } from "./stream-fixtures";
 import { deriveContext } from "@/app/utils/messageContext";
 import type {
@@ -186,7 +188,7 @@ describe("chatStore view_context", () => {
     expect(sentBody()).not.toHaveProperty("view_context");
   });
 
-  it("enriches the map surface with live viewport + visible insights", async () => {
+  it("enriches the map surface with live viewport + visible and focused insights", async () => {
     useViewContextStore.getState().setViewContext({ page: "map" });
     useInsightStore.getState().addInsights([
       {
@@ -196,9 +198,12 @@ describe("chatStore view_context", () => {
         data: [],
         xAxis: "x",
         yAxis: "y",
+        id: "i1-chart-0",
         insightId: "i1",
+        chartPosition: 0,
       },
     ]);
+    useInsightStore.getState().setFocusedWidgetId("i1-chart-0");
     useMapStore.setState({
       mapRef: {
         getMap: () => ({
@@ -219,6 +224,7 @@ describe("chatStore view_context", () => {
       page: "map",
       viewport: { bbox: [-73.9876, 40.7661, -73.9397, 40.8002], zoom: 5 },
       visible_insights: ["i1"],
+      focused_insight: { id: "i1", chart_position: 0 },
     });
   });
 });
@@ -774,6 +780,21 @@ describe("dashboard_updated stream signal → dashboard-card message", () => {
       dashboardId: "dash-1",
       dashboardName: "Paraná",
     });
+  });
+
+  it("marks cached alerts summaries stale: the write may have added a chart", async () => {
+    const summaryKey = dashboardKeys.alertsSummary(["dash-1"]);
+    queryClient.setQueryData(summaryKey, {});
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([
+        dashboardWriteLine("dash-1", "Paraná", "add_to_dashboard"),
+      ])
+    );
+
+    await useChatStore.getState().sendMessage("add it to my dashboard");
+
+    expect(queryClient.getQueryState(summaryKey)?.isInvalidated).toBe(true);
+    queryClient.removeQueries({ queryKey: summaryKey });
   });
 
   it("announces a create with an assistant message ahead of the card", async () => {

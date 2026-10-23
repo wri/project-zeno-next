@@ -5,6 +5,7 @@ import type { AnalysisService } from "../../model/analysis-service";
 import type { AnalysisSelection } from "../../model/analysis-selection";
 import type { InsightSink } from "../../model/insight-sink";
 import { useAnalysis } from "../use-analysis";
+import useChatStore from "@/app/store/chatStore";
 import { resolveAnalysisWindow } from "../../lib/default-analysis-window";
 
 const selection: AnalysisSelection = {
@@ -39,6 +40,28 @@ describe("useAnalysis", () => {
       selection,
       expect.any(AbortSignal)
     );
+  });
+
+  it("runs in the open conversation, so the insight is filed under it", async () => {
+    useChatStore.setState({ currentThreadId: "thread-1" });
+    try {
+      const service: AnalysisService = {
+        run: vi.fn().mockResolvedValue({ id: "analysis-1", charts: [] }),
+      };
+      const { result } = renderHook(() => useAnalysis(service));
+
+      act(() => {
+        result.current.run(selection);
+      });
+
+      await waitFor(() => expect(result.current.status).toBe("done"));
+      expect(service.run).toHaveBeenCalledWith(
+        { ...selection, threadId: "thread-1" },
+        expect.any(AbortSignal)
+      );
+    } finally {
+      useChatStore.setState({ currentThreadId: null });
+    }
   });
 
   it("surfaces an error when the analysis fails", async () => {

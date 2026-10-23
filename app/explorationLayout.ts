@@ -10,8 +10,6 @@ export const CATALOG_CARD_HEIGHT_PX = 115;
 export const EXPLORATION_PANEL_GAP_PX = 8;
 /** Catalog / areas slide-out column — shared with `app/app/(chat)/layout.tsx`. */
 export const CATALOG_COLUMN_Z_INDEX = 1095;
-/** Map feedback (selection mode, area validation) — above catalog column, below chat. */
-export const MAP_FEEDBACK_Z_INDEX = 1096;
 
 /**
  * Left offset of the catalog column (data catalog OR areas panel — they share
@@ -89,23 +87,6 @@ export function getDashboardContentLeftPx(isChatFullSize: boolean): number {
     COMPACT_CHAT_PANEL_WIDTH_PX +
     EXPLORATION_PANEL_GAP_PX
   );
-}
-
-/** Left offset for map feedback toasts (selection mode, draw validation). */
-export function getMapFeedbackLeftPx(
-  isChatFullSize: boolean,
-  isCatalogColumnOpen: boolean
-): number {
-  if (isCatalogColumnOpen) {
-    return (
-      getCatalogLeftPx(isChatFullSize) +
-      CATALOG_PANEL_WIDTH_PX +
-      EXPLORATION_PANEL_GAP_PX
-    );
-  }
-  return isChatFullSize
-    ? getMapControlsLeftPx(true, false)
-    : COMPACT_CHAT_INSET_PX;
 }
 
 /**

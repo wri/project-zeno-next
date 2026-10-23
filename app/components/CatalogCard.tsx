@@ -7,13 +7,14 @@ import {
   CATALOG_CARD_WIDTH_PX,
 } from "@/app/explorationLayout";
 
+import { toggleAriaLabel as mapToggleAriaLabel } from "@/src/shared/ui/entity-card";
+
 import { Tooltip } from "./ui/tooltip";
-import { ViewOnlyBadge } from "./ViewOnlyBadge";
 
 export interface CatalogCardProps {
   thumbnail: ReactNode;
-  typeLabel?: string;
-  typeLabelColor?: string;
+  typeLabel: string;
+  typeLabelColor: string;
   title: string;
   description?: string;
   selected?: boolean;
@@ -31,11 +32,11 @@ export interface CatalogCardProps {
   dataPanel?: string;
   /** Optional info button click handler. When omitted, the info button is hidden. */
   onInfoClick?: () => void;
-  /** Optional info button tooltip / aria text. Defaults to "Show dataset info". */
+  /** Info button tooltip / aria text. */
   infoTooltip?: string;
   /**
    * Optional action node rendered in the top-right of the card header (same row
-   * as the type label). Used by the Areas panel to show locate/menu actions.
+   * as the type label).
    */
   titleActions?: ReactNode;
   /**
@@ -43,22 +44,18 @@ export interface CatalogCardProps {
    * insight cards). Sits left of `titleActions`.
    */
   badge?: ReactNode;
-  /**
-   * Contextual-only dataset (no analytics endpoint): shows a right-aligned
-   * VIEW ONLY badge, tinted to match `selectedBg` when selected.
-   */
-  viewOnly?: boolean;
 }
 
 /**
  * Generic catalog card primitive — taller than the shared `InfoCard`, with
- * metadata stacked above a divider and a labelled show-on-map toggle. Used by
- * both `CatalogPanel` (datasets) and `AreasPanel` (AOIs).
+ * metadata stacked above a divider and a labelled show-on-map toggle. Only the
+ * Analyses panel and the curated list still use it; they move to `EntityCard`
+ * next.
  */
 export function CatalogCard({
   thumbnail,
-  typeLabel = "DATA",
-  typeLabelColor = "#1AA915",
+  typeLabel,
+  typeLabelColor,
   title,
   description,
   selected = false,
@@ -70,19 +67,17 @@ export function CatalogCard({
   toggleDisabled = false,
   dataPanel,
   onInfoClick,
-  infoTooltip = "Show dataset info",
+  infoTooltip,
   titleActions,
   badge,
-  viewOnly = false,
 }: CatalogCardProps) {
-  const tinted = selected && !!selectedBg;
   return (
     <Flex
       w={`${CATALOG_CARD_WIDTH_PX}px`}
       maxW="100%"
       h={`${CATALOG_CARD_HEIGHT_PX}px`}
       flexShrink={0}
-      bg={tinted ? selectedBg : "#FFFFFF"}
+      bg={selected && selectedBg ? selectedBg : "#FFFFFF"}
       border={selected ? "2px solid" : "1px solid"}
       borderColor={selected ? "primary.solid" : "rgba(19, 22, 25, 0.3)"}
       borderRadius="4px"
@@ -118,7 +113,6 @@ export function CatalogCard({
               </Text>
               {badge}
               <Box flex="1" minW={0} />
-              {viewOnly && <ViewOnlyBadge selected={tinted} />}
               {titleActions}
             </Flex>
           )}
@@ -192,8 +186,7 @@ export function CatalogCard({
             colorPalette="primary"
             flexShrink={0}
             aria-label={
-              toggleAriaLabel ??
-              (showOnMap ? `Hide ${title} from map` : `Show ${title} on map`)
+              toggleAriaLabel ?? mapToggleAriaLabel("map", title, showOnMap)
             }
             data-panel={dataPanel}
           >

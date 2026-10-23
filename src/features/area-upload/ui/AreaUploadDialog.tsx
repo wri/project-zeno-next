@@ -57,6 +57,9 @@ export function AreaUploadDialog({
       onOpenChange={(e) => requestOpenChange(e.open)}
     >
       <Portal>
+        {/* Dims the exploration panels, so the dialog doesn't read as part
+            of the column it opens beside. Matches the composer's picker. */}
+        <Dialog.Backdrop backdropFilter="blur(2px)" />
         <Dialog.Positioner>
           <Dialog.Content>
             <Dialog.Header>

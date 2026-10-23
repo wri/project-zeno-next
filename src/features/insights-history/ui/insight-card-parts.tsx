@@ -63,9 +63,9 @@ export function VerificationBadge({
  * An LGMS analysis arrives as four charts, three of which are the same time
  * series at different roll-ups. They fold into one entry chosen by the DETAIL
  * pill, so the pane pages through two charts and not four — the same reading
- * the map workspace gives. The pane's charts carry backend UUIDs rather than
- * the `{insightId}-chart-{n}` ids, so the roll-ups are found within this one
- * analysis and keyed on its id (see `netFluxRollups`).
+ * the map workspace gives. The pane already holds this one analysis's charts,
+ * so the roll-ups are found among them and keyed on its id (see
+ * `netFluxRollups`).
  */
 export function InsightGroupDetail({
   group,
