@@ -91,7 +91,7 @@ export default function DashboardInsightModule({
   // Hiding a chart can strand the pager past the end — clamp on the way out
   // rather than in an effect, so the card never paints an empty frame first.
   const index = Math.min(page, Math.max(total - 1, 0));
-  const card = cards[index] ?? null;
+  const card = cards[index];
   const chartId = card?.id;
 
   const placeholder =
@@ -99,7 +99,7 @@ export default function DashboardInsightModule({
       ? "This analysis is not available."
       : total === 0 && !showSummary && isOwner
         ? "All content in this analysis is hidden — use Customize to show it."
-        : null;
+        : undefined;
 
   return (
     <>
