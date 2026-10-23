@@ -167,7 +167,18 @@ export default function DashboardMapWidget({
     return () => observer.disconnect();
   }, []);
 
-  return (
+  const legend = (
+    <DashboardMapLegend
+      layer={layer}
+      opacity={opacity}
+      onOpacityChange={(target, value) =>
+        setOpacity((prev) => ({ ...prev, [target]: value }))
+      }
+      print={print}
+    />
+  );
+
+  const map = (
     <Box
       ref={containerRef}
       {...{ [PRINT_READY_ATTR]: print ? String(drawn) : undefined }}
@@ -308,24 +319,32 @@ export default function DashboardMapWidget({
           </Marker>
         )}
         {/* Non-map children render as DOM overlays inside the map container
-            (same pattern as the explorer's Map.tsx). */}
-        <Box
-          position="absolute"
-          bottom="8px"
-          right="8px"
-          zIndex={1}
-          w="300px"
-          maxW="calc(100% - 16px)"
-        >
-          <DashboardMapLegend
-            layer={layer}
-            opacity={opacity}
-            onOpacityChange={(target, value) =>
-              setOpacity((prev) => ({ ...prev, [target]: value }))
-            }
-          />
-        </Box>
+            (same pattern as the explorer's Map.tsx). On paper the legend
+            goes below the map instead, where it is not clipped. */}
+        {!print && (
+          <Box
+            position="absolute"
+            bottom="8px"
+            right="8px"
+            zIndex={1}
+            w="300px"
+            maxW="calc(100% - 16px)"
+          >
+            {legend}
+          </Box>
+        )}
       </MapGl>
     </Box>
+  );
+
+  return print ? (
+    <>
+      {map}
+      <Box pt="8px" w="300px" maxW="100%">
+        {legend}
+      </Box>
+    </>
+  ) : (
+    map
   );
 }

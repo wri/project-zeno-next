@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, render } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { useEffect, useImperativeHandle } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -46,7 +46,7 @@ vi.mock("react-map-gl/maplibre", () => {
       fitBounds: vi.fn(),
     }));
     useEffect(() => onLoad?.(), []); // eslint-disable-line react-hooks/exhaustive-deps
-    return <div>{children}</div>;
+    return <div data-testid="maplibre">{children}</div>;
   };
   return {
     __esModule: true,
@@ -75,11 +75,16 @@ const layer = {
 const renderMap = (props: {
   print?: boolean;
   aoi?: { source: string; src_id: string; name: string };
+  layer?: typeof layer & { datasetId?: number };
 }) =>
   render(
     <QueryClientProvider client={new QueryClient()}>
       <ChakraProvider value={defaultSystem}>
-        <DashboardMapWidget layer={layer} aoi={props.aoi} print={props.print} />
+        <DashboardMapWidget
+          layer={props.layer ?? layer}
+          aoi={props.aoi}
+          print={props.print}
+        />
       </ChakraProvider>
     </QueryClientProvider>
   );
@@ -128,5 +133,27 @@ describe("DashboardMapWidget print readiness", () => {
     expect(readiness(container)).toBeUndefined();
     expect(maplibre.map.once).not.toHaveBeenCalled();
     expect(maplibre.props.interactive).toBe(true);
+  });
+});
+
+describe("DashboardMapWidget legend", () => {
+  // Integrated alerts: a dataset card with a legend.
+  const alertsLayer = { ...layer, datasetId: 11 };
+  it("prints the legend whole, below the map rather than clipped inside it", () => {
+    renderMap({ print: true, layer: alertsLayer });
+
+    const title = screen.getByText("Integrated Disturbance Alerts");
+    expect(screen.getByTestId("maplibre").contains(title)).toBe(false);
+    const list = title.closest("ul");
+    expect(list && getComputedStyle(list).overflowY).toBe("visible");
+  });
+
+  it("keeps the dashboard legend over the map, capped", () => {
+    renderMap({ layer: alertsLayer });
+
+    const title = screen.getByText("Integrated Disturbance Alerts");
+    expect(screen.getByTestId("maplibre").contains(title)).toBe(true);
+    const list = title.closest("ul");
+    expect(list && getComputedStyle(list).overflowY).toBe("auto");
   });
 });
