@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { failureFlow } from "../flow";
-import { formatDay, pct, versionLabel } from "../format";
+import { failureBreakdown, failurePhrase } from "../failures";
+import { formatDay, parseVersion, pct, share } from "../format";
 import { mixSentence } from "../mix";
-import { filterQuestions, NO_FILTER, questionStatus } from "../questions";
+import { filterQuestions, NO_FILTER } from "../questions";
 import { monthsSinceOrigin, pickRun, trendRuns } from "../runs";
-import { tiersOf } from "../tiers";
+import { tierLines, tiersOf } from "../tiers";
 import type { BenchmarkRunRef } from "../../model/types";
-import { makePage, makeQuestion, makeStats, makeUseCase } from "./fixtures";
+import { makeQuestion, makeStats, makeUseCase } from "./fixtures";
 
 describe("tiersOf", () => {
   it("splits the cumulative shares into four tiers that sum to the scored total", () => {
@@ -25,32 +25,51 @@ describe("tiersOf", () => {
       ["never", 78],
     ]);
     expect(tiers.reduce((sum, t) => sum + t.count, 0)).toBe(269);
+    expect(tiers[0].share).toBeCloseTo(135 / 269);
   });
 
   it("treats a group with no scored question as empty", () => {
     const tiers = tiersOf(
       makeStats({ scored: 0, everyTime: null, majority: null, anyTime: null })
     );
-    expect(tiers.every((t) => t.count === 0)).toBe(true);
+    expect(tiers.every((t) => t.count === 0 && t.share === null)).toBe(true);
+  });
+
+  it("words each tier once for labels and tooltips", () => {
+    expect(tierLines(makeStats())[0]).toBe("40% accurate every time (4)");
   });
 });
 
-describe("failureFlow", () => {
-  it("peels failures off in attribution order and drops empty stages", () => {
-    const flow = failureFlow(makePage({ unattributed: 1 }));
-    expect(flow.leaves.map((l) => [l.key, l.count])).toEqual([
+describe("failureBreakdown", () => {
+  it("lists the non-empty stages in attribution order with their share", () => {
+    const stats = makeStats({
+      failureModes: {
+        scope: 1,
+        retrieval: 3,
+        analysis: 0,
+        explanation: 1,
+        output: 0,
+        unattributed: 1,
+      },
+    });
+    expect(failureBreakdown(stats).map((m) => [m.key, m.count])).toEqual([
+      ["scope", 1],
       ["retrieval", 3],
       ["explanation", 1],
       ["unattributed", 1],
     ]);
-    expect(flow.accurate).toBe(10 - 5);
+    expect(failureBreakdown(stats)[1].share).toBeCloseTo(0.3);
+    expect(failurePhrase(stats)).toBe(
+      "1 at scope, 3 at retrieval, 1 at explanation, 1 at unattributed"
+    );
   });
 });
 
-describe("questions", () => {
+describe("filterQuestions", () => {
   const pass = makeQuestion({ id: "a" });
   const flaky = makeQuestion({
     id: "b",
+    status: "inconsistent",
     failedChecks: [
       {
         check: "aoi_id_match",
@@ -65,54 +84,30 @@ describe("questions", () => {
   const failed = makeQuestion({
     id: "c",
     verdict: "fail",
+    status: "fail",
     useCases: ["UC2"],
     type: "causal",
     query: "Why is Riau burning?",
   });
-  const errored = makeQuestion({ id: "d", verdict: "error" });
-
-  it("classifies passes with a failed try as inconsistent", () => {
-    expect([pass, flaky, failed, errored].map(questionStatus)).toEqual([
-      "pass",
-      "inconsistent",
-      "fail",
-      "error",
-    ]);
-  });
+  const errored = makeQuestion({ id: "d", verdict: "error", status: "error" });
+  const all = [pass, flaky, failed, errored];
+  const ids = (f: Partial<typeof NO_FILTER>) =>
+    filterQuestions(all, { ...NO_FILTER, ...f }).map((q) => q.id);
 
   it("filters by status, type, use case and searches the check labels", () => {
-    const all = [pass, flaky, failed, errored];
-    expect(
-      filterQuestions(all, { ...NO_FILTER, status: "failed" }).map((q) => q.id)
-    ).toEqual(["c", "d"]);
-    expect(
-      filterQuestions(all, { ...NO_FILTER, status: "inconsistent" }).map(
-        (q) => q.id
-      )
-    ).toEqual(["b"]);
-    expect(
-      filterQuestions(all, { ...NO_FILTER, type: "causal" }).map((q) => q.id)
-    ).toEqual(["c"]);
-    expect(
-      filterQuestions(all, { ...NO_FILTER, useCase: "UC2" }).map((q) => q.id)
-    ).toEqual(["c"]);
-    expect(
-      filterQuestions(all, { ...NO_FILTER, search: "right place" }).map(
-        (q) => q.id
-      )
-    ).toEqual(["b"]);
-    expect(
-      filterQuestions(all, { ...NO_FILTER, search: "RIAU" }).map((q) => q.id)
-    ).toEqual(["c"]);
+    expect(ids({ status: "failed" })).toEqual(["c", "d"]);
+    expect(ids({ status: "inconsistent" })).toEqual(["b"]);
+    expect(ids({ type: "causal" })).toEqual(["c"]);
+    expect(ids({ useCase: "UC2" })).toEqual(["c"]);
+    expect(ids({ search: "right place" })).toEqual(["b"]);
+    expect(ids({ search: "RIAU" })).toEqual(["c"]);
   });
 });
 
 describe("mixSentence", () => {
-  it("names the top types, the places over 15% and the top datasets", () => {
-    expect(
-      mixSentence(makeUseCase(), { monitoring: "Monitoring", causal: "Causal" })
-    ).toBe(
-      "Mostly monitoring and causal questions, about sub-national areas and protected areas, using disturbance alerts and tree cover loss."
+  it("names the top types, the places over 15% and the top datasets, keeping acronyms", () => {
+    expect(mixSentence(makeUseCase())).toBe(
+      "Mostly monitoring and causal questions, about sub-national areas and protected areas, using GHG net flux and tree cover loss."
     );
   });
 });
@@ -126,6 +121,7 @@ describe("runs", () => {
     runId,
     started: `${runId.slice(0, 4)}-${runId.slice(4, 6)}-${runId.slice(6, 8)}T00:00:00Z`,
     version,
+    versionLabel: version,
     canonical,
     pagePath: `results/benchmark/pages/${runId}.json`,
   });
@@ -157,11 +153,25 @@ describe("runs", () => {
 });
 
 describe("format", () => {
-  it("formats shares, days and version labels", () => {
+  it("formats shares and days", () => {
     expect(pct(0.5018587, 1)).toBe("50.2%");
     expect(pct(null)).toBe("–");
+    expect(share(1, 0)).toBeNull();
     expect(formatDay("2026-10-23T09:44:47Z")).toBe("23 Oct 2026");
-    expect(versionLabel("2026-draft-3")).toBe("draft 3");
-    expect(versionLabel("2026")).toBe("2026");
+  });
+
+  it("names a version by its set and draft", () => {
+    expect(parseVersion("2026-draft-3", true)).toEqual({
+      set: "2026",
+      draftLabel: "draft 3",
+    });
+    expect(parseVersion("2026-draft", true)).toEqual({
+      set: "2026",
+      draftLabel: "draft",
+    });
+    expect(parseVersion("2026", false)).toEqual({
+      set: "2026",
+      draftLabel: null,
+    });
   });
 });

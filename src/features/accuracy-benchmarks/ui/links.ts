@@ -14,7 +14,7 @@ export function isView(value: string | null): value is View {
   return !!value && (VIEWS as readonly string[]).includes(value);
 }
 
-export const PAGE_PATH = "/accuracy-benchmarks";
+const PAGE_PATH = "/accuracy-benchmarks";
 
 export function pageHref(params: {
   readonly view?: View;

@@ -137,18 +137,32 @@ const WIRE_PAGE = {
 };
 
 describe("parseBenchmarkPage", () => {
-  it("normalises the wire page once: camelCase, measured vs unmeasured types, string dataset ids", () => {
+  it("normalises the wire page once: settled stats, resolved labels and status", () => {
     const page = parseBenchmarkPage(WIRE_PAGE);
-    expect(page.summary.everyTime).toBe(0);
-    expect(page.summary.consistency).toEqual({ complete: 1, clean: 0 });
+    expect(page.summary).toMatchObject({ everyTime: 0, total: 2, failed: 1 });
+    expect(page.summary.failureModes).toEqual({
+      scope: 0,
+      retrieval: 1,
+      analysis: 0,
+      explanation: 0,
+      output: 0,
+      unattributed: 0,
+    });
+    expect(page.benchmark).toMatchObject({
+      set: "2026",
+      draftLabel: "draft 3",
+    });
     expect(page.types.map((t) => t.key)).toEqual(["monitoring"]);
     expect(page.unmeasuredTypes.map((t) => t.key)).toEqual(["refusal"]);
-    expect(page.types[0].stageChecks.retrieval.firstFailures).toBe(1);
     expect(page.types[0].exampleFail?.failedChecks).toEqual(["aoi_id_match"]);
-    expect(page.useCases[0].composition.places).toEqual([
-      { key: "Sub-national area", count: 2 },
+    expect(page.useCases[0].composition.types).toEqual([
+      { key: "monitoring", label: "Monitoring", count: 2 },
     ]);
     const [q] = page.questions;
+    expect(q).toMatchObject({
+      typeLabel: "Monitoring",
+      status: "inconsistent",
+    });
     expect(q.failedChecks[0].perTrial).toEqual([true, true, false]);
     expect(q.attempts[0]).toMatchObject({
       datasetId: "11",
@@ -162,6 +176,13 @@ describe("parseBenchmarkPage", () => {
     expect(() =>
       parseBenchmarkPage({ ...WIRE_PAGE, schema_version: 2 })
     ).toThrow();
+  });
+
+  it("refuses a question whose type the page does not list", () => {
+    const [q] = WIRE_PAGE.questions;
+    expect(() =>
+      parseBenchmarkPage({ ...WIRE_PAGE, questions: [{ ...q, type: "risk" }] })
+    ).toThrow(/unknown query type risk/);
   });
 });
 

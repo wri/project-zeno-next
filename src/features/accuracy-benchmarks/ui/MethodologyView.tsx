@@ -13,39 +13,11 @@ import {
   Text,
 } from "@chakra-ui/react";
 import { Link } from "@/src/shared/lib/router";
-import { STAGE_LABELS, STAGE_ORDER, STAGE_QUESTIONS } from "../model/config";
+import { Swatch } from "@/src/shared/ui/Swatch";
+import { STAGE_COPY, STAGE_LABELS, STAGE_ORDER } from "../model/config";
 import type { BenchmarkPage, StageKey } from "../model/types";
 import { STAGE_COLORS } from "./palette";
-import { Eyebrow } from "./parts";
-
-/** What each check covers, why it matters, and what it does not test yet. */
-const CHECKS: Readonly<Record<StageKey, readonly [string, string, string]>> = {
-  scope: [
-    "Whether Horizon answers when it should, asks a clarifying question when a request is ambiguous, and declines when it cannot answer safely, rather than guessing.",
-    "A confident answer to the wrong question looks exactly like a right answer, which makes scope failures the hardest to spot.",
-    "Asking back when one dataset clearly fits currently counts as a retrieval failure, because no data was fetched. Scope across multi-turn conversations is not tested.",
-  ],
-  retrieval: [
-    "Whether Horizon finds the right place, chooses the right dataset, applies the right settings (thresholds, forest filters), uses the requested dates, and fetches the data.",
-    "Correct math on the wrong place, dataset or years gives a confident answer about the wrong thing, which is worse than no answer.",
-    "User-drawn custom areas and saved-area portfolios are not in the benchmark yet; they need seeded test accounts.",
-  ],
-  analysis: [
-    "Whether the figures hold together: the chart is complete and the figures in the reply match it. Checked by code, not by a model, whenever an answer includes a chart.",
-    "Analysis failures produce precise-looking numbers that are wrong, which could lead to users confidently citing incorrect numbers.",
-    "Comparing figures with the data service's own totals is not yet in the benchmark; it is being built before the November freeze.",
-  ],
-  explanation: [
-    "Whether the written answer says what the data says: no web sources used in place of the data, and required statements present where a question needs them (for example, not naming a commodity the driver data does not identify).",
-    "The text is the part users read. A correct chart under text that over-claims a cause misleads even a careful reader.",
-    "Dataset caveats are required by the system's instructions but not yet scored everywhere.",
-  ],
-  output: [
-    "Whether the answer includes the right chart or map layer, and whether charts are well-formed and match the answer.",
-    "A missing or broken chart makes a right answer unusable; the wrong chart type invites the wrong conclusion from correct data.",
-    "Chart readability is not scored, only structural validity.",
-  ],
-};
+import { Eyebrow, Panel } from "./parts";
 
 /** A question the 29 Sep run got right, step by step: what Horizon did, and
  * which of it the benchmark checked. */
@@ -138,7 +110,7 @@ function WorkedExamples() {
         templateColumns={{ base: "1fr", md: "minmax(0, 1.4fr) minmax(0, 1fr)" }}
         gap={4}
       >
-        <Box borderWidth="1px" borderColor="border" borderRadius="lg" p={4}>
+        <Panel p={4}>
           <Eyebrow>Got right · Trend</Eyebrow>
           <Text fontSize="lg" mt={2} mb={3}>
             &ldquo;Looking at Brazil&rsquo;s tree cover loss across all forest
@@ -165,14 +137,8 @@ function WorkedExamples() {
           <Text mt={3} fontWeight="semibold" color="fg.success">
             Accurate on all 3 attempts.
           </Text>
-        </Box>
-        <Box
-          borderWidth="1px"
-          borderColor="border"
-          borderRadius="lg"
-          p={4}
-          alignSelf="start"
-        >
+        </Panel>
+        <Panel p={4} alignSelf="start">
           <Eyebrow>Got wrong · Quantification</Eyebrow>
           <Text fontSize="lg" mt={2} mb={3}>
             &ldquo;Using a 50% canopy cover threshold, what is Brazil&rsquo;s
@@ -194,7 +160,7 @@ function WorkedExamples() {
             dataset, then asked permission instead of fetching the data. No
             data, no answer.
           </Text>
-        </Box>
+        </Panel>
       </Grid>
       <Text
         as="blockquote"
@@ -280,11 +246,16 @@ export function MethodologyView({
               fact) and only used Challenge Set questions whose correct answers
               had already been checked.
             </>,
-            <>
-              <b>Draft status.</b> Selected questions need to be double checked
-              and expected answers for the new questions have not been reviewed
-              yet. The set is frozen as v2026 once the November baseline runs.
-            </>,
+            ...(page.benchmark.draftLabel
+              ? [
+                  <>
+                    <b>Draft status.</b> Selected questions need to be double
+                    checked and expected answers for the new questions have not
+                    been reviewed yet. The set is frozen as v
+                    {page.benchmark.set} once the November baseline runs.
+                  </>,
+                ]
+              : []),
           ]}
         />
       </Block>
@@ -397,28 +368,27 @@ export function MethodologyView({
                   alignItems="center"
                   gap={2}
                 >
-                  <Box
-                    w="10px"
-                    h="10px"
-                    borderRadius="2px"
-                    bg={STAGE_COLORS[stage]}
-                  />
+                  <Swatch color={STAGE_COLORS[stage]} width={10} height={10} />
                   {i + 1} · {STAGE_LABELS[stage]}
                 </Heading>
                 <Text fontSize="sm" color="fg.muted" mt={1}>
-                  {STAGE_QUESTIONS[stage]}
+                  {STAGE_COPY[stage].question}
                 </Text>
               </Box>
               <Box as="dl" fontSize="sm" display="grid" gap={2}>
                 {(
-                  ["What we check", "Why it matters", "Not yet tested"] as const
-                ).map((term, j) => (
+                  [
+                    ["What we check", STAGE_COPY[stage].what],
+                    ["Why it matters", STAGE_COPY[stage].why],
+                    ["Not yet tested", STAGE_COPY[stage].notYet],
+                  ] as const
+                ).map(([term, text]) => (
                   <Box key={term}>
                     <Text as="dt" fontWeight="semibold">
                       {term}
                     </Text>
                     <Text as="dd" color="fg.muted">
-                      {CHECKS[stage][j]}
+                      {text}
                     </Text>
                   </Box>
                 ))}

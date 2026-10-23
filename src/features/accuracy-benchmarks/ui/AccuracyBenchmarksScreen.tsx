@@ -19,7 +19,7 @@ import {
 import { Link, useRouter, useSearchParams } from "@/src/shared/lib/router";
 import type { BenchmarkPage, BenchmarkRunRef } from "../model/types";
 import { BENCHMARK_DATA_BRANCH } from "../api/github";
-import { formatDay, versionLabel } from "../lib/format";
+import { formatDay } from "../lib/format";
 import { pickRun, trendRuns } from "../lib/runs";
 import { FailureFlowSection } from "./dashboard/FailureFlowSection";
 import { Hero } from "./dashboard/Hero";
@@ -30,29 +30,31 @@ import { isView, pageHref, VIEW_LABELS, VIEWS, type View } from "./links";
 import { MethodologyView } from "./MethodologyView";
 import { QueryState } from "./QueryState";
 import { QuestionsView } from "./QuestionsView";
+import { Panel } from "./parts";
 import {
   useBenchmarkPage,
-  useBenchmarkPages,
   useBenchmarkRuns,
+  useBenchmarkSummaries,
 } from "./use-benchmark-data";
 
+/** The headline of every canonical run of the page's version; a point
+ * appears once its page has loaded. */
 function useTrend(
   runs: readonly BenchmarkRunRef[],
   page: BenchmarkPage
 ): TrendPoint[] {
   const points = trendRuns(runs, page.benchmark.version);
-  const pages = useBenchmarkPages(points.map((r) => r.pagePath));
+  const summaries = useBenchmarkSummaries(points.map((r) => r.pagePath));
   return points.flatMap((run, i) => {
-    const loaded = run.runId === page.run.runId ? page : pages[i]?.data;
-    const everyTime = loaded?.summary.everyTime;
-    return everyTime == null
+    const summary = summaries[i];
+    return summary?.everyTime == null
       ? []
       : [
           {
             runId: run.runId,
             started: run.started,
-            everyTime,
-            majority: loaded?.summary.majority ?? null,
+            everyTime: summary.everyTime,
+            majority: summary.majority,
           },
         ];
   });
@@ -87,17 +89,13 @@ function Dashboard({
         })}
       />
       <QuestionTypesSection page={page} />
-      <Flex
+      <Panel
         my={8}
-        p={{ base: 4, md: 5 }}
+        display="flex"
         gap={4}
-        align="center"
-        justify="space-between"
-        wrap="wrap"
-        borderWidth="1px"
-        borderColor="border"
-        borderRadius="lg"
-        bg="bg.panel"
+        alignItems="center"
+        justifyContent="space-between"
+        flexWrap="wrap"
       >
         <Text color="fg.muted" fontSize="sm" maxW="60ch">
           How the questions were chosen, what an answer has to get right, and
@@ -108,7 +106,7 @@ function Dashboard({
             Read the methodology →
           </Link>
         </Button>
-      </Flex>
+      </Panel>
     </>
   );
 }
@@ -152,15 +150,13 @@ export function AccuracyBenchmarksScreen() {
           <Text color="fg.muted">AI accuracy: priority use cases</Text>
           {data ? (
             <Badge
-              colorPalette={
-                data.benchmark.status === "draft" ? "yellow" : "green"
-              }
+              colorPalette={data.benchmark.draftLabel ? "yellow" : "green"}
               variant="subtle"
             >
-              {data.benchmark.status === "draft"
-                ? `${versionLabel(data.benchmark.version)} · `
+              {data.benchmark.draftLabel
+                ? `${data.benchmark.draftLabel} · `
                 : ""}
-              Benchmark Set v{data.benchmark.version.slice(0, 4)}
+              Benchmark Set v{data.benchmark.set}
             </Badge>
           ) : null}
         </HStack>
@@ -173,9 +169,9 @@ export function AccuracyBenchmarksScreen() {
                 value={run.runId}
                 onChange={(e) => go({ run: e.target.value })}
               >
-                {[...runs.data].reverse().map((r) => (
+                {runs.data.toReversed().map((r) => (
                   <option key={r.runId} value={r.runId}>
-                    {formatDay(r.started)} · {versionLabel(r.version)}
+                    {formatDay(r.started)} · {r.versionLabel}
                     {r.canonical ? "" : " (not canonical)"}
                   </option>
                 ))}
@@ -236,11 +232,15 @@ export function AccuracyBenchmarksScreen() {
             borderTopWidth="1px"
             borderColor="border"
           >
-            Benchmark Set v{data.benchmark.version.slice(0, 4)},{" "}
-            {versionLabel(data.benchmark.version)} ({data.benchmark.members}{" "}
-            questions). Run {data.run.runId} on production, default tools,{" "}
-            {data.run.numTrials} attempts per question, harness{" "}
-            {data.run.harnessSha}. Source:{" "}
+            Benchmark Set v{data.benchmark.set}
+            {data.benchmark.draftLabel
+              ? `, ${data.benchmark.draftLabel}`
+              : ""}{" "}
+            ({data.benchmark.members} questions). Run {data.run.runId} on
+            production, default tools, {data.run.numTrials} attempts per
+            question
+            {data.run.harnessSha ? `, harness ${data.run.harnessSha}` : ""}.
+            Source:{" "}
             <ChakraLink
               href={`https://github.com/wri/gnw-gold-evals/tree/${BENCHMARK_DATA_BRANCH}/results/benchmark`}
               target="_blank"

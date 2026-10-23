@@ -1,10 +1,21 @@
-import type { ReactNode } from "react";
-import { Box, Flex, Heading, HStack, Text } from "@chakra-ui/react";
+import { useRef, useState, type ComponentProps, type ReactNode } from "react";
+import {
+  Box,
+  Button,
+  chakra,
+  Flex,
+  Heading,
+  HStack,
+  Text,
+} from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
 import type { GroupStats } from "../model/types";
 import { pct } from "../lib/format";
-import { TIER_LEGEND, tiersOf, type TierKey } from "../lib/tiers";
+import { tierLines, TIERS, tiersOf, type TierKey } from "../lib/tiers";
 import { PASS_COLOR, TIER_OPACITY } from "./palette";
+
+/** Clears the sticky app header when a panel is scrolled into view. */
+const HEADER_CLEARANCE = "64px";
 
 export function Eyebrow({ children }: { readonly children: ReactNode }) {
   return (
@@ -18,6 +29,35 @@ export function Eyebrow({ children }: { readonly children: ReactNode }) {
     >
       {children}
     </Text>
+  );
+}
+
+/** A small muted label over a block, e.g. "Got right". */
+export function Caption({ children }: { readonly children: ReactNode }) {
+  return (
+    <Text
+      fontFamily="mono"
+      fontSize="xs"
+      color="fg.subtle"
+      textTransform="uppercase"
+      letterSpacing="0.06em"
+    >
+      {children}
+    </Text>
+  );
+}
+
+/** The bordered card every block of the page sits in. */
+export function Panel(props: ComponentProps<typeof Box>) {
+  return (
+    <Box
+      borderWidth="1px"
+      borderColor="border"
+      borderRadius="lg"
+      bg="bg.panel"
+      p={{ base: 4, md: 5 }}
+      {...props}
+    />
   );
 }
 
@@ -77,41 +117,53 @@ export function tierSwatchStyle(key: TierKey) {
       };
 }
 
-export function TierLegend() {
+export function Legend({
+  items,
+}: {
+  readonly items: readonly {
+    readonly key: string;
+    readonly label: string;
+    readonly swatch: ReactNode;
+  }[];
+}) {
   return (
     <HStack gap={4} wrap="wrap" fontSize="xs" color="fg.muted">
-      {TIER_LEGEND.map((t) => (
-        <HStack key={t.key} gap={1.5}>
-          <Box
-            w="10px"
-            h="10px"
-            borderRadius="2px"
-            {...tierSwatchStyle(t.key)}
-          />
-          <span>{t.label}</span>
+      {items.map((item) => (
+        <HStack key={item.key} gap={1.5}>
+          {item.swatch}
+          <span>{item.label}</span>
         </HStack>
       ))}
     </HStack>
   );
 }
 
-/** Tier summary in words, for labels and tooltips. */
-export function tierSummary(stats: GroupStats): string {
-  const n = stats.scored;
-  return tiersOf(stats)
-    .map(
-      (t) =>
-        `${pct(n ? t.count / n : null)} ${t.label.toLowerCase()} (${t.count})`
-    )
-    .join(", ");
+export function TierLegend() {
+  return (
+    <Legend
+      items={TIERS.map((t) => ({
+        key: t.key,
+        label: t.label,
+        swatch: (
+          <Box
+            w="10px"
+            h="10px"
+            borderRadius="2px"
+            {...tierSwatchStyle(t.key)}
+          />
+        ),
+      }))}
+    />
+  );
 }
 
-function TierSegments({
+/** The four reliability tiers of a group as one stacked bar (decorative). */
+export function TierSegments({
   stats,
-  height,
+  height = "12px",
 }: {
   readonly stats: GroupStats;
-  readonly height: string;
+  readonly height?: string;
 }) {
   return (
     <Flex
@@ -137,45 +189,33 @@ function TierSegments({
 }
 
 /**
- * The four reliability tiers of a group as one stacked bar, with the
- * breakdown on hover. It sits inside a row button, which carries the same
- * words as its label, so the bar itself takes no focus.
+ * A group's tier bar with the breakdown on hover. It sits inside a row
+ * button, which carries the same words as its label, so the bar itself
+ * takes no focus.
  */
 export function TierBar({
   stats,
   label,
-  height = "12px",
 }: {
   readonly stats: GroupStats;
   readonly label: string;
-  readonly height?: string;
 }) {
-  const n = stats.scored;
   return (
     <Tooltip
       content={
         <Box fontSize="xs">
           <Text fontWeight="semibold">{label}</Text>
-          {tiersOf(stats).map((t) => (
-            <Text key={t.key}>
-              {pct(n ? t.count / n : null)} {t.label.toLowerCase()} ({t.count})
-            </Text>
+          {tierLines(stats).map((line) => (
+            <Text key={line}>{line}</Text>
           ))}
         </Box>
       }
     >
       <Box w="100%">
-        <TierSegments stats={stats} height={height} />
+        <TierSegments stats={stats} />
       </Box>
     </Tooltip>
   );
-}
-
-/** Bring a detail panel into view after a row below it changed it. */
-export function revealIfAbove(el: HTMLElement | null): void {
-  if (!el || el.getBoundingClientRect().top >= 60) return;
-  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
 }
 
 /** Tier counts as inline facts, e.g. "Accurate every time 38". */
@@ -188,5 +228,160 @@ export function TierFacts({ stats }: { readonly stats: GroupStats }) {
         </Text>
       ))}
     </>
+  );
+}
+
+/** "For X, users can expect an accurate answer every time on …". */
+export function ReliabilitySentence({
+  subject,
+  stats,
+}: {
+  readonly subject: ReactNode;
+  readonly stats: GroupStats;
+}) {
+  return (
+    <Text fontSize="lg">
+      For {subject}, users can expect an accurate answer every time on{" "}
+      <b>{pct(stats.everyTime)} of questions</b>, and at least most of the time
+      on {pct(stats.majority)}.
+    </Text>
+  );
+}
+
+/** A detail panel that a row below it can bring back into view. */
+export function DetailPanel(props: ComponentProps<typeof Panel>) {
+  return (
+    <Panel scrollMarginTop={HEADER_CLEARANCE} aria-live="polite" {...props} />
+  );
+}
+
+/**
+ * Master-detail selection for a list of groups: the selected item (the
+ * first until one is picked) and a ref for the detail panel, which is
+ * scrolled back into view when a row below it is picked.
+ */
+export function useRowSelection<T extends { readonly key: string }>(
+  items: readonly T[]
+) {
+  const [key, setKey] = useState<string | null>(null);
+  const detailRef = useRef<HTMLDivElement>(null);
+  const selected = items.find((i) => i.key === key) ?? items[0];
+  function select(next: string) {
+    setKey(next);
+    const reduced = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+    detailRef.current?.scrollIntoView({
+      behavior: reduced ? "auto" : "smooth",
+      block: "nearest",
+    });
+  }
+  return { selected, select, detailRef };
+}
+
+/** One selectable group row: name, headline share, then a bar. */
+export function SelectableRow({
+  selected,
+  onSelect,
+  ariaLabel,
+  title,
+  sub,
+  value,
+  caption,
+  children,
+}: {
+  readonly selected: boolean;
+  readonly onSelect: () => void;
+  readonly ariaLabel: string;
+  readonly title: string;
+  readonly sub: string;
+  readonly value: string;
+  readonly caption: string;
+  readonly children: ReactNode;
+}) {
+  return (
+    <chakra.button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={selected}
+      aria-label={ariaLabel}
+      display="grid"
+      gridTemplateColumns={{
+        base: "minmax(0, 1fr) 5rem",
+        md: "minmax(0, 16rem) 6rem minmax(0, 1fr)",
+      }}
+      gap={{ base: 2, md: 4 }}
+      alignItems="center"
+      textAlign="left"
+      cursor="pointer"
+      p={3}
+      borderWidth="1px"
+      borderColor={selected ? "primary.solid" : "border"}
+      borderRadius="md"
+      bg={selected ? "bg.subtle" : "bg.panel"}
+      _hover={{ borderColor: "primary.solid" }}
+      _focusVisible={{
+        outline: "2px solid",
+        outlineColor: "primary.solid",
+        outlineOffset: "2px",
+      }}
+    >
+      <Box minW={0}>
+        <Text fontWeight="semibold" truncate>
+          {title}
+        </Text>
+        <Text fontSize="xs" color="fg.subtle">
+          {sub}
+        </Text>
+      </Box>
+      <Box textAlign={{ base: "right", md: "left" }}>
+        <Text fontWeight="semibold" fontVariantNumeric="tabular-nums">
+          {value}
+        </Text>
+        <Text fontSize="xs" color="fg.subtle">
+          {caption}
+        </Text>
+      </Box>
+      <Box gridColumn={{ base: "1 / -1", md: "auto" }} minW={0}>
+        {children}
+      </Box>
+    </chakra.button>
+  );
+}
+
+/** A small segmented control of mutually exclusive options. */
+export function Segmented<T extends string>({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  readonly label: string;
+  readonly options: readonly (readonly [T, string])[];
+  readonly value: T;
+  readonly onChange: (value: T) => void;
+}) {
+  return (
+    <HStack
+      gap={0}
+      role="group"
+      aria-label={label}
+      borderWidth="1px"
+      borderColor="border"
+      borderRadius="md"
+      p="2px"
+    >
+      {options.map(([option, text]) => (
+        <Button
+          key={option}
+          size="xs"
+          variant={value === option ? "solid" : "ghost"}
+          aria-pressed={value === option}
+          onClick={() => onChange(option)}
+        >
+          {text}
+        </Button>
+      ))}
+    </HStack>
   );
 }

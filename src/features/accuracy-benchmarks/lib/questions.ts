@@ -1,15 +1,6 @@
 import { checkLabel } from "../model/config";
 import type { Question } from "../model/types";
 
-/** "inconsistent": right overall, but at least one check failed on a try. */
-export type QuestionStatus = "pass" | "inconsistent" | "fail" | "error";
-
-export function questionStatus(q: Question): QuestionStatus {
-  if (q.verdict === "error") return "error";
-  if (q.verdict === "fail" || q.verdict === "uncovered") return "fail";
-  return q.failedChecks.length ? "inconsistent" : "pass";
-}
-
 export type StatusFilter = "all" | "failed" | "inconsistent";
 
 export interface QuestionFilter {
@@ -39,10 +30,13 @@ export function filterQuestions(
 ): Question[] {
   const search = filter.search.trim().toLowerCase();
   return questions.filter((q) => {
-    const status = questionStatus(q);
-    if (filter.status === "failed" && status !== "fail" && status !== "error")
+    if (
+      filter.status === "failed" &&
+      q.status !== "fail" &&
+      q.status !== "error"
+    )
       return false;
-    if (filter.status === "inconsistent" && status !== "inconsistent")
+    if (filter.status === "inconsistent" && q.status !== "inconsistent")
       return false;
     if (filter.type && q.type !== filter.type) return false;
     if (filter.useCase && !q.useCases.includes(filter.useCase)) return false;

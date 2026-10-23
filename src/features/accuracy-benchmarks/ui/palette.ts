@@ -8,16 +8,14 @@ import type { TierKey } from "../lib/tiers";
 
 export const PASS_COLOR = "#2e9b5f";
 
-export const STAGE_COLORS: Readonly<Record<AttributionKey | "shared", string>> =
-  {
-    scope: "#7b5cb8",
-    retrieval: "#c24a4a",
-    analysis: "#b88a12",
-    explanation: "#2f86c9",
-    output: "#b0457e",
-    unattributed: "#8a8f98",
-    shared: "#8a8f98",
-  };
+export const STAGE_COLORS: Readonly<Record<AttributionKey, string>> = {
+  scope: "#7b5cb8",
+  retrieval: "#c24a4a",
+  analysis: "#b88a12",
+  explanation: "#2f86c9",
+  output: "#b0457e",
+  unattributed: "#8a8f98",
+};
 
 /** Reliability tiers: the pass colour at falling opacity; "never" is an
  * outlined empty swatch. */

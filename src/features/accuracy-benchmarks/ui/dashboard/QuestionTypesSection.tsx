@@ -1,60 +1,64 @@
-import { useRef, useState, type Ref } from "react";
-import {
-  Box,
-  Button,
-  chakra,
-  Flex,
-  Grid,
-  HStack,
-  Text,
-} from "@chakra-ui/react";
+import { useState, type Ref } from "react";
+import { Box, Flex, Grid, Text } from "@chakra-ui/react";
+import { Swatch } from "@/src/shared/ui/Swatch";
 import {
   ATTRIBUTION_ORDER,
-  STAGE_LABELS,
   checkLabel,
+  STAGE_LABELS,
 } from "../../model/config";
 import type {
-  AttributionKey,
   BenchmarkPage,
+  GroupStats,
   MeasuredType,
 } from "../../model/types";
+import { failureBreakdown, failurePhrase } from "../../lib/failures";
 import { pct } from "../../lib/format";
+import { tierLines } from "../../lib/tiers";
 import { PASS_COLOR, STAGE_COLORS } from "../palette";
 import {
-  revealIfAbove,
+  Caption,
+  DetailPanel,
+  Legend,
+  ReliabilitySentence,
   Section,
+  Segmented,
+  SelectableRow,
   TierBar,
   TierFacts,
   TierLegend,
-  tierSummary,
+  useRowSelection,
 } from "../parts";
 
 type BarView = "rate" | "modes";
-type ModeKey = "pass" | AttributionKey;
 
-const MODE_KEYS: readonly ModeKey[] = ["pass", ...ATTRIBUTION_ORDER];
+const BAR_VIEWS: readonly (readonly [BarView, string])[] = [
+  ["rate", "Pass rate"],
+  ["modes", "Where it failed"],
+];
 
-function modeColor(key: ModeKey): string {
-  return key === "pass" ? PASS_COLOR : STAGE_COLORS[key];
-}
-
-function modeLabel(key: ModeKey): string {
-  return key === "pass" ? "Accurate" : STAGE_LABELS[key];
-}
-
-function modeCount(t: MeasuredType, key: ModeKey): number {
-  return key === "pass" ? t.stats.passed : (t.stats.failureModes[key] ?? 0);
-}
-
-function failureList(t: MeasuredType): string {
-  return ATTRIBUTION_ORDER.filter((k) => t.stats.failureModes[k])
-    .map(
-      (k) => `${t.stats.failureModes[k]} at ${STAGE_LABELS[k].toLowerCase()}`
-    )
-    .join(", ");
-}
+/** Accurate answers and each failure stage, for the "Where it failed" bars. */
+const MODES = [
+  { key: "pass", label: "Accurate", color: PASS_COLOR },
+  ...ATTRIBUTION_ORDER.map((key) => ({
+    key,
+    label: STAGE_LABELS[key],
+    color: STAGE_COLORS[key],
+  })),
+];
 
 function ModesBar({ t }: { readonly t: MeasuredType }) {
+  const segments = [
+    {
+      key: "pass",
+      label: "Accurate",
+      count: t.stats.passed,
+      color: PASS_COLOR,
+    },
+    ...failureBreakdown(t.stats).map((m) => ({
+      ...m,
+      color: STAGE_COLORS[m.key],
+    })),
+  ].filter((s) => s.count > 0);
   return (
     <Flex
       h="22px"
@@ -64,25 +68,22 @@ function ModesBar({ t }: { readonly t: MeasuredType }) {
       aria-hidden
       w="100%"
     >
-      {MODE_KEYS.filter((k) => modeCount(t, k)).map((k) => {
-        const count = modeCount(t, k);
-        return (
-          <Flex
-            key={k}
-            flex={`${count} 1 0`}
-            bg={modeColor(k)}
-            color="white"
-            fontSize="2xs"
-            fontWeight="semibold"
-            align="center"
-            justify="center"
-            minW="3px"
-            title={`${t.label} · ${modeLabel(k)}: ${count} of ${t.stats.scored} questions${k === "pass" ? " answered accurately" : " failed here first"}`}
-          >
-            {count >= 2 ? count : null}
-          </Flex>
-        );
-      })}
+      {segments.map((s) => (
+        <Flex
+          key={s.key}
+          flex={`${s.count} 1 0`}
+          bg={s.color}
+          color="white"
+          fontSize="2xs"
+          fontWeight="semibold"
+          align="center"
+          justify="center"
+          minW="3px"
+          title={`${t.label} · ${s.label}: ${s.count} of ${t.stats.scored} questions${s.key === "pass" ? " answered accurately" : " failed here first"}`}
+        >
+          {s.count >= 2 ? s.count : null}
+        </Flex>
+      ))}
     </Flex>
   );
 }
@@ -94,33 +95,21 @@ function TypeDetail({
   readonly t: MeasuredType;
   readonly detailRef: Ref<HTMLDivElement>;
 }) {
-  const fails = t.stats.scored - t.stats.passed;
   return (
-    <Box
-      ref={detailRef}
-      scrollMarginTop={4}
-      borderWidth="1px"
-      borderColor="border"
-      borderRadius="lg"
-      bg="bg.panel"
-      p={{ base: 4, md: 5 }}
-      aria-live="polite"
-    >
-      <Text
-        fontSize="xs"
-        color="fg.subtle"
-        fontFamily="mono"
-        textTransform="uppercase"
-        letterSpacing="0.06em"
-      >
+    <DetailPanel ref={detailRef}>
+      <Caption>
         If a user asks a question like this, how likely are they to be misled?
-      </Text>
-      <Text fontSize="lg" mt={2}>
-        For <b>{t.label.toLowerCase()}</b> questions ({t.description}), users
-        can expect an accurate answer every time on{" "}
-        <b>{pct(t.stats.everyTime)} of questions</b>, and at least most of the
-        time on {pct(t.stats.majority)}.
-      </Text>
+      </Caption>
+      <Box mt={2}>
+        <ReliabilitySentence
+          subject={
+            <>
+              <b>{t.label.toLowerCase()}</b> questions ({t.description})
+            </>
+          }
+          stats={t.stats}
+        />
+      </Box>
       <Grid
         mt={3}
         gap={5}
@@ -129,14 +118,7 @@ function TypeDetail({
         color="fg.muted"
       >
         <Box minW={0}>
-          <Text
-            fontFamily="mono"
-            fontSize="xs"
-            color="fg.subtle"
-            textTransform="uppercase"
-          >
-            Got right
-          </Text>
+          <Caption>Got right</Caption>
           <Text>
             {t.examplePass ? (
               <>&ldquo;{t.examplePass}&rdquo;</>
@@ -146,14 +128,7 @@ function TypeDetail({
           </Text>
         </Box>
         <Box minW={0}>
-          <Text
-            fontFamily="mono"
-            fontSize="xs"
-            color="fg.subtle"
-            textTransform="uppercase"
-          >
-            Got wrong
-          </Text>
+          <Caption>Got wrong</Caption>
           {t.exampleFail ? (
             <Text>
               &ldquo;{t.exampleFail.query}&rdquo;
@@ -167,14 +142,18 @@ function TypeDetail({
       </Grid>
       <Flex mt={4} gap={4} wrap="wrap" fontSize="xs" color="fg.muted">
         <TierFacts stats={t.stats} />
-        {fails ? (
+        {t.stats.failed ? (
           <Text as="span">
-            Failed: <b>{failureList(t)}</b>
+            Failed: <b>{failurePhrase(t.stats)}</b>
           </Text>
         ) : null}
       </Flex>
-    </Box>
+    </DetailPanel>
   );
+}
+
+function rowValue(view: BarView, stats: GroupStats): string {
+  return view === "rate" ? pct(stats.everyTime) : pct(stats.majority);
 }
 
 export function QuestionTypesSection({
@@ -183,10 +162,7 @@ export function QuestionTypesSection({
   readonly page: BenchmarkPage;
 }) {
   const [view, setView] = useState<BarView>("rate");
-  const [selectedKey, setSelectedKey] = useState<string | null>(null);
-  const detailRef = useRef<HTMLDivElement>(null);
-  const selected =
-    page.types.find((t) => t.key === selectedKey) ?? page.types[0];
+  const { selected, select, detailRef } = useRowSelection(page.types);
   if (!selected) return null;
   return (
     <Section
@@ -195,27 +171,12 @@ export function QuestionTypesSection({
       title="Accuracy by question type"
       sub="Each question type has its own definition of a right answer. Select a type for examples."
       action={
-        <HStack
-          gap={0}
-          role="group"
-          aria-label="Bar view"
-          borderWidth="1px"
-          borderColor="border"
-          borderRadius="md"
-          p="2px"
-        >
-          {(["rate", "modes"] as const).map((v) => (
-            <Button
-              key={v}
-              size="xs"
-              variant={view === v ? "solid" : "ghost"}
-              aria-pressed={view === v}
-              onClick={() => setView(v)}
-            >
-              {v === "rate" ? "Pass rate" : "Where it failed"}
-            </Button>
-          ))}
-        </HStack>
+        <Segmented
+          label="Bar view"
+          options={BAR_VIEWS}
+          value={view}
+          onChange={setView}
+        />
       }
     >
       <TypeDetail t={selected} detailRef={detailRef} />
@@ -223,76 +184,34 @@ export function QuestionTypesSection({
         {view === "rate" ? (
           <TierLegend />
         ) : (
-          <HStack gap={4} wrap="wrap" fontSize="xs" color="fg.muted">
-            {MODE_KEYS.map((k) => (
-              <HStack key={k} gap={1.5}>
-                <Box w="10px" h="10px" borderRadius="2px" bg={modeColor(k)} />
-                <span>{modeLabel(k)}</span>
-              </HStack>
-            ))}
-          </HStack>
+          <Legend
+            items={MODES.map((m) => ({
+              key: m.key,
+              label: m.label,
+              swatch: <Swatch color={m.color} width={10} height={10} />,
+            }))}
+          />
         )}
       </Box>
       <Box display="grid" gap={2}>
-        {page.types.map((t) => {
-          const isSelected = t.key === selected.key;
-          return (
-            <chakra.button
-              key={t.key}
-              type="button"
-              onClick={() => {
-                setSelectedKey(t.key);
-                revealIfAbove(detailRef.current);
-              }}
-              aria-pressed={isSelected}
-              aria-label={`${t.label}, ${t.stats.scored} questions: ${tierSummary(t.stats)}`}
-              display="grid"
-              gridTemplateColumns={{
-                base: "minmax(0, 1fr) 5rem",
-                md: "minmax(0, 16rem) 6rem minmax(0, 1fr)",
-              }}
-              gap={{ base: 2, md: 4 }}
-              alignItems="center"
-              textAlign="left"
-              cursor="pointer"
-              p={3}
-              borderWidth="1px"
-              borderColor={isSelected ? "primary.solid" : "border"}
-              borderRadius="md"
-              bg={isSelected ? "bg.subtle" : "bg.panel"}
-              _hover={{ borderColor: "primary.solid" }}
-              _focusVisible={{
-                outline: "2px solid",
-                outlineColor: "primary.solid",
-                outlineOffset: "2px",
-              }}
-            >
-              <Box minW={0}>
-                <Text fontWeight="semibold">{t.label}</Text>
-                <Text fontSize="xs" color="fg.subtle">
-                  {t.description} · {t.stats.scored}
-                </Text>
-              </Box>
-              <Box textAlign={{ base: "right", md: "left" }}>
-                <Text fontWeight="semibold" fontVariantNumeric="tabular-nums">
-                  {view === "rate"
-                    ? pct(t.stats.everyTime)
-                    : pct(t.stats.majority)}
-                </Text>
-                <Text fontSize="xs" color="fg.subtle">
-                  {view === "rate" ? "every time" : "2 of 3 tries"}
-                </Text>
-              </Box>
-              <Box gridColumn={{ base: "1 / -1", md: "auto" }} minW={0}>
-                {view === "rate" ? (
-                  <TierBar stats={t.stats} label={t.label} />
-                ) : (
-                  <ModesBar t={t} />
-                )}
-              </Box>
-            </chakra.button>
-          );
-        })}
+        {page.types.map((t) => (
+          <SelectableRow
+            key={t.key}
+            selected={t.key === selected.key}
+            onSelect={() => select(t.key)}
+            ariaLabel={`${t.label}, ${t.stats.scored} questions: ${tierLines(t.stats).join(", ")}`}
+            title={t.label}
+            sub={`${t.description} · ${t.stats.scored}`}
+            value={rowValue(view, t.stats)}
+            caption={view === "rate" ? "every time" : "2 of 3 tries"}
+          >
+            {view === "rate" ? (
+              <TierBar stats={t.stats} label={t.label} />
+            ) : (
+              <ModesBar t={t} />
+            )}
+          </SelectableRow>
+        ))}
       </Box>
       <Text mt={3} fontSize="xs" color="fg.subtle">
         Types with fewer than 20 questions can swing a lot between runs.

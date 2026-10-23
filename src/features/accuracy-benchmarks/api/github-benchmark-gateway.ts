@@ -1,12 +1,14 @@
 /**
  * Driven adapter implementing `BenchmarkGateway` over GitHub raw, and the
  * only place that knows the page file's snake_case wire shape: it is
- * parsed once here into the normalised types in `model/types.ts`. A
- * schema mismatch throws (the page is a derived artefact with a
- * schema_version, so drift is a bug to see, not to paper over).
+ * parsed once here into the normalised types in `model/types.ts` (labels
+ * resolved, failure modes zero-filled, question status settled). A schema
+ * mismatch or an unknown query type throws: the page is a derived artefact
+ * with a schema_version, so drift is a bug to see, not to paper over.
  */
 
 import { z } from "zod";
+import { ATTRIBUTION_ORDER, STAGE_ORDER } from "../model/config";
 import type { BenchmarkGateway } from "../model/benchmark-gateway";
 import type {
   Attempt,
@@ -16,16 +18,15 @@ import type {
   GroupStats,
   MeasuredType,
   Question,
-  StageCheck,
-  StageKey,
-  UnmeasuredType,
+  QuestionStatus,
 } from "../model/types";
+import { parseVersion } from "../lib/format";
 import { BENCHMARK_DATA_BRANCH, RUN_INDEX_PATH, rawUrl } from "./github";
 
-export const PAGE_SCHEMA_VERSION = 1;
+const PAGE_SCHEMA_VERSION = 1;
 
 export class BenchmarkDataUnavailableError extends Error {
-  constructor(public readonly url: string) {
+  constructor(url: string) {
     super(
       `Benchmark data not found: ${url}. The page reads branch ` +
         `"${BENCHMARK_DATA_BRANCH}" of wri/gnw-gold-evals; a recently added ` +
@@ -37,20 +38,18 @@ export class BenchmarkDataUnavailableError extends Error {
 
 // ── Wire schemas ───────────────────────────────────────────────────────────
 
-const Stage = z.enum([
-  "scope",
-  "retrieval",
-  "analysis",
-  "explanation",
-  "output",
-]);
-const Attribution = z.enum([...Stage.options, "unattributed"]);
+const Stage = z.enum(STAGE_ORDER);
+const Attribution = z.enum([...STAGE_ORDER, "unattributed"]);
+const Status = z.enum(["draft", "frozen", "retired"]);
 
 const RawIndexRun = z.looseObject({
   run_id: z.string(),
   started: z.string(),
   canonical: z.boolean().default(false),
-  benchmark: z.looseObject({ version: z.string() }),
+  benchmark: z.looseObject({
+    version: z.string(),
+    status: Status.default("draft"),
+  }),
   page: z.string().optional(),
 });
 
@@ -68,27 +67,25 @@ const RawStats = z.object({
   failure_modes: z.partialRecord(Attribution, z.number()),
 });
 
-const RawStageCheck = z.object({
-  checked: z.number(),
-  passed: z.number(),
-  first_failures: z.number(),
-});
-
-const RawCount = z.tuple([z.string(), z.number()]);
-
-const RawType = z.looseObject({
+const RawTypeBase = z.object({
   key: z.string(),
   label: z.string(),
   description: z.string(),
-  measured: z.boolean(),
-  ...RawStats.partial().shape,
-  stage_checks: z.record(Stage, RawStageCheck).optional(),
-  example_pass: z.string().nullable().optional(),
-  example_fail: z
-    .object({ query: z.string(), failed_checks: z.array(z.string()) })
-    .nullable()
-    .optional(),
 });
+
+const RawType = z.discriminatedUnion("measured", [
+  RawTypeBase.extend({ measured: z.literal(false) }),
+  RawTypeBase.extend({
+    measured: z.literal(true),
+    ...RawStats.shape,
+    example_pass: z.string().nullable(),
+    example_fail: z
+      .object({ query: z.string(), failed_checks: z.array(z.string()) })
+      .nullable(),
+  }),
+]);
+
+const RawCount = z.tuple([z.string(), z.number()]);
 
 const RawUseCase = z.object({
   key: z.string(),
@@ -113,28 +110,24 @@ const RawAttempt = z.object({
   answer_excerpt: z.string(),
 });
 
-const RawFailedCheck = z.object({
-  check: z.string(),
-  stage: z.union([Stage, z.literal("shared")]),
-  verdict: z.enum(["pass", "fail"]),
-  per_trial: z.array(z.boolean().nullable()),
-  actual: z.string().nullable(),
-  reason: z.string().nullable(),
-});
-
 const RawQuestion = z.object({
   id: z.string(),
-  uid: z.string(),
-  benchmark_id: z.string(),
   type: z.string(),
-  cohort: z.string(),
-  difficulty: z.string(),
   query: z.string(),
   verdict: z.enum(["pass", "fail", "error", "uncovered"]),
   trials_right: z.array(z.boolean()),
   consistent: z.boolean(),
   primary_failure: Attribution.nullable(),
-  failed_checks: z.array(RawFailedCheck),
+  failed_checks: z.array(
+    z.object({
+      check: z.string(),
+      stage: z.union([Stage, z.literal("shared")]),
+      verdict: z.enum(["pass", "fail"]),
+      per_trial: z.array(z.boolean().nullable()),
+      actual: z.string().nullable(),
+      reason: z.string().nullable(),
+    })
+  ),
   expected: z.record(z.string(), z.string()),
   drafted: z.boolean(),
   attempts: z.array(RawAttempt.nullable()),
@@ -154,17 +147,18 @@ const RawPage = z.looseObject({
   }),
   benchmark: z.looseObject({
     version: z.string(),
-    status: z.enum(["draft", "frozen", "retired"]),
+    status: Status,
     members: z.number(),
     excluded: z.number(),
   }),
-  summary: z.looseObject({
-    ...RawStats.shape,
-    consistency: z.object({ complete: z.number(), clean: z.number() }),
-    datasets_covered: z.number(),
-  }),
-  stages: z.array(z.object({ key: Stage, ...RawStageCheck.shape })),
-  unattributed: z.number(),
+  summary: z.looseObject(RawStats.shape),
+  stages: z.array(
+    z.looseObject({
+      key: Stage,
+      checked: z.number(),
+      first_failures: z.number(),
+    })
+  ),
   types: z.array(RawType),
   use_cases: z.array(RawUseCase),
   questions: z.array(RawQuestion),
@@ -172,54 +166,27 @@ const RawPage = z.looseObject({
 
 // ── Mapping ────────────────────────────────────────────────────────────────
 
-type RawStatsT = z.infer<typeof RawStats>;
-
-function toStats(raw: RawStatsT): GroupStats {
+function toStats(raw: z.infer<typeof RawStats>): GroupStats {
   return {
+    total: raw.scored + raw.errors,
     scored: raw.scored,
     errors: raw.errors,
     passed: raw.passed,
+    failed: raw.scored - raw.passed,
     majority: raw.majority,
     everyTime: raw.every_time,
     anyTime: raw.any_time,
-    failureModes: raw.failure_modes,
+    failureModes: Object.fromEntries(
+      ATTRIBUTION_ORDER.map((k) => [k, raw.failure_modes[k] ?? 0])
+    ) as GroupStats["failureModes"],
   };
 }
 
-function toStageCheck(raw: z.infer<typeof RawStageCheck>): StageCheck {
-  return {
-    checked: raw.checked,
-    passed: raw.passed,
-    firstFailures: raw.first_failures,
-  };
-}
-
-function toCounts(raw: readonly (readonly [string, number])[]): Count[] {
-  return raw.map(([key, count]) => ({ key, count }));
-}
-
-function toType(raw: z.infer<typeof RawType>): MeasuredType | UnmeasuredType {
-  const base = { key: raw.key, label: raw.label, description: raw.description };
-  if (!raw.measured) return base;
-  const stats = RawStats.parse(raw);
-  if (!raw.stage_checks) {
-    throw new Error(`measured type ${raw.key} has no stage_checks`);
-  }
-  const stageChecks = Object.fromEntries(
-    Object.entries(raw.stage_checks).map(([k, v]) => [k, toStageCheck(v)])
-  ) as Record<StageKey, StageCheck>;
-  return {
-    ...base,
-    stats: toStats(stats),
-    stageChecks,
-    examplePass: raw.example_pass ?? null,
-    exampleFail: raw.example_fail
-      ? {
-          query: raw.example_fail.query,
-          failedChecks: raw.example_fail.failed_checks,
-        }
-      : null,
-  };
+function toCounts(
+  raw: readonly (readonly [string, number])[],
+  label: (key: string) => string = (key) => key
+): Count[] {
+  return raw.map(([key, count]) => ({ key, label: label(key), count }));
 }
 
 function toAttempt(raw: z.infer<typeof RawAttempt> | null): Attempt | null {
@@ -236,89 +203,120 @@ function toAttempt(raw: z.infer<typeof RawAttempt> | null): Attempt | null {
   };
 }
 
-function toQuestion(raw: z.infer<typeof RawQuestion>): Question {
-  return {
-    id: raw.id,
-    uid: raw.uid,
-    benchmarkId: raw.benchmark_id,
-    type: raw.type,
-    cohort: raw.cohort,
-    difficulty: raw.difficulty,
-    query: raw.query,
-    verdict: raw.verdict,
-    trialsRight: raw.trials_right,
-    consistent: raw.consistent,
-    primaryFailure: raw.primary_failure,
-    failedChecks: raw.failed_checks.map((f) => ({
-      check: f.check,
-      stage: f.stage,
-      verdict: f.verdict,
-      perTrial: f.per_trial,
-      actual: f.actual,
-      reason: f.reason,
-    })),
-    expected: raw.expected,
-    drafted: raw.drafted,
-    attempts: raw.attempts.map(toAttempt),
-    traceUrl: raw.trace_url,
-    place: raw.place,
-    useCases: raw.use_cases,
-    synthetic: raw.synthetic,
-  };
+function statusOf(raw: z.infer<typeof RawQuestion>): QuestionStatus {
+  if (raw.verdict === "error") return "error";
+  if (raw.verdict !== "pass") return "fail";
+  return raw.consistent ? "pass" : "inconsistent";
 }
 
 /** Parse a page file's JSON into the normalised page. Throws on drift. */
 export function parseBenchmarkPage(json: unknown): BenchmarkPage {
   const raw = RawPage.parse(json);
-  const types = raw.types.map(toType);
+  const typeLabels = new Map(raw.types.map((t) => [t.key, t.label]));
+  function typeLabel(key: string): string {
+    const label = typeLabels.get(key);
+    if (label === undefined) throw new Error(`unknown query type ${key}`);
+    return label;
+  }
+  const measured: MeasuredType[] = [];
+  for (const t of raw.types) {
+    if (!t.measured) continue;
+    measured.push({
+      key: t.key,
+      label: t.label,
+      description: t.description,
+      stats: toStats(t),
+      examplePass: t.example_pass,
+      exampleFail: t.example_fail && {
+        query: t.example_fail.query,
+        failedChecks: t.example_fail.failed_checks,
+      },
+    });
+  }
   return {
     run: {
       runId: raw.run.run_id,
       started: raw.run.started,
       numTrials: raw.run.num_trials,
-      harnessSha: raw.run.harness_sha ?? "",
+      harnessSha: raw.run.harness_sha,
     },
     benchmark: {
       version: raw.benchmark.version,
-      status: raw.benchmark.status,
+      ...parseVersion(raw.benchmark.version, raw.benchmark.status === "draft"),
       members: raw.benchmark.members,
       excluded: raw.benchmark.excluded,
     },
-    summary: {
-      ...toStats(raw.summary),
-      consistency: raw.summary.consistency,
-      datasetsCovered: raw.summary.datasets_covered,
-    },
-    stages: raw.stages.map((s) => ({ key: s.key, ...toStageCheck(s) })),
-    unattributed: raw.unattributed,
-    types: types.filter((t): t is MeasuredType => "stats" in t),
-    unmeasuredTypes: types.filter((t) => !("stats" in t)),
+    summary: toStats(raw.summary),
+    stages: raw.stages.map((s) => ({
+      key: s.key,
+      checked: s.checked,
+      firstFailures: s.first_failures,
+    })),
+    types: measured,
+    unmeasuredTypes: raw.types
+      .filter((t) => !t.measured)
+      .map(({ key, label, description }) => ({ key, label, description })),
     useCases: raw.use_cases.map((u) => ({
       key: u.key,
       label: u.label,
       stats: toStats(u),
       composition: {
-        types: toCounts(u.composition.types),
+        types: toCounts(u.composition.types, typeLabel),
         places: toCounts(u.composition.places),
         datasets: toCounts(u.composition.datasets),
         synthetic: u.composition.synthetic,
       },
     })),
-    questions: raw.questions.map(toQuestion),
+    questions: raw.questions.map(
+      (q): Question => ({
+        id: q.id,
+        type: q.type,
+        typeLabel: typeLabel(q.type),
+        query: q.query,
+        verdict: q.verdict,
+        status: statusOf(q),
+        trialsRight: q.trials_right,
+        primaryFailure: q.primary_failure,
+        failedChecks: q.failed_checks.map((f) => ({
+          check: f.check,
+          stage: f.stage,
+          verdict: f.verdict,
+          perTrial: f.per_trial,
+          actual: f.actual,
+          reason: f.reason,
+        })),
+        expected: q.expected,
+        drafted: q.drafted,
+        attempts: q.attempts.map(toAttempt),
+        traceUrl: q.trace_url,
+        place: q.place,
+        useCases: q.use_cases,
+        synthetic: q.synthetic,
+      })
+    ),
   };
 }
 
 /** Benchmark runs with committed page data, oldest first. */
 export function parseBenchmarkRuns(json: unknown): BenchmarkRunRef[] {
   return RawIndex.parse(json)
-    .sets.benchmark.filter((r) => !!r.page)
-    .map((r) => ({
-      runId: r.run_id,
-      started: r.started,
-      version: r.benchmark.version,
-      canonical: r.canonical,
-      pagePath: r.page!,
-    }))
+    .sets.benchmark.flatMap((r) => {
+      if (!r.page) return [];
+      const { set, draftLabel } = parseVersion(
+        r.benchmark.version,
+        r.benchmark.status === "draft"
+      );
+      return [
+        {
+          runId: r.run_id,
+          started: r.started,
+          version: r.benchmark.version,
+          versionLabel: draftLabel ?? `v${set}`,
+          canonical: r.canonical,
+          pagePath: r.page,
+        },
+      ];
+    })
     .sort((a, b) => a.runId.localeCompare(b.runId));
 }
 

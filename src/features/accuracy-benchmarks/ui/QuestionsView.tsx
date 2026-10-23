@@ -1,8 +1,7 @@
-import { Fragment, useState } from "react";
+import { memo, useCallback, useDeferredValue, useState } from "react";
 import {
   Badge,
   Box,
-  Button,
   Flex,
   Grid,
   Heading,
@@ -14,19 +13,22 @@ import {
   Text,
 } from "@chakra-ui/react";
 import { STAGE_LABELS, checkLabel } from "../model/config";
-import type { Attempt, BenchmarkPage, Question } from "../model/types";
+import type {
+  Attempt,
+  BenchmarkPage,
+  Question,
+  QuestionStatus,
+} from "../model/types";
 import {
   filterQuestions,
   NO_FILTER,
-  questionStatus,
   type QuestionFilter,
-  type QuestionStatus,
   type StatusFilter,
 } from "../lib/questions";
 import { STAGE_COLORS } from "./palette";
-import { Eyebrow } from "./parts";
+import { Eyebrow, Panel, Segmented } from "./parts";
 
-const STATUS_FILTERS: readonly [StatusFilter, string][] = [
+const STATUS_FILTERS: readonly (readonly [StatusFilter, string])[] = [
   ["all", "All"],
   ["failed", "Failed"],
   ["inconsistent", "Inconsistent passes"],
@@ -198,6 +200,105 @@ function QuestionDetail({ q }: { readonly q: Question }) {
   );
 }
 
+/** One question and, when open, its detail. Memoised so a keystroke or an
+ * expanded row re-renders only the rows whose props changed. */
+const QuestionRow = memo(function QuestionRow({
+  q,
+  isOpen,
+  onToggle,
+}: {
+  readonly q: Question;
+  readonly isOpen: boolean;
+  readonly onToggle: (id: string) => void;
+}) {
+  const [badgeLabel, badgeColor] = STATUS_BADGE[q.status];
+  return (
+    <>
+      <Table.Row
+        tabIndex={0}
+        aria-expanded={isOpen}
+        cursor="pointer"
+        _hover={{ bg: "bg.subtle" }}
+        _focusVisible={{
+          outline: "2px solid",
+          outlineColor: "primary.solid",
+          outlineOffset: "-2px",
+        }}
+        onClick={() => onToggle(q.id)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onToggle(q.id);
+          }
+        }}
+      >
+        <Table.Cell maxW="28rem" whiteSpace="normal">
+          <Text>
+            {q.query}
+            {q.drafted ? (
+              <Badge
+                ml={2}
+                size="xs"
+                colorPalette="yellow"
+                title="Expected answer drafted, not yet reviewed"
+              >
+                DRAFT
+              </Badge>
+            ) : null}
+          </Text>
+          <Text fontFamily="mono" fontSize="2xs" color="fg.subtle" mt={0.5}>
+            {q.id} · {q.place}
+            {q.synthetic ? " · synthetic" : ""}
+          </Text>
+        </Table.Cell>
+        <Table.Cell>{q.typeLabel}</Table.Cell>
+        <Table.Cell>
+          <Badge colorPalette={badgeColor} size="sm">
+            {badgeLabel}
+          </Badge>
+        </Table.Cell>
+        <Table.Cell>
+          <AttemptMarks trials={q.trialsRight} />
+        </Table.Cell>
+        <Table.Cell>
+          {q.primaryFailure ? (
+            <HStack gap={1.5}>
+              <Box
+                w="8px"
+                h="8px"
+                borderRadius="full"
+                bg={STAGE_COLORS[q.primaryFailure]}
+              />
+              <span>{STAGE_LABELS[q.primaryFailure]}</span>
+            </HStack>
+          ) : (
+            <Text color="fg.subtle">–</Text>
+          )}
+        </Table.Cell>
+        <Table.Cell whiteSpace="normal" fontSize="xs">
+          {q.failedChecks.length ? (
+            q.failedChecks.map((f) => (
+              <Text key={f.check}>
+                {checkLabel(f.check)}
+                {f.verdict === "pass" ? " (1 attempt)" : ""}
+              </Text>
+            ))
+          ) : (
+            <Text color="fg.subtle">none</Text>
+          )}
+        </Table.Cell>
+      </Table.Row>
+      {isOpen ? (
+        <Table.Row bg="bg.subtle">
+          <Table.Cell colSpan={6} whiteSpace="normal">
+            <QuestionDetail q={q} />
+          </Table.Cell>
+        </Table.Row>
+      ) : null}
+    </>
+  );
+});
+
 export function QuestionsView({
   page,
   initialUseCase,
@@ -210,19 +311,21 @@ export function QuestionsView({
     useCase: initialUseCase,
   });
   const [open, setOpen] = useState<ReadonlySet<string>>(new Set());
-  const typeLabels = Object.fromEntries(
-    page.types.map((t) => [t.key, t.label])
-  );
-  const rows = filterQuestions(page.questions, filter);
+  const search = useDeferredValue(filter.search);
+  const rows = filterQuestions(page.questions, { ...filter, search });
 
-  function toggle(id: string) {
+  function update(patch: Partial<QuestionFilter>) {
+    setFilter((f) => ({ ...f, ...patch }));
+  }
+
+  const toggle = useCallback((id: string) => {
     setOpen((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
-  }
+  }, []);
 
   return (
     <Box
@@ -240,33 +343,18 @@ export function QuestionsView({
       </Text>
 
       <Flex mt={5} gap={3} wrap="wrap" align="center">
-        <HStack
-          gap={0}
-          role="group"
-          aria-label="Show"
-          borderWidth="1px"
-          borderColor="border"
-          borderRadius="md"
-          p="2px"
-        >
-          {STATUS_FILTERS.map(([value, label]) => (
-            <Button
-              key={value}
-              size="xs"
-              variant={filter.status === value ? "solid" : "ghost"}
-              aria-pressed={filter.status === value}
-              onClick={() => setFilter({ ...filter, status: value })}
-            >
-              {label}
-            </Button>
-          ))}
-        </HStack>
+        <Segmented
+          label="Show"
+          options={STATUS_FILTERS}
+          value={filter.status}
+          onChange={(status) => update({ status })}
+        />
         <NativeSelect.Root size="sm" width="auto">
           <NativeSelect.Field
             id="questions-type"
             aria-label="Question type"
             value={filter.type}
-            onChange={(e) => setFilter({ ...filter, type: e.target.value })}
+            onChange={(e) => update({ type: e.target.value })}
           >
             <option value="">All types</option>
             {page.types.map((t) => (
@@ -282,7 +370,7 @@ export function QuestionsView({
             id="questions-use-case"
             aria-label="Use case"
             value={filter.useCase}
-            onChange={(e) => setFilter({ ...filter, useCase: e.target.value })}
+            onChange={(e) => update({ useCase: e.target.value })}
           >
             <option value="">All use cases</option>
             {page.useCases.map((u) => (
@@ -301,21 +389,14 @@ export function QuestionsView({
           placeholder="Search questions or checks"
           aria-label="Search questions or checks"
           value={filter.search}
-          onChange={(e) => setFilter({ ...filter, search: e.target.value })}
+          onChange={(e) => update({ search: e.target.value })}
         />
         <Text fontSize="sm" color="fg.subtle" aria-live="polite">
           {rows.length} of {page.questions.length} questions
         </Text>
       </Flex>
 
-      <Box
-        mt={4}
-        borderWidth="1px"
-        borderColor="border"
-        borderRadius="lg"
-        overflowX="auto"
-        bg="bg.panel"
-      >
+      <Panel mt={4} p={0} overflowX="auto">
         <Table.Root size="sm" minW="860px">
           <Table.Header>
             <Table.Row>
@@ -335,104 +416,17 @@ export function QuestionsView({
                 </Table.Cell>
               </Table.Row>
             ) : null}
-            {rows.map((q) => {
-              const status = questionStatus(q);
-              const isOpen = open.has(q.id);
-              const [badgeLabel, badgeColor] = STATUS_BADGE[status];
-              return (
-                <Fragment key={q.id}>
-                  <Table.Row
-                    tabIndex={0}
-                    aria-expanded={isOpen}
-                    cursor="pointer"
-                    _hover={{ bg: "bg.subtle" }}
-                    _focusVisible={{
-                      outline: "2px solid",
-                      outlineColor: "primary.solid",
-                      outlineOffset: "-2px",
-                    }}
-                    onClick={() => toggle(q.id)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        toggle(q.id);
-                      }
-                    }}
-                  >
-                    <Table.Cell maxW="28rem" whiteSpace="normal">
-                      <Text>
-                        {q.query}
-                        {q.drafted ? (
-                          <Badge
-                            ml={2}
-                            size="xs"
-                            colorPalette="yellow"
-                            title="Expected answer drafted, not yet reviewed"
-                          >
-                            DRAFT
-                          </Badge>
-                        ) : null}
-                      </Text>
-                      <Text
-                        fontFamily="mono"
-                        fontSize="2xs"
-                        color="fg.subtle"
-                        mt={0.5}
-                      >
-                        {q.id} · {q.place}
-                        {q.synthetic ? " · synthetic" : ""}
-                      </Text>
-                    </Table.Cell>
-                    <Table.Cell>{typeLabels[q.type] ?? q.type}</Table.Cell>
-                    <Table.Cell>
-                      <Badge colorPalette={badgeColor} size="sm">
-                        {badgeLabel}
-                      </Badge>
-                    </Table.Cell>
-                    <Table.Cell>
-                      <AttemptMarks trials={q.trialsRight} />
-                    </Table.Cell>
-                    <Table.Cell>
-                      {q.primaryFailure ? (
-                        <HStack gap={1.5}>
-                          <Box
-                            w="8px"
-                            h="8px"
-                            borderRadius="full"
-                            bg={STAGE_COLORS[q.primaryFailure]}
-                          />
-                          <span>{STAGE_LABELS[q.primaryFailure]}</span>
-                        </HStack>
-                      ) : (
-                        <Text color="fg.subtle">–</Text>
-                      )}
-                    </Table.Cell>
-                    <Table.Cell whiteSpace="normal" fontSize="xs">
-                      {q.failedChecks.length ? (
-                        q.failedChecks.map((f) => (
-                          <Text key={f.check}>
-                            {checkLabel(f.check)}
-                            {f.verdict === "pass" ? " (1 attempt)" : ""}
-                          </Text>
-                        ))
-                      ) : (
-                        <Text color="fg.subtle">none</Text>
-                      )}
-                    </Table.Cell>
-                  </Table.Row>
-                  {isOpen ? (
-                    <Table.Row bg="bg.subtle">
-                      <Table.Cell colSpan={6} whiteSpace="normal">
-                        <QuestionDetail q={q} />
-                      </Table.Cell>
-                    </Table.Row>
-                  ) : null}
-                </Fragment>
-              );
-            })}
+            {rows.map((q) => (
+              <QuestionRow
+                key={q.id}
+                q={q}
+                isOpen={open.has(q.id)}
+                onToggle={toggle}
+              />
+            ))}
           </Table.Body>
         </Table.Root>
-      </Box>
+      </Panel>
     </Box>
   );
 }

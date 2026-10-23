@@ -27,19 +27,19 @@ about 5 minutes per path.
 Unlike `/evals`, this slice computes no scores: the page data already carries
 the tiers, failure attribution and per-group stats, so the numbers match the
 Python (`tools/challenge_rollup.py --benchmark`) by construction. `lib/` holds
-only presentation helpers (tiers, the failure flow, filters, the trend).
+only presentation helpers (tiers, the failure breakdown, filters, runs).
 
 The superuser gate (`app/accuracy-benchmarks/page.tsx`) is UX-only and holds
 while the benchmark is a draft (AJ, 2026-10-23): the data is public on GitHub.
 
 ## Segments
 
-| Segment  | Contents                                                               |
-| -------- | ---------------------------------------------------------------------- |
-| `model/` | Normalised page types, the gateway port, stage and check labels        |
-| `lib/`   | Pure presentation helpers (tiers, flow, question filters, run picking) |
-| `api/`   | GitHub raw gateway: zod schemas for the wire page, mapping             |
-| `ui/`    | Screen, three URL-synced views (`?view=`, `?run=`, `?uc=`), sections   |
+| Segment  | Contents                                                                                              |
+| -------- | ----------------------------------------------------------------------------------------------------- |
+| `model/` | Normalised page types, the gateway port, stage and check labels                                       |
+| `lib/`   | Pure presentation helpers (tiers, failure breakdown, filters, run picking)                            |
+| `api/`   | GitHub raw gateway: zod schemas for the wire page, mapping                                            |
+| `ui/`    | Screen, three views in the URL (`?view=`, `?run=`; `?uc=` opens All questions filtered to a use case) |
 
 ## Invariants (mirrored from gnw-gold-evals; update both together)
 

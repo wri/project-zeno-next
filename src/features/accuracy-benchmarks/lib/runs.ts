@@ -2,18 +2,19 @@ import type { BenchmarkRunRef } from "../model/types";
 
 /**
  * The run the page opens on: the requested one when it exists, else the
- * newest canonical run, else the newest run with page data.
+ * newest canonical run, else the newest run with page data. Runs come
+ * oldest first (the gateway's contract).
  */
 export function pickRun(
   runs: readonly BenchmarkRunRef[],
   requested: string | null
 ): BenchmarkRunRef | null {
-  if (requested) {
-    const match = runs.find((r) => r.runId === requested);
-    if (match) return match;
-  }
-  const newestFirst = [...runs].sort((a, b) => b.runId.localeCompare(a.runId));
-  return newestFirst.find((r) => r.canonical) ?? newestFirst[0] ?? null;
+  return (
+    runs.find((r) => r.runId === requested) ??
+    runs.findLast((r) => r.canonical) ??
+    runs.at(-1) ??
+    null
+  );
 }
 
 /** Trend points: the canonical runs of one version, oldest first. Rates
@@ -22,9 +23,7 @@ export function trendRuns(
   runs: readonly BenchmarkRunRef[],
   version: string
 ): BenchmarkRunRef[] {
-  return runs
-    .filter((r) => r.version === version && r.canonical)
-    .sort((a, b) => a.runId.localeCompare(b.runId));
+  return runs.filter((r) => r.version === version && r.canonical);
 }
 
 /**

@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode, type Ref } from "react";
+import type { ReactNode, Ref } from "react";
 import {
   chakra,
   Box,
@@ -10,34 +10,30 @@ import {
   Text,
 } from "@chakra-ui/react";
 import { Link } from "@/src/shared/lib/router";
-import { ATTRIBUTION_ORDER, STAGE_LABELS } from "../../model/config";
 import type { BenchmarkPage, Count, UseCaseResult } from "../../model/types";
-import { pct } from "../../lib/format";
+import { failureBreakdown, failurePhrase } from "../../lib/failures";
+import { pct, share } from "../../lib/format";
 import { mixSentence } from "../../lib/mix";
+import { tierLines } from "../../lib/tiers";
 import {
-  revealIfAbove,
+  Caption,
+  DetailPanel,
+  ReliabilitySentence,
   Section,
+  SelectableRow,
   TierBar,
   TierFacts,
   TierLegend,
-  tierSummary,
+  useRowSelection,
 } from "../parts";
 
-function bySize(a: UseCaseResult, b: UseCaseResult): number {
-  return b.stats.scored + b.stats.errors - (a.stats.scored + a.stats.errors);
-}
-
-function failureSummary(uc: UseCaseResult): string {
-  const fails = uc.stats.scored - uc.stats.passed;
-  const stages = ATTRIBUTION_ORDER.filter((k) => uc.stats.failureModes[k]);
-  if (!fails || !stages.length) return "";
-  if (fails === 1) {
-    return ` The 1 wrong answer failed at ${STAGE_LABELS[stages[0]].toLowerCase()}.`;
-  }
-  const parts = stages.map(
-    (k) => `${uc.stats.failureModes[k]} at ${STAGE_LABELS[k].toLowerCase()}`
-  );
-  return ` Of the ${fails} wrong answers: ${parts.join(", ")}.`;
+function wrongAnswers(uc: UseCaseResult): string {
+  const { failed } = uc.stats;
+  const [first] = failureBreakdown(uc.stats);
+  if (!failed || !first) return "";
+  return failed === 1
+    ? ` The 1 wrong answer failed at ${first.label.toLowerCase()}.`
+    : ` Of the ${failed} wrong answers: ${failurePhrase(uc.stats)}.`;
 }
 
 function CountBars({
@@ -45,26 +41,16 @@ function CountBars({
   aside,
   counts,
   total,
-  label = (k) => k,
 }: {
   readonly title: string;
   readonly aside?: ReactNode;
   readonly counts: readonly Count[];
   readonly total: number;
-  readonly label?: (key: string) => string;
 }) {
   return (
     <Box minW={0}>
       <Flex mb={2} gap={2} justify="space-between" align="baseline" wrap="wrap">
-        <Text
-          fontFamily="mono"
-          fontSize="xs"
-          color="fg.subtle"
-          textTransform="uppercase"
-          letterSpacing="0.06em"
-        >
-          {title}
-        </Text>
+        <Caption>{title}</Caption>
         {aside}
       </Flex>
       <Box display="grid" gap={1.5}>
@@ -76,14 +62,14 @@ function CountBars({
             alignItems="center"
             fontSize="xs"
           >
-            <Text truncate title={label(c.key)}>
-              {label(c.key)}
+            <Text truncate title={c.label}>
+              {c.label}
             </Text>
             <Box h="6px" bg="bg.muted" borderRadius="full" overflow="hidden">
               <Box
                 h="100%"
                 bg="primary.solid"
-                w={`${total ? (c.count / total) * 100 : 0}%`}
+                w={pct(share(c.count, total) ?? 0)}
               />
             </Box>
             <Text textAlign="right" fontVariantNumeric="tabular-nums">
@@ -97,18 +83,9 @@ function CountBars({
 }
 
 /** Top question types and places of a use case as share chips. */
-function MixChips({
-  uc,
-  typeLabels,
-}: {
-  readonly uc: UseCaseResult;
-  readonly typeLabels: Readonly<Record<string, string>>;
-}) {
-  const total = uc.stats.scored + uc.stats.errors;
+function MixChips({ uc }: { readonly uc: UseCaseResult }) {
   const chips = [
-    ...uc.composition.types
-      .slice(0, 4)
-      .map((c) => ({ ...c, key: typeLabels[c.key] ?? c.key })),
+    ...uc.composition.types.slice(0, 4),
     ...uc.composition.places.slice(0, 2),
   ];
   return (
@@ -124,7 +101,7 @@ function MixChips({
           bg="bg.muted"
           color="fg.muted"
         >
-          {c.key} <b>{total ? Math.round((c.count / total) * 100) : 0}%</b>
+          {c.label} <b>{pct(share(c.count, uc.stats.total))}</b>
         </Text>
       ))}
     </HStack>
@@ -134,7 +111,6 @@ function MixChips({
 function UseCaseDetail({
   uc,
   all,
-  typeLabels,
   onPick,
   questionsHref,
   methodologyHref,
@@ -142,24 +118,14 @@ function UseCaseDetail({
 }: {
   readonly uc: UseCaseResult;
   readonly all: readonly UseCaseResult[];
-  readonly typeLabels: Readonly<Record<string, string>>;
   readonly onPick: (key: string) => void;
   readonly questionsHref: (key: string) => string;
   readonly methodologyHref: string;
   readonly detailRef: Ref<HTMLDivElement>;
 }) {
-  const total = uc.stats.scored + uc.stats.errors;
+  const { total } = uc.stats;
   return (
-    <Box
-      ref={detailRef}
-      scrollMarginTop={4}
-      borderWidth="1px"
-      borderColor="border"
-      borderRadius="lg"
-      bg="bg.panel"
-      p={{ base: 4, md: 5 }}
-      aria-live="polite"
-    >
+    <DetailPanel ref={detailRef}>
       <Flex align="center" gap={3} wrap="wrap" mb={3}>
         <chakra.label htmlFor="uc-pick" fontSize="sm" color="fg.muted">
           Showing
@@ -182,14 +148,10 @@ function UseCaseDetail({
           {total} questions
         </Text>
       </Flex>
-      <Text fontSize="lg">
-        For <b>{uc.label}</b>, users can expect an accurate answer every time on{" "}
-        <b>{pct(uc.stats.everyTime)} of questions</b>, and at least most of the
-        time on {pct(uc.stats.majority)}.
-      </Text>
+      <ReliabilitySentence subject={<b>{uc.label}</b>} stats={uc.stats} />
       <Text fontSize="sm" color="fg.muted" mt={1}>
-        {mixSentence(uc, typeLabels)}
-        {failureSummary(uc)}
+        {mixSentence(uc)}
+        {wrongAnswers(uc)}
       </Text>
       <Grid
         mt={4}
@@ -205,7 +167,6 @@ function UseCaseDetail({
           }
           counts={uc.composition.types}
           total={total}
-          label={(k) => typeLabels[k] ?? k}
         />
         <CountBars
           title="Kinds of place"
@@ -236,7 +197,7 @@ function UseCaseDetail({
           </Link>
         </ChakraLink>
       </Flex>
-    </Box>
+    </DetailPanel>
   );
 }
 
@@ -250,13 +211,10 @@ export function UseCasesSection({
   /** The methodology's "Why question types matter" block. */
   readonly methodologyHref: string;
 }) {
-  const ordered = [...page.useCases].sort(bySize);
-  const [selectedKey, setSelectedKey] = useState<string | null>(null);
-  const detailRef = useRef<HTMLDivElement>(null);
-  const selected = ordered.find((u) => u.key === selectedKey) ?? ordered[0];
-  const typeLabels = Object.fromEntries(
-    page.types.map((t) => [t.key, t.label])
+  const ordered = [...page.useCases].sort(
+    (a, b) => b.stats.total - a.stats.total
   );
+  const { selected, select, detailRef } = useRowSelection(ordered);
   if (!selected) return null;
   return (
     <Section
@@ -265,17 +223,16 @@ export function UseCasesSection({
       title="Accuracy by use case"
       sub={
         <>
-          Results grouped by GNW&rsquo;s six <b>priority use cases</b>. A
-          question can serve more than one use case. Each use case draws on its
-          own mix of question types, places and datasets: select one to see it.
+          Results grouped by GNW&rsquo;s <b>priority use cases</b>. A question
+          can serve more than one use case. Each use case draws on its own mix
+          of question types, places and datasets: select one to see it.
         </>
       }
     >
       <UseCaseDetail
         uc={selected}
         all={ordered}
-        typeLabels={typeLabels}
-        onPick={setSelectedKey}
+        onPick={select}
         questionsHref={questionsHref}
         methodologyHref={methodologyHref}
         detailRef={detailRef}
@@ -285,64 +242,22 @@ export function UseCasesSection({
       </Box>
       <Box display="grid" gap={2}>
         {ordered.map((uc) => {
-          const total = uc.stats.scored + uc.stats.errors;
           const isSelected = uc.key === selected.key;
           return (
-            <chakra.button
+            <SelectableRow
               key={uc.key}
-              type="button"
-              onClick={() => {
-                setSelectedKey(uc.key);
-                revealIfAbove(detailRef.current);
-              }}
-              aria-pressed={isSelected}
-              aria-label={`${uc.label}, ${total} questions: ${tierSummary(uc.stats)}`}
-              display="grid"
-              gridTemplateColumns={{
-                base: "minmax(0, 1fr) 5rem",
-                md: "minmax(0, 16rem) 6rem minmax(0, 1fr)",
-              }}
-              gap={{ base: 2, md: 4 }}
-              alignItems="center"
-              textAlign="left"
-              cursor="pointer"
-              p={3}
-              borderWidth="1px"
-              borderColor={isSelected ? "primary.solid" : "border"}
-              borderRadius="md"
-              bg={isSelected ? "bg.subtle" : "bg.panel"}
-              _hover={{ borderColor: "primary.solid" }}
-              _focusVisible={{
-                outline: "2px solid",
-                outlineColor: "primary.solid",
-                outlineOffset: "2px",
-              }}
+              selected={isSelected}
+              onSelect={() => select(uc.key)}
+              ariaLabel={`${uc.label}, ${uc.stats.total} questions: ${tierLines(uc.stats).join(", ")}`}
+              title={uc.label}
+              sub={`${uc.key} · ${uc.stats.total} questions`}
+              value={pct(uc.stats.everyTime)}
+              caption="every time"
             >
-              <Box minW={0}>
-                <Text fontWeight="semibold" truncate>
-                  {uc.label}
-                </Text>
-                <Text fontSize="xs" color="fg.subtle">
-                  {uc.key} · {total} questions
-                </Text>
-              </Box>
-              <Box textAlign={{ base: "right", md: "left" }}>
-                <Text fontWeight="semibold" fontVariantNumeric="tabular-nums">
-                  {pct(uc.stats.everyTime)}
-                </Text>
-                <Text fontSize="xs" color="fg.subtle">
-                  every time
-                </Text>
-              </Box>
-              <Box
-                gridColumn={{ base: "1 / -1", md: "auto" }}
-                minW={0}
-                display="grid"
-                gap={2}
-              >
+              <Box display="grid" gap={2}>
                 <TierBar stats={uc.stats} label={uc.label} />
                 <Flex justify="space-between" align="center" gap={3}>
-                  <MixChips uc={uc} typeLabels={typeLabels} />
+                  <MixChips uc={uc} />
                   <Text
                     as="span"
                     fontSize="xs"
@@ -353,7 +268,7 @@ export function UseCasesSection({
                   </Text>
                 </Flex>
               </Box>
-            </chakra.button>
+            </SelectableRow>
           );
         })}
       </Box>

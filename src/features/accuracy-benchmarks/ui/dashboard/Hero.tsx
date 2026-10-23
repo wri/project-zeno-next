@@ -10,7 +10,7 @@ import { Link } from "@/src/shared/lib/router";
 import type { BenchmarkPage } from "../../model/types";
 import { formatDay, pct } from "../../lib/format";
 import { tiersOf } from "../../lib/tiers";
-import { Eyebrow, tierSwatchStyle } from "../parts";
+import { Eyebrow, Panel, TierSegments, tierSwatchStyle } from "../parts";
 import { TrendChart, type TrendPoint } from "./TrendChart";
 
 export function Hero({
@@ -23,9 +23,8 @@ export function Hero({
   readonly methodologyHref: string;
 }) {
   const { summary, benchmark } = page;
-  const n = summary.scored;
   const tiers = tiersOf(summary);
-  const draft = benchmark.status === "draft";
+  const draft = benchmark.draftLabel !== null;
   return (
     <Grid
       as="section"
@@ -47,9 +46,7 @@ export function Hero({
           letterSpacing="-0.02em"
           fontVariantNumeric="tabular-nums"
         >
-          {summary.everyTime == null
-            ? "–"
-            : (summary.everyTime * 100).toFixed(1)}
+          {pct(summary.everyTime, 1).replace("%", "")}
           <Text as="span" fontSize="0.45em" ml={1} color="fg.muted">
             %
           </Text>
@@ -60,24 +57,7 @@ export function Hero({
         </Text>
 
         <Box mt={6} role="group" aria-label="How often answers were accurate">
-          <Flex
-            gap="2px"
-            h="14px"
-            borderRadius="4px"
-            overflow="hidden"
-            aria-hidden
-          >
-            {tiers.map((t) =>
-              t.count ? (
-                <Box
-                  key={t.key}
-                  flex={`${t.count} 1 0`}
-                  minW="2px"
-                  {...tierSwatchStyle(t.key)}
-                />
-              ) : null
-            )}
-          </Flex>
+          <TierSegments stats={summary} height="14px" />
           <Box as="ul" listStyleType="none" mt={3} display="grid" gap={1.5}>
             {tiers.map((t) => (
               <Grid
@@ -104,7 +84,7 @@ export function Hero({
                   textAlign="right"
                   fontVariantNumeric="tabular-nums"
                 >
-                  {pct(n ? t.count / n : null, 1)}
+                  {pct(t.share, 1)}
                 </Text>
                 <Text as="span">
                   <Text as="b" color="fg">
@@ -142,7 +122,7 @@ export function Hero({
               Benchmark Set
             </Text>
             <Text as="dd" fontWeight="semibold">
-              v{benchmark.version.slice(0, 4)}{" "}
+              v{benchmark.set}{" "}
               {draft ? (
                 <Badge size="sm" colorPalette="yellow" variant="subtle">
                   draft
@@ -164,7 +144,7 @@ export function Hero({
                   fontSize="xs"
                   color="fg.subtle"
                 >
-                  {n} scored; {summary.errors} got no answer
+                  {summary.scored} scored; {summary.errors} got no answer
                 </Text>
               ) : null}
             </Text>
@@ -180,18 +160,11 @@ export function Hero({
         </Flex>
       </Box>
 
-      <Box
-        minW={0}
-        borderWidth="1px"
-        borderColor="border"
-        borderRadius="lg"
-        bg="bg.panel"
-        p={{ base: 4, md: 5 }}
-      >
+      <Panel minW={0}>
         <Flex justify="space-between" align="baseline" gap={3} mb={2}>
           <Text fontWeight="semibold">Accuracy over time</Text>
           <Text fontSize="xs" color="fg.subtle">
-            Benchmark Set v{benchmark.version.slice(0, 4)}
+            Benchmark Set v{benchmark.set}
           </Text>
         </Flex>
         <TrendChart points={trend} draft={draft} />
@@ -201,7 +174,7 @@ export function Hero({
             review. The official baseline is in November.
           </Text>
         ) : null}
-      </Box>
+      </Panel>
     </Grid>
   );
 }

@@ -1,4 +1,4 @@
-import { formatDay } from "../../lib/format";
+import { formatDay, pct } from "../../lib/format";
 import { monthsSinceOrigin } from "../../lib/runs";
 
 export interface TrendPoint {
@@ -69,10 +69,7 @@ export function TrendChart({
       aria-label={
         points.length
           ? `Accuracy over time: ${points
-              .map(
-                (p) =>
-                  `${(p.everyTime * 100).toFixed(1)}% on ${formatDay(p.started)}`
-              )
+              .map((p) => `${pct(p.everyTime, 1)} on ${formatDay(p.started)}`)
               .join(", ")}.`
           : "Accuracy over time: no comparable runs yet."
       }
@@ -152,7 +149,7 @@ export function TrendChart({
       )}
       {placed.map((p) => (
         <g key={p.runId}>
-          <title>{`${formatDay(p.started)}${draft ? " · draft run" : ""}: ${(p.everyTime * 100).toFixed(1)}% accurate every time${p.majority == null ? "" : `, ${(p.majority * 100).toFixed(1)}% at least most of the time`}`}</title>
+          <title>{`${formatDay(p.started)}${draft ? " · draft run" : ""}: ${pct(p.everyTime, 1)} accurate every time${p.majority == null ? "" : `, ${pct(p.majority, 1)} at least most of the time`}`}</title>
           <circle
             cx={p.px}
             cy={p.py}
@@ -172,7 +169,7 @@ export function TrendChart({
             fontWeight="650"
             fill="var(--chakra-colors-fg)"
           >
-            {(last.everyTime * 100).toFixed(1)}%
+            {pct(last.everyTime, 1)}
           </text>
           <text
             x={last.px + 15}

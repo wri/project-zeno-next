@@ -1,6 +1,15 @@
 import type { GroupStats } from "../model/types";
+import { pct, share } from "./format";
 
-export type TierKey = "every" | "most" | "some" | "never";
+/** The reliability tiers, best first. */
+export const TIERS = [
+  { key: "every", label: "Accurate every time", attempts: "3 of 3 tries" },
+  { key: "most", label: "Accurate most of the time", attempts: "2 of 3 tries" },
+  { key: "some", label: "Accurate some of the time", attempts: "1 of 3 tries" },
+  { key: "never", label: "Never accurate", attempts: "0 of 3 tries" },
+] as const;
+
+export type TierKey = (typeof TIERS)[number]["key"];
 
 export interface Tier {
   readonly key: TierKey;
@@ -8,19 +17,13 @@ export interface Tier {
   /** How many of the three attempts were right. */
   readonly attempts: string;
   readonly count: number;
+  readonly share: number | null;
 }
 
-const TIER_LABELS: Readonly<Record<TierKey, [string, string]>> = {
-  every: ["Accurate every time", "3 of 3 tries"],
-  most: ["Accurate most of the time", "2 of 3 tries"],
-  some: ["Accurate some of the time", "1 of 3 tries"],
-  never: ["Never accurate", "0 of 3 tries"],
-};
-
 /**
- * Split a group's scored questions into four reliability tiers. The page
- * data carries the three cumulative shares (every time ⊆ majority ⊆ any
- * time), so the tiers are their differences.
+ * Split a group's scored questions into the four tiers. The page data
+ * carries the three cumulative shares (every time ⊆ majority ⊆ any time),
+ * so the tiers are their differences.
  */
 export function tiersOf(stats: GroupStats): Tier[] {
   const n = stats.scored;
@@ -33,15 +36,16 @@ export function tiersOf(stats: GroupStats): Tier[] {
     some: any - most,
     never: n - any,
   };
-  return (Object.keys(TIER_LABELS) as TierKey[]).map((key) => ({
-    key,
-    label: TIER_LABELS[key][0],
-    attempts: TIER_LABELS[key][1],
-    count: counts[key],
+  return TIERS.map((t) => ({
+    ...t,
+    count: counts[t.key],
+    share: share(counts[t.key], n),
   }));
 }
 
-/** The tier legend, independent of any group. */
-export const TIER_LEGEND: readonly Pick<Tier, "key" | "label">[] = (
-  Object.keys(TIER_LABELS) as TierKey[]
-).map((key) => ({ key, label: TIER_LABELS[key][0] }));
+/** One line per tier, e.g. "58% accurate every time (65)". */
+export function tierLines(stats: GroupStats): string[] {
+  return tiersOf(stats).map(
+    (t) => `${pct(t.share)} ${t.label.toLowerCase()} (${t.count})`
+  );
+}
