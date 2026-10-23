@@ -1,14 +1,13 @@
 import { Box, Flex, Text } from "@chakra-ui/react";
-import { ChartBarIcon } from "@phosphor-icons/react";
 
 import InsightCaption from "@/app/components/InsightCaption";
-import WidgetMessage from "@/app/components/WidgetMessage";
 import { AnalysisParamsChips } from "@/app/components/widgets/AnalysisParameters";
 import { buildChips } from "@/app/components/widgets/analysis-params-utils";
 import type { InsightWidget } from "@/app/types/chat";
 import type { MapWidgetLayer } from "../lib/mapWidgets";
-import DashboardMapWidget from "./DashboardMapWidget";
 import DashboardTextWidget from "./DashboardTextWidget";
+import DashboardWidgetBody from "./DashboardWidgetBody";
+import { WIDGET_TITLE_PROPS } from "./DashboardWidgetCard";
 
 // A widget is never split across pages. A card taller than a page still is:
 // the browser treats this as a preference.
@@ -44,14 +43,7 @@ export default function DashboardWidgetDocument({
 
   return (
     <Flex flexDir="column" css={UNBROKEN}>
-      <Text
-        pb="8px"
-        fontSize="14px"
-        fontWeight="medium"
-        lineHeight="16px"
-        color="#172B7A"
-        wordBreak="break-word"
-      >
+      <Text pb="8px" {...WIDGET_TITLE_PROPS}>
         {title}
       </Text>
       {chips.length > 0 && (
@@ -61,33 +53,15 @@ export default function DashboardWidgetDocument({
         </Box>
       )}
       {intro}
-      {placeholder ? (
-        <Flex
-          minH="160px"
-          align="center"
-          justify="center"
-          direction="column"
-          gap={2}
-          color="fg.muted"
-          px={6}
-          textAlign="center"
-        >
-          <ChartBarIcon size={24} />
-          <Text fontSize="sm">{placeholder}</Text>
-        </Flex>
-      ) : map ? (
-        <DashboardMapWidget
-          layer={map}
-          aoi={aoi}
-          bboxOverride={viewportBbox ?? null}
-          tall={isDouble}
-          print
-        />
-      ) : (
-        card && (
-          <WidgetMessage widget={card} inWorkspace fullWidth={isDouble} print />
-        )
-      )}
+      <DashboardWidgetBody
+        card={card}
+        map={map}
+        aoi={aoi}
+        viewportBbox={viewportBbox}
+        placeholder={placeholder}
+        isDouble={isDouble}
+        print
+      />
     </Flex>
   );
 }
@@ -102,6 +76,7 @@ export function DashboardNoteDocument({
   placeholder,
 }: {
   text: string | null;
+  /** Copy shown when the note is empty; the grid sets it whenever `text` is null. */
   placeholder: string | null;
 }) {
   return (
@@ -119,7 +94,7 @@ export function DashboardNoteDocument({
         <DashboardTextWidget text={text} print />
       ) : (
         <Text py="12px" fontSize="sm" color="fg.muted">
-          {placeholder ?? "This note is empty."}
+          {placeholder}
         </Text>
       )}
     </Box>

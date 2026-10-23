@@ -259,11 +259,20 @@ function ContainerGrid({
     const size = topLevelSize(widget);
     const body =
       widget.widget_type === "insight" ? null : standaloneBody(widget);
-    const title =
-      body?.map?.title ??
-      (typeof widget.config.title === "string" ? widget.config.title : "");
     const lifted = drag?.id === widget.id ? drag : null;
     const armDrag = (event: React.PointerEvent) => onDragStart(event, widget);
+    // What a map or placeholder cell shows, on the dashboard and on paper.
+    const standalone = {
+      title:
+        body?.map?.title ??
+        (typeof widget.config.title === "string" ? widget.config.title : ""),
+      card: null,
+      map: body?.map,
+      aoi: areaAoi,
+      viewportBbox: body?.map ? mapWidgetViewportBbox(widget.config) : null,
+      placeholder: body?.placeholder ?? null,
+      isDouble: size === "double",
+    };
 
     return (
       <Box
@@ -295,58 +304,40 @@ function ContainerGrid({
               }
               onRemove={() => deleteWidget.mutate(widget.id)}
             />
-          ) : print ? (
-            widget.widget_type === "text" ? (
+          ) : widget.widget_type === "text" ? (
+            print ? (
               <DashboardNoteDocument
                 text={body?.text ?? null}
-                placeholder={body?.placeholder ?? null}
+                placeholder={standalone.placeholder}
               />
             ) : (
-              <DashboardWidgetDocument
-                title={title}
-                card={null}
-                map={body?.map}
-                aoi={areaAoi}
-                viewportBbox={
-                  body?.map ? mapWidgetViewportBbox(widget.config) : null
+              <DashboardTextWidgetCard
+                text={body?.text ?? null}
+                placeholder={standalone.placeholder}
+                isOwner={isOwner}
+                isDouble={standalone.isDouble}
+                onArmDrag={armDrag}
+                onToggleSize={() => toggleSize(widget)}
+                onSaveText={(next) =>
+                  updateWidget.mutate({
+                    widgetId: widget.id,
+                    patch: { config: withText(widget.config, next) },
+                  })
                 }
-                placeholder={body?.placeholder ?? null}
-                isDouble={size === "double"}
+                onRemove={() => deleteWidget.mutate(widget.id)}
               />
             )
-          ) : widget.widget_type === "text" ? (
-            <DashboardTextWidgetCard
-              text={body?.text ?? null}
-              placeholder={body?.placeholder ?? null}
-              isOwner={isOwner}
-              isDouble={size === "double"}
-              onArmDrag={armDrag}
-              onToggleSize={() => toggleSize(widget)}
-              onSaveText={(next) =>
-                updateWidget.mutate({
-                  widgetId: widget.id,
-                  patch: { config: withText(widget.config, next) },
-                })
-              }
-              onRemove={() => deleteWidget.mutate(widget.id)}
-            />
+          ) : print ? (
+            <DashboardWidgetDocument {...standalone} />
           ) : (
             <DashboardWidgetCard
-              title={title}
-              card={null}
-              map={body?.map}
-              aoi={areaAoi}
-              viewportBbox={
-                body?.map ? mapWidgetViewportBbox(widget.config) : null
-              }
-              placeholder={body?.placeholder ?? null}
+              {...standalone}
               removeMode="widget"
               isOwner={isOwner}
-              isDouble={size === "double"}
               onArmDrag={armDrag}
               onToggleSize={() => toggleSize(widget)}
               onRename={
-                body?.placeholder
+                standalone.placeholder
                   ? undefined
                   : (name) =>
                       updateWidget.mutate({
