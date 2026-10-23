@@ -6,7 +6,7 @@ import type { DrawAreaSlice } from "@/app/store/drawAreaSlice";
 import useMapStore from "@/app/store/mapStore";
 import { addCustomAreaToMap } from "@/app/utils/addCustomAreaToMap";
 import { formatAreaWithUnits } from "@/app/utils/formatArea";
-import { MAX_AREA_KM2, MIN_AREA_KM2 } from "@/src/entities/custom-area";
+import { MAX_AREA_KM2 } from "@/src/entities/custom-area";
 
 /**
  * Draw and Upload for the `AreasPanel`, above the filter chips. While drawing,
@@ -197,10 +197,8 @@ function DrawingStatus({ onRedraw }: { onRedraw: () => void }) {
 type DrawValidationError = NonNullable<DrawAreaSlice["validationError"]>;
 
 /** "Area too large: 4,322,548 km². Maximum is 10,000 km²." */
-export function drawErrorMessage({ code, area }: DrawValidationError): string {
-  return code === "too-small"
-    ? `Area too small: ${formatAreaWithUnits(area)}. Minimum is ${formatAreaWithUnits(MIN_AREA_KM2)}.`
-    : `Area too large: ${formatAreaWithUnits(area)}. Maximum is ${formatAreaWithUnits(MAX_AREA_KM2)}.`;
+export function drawErrorMessage({ area }: DrawValidationError): string {
+  return `Area too large: ${formatAreaWithUnits(area)}. Maximum is ${formatAreaWithUnits(MAX_AREA_KM2)}.`;
 }
 
 function DrawError({

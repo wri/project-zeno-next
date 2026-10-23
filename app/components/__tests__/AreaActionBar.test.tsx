@@ -147,10 +147,10 @@ describe("AreaActionBar", () => {
 
   it("dismisses a rejected shape back to Draw and Upload", () => {
     useMapStore.setState({
-      validationError: { code: "too-small", area: 0.04 },
+      validationError: { code: "too-large", area: 4_322_548 },
     });
     renderBar();
-    expect(screen.getByRole("alert").textContent).toContain("Minimum is");
+    expect(screen.getByRole("alert").textContent).toContain("Maximum is");
 
     fireEvent.click(button("Dismiss"));
     expect(actions.clearValidationError).toHaveBeenCalledOnce();
