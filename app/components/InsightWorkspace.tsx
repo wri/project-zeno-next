@@ -119,12 +119,34 @@ export default function InsightWorkspace() {
     (state) => state.isGeneratingInsight
   );
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  // In the store, not local state, so a chat request can tell the agent
+  // which chart is on screen (view_context.focused_insight).
+  const isCollapsed = useInsightStore((state) => state.isWorkspaceCollapsed);
+  const setWorkspaceCollapsed = useInsightStore(
+    (state) => state.setWorkspaceCollapsed
+  );
+  const setFocusedWidgetId = useInsightStore(
+    (state) => state.setFocusedWidgetId
+  );
   const [paramsExpanded, setParamsExpanded] = useState(false);
 
   useEffect(() => {
     setCurrentIndex(0);
   }, [insights.length]);
+
+  // Only this component knows the pager order, so it publishes the chart on
+  // show. Unmounting shows nothing and resets the card, as local state did.
+  const focusedWidgetId = insights[currentIndex]?.id ?? null;
+  useEffect(() => {
+    setFocusedWidgetId(focusedWidgetId);
+  }, [focusedWidgetId, setFocusedWidgetId]);
+  useEffect(
+    () => () => {
+      setFocusedWidgetId(null);
+      setWorkspaceCollapsed(false);
+    },
+    [setFocusedWidgetId, setWorkspaceCollapsed]
+  );
 
   const total = insights.length;
   // First analysis still generating: no chart to show yet, so present a
@@ -262,7 +284,7 @@ export default function InsightWorkspace() {
             color="#656E7B"
             aria-label={isCollapsed ? "Expand insight" : "Collapse insight"}
             flexShrink={0}
-            onClick={() => setIsCollapsed((v) => !v)}
+            onClick={() => setWorkspaceCollapsed(!isCollapsed)}
           >
             {isCollapsed ? (
               <CaretDownIcon size={12} weight="bold" />

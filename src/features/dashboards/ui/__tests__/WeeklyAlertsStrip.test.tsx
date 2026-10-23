@@ -98,7 +98,7 @@ describe("WeeklyAlertsStrip", () => {
     );
   });
 
-  it("renders nothing for a dashboard without alerts in the summary's period", async () => {
+  it("renders nothing for a dashboard without alerts", async () => {
     vi.mocked(fetchDashboardAlertsSummary).mockResolvedValue(summaryWith({}));
 
     const { container } = renderStrip();

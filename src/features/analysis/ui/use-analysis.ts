@@ -121,8 +121,14 @@ export function useAnalysis(
       // Drive the shared insight-workspace skeleton (the direct flow doesn't go
       // through chatStore, which owns this flag for the generative flow).
       useChatStore.getState().setGeneratingInsight(true);
+      // File the result under the open conversation, if there is one. Before
+      // the first chat message there is no thread, and it stays the user's.
+      const request = {
+        ...selection,
+        threadId: useChatStore.getState().currentThreadId ?? undefined,
+      };
 
-      service.run(selection, controller.signal).then(
+      service.run(request, controller.signal).then(
         (analysisResult) => {
           setResult(analysisResult);
           setStatus("done");
@@ -131,6 +137,7 @@ export function useAnalysis(
           // than an area-only one.
           const rawWidgets = chartsToWidgets(
             analysisResult.charts,
+            analysisResult.id,
             analysisResult.params
               ? {
                   areas: [analysisResult.params.name],

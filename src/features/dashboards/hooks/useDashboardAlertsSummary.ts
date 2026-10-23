@@ -7,14 +7,14 @@ import {
 import { fetchDashboardAlertsSummary } from "../api/dashboards";
 import { dashboardKeys } from "./dashboardKeys";
 
-// The alert week only turns over on a Sunday, but a dashboard's first summary
-// of the day can still be waiting on an analytics job, so re-check hourly
-// rather than once per session; the entry stays cached that long too, so a
-// detour through the map does not cost a new request on return.
+// The period moves at most daily, with each alerts release, but a dashboard's
+// first summary of the day can still be waiting on an analytics job, so
+// re-check hourly rather than once per session; the entry stays cached that
+// long too, so a detour through the map does not cost a new request on return.
 const STALE_TIME_MS = 60 * 60 * 1000;
 
 /**
- * Integrated alerts over the latest full alert week for the given dashboards.
+ * Integrated alerts over the backend's default period for the given dashboards.
  * Disabled for an empty list (the backend rejects one). While a create or
  * delete changes the id set the previous summary is held, so badges do not
  * blink out and back; lookups are by id, so the held copy stays right.

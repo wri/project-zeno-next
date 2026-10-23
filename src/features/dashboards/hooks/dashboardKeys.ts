@@ -29,6 +29,9 @@ export const dashboardKeys = {
       range?.end ?? null,
       landFilter,
     ] as const,
+  // The dataset's own dates, the same for every user and dashboard, so no
+  // dashboard write invalidates them.
+  alertsFreshness: ["integrated-alerts-freshness"] as const,
   // A mutation key, not a query key: lets any mounted card see a template
   // request that is still in flight for this dashboard.
   applyTemplate: (dashboardId: string) =>
