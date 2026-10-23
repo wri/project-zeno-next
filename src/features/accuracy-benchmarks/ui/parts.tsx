@@ -137,22 +137,19 @@ function TierSegments({
 }
 
 /**
- * The four reliability tiers of a group as one stacked bar. Inside a
- * button (`decorative`) it is a plain picture and the button carries the
- * words; standalone it is focusable with a tooltip.
+ * The four reliability tiers of a group as one stacked bar, with the
+ * breakdown on hover. It sits inside a row button, which carries the same
+ * words as its label, so the bar itself takes no focus.
  */
 export function TierBar({
   stats,
   label,
   height = "12px",
-  decorative = false,
 }: {
   readonly stats: GroupStats;
   readonly label: string;
   readonly height?: string;
-  readonly decorative?: boolean;
 }) {
-  if (decorative) return <TierSegments stats={stats} height={height} />;
   const n = stats.scored;
   return (
     <Tooltip
@@ -167,16 +164,18 @@ export function TierBar({
         </Box>
       }
     >
-      <Box
-        role="img"
-        aria-label={`${label}: ${tierSummary(stats)}`}
-        tabIndex={0}
-        w="100%"
-      >
+      <Box w="100%">
         <TierSegments stats={stats} height={height} />
       </Box>
     </Tooltip>
   );
+}
+
+/** Bring a detail panel into view after a row below it changed it. */
+export function revealIfAbove(el: HTMLElement | null): void {
+  if (!el || el.getBoundingClientRect().top >= 60) return;
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
 }
 
 /** Tier counts as inline facts, e.g. "Accurate every time 38". */

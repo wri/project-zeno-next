@@ -47,7 +47,14 @@ function useTrend(
     const everyTime = loaded?.summary.everyTime;
     return everyTime == null
       ? []
-      : [{ runId: run.runId, started: run.started, everyTime }];
+      : [
+          {
+            runId: run.runId,
+            started: run.started,
+            everyTime,
+            majority: loaded?.summary.majority ?? null,
+          },
+        ];
   });
 }
 
@@ -73,6 +80,11 @@ function Dashboard({
         questionsHref={(useCase) =>
           pageHref({ view: "questions", run: runId, useCase })
         }
+        methodologyHref={pageHref({
+          view: "methodology",
+          run: runId,
+          hash: "question-types",
+        })}
       />
       <QuestionTypesSection page={page} />
       <Flex
@@ -210,7 +222,12 @@ export function AccuracyBenchmarksScreen() {
               initialUseCase={useCaseParam}
             />
           ) : null}
-          {view === "methodology" ? <MethodologyView page={data} /> : null}
+          {view === "methodology" ? (
+            <MethodologyView
+              page={data}
+              dashboardHref={pageHref({ run: run?.runId })}
+            />
+          ) : null}
           <Text
             as="footer"
             fontSize="xs"

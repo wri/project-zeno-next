@@ -194,7 +194,7 @@ export function Hero({
             Benchmark Set v{benchmark.version.slice(0, 4)}
           </Text>
         </Flex>
-        <TrendChart points={trend} />
+        <TrendChart points={trend} draft={draft} />
         {draft ? (
           <Text fontSize="xs" color="fg.muted" mt={2}>
             <b>Draft run:</b> expected answers for new questions are still under

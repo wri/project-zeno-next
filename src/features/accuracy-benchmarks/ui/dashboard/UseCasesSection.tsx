@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useRef, useState, type ReactNode, type Ref } from "react";
 import {
   chakra,
   Box,
   Flex,
   Grid,
+  HStack,
   Link as ChakraLink,
   NativeSelect,
   Text,
@@ -13,7 +14,14 @@ import { ATTRIBUTION_ORDER, STAGE_LABELS } from "../../model/config";
 import type { BenchmarkPage, Count, UseCaseResult } from "../../model/types";
 import { pct } from "../../lib/format";
 import { mixSentence } from "../../lib/mix";
-import { Section, TierBar, TierFacts, TierLegend, tierSummary } from "../parts";
+import {
+  revealIfAbove,
+  Section,
+  TierBar,
+  TierFacts,
+  TierLegend,
+  tierSummary,
+} from "../parts";
 
 function bySize(a: UseCaseResult, b: UseCaseResult): number {
   return b.stats.scored + b.stats.errors - (a.stats.scored + a.stats.errors);
@@ -34,27 +42,31 @@ function failureSummary(uc: UseCaseResult): string {
 
 function CountBars({
   title,
+  aside,
   counts,
   total,
   label = (k) => k,
 }: {
   readonly title: string;
+  readonly aside?: ReactNode;
   readonly counts: readonly Count[];
   readonly total: number;
   readonly label?: (key: string) => string;
 }) {
   return (
     <Box minW={0}>
-      <Text
-        fontFamily="mono"
-        fontSize="xs"
-        color="fg.subtle"
-        textTransform="uppercase"
-        letterSpacing="0.06em"
-        mb={2}
-      >
-        {title}
-      </Text>
+      <Flex mb={2} gap={2} justify="space-between" align="baseline" wrap="wrap">
+        <Text
+          fontFamily="mono"
+          fontSize="xs"
+          color="fg.subtle"
+          textTransform="uppercase"
+          letterSpacing="0.06em"
+        >
+          {title}
+        </Text>
+        {aside}
+      </Flex>
       <Box display="grid" gap={1.5}>
         {counts.map((c) => (
           <Grid
@@ -84,22 +96,63 @@ function CountBars({
   );
 }
 
+/** Top question types and places of a use case as share chips. */
+function MixChips({
+  uc,
+  typeLabels,
+}: {
+  readonly uc: UseCaseResult;
+  readonly typeLabels: Readonly<Record<string, string>>;
+}) {
+  const total = uc.stats.scored + uc.stats.errors;
+  const chips = [
+    ...uc.composition.types
+      .slice(0, 4)
+      .map((c) => ({ ...c, key: typeLabels[c.key] ?? c.key })),
+    ...uc.composition.places.slice(0, 2),
+  ];
+  return (
+    <HStack gap={1.5} wrap="wrap">
+      {chips.map((c) => (
+        <Text
+          as="span"
+          key={c.key}
+          fontSize="2xs"
+          px={1.5}
+          py={0.5}
+          borderRadius="sm"
+          bg="bg.muted"
+          color="fg.muted"
+        >
+          {c.key} <b>{total ? Math.round((c.count / total) * 100) : 0}%</b>
+        </Text>
+      ))}
+    </HStack>
+  );
+}
+
 function UseCaseDetail({
   uc,
   all,
   typeLabels,
   onPick,
   questionsHref,
+  methodologyHref,
+  detailRef,
 }: {
   readonly uc: UseCaseResult;
   readonly all: readonly UseCaseResult[];
   readonly typeLabels: Readonly<Record<string, string>>;
   readonly onPick: (key: string) => void;
   readonly questionsHref: (key: string) => string;
+  readonly methodologyHref: string;
+  readonly detailRef: Ref<HTMLDivElement>;
 }) {
   const total = uc.stats.scored + uc.stats.errors;
   return (
     <Box
+      ref={detailRef}
+      scrollMarginTop={4}
       borderWidth="1px"
       borderColor="border"
       borderRadius="lg"
@@ -145,6 +198,11 @@ function UseCaseDetail({
       >
         <CountBars
           title="Question types"
+          aside={
+            <ChakraLink asChild color="primary.solid" fontSize="xs">
+              <Link href={methodologyHref}>Why question types? →</Link>
+            </ChakraLink>
+          }
           counts={uc.composition.types}
           total={total}
           label={(k) => typeLabels[k] ?? k}
@@ -185,12 +243,16 @@ function UseCaseDetail({
 export function UseCasesSection({
   page,
   questionsHref,
+  methodologyHref,
 }: {
   readonly page: BenchmarkPage;
   readonly questionsHref: (useCase: string) => string;
+  /** The methodology's "Why question types matter" block. */
+  readonly methodologyHref: string;
 }) {
   const ordered = [...page.useCases].sort(bySize);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const detailRef = useRef<HTMLDivElement>(null);
   const selected = ordered.find((u) => u.key === selectedKey) ?? ordered[0];
   const typeLabels = Object.fromEntries(
     page.types.map((t) => [t.key, t.label])
@@ -215,6 +277,8 @@ export function UseCasesSection({
         typeLabels={typeLabels}
         onPick={setSelectedKey}
         questionsHref={questionsHref}
+        methodologyHref={methodologyHref}
+        detailRef={detailRef}
       />
       <Box mt={4} mb={2}>
         <TierLegend />
@@ -227,7 +291,10 @@ export function UseCasesSection({
             <chakra.button
               key={uc.key}
               type="button"
-              onClick={() => setSelectedKey(uc.key)}
+              onClick={() => {
+                setSelectedKey(uc.key);
+                revealIfAbove(detailRef.current);
+              }}
               aria-pressed={isSelected}
               aria-label={`${uc.label}, ${total} questions: ${tierSummary(uc.stats)}`}
               display="grid"
@@ -267,8 +334,24 @@ export function UseCasesSection({
                   every time
                 </Text>
               </Box>
-              <Box gridColumn={{ base: "1 / -1", md: "auto" }} minW={0}>
-                <TierBar stats={uc.stats} label={uc.label} decorative />
+              <Box
+                gridColumn={{ base: "1 / -1", md: "auto" }}
+                minW={0}
+                display="grid"
+                gap={2}
+              >
+                <TierBar stats={uc.stats} label={uc.label} />
+                <Flex justify="space-between" align="center" gap={3}>
+                  <MixChips uc={uc} typeLabels={typeLabels} />
+                  <Text
+                    as="span"
+                    fontSize="xs"
+                    color={isSelected ? "fg.muted" : "primary.solid"}
+                    flexShrink={0}
+                  >
+                    {isSelected ? "Showing above" : "View details ›"}
+                  </Text>
+                </Flex>
               </Box>
             </chakra.button>
           );

@@ -6,6 +6,8 @@ export interface TrendPoint {
   readonly started: string;
   /** Share right on every try, in [0, 1]. */
   readonly everyTime: number;
+  /** Share right on at least 2 of 3 tries. */
+  readonly majority: number | null;
 }
 
 // Axis: Sep 2026 to Dec 2027 in months; the v2026 freeze is in November 2026.
@@ -32,8 +34,11 @@ const TICKS: readonly [number, string][] = [
  */
 export function TrendChart({
   points,
+  draft,
 }: {
   readonly points: readonly TrendPoint[];
+  /** Label the points as draft runs. */
+  readonly draft: boolean;
 }) {
   const lowest = Math.min(
     40,
@@ -147,7 +152,7 @@ export function TrendChart({
       )}
       {placed.map((p) => (
         <g key={p.runId}>
-          <title>{`${formatDay(p.started)}: ${(p.everyTime * 100).toFixed(1)}% accurate every time`}</title>
+          <title>{`${formatDay(p.started)}${draft ? " · draft run" : ""}: ${(p.everyTime * 100).toFixed(1)}% accurate every time${p.majority == null ? "" : `, ${(p.majority * 100).toFixed(1)}% at least most of the time`}`}</title>
           <circle
             cx={p.px}
             cy={p.py}
@@ -176,7 +181,7 @@ export function TrendChart({
             fontFamily="monospace"
             fill="var(--chakra-colors-fg-muted)"
           >
-            every time
+            {draft ? "draft · every time" : "every time"}
           </text>
         </>
       ) : null}

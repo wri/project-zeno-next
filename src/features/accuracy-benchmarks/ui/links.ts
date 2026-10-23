@@ -20,6 +20,8 @@ export function pageHref(params: {
   readonly view?: View;
   readonly run?: string | null;
   readonly useCase?: string;
+  /** An anchor on the target view, e.g. "question-types". */
+  readonly hash?: string;
 }): string {
   const search = new URLSearchParams();
   if (params.view && params.view !== "dashboard")
@@ -27,5 +29,6 @@ export function pageHref(params: {
   if (params.run) search.set("run", params.run);
   if (params.useCase) search.set("uc", params.useCase);
   const query = search.toString();
-  return query ? `${PAGE_PATH}?${query}` : PAGE_PATH;
+  const anchor = params.hash ? `#${params.hash}` : "";
+  return `${PAGE_PATH}${query ? `?${query}` : ""}${anchor}`;
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState, type Ref } from "react";
 import {
   Box,
   Button,
@@ -20,7 +20,14 @@ import type {
 } from "../../model/types";
 import { pct } from "../../lib/format";
 import { PASS_COLOR, STAGE_COLORS } from "../palette";
-import { Section, TierBar, TierFacts, TierLegend, tierSummary } from "../parts";
+import {
+  revealIfAbove,
+  Section,
+  TierBar,
+  TierFacts,
+  TierLegend,
+  tierSummary,
+} from "../parts";
 
 type BarView = "rate" | "modes";
 type ModeKey = "pass" | AttributionKey;
@@ -80,10 +87,18 @@ function ModesBar({ t }: { readonly t: MeasuredType }) {
   );
 }
 
-function TypeDetail({ t }: { readonly t: MeasuredType }) {
+function TypeDetail({
+  t,
+  detailRef,
+}: {
+  readonly t: MeasuredType;
+  readonly detailRef: Ref<HTMLDivElement>;
+}) {
   const fails = t.stats.scored - t.stats.passed;
   return (
     <Box
+      ref={detailRef}
+      scrollMarginTop={4}
       borderWidth="1px"
       borderColor="border"
       borderRadius="lg"
@@ -169,6 +184,7 @@ export function QuestionTypesSection({
 }) {
   const [view, setView] = useState<BarView>("rate");
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const detailRef = useRef<HTMLDivElement>(null);
   const selected =
     page.types.find((t) => t.key === selectedKey) ?? page.types[0];
   if (!selected) return null;
@@ -202,7 +218,7 @@ export function QuestionTypesSection({
         </HStack>
       }
     >
-      <TypeDetail t={selected} />
+      <TypeDetail t={selected} detailRef={detailRef} />
       <Box mt={4} mb={2}>
         {view === "rate" ? (
           <TierLegend />
@@ -224,7 +240,10 @@ export function QuestionTypesSection({
             <chakra.button
               key={t.key}
               type="button"
-              onClick={() => setSelectedKey(t.key)}
+              onClick={() => {
+                setSelectedKey(t.key);
+                revealIfAbove(detailRef.current);
+              }}
               aria-pressed={isSelected}
               aria-label={`${t.label}, ${t.stats.scored} questions: ${tierSummary(t.stats)}`}
               display="grid"
@@ -266,7 +285,7 @@ export function QuestionTypesSection({
               </Box>
               <Box gridColumn={{ base: "1 / -1", md: "auto" }} minW={0}>
                 {view === "rate" ? (
-                  <TierBar stats={t.stats} label={t.label} decorative />
+                  <TierBar stats={t.stats} label={t.label} />
                 ) : (
                   <ModesBar t={t} />
                 )}
