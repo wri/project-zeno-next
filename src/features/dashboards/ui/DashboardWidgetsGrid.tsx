@@ -294,6 +294,7 @@ function ContainerGrid({
           ) : widget.widget_type === "alerts" ? (
             <DashboardAlertsWidget
               widget={widget}
+              print={print}
               areaAoi={areaAoi}
               isOwner={isOwner}
               isDouble={size === "double"}

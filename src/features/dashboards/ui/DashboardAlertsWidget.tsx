@@ -35,6 +35,7 @@ import DashboardAlertsList, {
 } from "./DashboardAlertsList";
 import DashboardAlertsMapPane from "./DashboardAlertsMapPane";
 import DashboardWidgetCard from "./DashboardWidgetCard";
+import DashboardWidgetDocument from "./DashboardWidgetDocument";
 
 /** A list stays fresh for a few hours: the data moves once a day. */
 const ALERTS_STALE_MS = 3 * 60 * 60 * 1000;
@@ -75,15 +76,29 @@ interface CardProps {
  *
  * The config is parsed once (`alertsWidgetSpec`); a config that cannot be
  * rendered shows the shell with a placeholder, like a broken map widget.
+ *
+ * The export (`print`) has no static version of the list and map yet: it
+ * prints the title and a pointer to the dashboard, and fetches nothing.
  */
 export default function DashboardAlertsWidget({
   widget,
+  print = false,
   ...card
-}: { widget: DashboardWidget } & CardProps) {
+}: { widget: DashboardWidget; print?: boolean } & CardProps) {
   const spec = useMemo(
     () => alertsWidgetSpec(widget.config, card.areaAoi?.name),
     [widget.config, card.areaAoi?.name]
   );
+
+  if (print) {
+    return (
+      <DashboardWidgetDocument
+        title={spec?.title ?? "Integrated alerts"}
+        placeholder="Live integrated alerts: open the dashboard to see the list and map."
+        isDouble={card.isDouble}
+      />
+    );
+  }
 
   if (!spec) {
     return (
