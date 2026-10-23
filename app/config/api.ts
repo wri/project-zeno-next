@@ -5,10 +5,15 @@ const API_HOST =
 const RW_API_HOST =
   import.meta.env.NEXT_PUBLIC_RW_API_URL || "https://api.resourcewatch.org";
 
+const ANALYTICS_API_HOST =
+  import.meta.env.NEXT_PUBLIC_ANALYTICS_API_HOST ||
+  "https://analytics.globalnaturewatch.org";
+
 export const API_CONFIG = {
   API_HOST,
   API_BASE_URL: `${API_HOST}/api`,
   RW_API_HOST,
+  ANALYTICS_API_HOST,
   ENDPOINTS: {
     CHAT: `${API_HOST}/api/chat`,
     METADATA: `${API_HOST}/api/metadata`,

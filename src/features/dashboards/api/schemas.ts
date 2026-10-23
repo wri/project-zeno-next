@@ -137,16 +137,24 @@ export const DashboardCreateRequestSchema = z.object({
 // the BE's `null` for "could not be fetched" (with the reason in `errors`);
 // `lib/alerts-summary` settles it into an explicit state.
 export const DashboardAlertsResponseSchema = z.object({
-  // Alert area in hectares over the week.
+  // Alert area in hectares over the period.
   integrated_alerts: z.number().nullable(),
   errors: z.record(z.string(), z.string()).default({}),
 });
 
 export const DashboardAlertsSummaryResponseSchema = z.object({
-  // Inclusive ISO dates of the latest full alert week (Sunday to Saturday).
+  // Inclusive ISO dates of the period counted: by default the 7 days ending
+  // on the latest alert date, or the latest full Sunday-to-Saturday week when
+  // that date is unavailable.
   start_date: z.string(),
   end_date: z.string(),
   dashboards: z.record(z.string(), DashboardAlertsResponseSchema),
+});
+
+// GET /v0/land_change/integrated_alerts/latest on the analytics API, not the
+// GNW backend; `lib/alerts-summary` reads the release date from `version`.
+export const IntegratedAlertsLatestResponseSchema = z.object({
+  data: z.object({ alert_date: z.iso.date(), version: z.string() }),
 });
 
 export type DashboardAoi = z.infer<typeof DashboardAoiSchema>;
@@ -166,4 +174,7 @@ export type DashboardCreateRequest = z.infer<
 >;
 export type DashboardAlertsSummaryResponse = z.infer<
   typeof DashboardAlertsSummaryResponseSchema
+>;
+export type IntegratedAlertsLatestResponse = z.infer<
+  typeof IntegratedAlertsLatestResponseSchema
 >;

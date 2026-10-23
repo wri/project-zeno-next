@@ -13,7 +13,7 @@ export default function DashboardCard({
   hasNewAlerts,
 }: {
   dashboard: Dashboard;
-  /** Whether the area had integrated alerts in the latest full alert week. */
+  /** Whether the area had integrated alerts in the summary's period. */
   hasNewAlerts: boolean;
 }) {
   const primaryAoi = dashboard.aois[0];

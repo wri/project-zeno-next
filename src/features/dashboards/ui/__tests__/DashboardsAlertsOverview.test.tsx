@@ -3,7 +3,7 @@ import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import type { AlertsSummary } from "../../lib/alerts-summary";
+import type { AlertsFreshness, AlertsSummary } from "../../lib/alerts-summary";
 import DashboardsAlertsOverview from "../DashboardsAlertsOverview";
 
 const summary: AlertsSummary = {
@@ -13,7 +13,10 @@ const summary: AlertsSummary = {
   newAlertAreaHa: { a: 1457.83, c: 9 },
 };
 
-const checkedAt = Date.UTC(2026, 9, 9, 14, 0);
+const freshness: AlertsFreshness = {
+  latestAlertDate: "2026-10-09",
+  updatedOn: "2026-10-11",
+};
 
 const renderOverview = (
   props: Partial<Parameters<typeof DashboardsAlertsOverview>[0]> = {}
@@ -23,7 +26,7 @@ const renderOverview = (
       <DashboardsAlertsOverview
         summary={summary}
         dashboardIds={["a", "b", "c", "d"]}
-        checkedAt={checkedAt}
+        freshness={freshness}
         {...props}
       />
     </ChakraProvider>
@@ -34,12 +37,10 @@ describe("DashboardsAlertsOverview", () => {
     renderOverview();
 
     expect(
-      screen.getByText(
-        "2 of 4 dashboards have new alerts for the week of Oct 5–11"
-      )
+      screen.getByText("2 of 4 dashboards have new alerts detected Oct 5–11")
     ).toBeTruthy();
     expect(
-      screen.getByText("Integrated alerts checked Oct 9, 2026 · 14:00 UTC")
+      screen.getByText("Latest alert detected Oct 9, 2026 · updated Oct 11")
     ).toBeTruthy();
   });
 
@@ -47,21 +48,30 @@ describe("DashboardsAlertsOverview", () => {
     renderOverview({ dashboardIds: ["a"] });
 
     expect(
-      screen.getByText(
-        "1 of 1 dashboard has new alerts for the week of Oct 5–11"
-      )
+      screen.getByText("1 of 1 dashboard has new alerts detected Oct 5–11")
     ).toBeTruthy();
   });
 
-  it("leaves out the checked time while the summary is held over", () => {
-    renderOverview({ checkedAt: undefined });
+  it("shows the count without dates while they load or when they failed", () => {
+    renderOverview({ freshness: undefined });
 
     expect(
-      screen.getByText(
-        "2 of 4 dashboards have new alerts for the week of Oct 5–11"
-      )
+      screen.getByText("2 of 4 dashboards have new alerts detected Oct 5–11")
     ).toBeTruthy();
-    expect(screen.queryByText(/Integrated alerts checked/)).toBeNull();
+    expect(screen.queryByText(/Latest alert detected/)).toBeNull();
+  });
+
+  it("says none were detected yet when the period starts after the latest detection", () => {
+    renderOverview({
+      summary: { ...summary, newAlertAreaHa: {} },
+      freshness: { latestAlertDate: "2026-10-04", updatedOn: "2026-10-06" },
+    });
+
+    expect(screen.getByText("No alerts detected Oct 5–11 yet")).toBeTruthy();
+    expect(screen.queryByText(/dashboards have new alerts/)).toBeNull();
+    expect(
+      screen.getByText("Latest alert detected Oct 4, 2026 · updated Oct 6")
+    ).toBeTruthy();
   });
 
   it("holds its height, silently, while the summary loads", () => {
