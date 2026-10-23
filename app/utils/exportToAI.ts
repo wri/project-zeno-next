@@ -85,6 +85,24 @@ export function buildExportPrompt(widget: InsightWidget): string {
 
 export type ExportMethod = "url" | "clipboard";
 
+// Best-effort copy that also works where navigator.clipboard is missing
+// (non-HTTPS origins). Components use Chakra's useClipboard instead; this runs
+// outside React, and the prompt depends on map state at click time.
+function copyText(text: string) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).catch(() => {});
+    return;
+  }
+  const el = document.createElement("textarea");
+  el.value = text;
+  el.style.position = "fixed";
+  el.style.opacity = "0";
+  document.body.appendChild(el);
+  el.select();
+  document.execCommand("copy");
+  el.remove();
+}
+
 export function exportToAI(
   widget: InsightWidget,
   provider: AIProvider
@@ -105,9 +123,7 @@ export function exportToAI(
   }
 
   // No URL pre-fill support, or payload too large — clipboard + blank tab
-  navigator.clipboard.writeText(prompt).catch(() => {
-    // Best-effort; still open the tab even if clipboard write fails
-  });
+  copyText(prompt);
   window.open(baseUrl, "_blank", "noopener,noreferrer");
   return "clipboard";
 }
