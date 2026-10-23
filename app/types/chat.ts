@@ -118,10 +118,15 @@ export interface InsightWidget extends ChartColorFields {
   // direct/curated flow) as curated.
   curated?: boolean;
   analysisParams?: AnalysisParams; // Parameters used by the agent to produce this insight
-  // Persisted insight UUID (streamed with generate_insights). All charts of
-  // one analysis share it; it is the handle for REST widget adds
-  // (POST /api/dashboards/:id/widgets).
+  // Persisted insight UUID. All charts of one analysis share it; it is the
+  // handle for REST widget adds (POST /api/dashboards/:id/widgets) and the id
+  // the agent loads the insight by (view_context). generate_insights streams
+  // it; `chartsToWidgets` stamps it for direct analyses and stored insights.
   insightId?: string;
+  // This chart's 0-based position among its insight's charts (backend
+  // `position`), so the agent can tell which chart of an analysis is on
+  // screen.
+  chartPosition?: number;
 }
 
 // Parameters the agent used to produce an insight (read-only transparency)

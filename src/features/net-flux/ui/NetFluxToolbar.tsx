@@ -49,14 +49,14 @@ function DetailInfo() {
  *
  * DETAIL selects between the three roll-ups `LGMSChartGenerator` returns
  * (Full detail / Category / Summary) rather than re-slicing one payload. It is
- * hidden when the widget has no siblings — a single chart, or one rehydrated
- * without the id shape the grouping relies on.
+ * hidden when the widget has no siblings — a single chart, or one with no
+ * `insightId` to group by.
  *
  * By default the siblings are found in the map workspace's insight store by
- * `chartBatchKey`. Surfaces that render an analysis from somewhere else (the
- * dashboard module, the Analyses pane) hold its charts directly and their ids
- * do not carry that shape, so they pass `siblings` and the `groupKey` the
- * DETAIL choice is remembered under — see `netFluxRollups`.
+ * `insightId`. Surfaces that render an analysis from somewhere else (the
+ * dashboard module, the Analyses pane) hold its charts directly, so they pass
+ * `siblings` and the `groupKey` the DETAIL choice is remembered under — see
+ * `netFluxRollups`.
  */
 export function NetFluxToolbar({
   widget,

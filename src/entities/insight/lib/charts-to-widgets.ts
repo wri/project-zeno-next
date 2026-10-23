@@ -25,6 +25,10 @@ const ALLOWED_TYPES = new Set<InsightWidget["type"]>([
  * transport (ADR 0008). `analysisParams`, when supplied, is attached to every
  * widget in the batch.
  *
+ * Every chart here belongs to a persisted insight, so `insightId` is required:
+ * it is what the agent loads the insight by and what a dashboard adds, and
+ * stamping it here means no acquisition path can forget it.
+ *
  * Unknown chart types fall back to "bar" so a bad type never blanks the widget.
  *
  * The registry color fields are carried through — they drive ChartWidget's
@@ -35,6 +39,7 @@ const ALLOWED_TYPES = new Set<InsightWidget["type"]>([
  */
 export function chartsToWidgets(
   charts: Chart[],
+  insightId: string,
   analysisParams?: AnalysisParams
 ): InsightWidget[] {
   return charts.map((chart) => {
@@ -51,6 +56,8 @@ export function chartsToWidgets(
       yAxis: chart.yAxis,
       seriesFields: pivoted?.seriesFields ?? chart.seriesFields,
       analysisParams,
+      insightId,
+      chartPosition: chart.position,
       ...pickChartColors(chart),
     };
   });
