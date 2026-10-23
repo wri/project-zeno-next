@@ -3,17 +3,13 @@ import {
   AreaUploadDialog,
   type UploadedAreas,
 } from "@/src/features/area-upload";
+import { addCustomAreaToMap } from "../utils/addCustomAreaToMap";
 import { toaster } from "./ui/toaster";
 
 /** The map areas panel's upload dialog: the shared one, plus map side effects. */
 function UploadAreaDialog() {
-  const {
-    dialogVisible,
-    toggleUploadAreaDialog,
-    addToRegistry,
-    addLayer,
-    flyToGeoJson,
-  } = useMapStore();
+  const dialogVisible = useMapStore((s) => s.dialogVisible);
+  const toggleUploadAreaDialog = useMapStore((s) => s.toggleUploadAreaDialog);
 
   const handleUploaded = (result: UploadedAreas) => {
     // Batch-created areas are listed in the Areas panel, not drawn.
@@ -28,37 +24,7 @@ function UploadAreaDialog() {
       return;
     }
 
-    const {
-      name,
-      id,
-      geometries: [geo],
-    } = result.area;
-
-    const feat: GeoJSON.Feature = {
-      type: "Feature",
-      geometry: geo,
-      properties: {
-        id: id,
-        name: name,
-      },
-    };
-
-    addToRegistry({
-      ref: { name, source: "custom" },
-      data: feat,
-      srcId: id,
-      subtype: "custom-area",
-    });
-    // The visible layer IS the scope — no separate context item.
-    addLayer({
-      id,
-      name,
-      type: "geojson",
-      visible: true,
-      featureRefs: [{ name, source: "custom" }],
-    });
-
-    flyToGeoJson(feat);
+    addCustomAreaToMap(result.area);
   };
 
   return (

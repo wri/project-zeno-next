@@ -121,6 +121,13 @@ describe("AreaActionBar", () => {
     expect(useMapStore.getState().layers.map((l) => l.name)).toEqual([
       "Nakuru County, Kenya",
     ]);
+    // Selected for analysis, so the chat nudges as for a boundary click.
+    expect(useMapStore.getState().analysisSelection).toEqual({
+      name: "Nakuru County, Kenya",
+      source: "custom",
+      srcId: "a1",
+      subtype: "custom-area",
+    });
   });
 
   it("explains a rejected shape in the strip and offers to try again", () => {
