@@ -412,15 +412,26 @@ export default function WidgetMessage({
 
         {widget.type === "table" && (
           <WidgetErrorBoundary fallbackTitle="Unable to render table">
-            <ScrollableTableWrapper>
+            {print ? (
+              // Paper cannot scroll: every row, headers wrapping to fit.
               <TableWidget
                 data={
                   widget.data as Record<string, string | number | boolean>[]
                 }
                 caption={widget.title}
-                pageSize={print ? Infinity : undefined}
+                pageSize={Infinity}
+                wrap
               />
-            </ScrollableTableWrapper>
+            ) : (
+              <ScrollableTableWrapper>
+                <TableWidget
+                  data={
+                    widget.data as Record<string, string | number | boolean>[]
+                  }
+                  caption={widget.title}
+                />
+              </ScrollableTableWrapper>
+            )}
           </WidgetErrorBoundary>
         )}
         {/* Bottom action row — provenance + download + continue in AI */}

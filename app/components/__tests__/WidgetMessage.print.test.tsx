@@ -13,6 +13,12 @@ vi.mock("@/app/components/widgets/ChartWidget", async (importOriginal) => ({
   ...(await importOriginal<object>()),
   default: () => <div data-testid="chart" />,
 }));
+// The scroller only matters by its presence: paper has no scroll.
+vi.mock("@/app/components/widgets/ScrollableTableWrapper", () => ({
+  default: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="table-scroller">{children}</div>
+  ),
+}));
 
 import WidgetMessage from "../WidgetMessage";
 import type { InsightWidget } from "@/app/types/chat";
@@ -74,5 +80,21 @@ describe("WidgetMessage print", () => {
     // A header row plus all twelve data rows, and no pager.
     expect(screen.getAllByRole("row")).toHaveLength(rows.length + 1);
     expect(screen.queryByText(/of 12/)).toBeNull();
+  });
+
+  it("prints a table unscrolled, its headers wrapping to fit the page", () => {
+    renderCard(widget("table"), true);
+
+    expect(screen.queryByTestId("table-scroller")).toBeNull();
+    const header = screen.getAllByRole("columnheader")[0];
+    expect(getComputedStyle(header).whiteSpace).toBe("normal");
+  });
+
+  it("keeps a dashboard table in its horizontal scroller", () => {
+    renderCard(widget("table"), false);
+
+    expect(screen.getByTestId("table-scroller")).toBeTruthy();
+    const header = screen.getAllByRole("columnheader")[0];
+    expect(getComputedStyle(header).whiteSpace).toBe("pre");
   });
 });
