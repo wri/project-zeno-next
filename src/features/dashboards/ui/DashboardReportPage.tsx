@@ -70,8 +70,16 @@ const mapsDrawn = (timeoutMs: number) => {
   });
 };
 
-/** A CSS string literal, for the dashboard name in the page footer. */
-const cssString = (value: string) => `"${value.replace(/[\\"]/g, "\\$&")}"`;
+/**
+ * A CSS string literal, for the dashboard name in the page footer. A control
+ * character (a newline in a pasted name) cannot appear raw in a CSS string, so
+ * it is hex-escaped too: unescaped, it ends the string and the rest of the
+ * name would be read as CSS.
+ */
+const cssString = (value: string) =>
+  `"${value
+    .replace(/[\\"]/g, "\\$&")
+    .replace(/\p{Cc}/gu, (c) => `\\${c.codePointAt(0)?.toString(16)} `)}"`;
 
 /**
  * The printed page. Defining the margin boxes replaces the browser's own

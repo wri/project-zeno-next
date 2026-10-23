@@ -142,6 +142,16 @@ describe("DashboardReportPage", () => {
     expect(css).toContain('counter(page) " of " counter(pages)');
   });
 
+  it("keeps a name with control characters inside the footer's string", () => {
+    renderPage({ ...dashboard, name: "Ucayali\n} body { display: none; }" });
+
+    const css = [...document.querySelectorAll("style")]
+      .map((style) => style.textContent ?? "")
+      .find((text) => text.includes("@page"));
+    // The newline is a hex escape, so the brace after it stays in the string.
+    expect(css).toContain('content: "Ucayali\\a } body { display: none; }";');
+  });
+
   it("links back to the interactive dashboard", () => {
     renderPage();
 
