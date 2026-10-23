@@ -193,6 +193,9 @@ export default function DashboardMapWidget({
         // No scroll-zoom in the page: the widget must not trap the wheel.
         // Pan/double-click zoom remain available; full screen allows it.
         scrollZoom={!!fill}
+        // A report map is a picture of the area: moving it after it is drawn
+        // would load new tiles that Save as PDF no longer waits for.
+        interactive={!print}
         dragRotate={false}
         attributionControl={false}
         // Printing snapshots the WebGL canvas, which is blank without a

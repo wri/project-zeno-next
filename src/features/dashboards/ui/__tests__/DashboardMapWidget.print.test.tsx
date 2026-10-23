@@ -11,6 +11,8 @@ const maplibre = vi.hoisted(() => {
   const idle: (() => void)[] = [];
   return {
     idle,
+    // The props the last rendered map was created with.
+    props: {} as { interactive?: boolean },
     map: {
       once: vi.fn((event: string, cb: () => void) => {
         if (event === "idle") idle.push(cb);
@@ -31,11 +33,14 @@ vi.mock("react-map-gl/maplibre", () => {
     children,
     onLoad,
     ref,
+    interactive,
   }: {
     children?: React.ReactNode;
     onLoad?: () => void;
     ref?: React.Ref<unknown>;
+    interactive?: boolean;
   }) => {
+    maplibre.props = { interactive };
     useImperativeHandle(ref, () => ({
       getMap: () => maplibre.map,
       fitBounds: vi.fn(),
@@ -112,10 +117,16 @@ describe("DashboardMapWidget print readiness", () => {
     expect(readiness(container)).toBe("false");
   });
 
+  it("draws report maps static, so no pan can load tiles after they are ready", () => {
+    renderMap({ print: true });
+    expect(maplibre.props.interactive).toBe(false);
+  });
+
   it("leaves dashboard maps unmarked", () => {
     const { container } = renderMap({});
 
     expect(readiness(container)).toBeUndefined();
     expect(maplibre.map.once).not.toHaveBeenCalled();
+    expect(maplibre.props.interactive).toBe(true);
   });
 });
