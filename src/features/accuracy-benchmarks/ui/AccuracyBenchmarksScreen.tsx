@@ -55,6 +55,7 @@ function useTrend(
             started: run.started,
             everyTime: summary.everyTime,
             majority: summary.majority,
+            anyTime: summary.anyTime,
           },
         ];
   });

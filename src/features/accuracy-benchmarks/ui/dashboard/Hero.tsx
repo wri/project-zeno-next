@@ -9,8 +9,14 @@ import {
 import { Link } from "@/src/shared/lib/router";
 import type { BenchmarkPage } from "../../model/types";
 import { formatDay, pct } from "../../lib/format";
-import { tiersOf } from "../../lib/tiers";
-import { Eyebrow, Panel, TierSegments, tierSwatchStyle } from "../parts";
+import { TIERS, tiersOf } from "../../lib/tiers";
+import {
+  Eyebrow,
+  Legend,
+  Panel,
+  TierSegments,
+  tierSwatchStyle,
+} from "../parts";
 import { TrendChart, type TrendPoint } from "./TrendChart";
 
 export function Hero({
@@ -168,6 +174,38 @@ export function Hero({
           </Text>
         </Flex>
         <TrendChart points={trend} draft={draft} />
+        <Box mt={2}>
+          <Legend
+            items={[
+              {
+                key: "every",
+                label: "Accurate every time",
+                swatch: (
+                  <Box
+                    w="10px"
+                    h="10px"
+                    borderRadius="full"
+                    {...tierSwatchStyle("every")}
+                  />
+                ),
+              },
+              ...TIERS.filter((t) => t.key === "most" || t.key === "some").map(
+                (t) => ({
+                  key: t.key,
+                  label: `+ ${t.label.toLowerCase()}`,
+                  swatch: (
+                    <Box
+                      w="10px"
+                      h="10px"
+                      borderRadius="2px"
+                      {...tierSwatchStyle(t.key)}
+                    />
+                  ),
+                })
+              ),
+            ]}
+          />
+        </Box>
         {draft ? (
           <Text fontSize="xs" color="fg.muted" mt={2}>
             <b>Draft run:</b> expected answers for new questions are still under
