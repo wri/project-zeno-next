@@ -71,9 +71,11 @@ function renderModule({
   onUpdateConfig = vi.fn(),
   onRemove = vi.fn(),
   onToggleSize = vi.fn(),
+  print = false,
 }: {
   widget?: DashboardWidget;
   isOwner?: boolean;
+  print?: boolean;
   onUpdateConfig?: (config: Record<string, unknown>) => void;
   onRemove?: () => void;
   onToggleSize?: () => void;
@@ -84,6 +86,7 @@ function renderModule({
         widget={w}
         isOwner={isOwner}
         isDouble
+        print={print}
         onArmDrag={() => {}}
         onToggleSize={onToggleSize}
         onUpdateConfig={onUpdateConfig}
@@ -300,6 +303,24 @@ describe("DashboardInsightModule", () => {
       expect(screen.getByRole("button", { name: "DETAIL: Full" })).toBeTruthy();
       // Still two cards: the pill chooses within the fold, it doesn't unfold.
       expect(screen.getByText("2 of 2 charts")).toBeTruthy();
+    });
+
+    it("prints every roll-up, each under its own DETAIL", () => {
+      renderModule({ widget: lgmsWidget(), print: true });
+
+      expect(
+        screen.getAllByTestId("widget-message").map((c) => c.textContent)
+      ).toEqual([
+        "Net GHG Flux — Annual Average",
+        "Net GHG Flux — Full Detail",
+        "Net GHG Flux by Category",
+        "Net GHG Flux Summary",
+      ]);
+      for (const detail of ["Full", "Category", "Summary"]) {
+        expect(
+          screen.getAllByRole("button", { name: `DETAIL: ${detail}` })
+        ).toHaveLength(1);
+      }
     });
 
     it("shows the tree card's MEASURE pill, which has no DETAIL of its own", () => {

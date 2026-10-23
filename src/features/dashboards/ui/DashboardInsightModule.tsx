@@ -133,6 +133,7 @@ export default function DashboardInsightModule({
             widget={chart}
             siblings={rollups}
             groupKey={widget.id}
+            print={print}
           />
         )}
       </Flex>
@@ -142,7 +143,9 @@ export default function DashboardInsightModule({
   if (print) {
     return (
       <Flex direction="column" gap="24px">
-        {(cards.length > 0 ? cards : [undefined]).map((chart, i) => (
+        {/* Every shown chart, the net-flux roll-ups unfolded: paper has no
+            DETAIL menu to reach the others. */}
+        {(vm.cards.length > 0 ? vm.cards : [undefined]).map((chart, i) => (
           <DashboardWidgetDocument
             key={chart?.id ?? "no-chart"}
             title={chart?.title ?? vm.title}
