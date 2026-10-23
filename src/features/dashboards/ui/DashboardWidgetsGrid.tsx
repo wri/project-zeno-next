@@ -11,15 +11,12 @@ import {
 import { computeWidgetMove } from "../model/widget-move";
 import type { PendingInsightWidget } from "../model/pending-insight-widgets-store";
 import {
-  insightWidgetSize,
-  mapWidgetSize,
+  topLevelWidgetSize,
   unresolvedPendingInsightWidgets,
-  widgetSize,
   widgetText,
   withSize,
   withText,
   withWidgetTitle,
-  type WidgetSize,
 } from "../lib/widgets";
 import {
   mapWidgetLayer,
@@ -33,6 +30,7 @@ import {
   useUpdateWidget,
 } from "./dashboardQueries";
 import { GRID_GAP_PX, TWO_COLUMN_QUERY } from "./gridLayout";
+import DashboardAlertsWidget from "./DashboardAlertsWidget";
 import DashboardInsightModule from "./DashboardInsightModule";
 import DashboardPendingInsightCard from "./DashboardPendingInsightCard";
 import DashboardSection from "./DashboardSection";
@@ -58,40 +56,25 @@ import {
  * can't be rendered.
  */
 interface StandaloneBody {
-  map: MapWidgetLayer | null;
-  text: string | null;
-  placeholder: string | null;
+  map?: MapWidgetLayer;
+  text?: string;
+  placeholder?: string;
 }
 
 function standaloneBody(widget: DashboardWidget): StandaloneBody {
   if (widget.widget_type === "map") {
     const map = mapWidgetLayer(widget.config);
-    return {
-      map,
-      text: null,
-      placeholder: map ? null : "This map widget can't be displayed.",
-    };
+    return map
+      ? { map }
+      : { placeholder: "This map widget can't be displayed." };
   }
   if (widget.widget_type === "text") {
     const text = widgetText(widget.config);
-    return {
-      map: null,
-      text,
-      placeholder: text ? null : "This note is empty.",
-    };
+    return text ? { text } : { placeholder: "This note is empty." };
   }
   return {
-    map: null,
-    text: null,
     placeholder: `This ${widget.widget_type} widget isn't supported here yet.`,
   };
-}
-
-/** The persisted column span for a top-level item. */
-function topLevelSize(widget: DashboardWidget): WidgetSize {
-  if (widget.widget_type === "insight") return insightWidgetSize(widget.config);
-  if (widget.widget_type === "map") return mapWidgetSize(widget.config);
-  return widgetSize(widget.config);
 }
 
 /**
@@ -242,7 +225,7 @@ function ContainerGrid({
       patch: {
         config: withSize(
           widget.config,
-          topLevelSize(widget) === "double" ? "single" : "double"
+          topLevelWidgetSize(widget) === "double" ? "single" : "double"
         ),
       },
     });
@@ -251,14 +234,17 @@ function ContainerGrid({
     <DropSlot
       data-testid="widget-drop-slot"
       height={drag?.rect.height ?? 0}
-      css={cellCss(!!dragged && topLevelSize(dragged) === "double")}
+      css={cellCss(!!dragged && topLevelWidgetSize(dragged) === "double")}
     />
   );
 
   const renderWidget = (widget: DashboardWidget) => {
-    const size = topLevelSize(widget);
+    const size = topLevelWidgetSize(widget);
+    // Insight and alerts widgets parse their own configs.
     const body =
-      widget.widget_type === "insight" ? null : standaloneBody(widget);
+      widget.widget_type === "insight" || widget.widget_type === "alerts"
+        ? null
+        : standaloneBody(widget);
     const lifted = drag?.id === widget.id ? drag : null;
     const armDrag = (event: React.PointerEvent) => onDragStart(event, widget);
     // What a map or placeholder cell shows, on the dashboard and on paper.
@@ -266,11 +252,12 @@ function ContainerGrid({
       title:
         body?.map?.title ??
         (typeof widget.config.title === "string" ? widget.config.title : ""),
-      card: null,
       map: body?.map,
       aoi: areaAoi,
-      viewportBbox: body?.map ? mapWidgetViewportBbox(widget.config) : null,
-      placeholder: body?.placeholder ?? null,
+      viewportBbox: body?.map
+        ? mapWidgetViewportBbox(widget.config)
+        : undefined,
+      placeholder: body?.placeholder,
       isDouble: size === "double",
     };
 
@@ -304,16 +291,32 @@ function ContainerGrid({
               }
               onRemove={() => deleteWidget.mutate(widget.id)}
             />
+          ) : widget.widget_type === "alerts" ? (
+            <DashboardAlertsWidget
+              widget={widget}
+              areaAoi={areaAoi}
+              isOwner={isOwner}
+              isDouble={size === "double"}
+              onArmDrag={armDrag}
+              onToggleSize={() => toggleSize(widget)}
+              onRename={(name) =>
+                updateWidget.mutate({
+                  widgetId: widget.id,
+                  patch: { config: withWidgetTitle(widget.config, name) },
+                })
+              }
+              onRemove={() => deleteWidget.mutate(widget.id)}
+            />
           ) : widget.widget_type === "text" ? (
             print ? (
               <DashboardNoteDocument
                 text={body?.text ?? null}
-                placeholder={standalone.placeholder}
+                placeholder={body?.placeholder ?? null}
               />
             ) : (
               <DashboardTextWidgetCard
                 text={body?.text ?? null}
-                placeholder={standalone.placeholder}
+                placeholder={body?.placeholder ?? null}
                 isOwner={isOwner}
                 isDouble={standalone.isDouble}
                 onArmDrag={armDrag}

@@ -4,7 +4,7 @@ import InsightCaption from "@/app/components/InsightCaption";
 import { AnalysisParamsChips } from "@/app/components/widgets/AnalysisParameters";
 import { buildChips } from "@/app/components/widgets/analysis-params-utils";
 import type { InsightWidget } from "@/app/types/chat";
-import type { MapWidgetLayer } from "../lib/mapWidgets";
+import type { MapAreaAoi, MapWidgetLayer } from "../lib/mapWidgets";
 import DashboardTextWidget from "./DashboardTextWidget";
 import DashboardWidgetBody from "./DashboardWidgetBody";
 import { WIDGET_TITLE_PROPS } from "./DashboardWidgetCard";
@@ -30,11 +30,11 @@ export default function DashboardWidgetDocument({
   intro,
 }: {
   title: string;
-  card: InsightWidget | null;
-  map?: MapWidgetLayer | null;
-  aoi?: { source: string; src_id: string; name: string };
-  viewportBbox?: [number, number, number, number] | null;
-  placeholder: string | null;
+  card?: InsightWidget;
+  map?: MapWidgetLayer;
+  aoi?: MapAreaAoi;
+  viewportBbox?: [number, number, number, number];
+  placeholder?: string;
   isDouble: boolean;
   /** Rendered above the body — the analysis narrative and chart pills. */
   intro?: React.ReactNode;

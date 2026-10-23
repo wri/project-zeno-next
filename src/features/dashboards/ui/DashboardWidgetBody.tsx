@@ -3,7 +3,7 @@ import { ChartBarIcon } from "@phosphor-icons/react";
 
 import WidgetMessage from "@/app/components/WidgetMessage";
 import type { InsightWidget } from "@/app/types/chat";
-import type { MapWidgetLayer } from "../lib/mapWidgets";
+import type { MapAreaAoi, MapWidgetLayer } from "../lib/mapWidgets";
 import DashboardMapWidget from "./DashboardMapWidget";
 
 /**
@@ -21,16 +21,16 @@ export default function DashboardWidgetBody({
   isDouble,
   print = false,
 }: {
-  /** The insight card to render, or null for a map/placeholder cell. */
-  card: InsightWidget | null;
+  /** The insight card to render; absent for a map or placeholder cell. */
+  card?: InsightWidget;
   /** The map layer to render for `widget_type: "map"` cells. */
-  map?: MapWidgetLayer | null;
+  map?: MapWidgetLayer;
   /** The dashboard's area — outline, label + viewport fit for map cells. */
-  aoi?: { source: string; src_id: string; name: string };
+  aoi?: MapAreaAoi;
   /** Reserved `config.viewport` bbox override for map cells. */
-  viewportBbox?: [number, number, number, number] | null;
-  /** Placeholder copy when `card` is null (unsupported type / hidden insight). */
-  placeholder: string | null;
+  viewportBbox?: [number, number, number, number];
+  /** Placeholder copy instead of any content (unsupported type / hidden insight). */
+  placeholder?: string;
   isDouble: boolean;
   /** The export rendering (see `DashboardWidgetsGrid`). */
   print?: boolean;
@@ -58,7 +58,7 @@ export default function DashboardWidgetBody({
     <DashboardMapWidget
       layer={map}
       aoi={aoi}
-      bboxOverride={viewportBbox ?? null}
+      bboxOverride={viewportBbox}
       tall={isDouble}
       print={print}
     />

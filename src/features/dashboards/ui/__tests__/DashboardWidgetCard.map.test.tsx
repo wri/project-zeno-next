@@ -47,15 +47,12 @@ const renderMapCard = (isOwner: boolean) =>
       <ChakraProvider value={defaultSystem}>
         <DashboardWidgetCard
           title="Tree cover loss"
-          card={null}
           map={{
             kind: "dataset",
             title: "Tree cover loss",
             tileUrl: "https://example.test/{z}/{x}/{y}.png",
           }}
           aoi={undefined}
-          viewportBbox={null}
-          placeholder={null}
           removeMode="widget"
           isOwner={isOwner}
           isDouble={false}
@@ -83,5 +80,60 @@ describe("DashboardWidgetCard map full screen", () => {
 
     fireEvent.click(within(dialog).getByRole("button", { name: /close/i }));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+});
+
+describe("DashboardWidgetCard body slot", () => {
+  it("renders a caller's body where the chart or map would be, with no full screen", () => {
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <ChakraProvider value={defaultSystem}>
+          <DashboardWidgetCard
+            title="Integrated alerts in Guarapuava"
+            body={<div data-testid="own-body">list and map</div>}
+            removeMode="widget"
+            isOwner
+            isDouble
+            onArmDrag={() => {}}
+            onToggleSize={() => {}}
+            onRemove={() => {}}
+          />
+        </ChakraProvider>
+      </QueryClientProvider>
+    );
+
+    expect(screen.getByTestId("own-body").textContent).toBe("list and map");
+    expect(screen.queryByTestId("mapgl")).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "View map full screen" })
+    ).toBeNull();
+    // The owner actions are the shell's, as for every other widget.
+    expect(screen.getByLabelText("Remove from dashboard")).toBeTruthy();
+    expect(screen.getByLabelText("Shrink to one column")).toBeTruthy();
+  });
+
+  it("gives a placeholder precedence over a body", () => {
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <ChakraProvider value={defaultSystem}>
+          <DashboardWidgetCard
+            title="Integrated alerts"
+            placeholder="This alerts widget can't be displayed."
+            body={<div data-testid="own-body" />}
+            removeMode="widget"
+            isOwner={false}
+            isDouble
+            onArmDrag={() => {}}
+            onToggleSize={() => {}}
+            onRemove={() => {}}
+          />
+        </ChakraProvider>
+      </QueryClientProvider>
+    );
+
+    expect(
+      screen.getByText("This alerts widget can't be displayed.")
+    ).toBeTruthy();
+    expect(screen.queryByTestId("own-body")).toBeNull();
   });
 });

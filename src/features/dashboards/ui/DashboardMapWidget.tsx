@@ -23,7 +23,7 @@ import { buildBasemapTileUrl } from "@/app/utils/basemapTileUrl";
 import { createBboxPolygon } from "@/app/utils/bboxUtils";
 import { fetchGeometry } from "@/app/utils/geometryClient";
 import { registerPrimaryForestProtocol } from "@/app/utils/primaryForestTileProtocol";
-import type { MapWidgetLayer } from "../lib/mapWidgets";
+import type { MapAreaAoi, MapWidgetLayer } from "../lib/mapWidgets";
 import DashboardMapLegend, {
   type MapWidgetOpacity,
 } from "./DashboardMapLegend";
@@ -47,6 +47,9 @@ export const PRINT_READY_ATTR = "data-print-ready";
  * sub-layer beneath it), outlines the dashboard's area, and fits the
  * viewport to that area — or to the reserved `config.viewport` bbox
  * override, which wins when present.
+ *
+ * A layer whose `tileUrl` changes (the alerts widget re-dates its tiles per
+ * period) gets a fresh raster source: see the tiles `<Source key>` below.
  */
 export default function DashboardMapWidget({
   layer,
@@ -54,16 +57,24 @@ export default function DashboardMapWidget({
   bboxOverride,
   tall,
   fill,
+  stretch,
   print = false,
 }: {
   layer: MapWidgetLayer;
   /** The dashboard's (single) area — outline, label + default viewport fit. */
-  aoi: { source: string; src_id: string; name: string } | undefined;
-  bboxOverride: [number, number, number, number] | null;
+  aoi: MapAreaAoi | undefined;
+  /** The reserved `config.viewport` bbox, which wins over the area fit when present. */
+  bboxOverride?: [number, number, number, number];
   /** Full-width cards get a taller map. */
   tall?: boolean;
   /** Fills its container (the full-screen dialog) and allows scroll-zoom. */
   fill?: boolean;
+  /**
+   * Fills its container's height, never under 280px, without the dialog's
+   * scroll-zoom: the alerts widget's map column, whose height the list
+   * beside it sets.
+   */
+  stretch?: boolean;
   /** The export rendering (see `DashboardWidgetsGrid`). */
   print?: boolean;
 }) {
@@ -160,7 +171,12 @@ export default function DashboardMapWidget({
     <Box
       ref={containerRef}
       {...{ [PRINT_READY_ATTR]: print ? String(drawn) : undefined }}
-      h={fill ? "100%" : { base: "280px", md: tall ? "520px" : "360px" }}
+      h={
+        fill || stretch
+          ? "100%"
+          : { base: "280px", md: tall ? "520px" : "360px" }
+      }
+      minH={stretch ? "280px" : undefined}
       rounded="md"
       overflow="hidden"
       borderWidth="1px"
@@ -220,7 +236,11 @@ export default function DashboardMapWidget({
             />
           </Source>
         )}
+        {/* Keyed on the URL: a re-dated layer (the alerts widget's date
+            range) is a fresh source, not a `setTiles` on the live one, which
+            MapLibre renders through in a broken state. */}
         <Source
+          key={layer.tileUrl}
           id="widget-tiles"
           type="raster"
           tiles={[layer.tileUrl]}

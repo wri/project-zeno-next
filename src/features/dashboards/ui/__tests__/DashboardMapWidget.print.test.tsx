@@ -74,12 +74,7 @@ const renderMap = (props: {
   render(
     <QueryClientProvider client={new QueryClient()}>
       <ChakraProvider value={defaultSystem}>
-        <DashboardMapWidget
-          layer={layer}
-          aoi={props.aoi}
-          bboxOverride={null}
-          print={props.print}
-        />
+        <DashboardMapWidget layer={layer} aoi={props.aoi} print={props.print} />
       </ChakraProvider>
     </QueryClientProvider>
   );

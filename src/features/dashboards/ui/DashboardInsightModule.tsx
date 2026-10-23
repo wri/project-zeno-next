@@ -99,7 +99,7 @@ export default function DashboardInsightModule({
   // Hiding a chart can strand the pager past the end — clamp on the way out
   // rather than in an effect, so the card never paints an empty frame first.
   const index = Math.min(page, Math.max(total - 1, 0));
-  const card = cards[index] ?? null;
+  const card = cards[index];
   const chartId = card?.id;
 
   const placeholder =
@@ -107,11 +107,11 @@ export default function DashboardInsightModule({
       ? "This analysis is not available."
       : total === 0 && !showSummary && isOwner
         ? "All content in this analysis is hidden — use Customize to show it."
-        : null;
+        : undefined;
 
   // The narrative and the chart's pills ride above the chart body. On paper
   // the narrative leads the first chart only.
-  const introFor = (chart: InsightWidget | null, withSummary: boolean) => {
+  const introFor = (chart: InsightWidget | undefined, withSummary: boolean) => {
     const summary = withSummary && showSummary;
     return summary || (chart && hasChartPills(chart)) ? (
       <Flex direction="column" gap="8px" px={print ? 0 : "12px"} pb="12px">
@@ -142,7 +142,7 @@ export default function DashboardInsightModule({
   if (print) {
     return (
       <Flex direction="column" gap="24px">
-        {(cards.length > 0 ? cards : [null]).map((chart, i) => (
+        {(cards.length > 0 ? cards : [undefined]).map((chart, i) => (
           <DashboardWidgetDocument
             key={chart?.id ?? "no-chart"}
             title={chart?.title ?? vm.title}
