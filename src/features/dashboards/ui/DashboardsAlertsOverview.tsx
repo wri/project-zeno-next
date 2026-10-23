@@ -53,7 +53,9 @@ export default function DashboardsAlertsOverview({
       wrap="wrap"
     >
       <Text fontSize="14px" lineHeight={LINE_HEIGHT} color="#656E7B">
-        {freshness && awaitingPeriodData(summary.startDate, freshness)
+        {freshness &&
+        countWithNewAlerts(summary, dashboardIds) === 0 &&
+        awaitingPeriodData(summary.startDate, freshness)
           ? `No alerts detected ${period} yet`
           : `${countWithNewAlerts(summary, dashboardIds)} of ${total} ${
               total === 1 ? "dashboard has" : "dashboards have"
