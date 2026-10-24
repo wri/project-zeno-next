@@ -318,10 +318,12 @@ export function MethodologyView({
               <b>Results by use case and question type</b> use the same measure
               as the headline: reliable AI accuracy, shown alongside the share
               of questions answered accurately most of the time, some of the
-              time and never. The one exception is the flow chart under
-              &ldquo;Where do wrong answers go wrong?&rdquo;, which still counts
-              a question as accurate if it was right on at least two of three
-              tries. We&rsquo;ll update it to match for the November baseline.
+              time and never. The flow chart under &ldquo;Where do wrong answers
+              go wrong?&rdquo; uses it too, and can switch to counting a
+              question as accurate when it was right most of the time or some of
+              the time. The failure breakdown by question type still counts a
+              question as accurate if it was right on at least two of three
+              tries.
             </>,
             <>
               <b>Errors are reported separately.</b> A question that errors or
@@ -331,7 +333,8 @@ export function MethodologyView({
             <>
               <b>Where answers fail.</b> Each wrong answer is counted once, at
               the first check it fails, in the order scope, retrieval, analysis,
-              explanation, output.
+              explanation, output. A question that was wrong on only some tries
+              counts at the first check it failed on those tries.
             </>,
             <>
               <b>Use cases overlap.</b> A question can belong to several use

@@ -28,7 +28,10 @@ about 5 minutes per path.
 Unlike `/evals`, this slice computes no scores: the page data already carries
 the tiers, failure attribution and per-group stats, so the numbers match the
 Python (`tools/challenge_rollup.py --benchmark`) by construction. `lib/` holds
-only presentation helpers (tiers, the failure breakdown, filters, runs).
+only presentation helpers (tiers, the failure breakdown, filters, runs). One
+exception: the failure flow's "every time" and "some of the time" standards
+regroup the per-question data (`lib/failures.ts`), because the page data
+attributes failures only for the majority standard.
 
 The superuser gate (`app/accuracy-benchmarks/page.tsx`) is UX-only and holds
 while the benchmark is a draft (AJ, 2026-10-23): the data is public on GitHub.
@@ -44,11 +47,14 @@ while the benchmark is a draft (AJ, 2026-10-23): the data is public on GitHub.
 
 ## Invariants (mirrored from gnw-gold-evals; update both together)
 
-- Headline = share of scored questions right on **every** trial; the flow
-  chart still counts "right on at least 2 of 3" (the North Star), and says so.
+- Headline = share of scored questions right on **every** trial. The flow
+  chart opens on the same measure and switches to "right on at least 2 of 3"
+  (the North Star, the page data's own attribution) or "at least 1 of 3".
 - Errored questions leave every denominator.
 - A failed question counts once, at its earliest failing stage in the order
   scope, retrieval, analysis, explanation, output; "unattributed" when only
-  shared checks failed.
+  shared checks failed. A question wrong on fewer than most trials counts at
+  the earliest stage among the checks that failed on any trial, so it sits at
+  the same stage under every standard.
 - Rates are comparable only within a benchmark version: the trend draws the
   canonical runs of the open run's version.

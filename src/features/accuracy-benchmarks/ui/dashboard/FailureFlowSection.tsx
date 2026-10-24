@@ -1,10 +1,17 @@
+import { useState } from "react";
 import { Box, Grid, Text } from "@chakra-ui/react";
 import { STAGE_COPY, STAGE_LABELS } from "../../model/config";
-import type { BenchmarkPage, GroupStats } from "../../model/types";
-import { failureBreakdown, type FailureMode } from "../../lib/failures";
+import type { BenchmarkPage } from "../../model/types";
+import {
+  failureFlow,
+  STANDARDS,
+  type FailureFlow,
+  type FailureMode,
+  type Standard,
+} from "../../lib/failures";
 import { pct, share } from "../../lib/format";
 import { PASS_COLOR, STAGE_COLORS } from "../palette";
-import { Panel, Section } from "../parts";
+import { Panel, Section, Segmented } from "../parts";
 
 const W = 1080;
 const X0 = 10;
@@ -18,6 +25,34 @@ const LEAF_SPACING = 14;
 const MAX_STAGE_GAP = 180;
 /** Room right of the flow for the leaf labels. */
 const LABEL_BUDGET = 300;
+
+const STANDARD_COPY: Readonly<
+  Record<
+    Standard,
+    {
+      readonly option: string;
+      readonly tries: string;
+      /** The short form for the chart, which has little room for labels. */
+      readonly leaf: string;
+    }
+  >
+> = {
+  every: { option: "Every time", tries: "all 3 tries", leaf: "3 of 3 tries" },
+  most: {
+    option: "Most of the time",
+    tries: "at least 2 of 3 tries",
+    leaf: "2+ of 3 tries",
+  },
+  some: {
+    option: "Some of the time",
+    tries: "at least 1 of 3 tries",
+    leaf: "1+ of 3 tries",
+  },
+};
+
+const STANDARD_OPTIONS = STANDARDS.map(
+  (s) => [s, STANDARD_COPY[s].option] as const
+);
 
 interface Band {
   readonly mode: FailureMode;
@@ -75,15 +110,21 @@ function layoutFlow(modes: readonly FailureMode[], total: number) {
 
 /** Each scored question flows left to right; a failed one peels off at the
  * stage where it first went wrong. */
-function FlowChart({ stats }: { readonly stats: GroupStats }) {
-  const modes = failureBreakdown(stats);
-  const total = stats.scored;
+function FlowChart({
+  flow,
+  standard,
+}: {
+  readonly flow: FailureFlow;
+  readonly standard: Standard;
+}) {
+  const { modes, scored: total } = flow;
   const { trunk, bands, passX, accurateHeight, bottom } = layoutFlow(
     modes,
     total
   );
   const height = bottom + 6;
-  const accurate = `${stats.passed} · ${pct(share(stats.passed, total))}`;
+  const accurate = `${flow.accurate} · ${pct(share(flow.accurate, total))}`;
+  const { tries, leaf } = STANDARD_COPY[standard];
 
   return (
     <Box overflowX="auto">
@@ -99,7 +140,7 @@ function FlowChart({ stats }: { readonly stats: GroupStats }) {
           role="img"
           aria-label={`Flow of ${total} scored questions: ${modes
             .map((m) => `${leafPhrase(m)}: ${m.count}`)
-            .join(", ")}; accurate on at least 2 of 3 tries: ${stats.passed}.`}
+            .join(", ")}; accurate on ${tries}: ${flow.accurate}.`}
         >
           <text
             x={X0}
@@ -185,7 +226,7 @@ function FlowChart({ stats }: { readonly stats: GroupStats }) {
             fontSize="14"
             fill="var(--chakra-colors-fg)"
           >
-            Accurate on 2+ of 3 tries <tspan fontWeight="600">{accurate}</tspan>
+            Accurate on {leaf} <tspan fontWeight="600">{accurate}</tspan>
           </text>
         </svg>
       </Box>
@@ -194,28 +235,39 @@ function FlowChart({ stats }: { readonly stats: GroupStats }) {
 }
 
 export function FailureFlowSection({ page }: { readonly page: BenchmarkPage }) {
-  const { summary } = page;
-  const everyCount = Math.round((summary.everyTime ?? 0) * summary.scored);
+  // The headline's measure by default, so the two agree on first read.
+  const [standard, setStandard] = useState<Standard>("every");
+  const flow = failureFlow(page.questions, standard);
+  const firstFailures = new Map(flow.modes.map((m) => [m.key, m.count]));
   return (
     <Section
       id="fail"
       eyebrow="Where answers fail"
       title="Where do wrong answers go wrong?"
       sub="Horizon answers in five steps. Each wrong answer is counted once, at the step where it first went wrong."
+      action={
+        <Segmented
+          label="Count a question as accurate when it is right"
+          options={STANDARD_OPTIONS}
+          value={standard}
+          onChange={setStandard}
+        />
+      }
     >
       <Panel>
         <Text fontSize="sm" color="fg.muted" mb={3}>
-          <b>This chart uses a looser count than the headline.</b> It counts a
-          question as accurate if it was right on at least 2 of 3 tries, so it
-          shows {summary.passed} ({pct(summary.majority)}) accurate questions.
-          Reliable AI accuracy counts only questions right on all 3 tries:{" "}
-          {everyCount} ({pct(summary.everyTime, 1)}). We&rsquo;ll update this
-          chart to match for the November baseline.
+          <b>
+            A question counts as accurate when it was right on{" "}
+            {STANDARD_COPY[standard].tries}
+          </b>
+          {standard === "every" ? ", the same measure as the headline" : ""}. A
+          wrong question stays at the same step whichever measure you pick; a
+          stricter measure only adds questions.
         </Text>
         <Text fontWeight="semibold" mb={2}>
-          Where the {summary.scored} scored questions end up
+          Where the {flow.scored} scored questions end up
         </Text>
-        <FlowChart stats={summary} />
+        <FlowChart flow={flow} standard={standard} />
       </Panel>
       <Grid
         mt={4}
@@ -248,12 +300,12 @@ export function FailureFlowSection({ page }: { readonly page: BenchmarkPage }) {
             <Text display="flex" justifyContent="space-between" fontSize="xs">
               <span>Applies to</span>
               <b>
-                {s.checked} of {summary.scored}
+                {s.checked} of {flow.scored}
               </b>
             </Text>
             <Text display="flex" justifyContent="space-between" fontSize="xs">
               <span>Failed here first</span>
-              <b>{s.firstFailures}</b>
+              <b>{firstFailures.get(s.key) ?? 0}</b>
             </Text>
           </Panel>
         ))}

@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { failureBreakdown, failurePhrase } from "../failures";
+import { failureBreakdown, failureFlow, failurePhrase } from "../failures";
 import { formatDay, parseVersion, pct, share } from "../format";
 import { mixSentence } from "../mix";
 import { filterQuestions, NO_FILTER } from "../questions";
 import { monthsSinceOrigin, pickRun, trendRuns } from "../runs";
 import { tierLines, tiersOf } from "../tiers";
-import type { BenchmarkRunRef } from "../../model/types";
+import type { BenchmarkRunRef, FailedCheck } from "../../model/types";
 import { makeQuestion, makeStats, makeUseCase } from "./fixtures";
 
 describe("tiersOf", () => {
@@ -62,6 +62,81 @@ describe("failureBreakdown", () => {
     expect(failurePhrase(stats)).toBe(
       "1 at scope, 3 at retrieval, 1 at explanation, 1 at unattributed"
     );
+  });
+});
+
+describe("failureFlow", () => {
+  const failed = (
+    check: string,
+    stage: FailedCheck["stage"],
+    verdict: FailedCheck["verdict"]
+  ): FailedCheck => ({
+    check,
+    stage,
+    verdict,
+    perTrial: verdict === "fail" ? [false, false, true] : [true, false, true],
+    actual: null,
+    reason: null,
+  });
+  const questions = [
+    makeQuestion({ id: "every" }),
+    // Right on 2 of 3: wrong only under "every", at its one-try failure.
+    makeQuestion({
+      id: "most",
+      status: "inconsistent",
+      trialsRight: [true, false, true],
+      failedChecks: [failed("web_fallback", "explanation", "pass")],
+    }),
+    // Right once: keeps the run's attribution, though an earlier stage
+    // failed on one try.
+    makeQuestion({
+      id: "some",
+      verdict: "fail",
+      status: "fail",
+      trialsRight: [false, false, true],
+      primaryFailure: "explanation",
+      failedChecks: [
+        failed("aoi_id_match", "retrieval", "pass"),
+        failed("expected_text_match", "explanation", "fail"),
+      ],
+    }),
+    makeQuestion({
+      id: "never",
+      verdict: "fail",
+      status: "fail",
+      trialsRight: [false, false, false],
+      primaryFailure: "unattributed",
+      failedChecks: [failed("agent_answer", "shared", "fail")],
+    }),
+    makeQuestion({ id: "error", verdict: "error", status: "error" }),
+  ];
+  const counts = (standard: Parameters<typeof failureFlow>[1]) => {
+    const flow = failureFlow(questions, standard);
+    return [flow.accurate, flow.modes.map((m) => [m.key, m.count])];
+  };
+
+  it("counts each standard over the scored questions only", () => {
+    expect(failureFlow(questions, "every").scored).toBe(4);
+    expect(counts("every")).toEqual([
+      1,
+      [
+        ["explanation", 2],
+        ["unattributed", 1],
+      ],
+    ]);
+    expect(counts("most")).toEqual([
+      2,
+      [
+        ["explanation", 1],
+        ["unattributed", 1],
+      ],
+    ]);
+    expect(counts("some")).toEqual([3, [["unattributed", 1]]]);
+  });
+
+  it("gives each failure's share of the scored questions", () => {
+    const flow = failureFlow(questions, "most");
+    expect(flow.modes.find((m) => m.key === "explanation")?.share).toBe(1 / 4);
   });
 });
 
