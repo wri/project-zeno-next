@@ -1,9 +1,10 @@
 /**
  * The accuracy-benchmarks page: how accurately Horizon answers the
- * BENCHMARK questions, per run. Three views share one route
+ * BENCHMARK questions, per run. Its views share one route
  * (`/accuracy-benchmarks?view=…&run=…`), so each view of a run can be
- * bookmarked. Data is precomputed page data from the public gnw-gold-evals
- * repo; the superuser gate lives in the route page and is UX-only.
+ * bookmarked. A standalone page: no app header, only a link home. Data is
+ * precomputed page data from the public gnw-gold-evals repo; the superuser
+ * gate lives in the route page and is UX-only.
  */
 
 import {
@@ -30,7 +31,7 @@ import { isView, pageHref, VIEW_LABELS, VIEWS, type View } from "./links";
 import { MethodologyView } from "./MethodologyView";
 import { QueryState } from "./QueryState";
 import { QuestionsView } from "./QuestionsView";
-import { Panel } from "./parts";
+import { HomeLink, Panel } from "./parts";
 import {
   useBenchmarkPage,
   useBenchmarkRuns,
@@ -147,7 +148,7 @@ export function AccuracyBenchmarksScreen() {
         borderColor="border"
       >
         <HStack gap={3} wrap="wrap">
-          <Text fontWeight="semibold">GNW Horizon</Text>
+          <HomeLink />
           <Text color="fg.muted">AI accuracy: priority use cases</Text>
           {data ? (
             <Badge

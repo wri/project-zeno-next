@@ -5,7 +5,8 @@ answers the BENCHMARK questions of [gnw-gold-evals](https://github.com/wri/gnw-g
 the headline (questions right on every one of three tries), where wrong
 answers fail, accuracy by priority use case and by question type, every
 question with what the agent did on each attempt, and the methodology. It is
-the in-app version of the published accuracy artifact.
+the in-app version of the published accuracy artifact, and a standalone page:
+no app header, only a link back to the Horizon homepage.
 
 ## Data source
 

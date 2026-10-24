@@ -6,16 +6,18 @@ import {
   Flex,
   Heading,
   HStack,
+  Link as ChakraLink,
   Text,
 } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
+import { Link } from "@/src/shared/lib/router";
 import type { GroupStats } from "../model/types";
 import { pct } from "../lib/format";
 import { tierLines, TIERS, tiersOf, type TierKey } from "../lib/tiers";
 import { PASS_COLOR, TIER_OPACITY } from "./palette";
 
-/** Clears the sticky app header when a panel is scrolled into view. */
-const HEADER_CLEARANCE = "64px";
+/** Room above a panel scrolled into view (the page has no sticky header). */
+const SCROLL_MARGIN = "16px";
 
 export function Eyebrow({ children }: { readonly children: ReactNode }) {
   return (
@@ -104,6 +106,15 @@ export function Section({
       </Flex>
       {children}
     </Box>
+  );
+}
+
+/** The standalone page's way back to the app. */
+export function HomeLink() {
+  return (
+    <ChakraLink asChild color="primary.solid" fontWeight="semibold">
+      <Link href="/">← GNW Horizon</Link>
+    </ChakraLink>
   );
 }
 
@@ -251,7 +262,7 @@ export function ReliabilitySentence({
 /** A detail panel that a row below it can bring back into view. */
 export function DetailPanel(props: ComponentProps<typeof Panel>) {
   return (
-    <Panel scrollMarginTop={HEADER_CLEARANCE} aria-live="polite" {...props} />
+    <Panel scrollMarginTop={SCROLL_MARGIN} aria-live="polite" {...props} />
   );
 }
 
