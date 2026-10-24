@@ -2,7 +2,7 @@ import { CHECKS, type CheckInfo } from "../model/checks";
 import { STAGE_ORDER } from "../model/config";
 import type { Question, StageKey } from "../model/types";
 
-export interface CheckGroups {
+interface CheckGroups {
   /** Scored checks the run's questions use, per step in stage order; a
    * shared check appears under both of its steps. */
   readonly byStage: readonly {
