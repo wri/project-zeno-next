@@ -22,6 +22,7 @@ import type { BenchmarkPage, BenchmarkRunRef } from "../model/types";
 import { BENCHMARK_DATA_BRANCH } from "../api/github";
 import { formatDay } from "../lib/format";
 import { pickRun, trendRuns } from "../lib/runs";
+import { ChecksView } from "./ChecksView";
 import { FailureFlowSection } from "./dashboard/FailureFlowSection";
 import { Hero } from "./dashboard/Hero";
 import { QuestionTypesSection } from "./dashboard/QuestionTypesSection";
@@ -222,6 +223,13 @@ export function AccuracyBenchmarksScreen() {
           ) : null}
           {view === "methodology" ? (
             <MethodologyView
+              page={data}
+              dashboardHref={pageHref({ run: run?.runId })}
+              checksHref={pageHref({ view: "checks", run: run?.runId })}
+            />
+          ) : null}
+          {view === "checks" ? (
+            <ChecksView
               page={data}
               dashboardHref={pageHref({ run: run?.runId })}
             />

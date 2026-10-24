@@ -1,4 +1,4 @@
-import { checkLabel } from "../model/config";
+import { checkLabel } from "../model/checks";
 import type { Question } from "../model/types";
 
 export type StatusFilter = "all" | "failed" | "inconsistent";

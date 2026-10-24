@@ -17,7 +17,7 @@ import { Swatch } from "@/src/shared/ui/Swatch";
 import { STAGE_COPY, STAGE_LABELS, STAGE_ORDER } from "../model/config";
 import type { BenchmarkPage, StageKey } from "../model/types";
 import { STAGE_COLORS } from "./palette";
-import { Eyebrow, Panel } from "./parts";
+import { BackLink, Block, Eyebrow, Panel } from "./parts";
 
 /** A question the 29 Sep run got right, step by step: what Horizon did, and
  * which of it the benchmark checked. */
@@ -41,8 +41,8 @@ const RIGHT_EXAMPLE: readonly [StageKey, ReactNode, ReactNode][] = [
     "analysis",
     "Built two annual series: loss in hectares, and emissions in tonnes of CO₂e.",
     <>
-      <b>Checked</b>: chart complete; figures in the reply match the chart.{" "}
-      <b>Not yet</b>: figures compared with the data service&rsquo;s own totals.
+      <b>Checked</b>: chart has no missing values. <b>Not yet</b>: figures
+      compared with the data service&rsquo;s own totals.
     </>,
   ],
   [
@@ -50,7 +50,7 @@ const RIGHT_EXAMPLE: readonly [StageKey, ReactNode, ReactNode][] = [
     "“Fluctuating rather than showing a steady increase or decrease”, with the caveat that loss is not the same as deforestation.",
     <>
       <b>Checked</b>: no web sources used in place of the data. <b>Not yet</b>:
-      required caveats.
+      required caveats; the reply&rsquo;s figures matched against the chart.
     </>,
   ],
   [
@@ -62,25 +62,6 @@ const RIGHT_EXAMPLE: readonly [StageKey, ReactNode, ReactNode][] = [
   ],
 ];
 
-function Block({
-  id,
-  title,
-  children,
-}: {
-  readonly id?: string;
-  readonly title: string;
-  readonly children: ReactNode;
-}) {
-  return (
-    <Box as="section" id={id} py={6} borderTopWidth="1px" borderColor="border">
-      <Heading as="h2" size="lg" mb={3}>
-        {title}
-      </Heading>
-      {children}
-    </Box>
-  );
-}
-
 function Bullets({ items }: { readonly items: readonly ReactNode[] }) {
   return (
     <List.Root gap={2.5} ps={5} color="fg.muted" fontSize="sm" maxW="72ch">
@@ -88,14 +69,6 @@ function Bullets({ items }: { readonly items: readonly ReactNode[] }) {
         <List.Item key={i}>{item}</List.Item>
       ))}
     </List.Root>
-  );
-}
-
-function BackLink({ href }: { readonly href: string }) {
-  return (
-    <ChakraLink asChild color="primary.solid" fontSize="sm">
-      <Link href={href}>← Back to the dashboard</Link>
-    </ChakraLink>
   );
 }
 
@@ -182,13 +155,18 @@ function WorkedExamples() {
 export function MethodologyView({
   page,
   dashboardHref,
+  checksHref,
 }: {
   readonly page: BenchmarkPage;
   readonly dashboardHref: string;
+  readonly checksHref: string;
 }) {
   const real = page.questions.filter((q) => !q.synthetic).length;
   const synthetic = page.questions.length - real;
   const drafted = page.questions.filter((q) => q.drafted).length;
+  const clarifying = page.questions.filter(
+    (q) => q.expected.clarification
+  ).length;
   const unmeasured = page.unmeasuredTypes.map(
     (t) => `${t.label.toLowerCase()} (${t.description})`
   );
@@ -419,8 +397,10 @@ export function MethodologyView({
             </>,
             <>
               <b>Numbers are not yet checked against source totals.</b> We
-              confirm the chart is complete and the reply&rsquo;s figures match
-              it, not yet that they match the data service&rsquo;s own totals.
+              confirm the chart has no missing values, not yet that its figures
+              match the data service&rsquo;s own totals. Whether the
+              reply&rsquo;s figures match the chart is tracked but not yet
+              scored.
             </>,
             ...(unmeasured.length
               ? [
@@ -439,26 +419,26 @@ export function MethodologyView({
               Horizon supports.
             </>,
             <>
-              <b>Clarifying questions are scored separately.</b> The check for
-              &ldquo;did it ask instead of guessing&rdquo; is not yet stable.
-              Dataset caveats are required by Horizon&rsquo;s instructions but
-              not yet scored.
+              <b>The clarifying-question check is still being proven.</b>{" "}
+              Whether Horizon asks instead of guessing is decided by an AI
+              reviewer and counts toward the score, but only {clarifying}{" "}
+              benchmark questions use it, too few yet to confirm the reviewer
+              gives the same verdict each time. Dataset caveats are required by
+              Horizon&rsquo;s instructions but not yet scored.
             </>,
           ]}
         />
       </Block>
 
-      <Block title="Additional documentation coming by November">
-        <Bullets
-          items={[
-            <>
-              <b>A reference for every check.</b> For each individual check
-              (validator): what it looks for, how it decides pass or fail, which
-              question types it applies to, and whether it is scored by code or
-              by an AI reviewer.
-            </>,
-          ]}
-        />
+      <Block title="Every check, one by one">
+        <Text color="fg.muted" fontSize="sm" maxW="72ch">
+          Each of the five checks is made up of smaller checks. The{" "}
+          <ChakraLink asChild color="primary.solid">
+            <Link href={checksHref}>Checks</Link>
+          </ChakraLink>{" "}
+          page lists every one: what it looks for, when it applies, and whether
+          code or an AI reviewer decides.
+        </Text>
         <Box mt={5}>
           <BackLink href={dashboardHref} />
         </Box>

@@ -109,11 +109,39 @@ export function Section({
   );
 }
 
+/** A titled block of a reading view (methodology, checks). */
+export function Block({
+  id,
+  title,
+  children,
+}: {
+  readonly id?: string;
+  readonly title: string;
+  readonly children: ReactNode;
+}) {
+  return (
+    <Box as="section" id={id} py={6} borderTopWidth="1px" borderColor="border">
+      <Heading as="h2" size="lg" mb={3}>
+        {title}
+      </Heading>
+      {children}
+    </Box>
+  );
+}
+
 /** The standalone page's way back to the app. */
 export function HomeLink() {
   return (
     <ChakraLink asChild color="primary.solid" fontWeight="semibold">
       <Link href="/">← GNW Horizon</Link>
+    </ChakraLink>
+  );
+}
+
+export function BackLink({ href }: { readonly href: string }) {
+  return (
+    <ChakraLink asChild color="primary.solid" fontSize="sm">
+      <Link href={href}>← Back to the dashboard</Link>
     </ChakraLink>
   );
 }

@@ -1,11 +1,8 @@
 import { useState, type Ref } from "react";
 import { Box, Flex, Grid, Text } from "@chakra-ui/react";
 import { Swatch } from "@/src/shared/ui/Swatch";
-import {
-  ATTRIBUTION_ORDER,
-  checkLabel,
-  STAGE_LABELS,
-} from "../../model/config";
+import { checkLabel } from "../../model/checks";
+import { ATTRIBUTION_ORDER, STAGE_LABELS } from "../../model/config";
 import type {
   BenchmarkPage,
   GroupStats,

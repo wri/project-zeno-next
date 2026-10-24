@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { checkLabel } from "../../model/checks";
+import { groupChecks } from "../checks";
 import { failureBreakdown, failureFlow, failurePhrase } from "../failures";
 import { formatDay, parseVersion, pct, share } from "../format";
 import { mixSentence } from "../mix";
@@ -137,6 +139,42 @@ describe("failureFlow", () => {
   it("gives each failure's share of the scored questions", () => {
     const flow = failureFlow(questions, "most");
     expect(flow.modes.find((m) => m.key === "explanation")?.share).toBe(1 / 4);
+  });
+});
+
+describe("groupChecks", () => {
+  it("lists the checks the questions switch on, per step, apart from the tracked and unused ones", () => {
+    const groups = groupChecks([
+      makeQuestion({ expected: { aoi_ids: "BRA", clarification: "TRUE" } }),
+      makeQuestion({ expected: { start_date: "2024-01-01", scope: "" } }),
+    ]);
+    const keys = (checks: readonly { key: string }[]) =>
+      checks.map((c) => c.key);
+    const byStage = Object.fromEntries(
+      groups.byStage.map((s) => [s.stage, keys(s.checks)])
+    );
+    expect(byStage.scope).toEqual([
+      "clarification_requested",
+      "dashboard_created",
+    ]);
+    expect(byStage.retrieval).toEqual(["aoi_id_match", "date_extraction"]);
+    // A shared check sits under both of its steps.
+    expect(byStage.output).toContain("dashboard_created");
+    expect(keys(groups.tracked)).toEqual([
+      "date_coverage",
+      "answer_traceability",
+    ]);
+    // An empty expected field switches nothing on.
+    expect(keys(groups.unused)).toContain("scope_match");
+    expect(keys(groups.unused)).toContain("charts_answer_judge");
+  });
+
+  it("marks the AI reviewer's checks as judged", () => {
+    expect(checkLabel("expected_text_match")).toBe(
+      "Reply says what it must (judged)"
+    );
+    expect(checkLabel("aoi_id_match")).toBe("Picked the right place");
+    expect(checkLabel("not_a_check")).toBe("not_a_check");
   });
 });
 

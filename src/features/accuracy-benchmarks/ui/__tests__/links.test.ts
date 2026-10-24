@@ -15,9 +15,11 @@ describe("pageHref", () => {
     );
   });
 
-  it("recognises only the three views", () => {
+  it("recognises only the four views", () => {
     expect(
-      ["dashboard", "questions", "methodology", "runs", null].map(isView)
-    ).toEqual([true, true, true, false, false]);
+      ["dashboard", "questions", "methodology", "checks", "runs", null].map(
+        isView
+      )
+    ).toEqual([true, true, true, true, false, false]);
   });
 });

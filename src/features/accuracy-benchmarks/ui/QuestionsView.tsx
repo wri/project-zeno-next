@@ -12,7 +12,8 @@ import {
   Table,
   Text,
 } from "@chakra-ui/react";
-import { STAGE_LABELS, checkLabel } from "../model/config";
+import { checkLabel } from "../model/checks";
+import { STAGE_LABELS } from "../model/config";
 import type {
   Attempt,
   BenchmarkPage,

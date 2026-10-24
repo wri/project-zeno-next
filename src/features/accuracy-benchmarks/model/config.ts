@@ -1,8 +1,7 @@
 /**
- * Stages, check names and place wording mirrored from gnw-gold-evals
- * (`goldset.benchmark` STAGE_ORDER, the validator names in
- * `goldset.registry`, the place kinds in `tools/benchmark_page.py`); update
- * both together.
+ * Stages and place wording mirrored from gnw-gold-evals (`goldset.benchmark`
+ * STAGE_ORDER, the place kinds in `tools/benchmark_page.py`); update both
+ * together. The checks are in `checks.ts`.
  */
 
 import type { AttributionKey, StageKey } from "./types";
@@ -59,7 +58,7 @@ export const STAGE_COPY: Readonly<Record<StageKey, StageCopy>> = {
   },
   analysis: {
     question: "Does it calculate correctly from that data?",
-    what: "Whether the figures hold together: the chart is complete and the figures in the reply match it. Checked by code, not by a model, whenever an answer includes a chart.",
+    what: "Whether the figures hold together: every value the chart plots is present. Checked by code, not by a model, whenever an answer includes a chart.",
     why: "Analysis failures produce precise-looking numbers that are wrong, which could lead to users confidently citing incorrect numbers.",
     notYet:
       "Comparing figures with the data service's own totals is not yet in the benchmark; it is being built before the November freeze.",
@@ -70,7 +69,7 @@ export const STAGE_COPY: Readonly<Record<StageKey, StageCopy>> = {
     what: "Whether the written answer says what the data says: no web sources used in place of the data, and required statements present where a question needs them (for example, not naming a commodity the driver data does not identify).",
     why: "The text is the part users read. A correct chart under text that over-claims a cause misleads even a careful reader.",
     notYet:
-      "Dataset caveats are required by the system's instructions but not yet scored everywhere.",
+      "Dataset caveats are required by the system's instructions but not yet scored everywhere. Whether the reply's main figure matches its chart is tracked, not yet scored.",
   },
   output: {
     question: "Does it return the right chart, map layer or table?",
@@ -79,34 +78,6 @@ export const STAGE_COPY: Readonly<Record<StageKey, StageCopy>> = {
     notYet: "Chart readability is not scored, only structural validity.",
   },
 };
-
-/** Plain-language names for the checks a question can fail. */
-const CHECK_LABELS: Readonly<Record<string, string>> = {
-  aoi_id_match: "Picked the right place",
-  dataset_id_match: "Picked the right dataset",
-  data_pull_exists: "Fetched the data",
-  answered_without_data: "Did not answer without data",
-  context_layer_match: "Applied the right forest filter",
-  dataset_parameter_match:
-    "Applied the right settings (such as canopy threshold)",
-  date_extraction: "Used the time window the question asked for",
-  date_coverage: "Data covers the requested window",
-  chart_integrity: "Chart has no missing values",
-  chart_well_formed: "Chart is well-formed",
-  answer_traceability: "Figures in the reply match the chart",
-  web_fallback: "Did not use web sources in place of the data",
-  expected_text_match: "Reply says what it must (judged)",
-  clarification_requested: "Asked back when it should (judged)",
-  forbidden_tools_absent:
-    "Did only what was asked (no analysis on a show-on-map request)",
-  pull_source_match: "Pulled from the right source",
-  nudge_match: "Offered the right choice of datasets",
-  dashboard_created: "Created the dashboard",
-};
-
-export function checkLabel(check: string): string {
-  return CHECK_LABELS[check] ?? check;
-}
 
 /** Plurals for the place kinds in a use case's mix sentence. */
 export const PLACE_PLURALS: Readonly<Record<string, string>> = {

@@ -4,9 +4,10 @@ Superuser-only page at `/accuracy-benchmarks` showing how accurately Horizon
 answers the BENCHMARK questions of [gnw-gold-evals](https://github.com/wri/gnw-gold-evals):
 the headline (questions right on every one of three tries), where wrong
 answers fail, accuracy by priority use case and by question type, every
-question with what the agent did on each attempt, and the methodology. It is
-the in-app version of the published accuracy artifact, and a standalone page:
-no app header, only a link back to the Horizon homepage.
+question with what the agent did on each attempt, the methodology, and a
+plain-language reference of every check. It is the in-app version of the
+published accuracy artifact, and a standalone page: no app header, only a link
+back to the Horizon homepage.
 
 ## Data source
 
@@ -28,22 +29,26 @@ about 5 minutes per path.
 Unlike `/evals`, this slice computes no scores: the page data already carries
 the tiers, failure attribution and per-group stats, so the numbers match the
 Python (`tools/challenge_rollup.py --benchmark`) by construction. `lib/` holds
-only presentation helpers (tiers, the failure breakdown, filters, runs). One
-exception: the failure flow's "every time" and "some of the time" standards
-regroup the per-question data (`lib/failures.ts`), because the page data
-attributes failures only for the majority standard.
+only presentation helpers (tiers, the failure breakdown, filters, runs, check
+grouping). One exception: the failure flow's "every time" and "some of the
+time" standards regroup the per-question data (`lib/failures.ts`), because the
+page data attributes failures only for the majority standard.
+
+The check reference (`model/checks.ts`) mirrors the BENCHMARK branch's
+`goldset.registry`, `goldset.buckets` and `src/goldset/evaluators/README.md`;
+a check is listed as used when a question's expected fields switch it on.
 
 The superuser gate (`app/accuracy-benchmarks/page.tsx`) is UX-only and holds
 while the benchmark is a draft (AJ, 2026-10-23): the data is public on GitHub.
 
 ## Segments
 
-| Segment  | Contents                                                                                              |
-| -------- | ----------------------------------------------------------------------------------------------------- |
-| `model/` | Normalised page types, the gateway port, stage and check labels                                       |
-| `lib/`   | Pure presentation helpers (tiers, failure breakdown, filters, run picking)                            |
-| `api/`   | GitHub raw gateway: zod schemas for the wire page, mapping                                            |
-| `ui/`    | Screen, three views in the URL (`?view=`, `?run=`; `?uc=` opens All questions filtered to a use case) |
+| Segment  | Contents                                                                                             |
+| -------- | ---------------------------------------------------------------------------------------------------- |
+| `model/` | Normalised page types, the gateway port, stage labels, the check reference                           |
+| `lib/`   | Pure presentation helpers (tiers, failure breakdown, filters, run picking)                           |
+| `api/`   | GitHub raw gateway: zod schemas for the wire page, mapping                                           |
+| `ui/`    | Screen, four views in the URL (`?view=`, `?run=`; `?uc=` opens All questions filtered to a use case) |
 
 ## Invariants (mirrored from gnw-gold-evals; update both together)
 
