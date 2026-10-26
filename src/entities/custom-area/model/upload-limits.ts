@@ -16,8 +16,8 @@ export const UPLOAD_FILE_TYPES = [
   ...BATCH_UPLOAD_FILE_TYPES,
 ];
 
-// Area validation constants (in square kilometers)
-export const MIN_AREA_KM2 = 0.1;
+// Area validation constant (in square kilometers). There is no minimum: the
+// backend accepts any size, so a small area is not refused here either.
 export const MAX_AREA_KM2 = 10000;
 
 /** CSV and zipped shapefiles go to the batch endpoint, one area per row. */
