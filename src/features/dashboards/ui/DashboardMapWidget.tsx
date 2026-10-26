@@ -1,4 +1,5 @@
 import "maplibre-gl/dist/maplibre-gl.css";
+import "@/app/utils/maplibreWorker";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Box, Tag } from "@chakra-ui/react";
 import { PolygonIcon } from "@phosphor-icons/react";
