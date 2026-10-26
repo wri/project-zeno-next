@@ -211,8 +211,9 @@ export function UseCasesSection({
   /** The methodology's "Why question types matter" block. */
   readonly methodologyHref: string;
 }) {
-  const ordered = [...page.useCases].sort(
-    (a, b) => b.stats.total - a.stats.total
+  // By use-case number (UC1, UC2, ... UC10), so UC1 is selected by default.
+  const ordered = [...page.useCases].sort((a, b) =>
+    a.key.localeCompare(b.key, "en", { numeric: true })
   );
   const { selected, select, detailRef } = useRowSelection(ordered);
   if (!selected) return null;
