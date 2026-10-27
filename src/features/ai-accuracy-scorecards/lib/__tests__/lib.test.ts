@@ -182,6 +182,17 @@ describe("groupChecks", () => {
     expect(stage("accepted_blog_match")).toEqual(["explanation"]);
   });
 
+  it("lists the figure checks once a question names a figure", () => {
+    const groups = groupChecks([
+      makeQuestion({
+        expected: { figure: "sum(area_ha)", figure_claim: "#1 < 0 :: a || b" },
+      }),
+    ]);
+    const keys = groups.byStage.flatMap((s) => s.checks.map((c) => c.key));
+    expect(keys).toContain("figure_match");
+    expect(keys).toContain("figure_claim_match");
+  });
+
   it("marks the AI reviewer's checks as judged", () => {
     expect(checkLabel("expected_text_match")).toBe(
       "Reply says what it must (judged)"
