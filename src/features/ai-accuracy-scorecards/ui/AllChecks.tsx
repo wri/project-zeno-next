@@ -181,7 +181,7 @@ export function AllChecks({
       {unused.length ? (
         <CheckGroup
           title="Not used by this benchmark yet"
-          lead={`The test harness has ${unused.length} more checks. We use them in our internal evals; no benchmark question calls for them yet, and they will count here once questions that need them are added.`}
+          lead={`The test harness has ${unused.length} more checks. We use them in our internal evals; no benchmark question calls for them yet, and they will count here once questions that need them are added. Several compare the reply or chart with a fixed expected answer; this benchmark instead recalculates each asked figure from the data Horizon fetched ("Reply gives the right figure from the data").`}
         >
           {unused.map((c) => (
             <Box

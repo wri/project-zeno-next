@@ -47,7 +47,7 @@ export const STAGE_COPY: Readonly<Record<StageKey, StageCopy>> = {
     what: "Whether Horizon answers when it should, asks a clarifying question when a request is ambiguous and declines when it cannot answer safely, rather than guessing.",
     why: "A confident answer to the wrong question looks exactly like a right answer, which makes scope failures the hardest to spot.",
     notYet:
-      "Asking back when one dataset clearly fits currently counts as a retrieval failure, because no data was fetched. Scope across multi-turn conversations is not tested.",
+      "Asking back when one dataset clearly fits counts as a retrieval failure, because no data was fetched, unless the question lists asking back as a fair answer. Scope across multi-turn conversations is not tested.",
   },
   retrieval: {
     question: "Does it get the right data: place, dataset, settings and dates?",
@@ -58,10 +58,10 @@ export const STAGE_COPY: Readonly<Record<StageKey, StageCopy>> = {
   },
   analysis: {
     question: "Does it calculate correctly from that data?",
-    what: "Whether the figures hold together: the chart has no missing values. Checked by code, not by a model, whenever an answer includes a chart. Whether the reply's figures match the chart is tracked but not yet scored.",
+    what: "Whether Horizon calculates correctly from the data it fetched: code recalculates the figure the question asks for from that same data and looks for it in the reply, an AI reviewer checks the reply's figures are for the period asked, and code checks the chart has no missing values. Whether the reply's figures match the chart is tracked but not yet scored; the figure check already tests the reply against the data itself.",
     why: "Analysis failures produce precise-looking numbers that are wrong, which could lead to users confidently citing incorrect numbers.",
     notYet:
-      "Comparing figures with the data service's own totals is not yet in the benchmark; it is being built before the November freeze.",
+      "Whether the fetched data is itself right is out of scope: the figure check assumes it is and tests what Horizon does with it. Comparing figures with an independent fetch of the same data is part of the internal regression suite, not this benchmark.",
   },
   explanation: {
     question:

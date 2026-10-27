@@ -571,8 +571,10 @@ export function MethodologyView({
             <>
               <b>What a question needed to be included.</b> Every question
               reflects a priority use case, can be scored the same way every
-              time and has a correct answer that is either fixed or recalculated
-              for each run from a fixed rule (for recent-alert questions). For
+              time and has a correct answer worked out the same way every time:
+              fixed, recalculated for each run from a fixed rule (for
+              recent-alert questions), or calculated by a fixed formula from the
+              data Horizon fetched (for questions that ask for a figure). For
               now, the set also includes only questions that Horizon can answer
               with its current capabilities and that our current checks can
               test. We left out questions about features Horizon doesn&rsquo;t
@@ -722,11 +724,16 @@ export function MethodologyView({
               failures, as a user would see them.
             </>,
             <>
-              <b>Numbers are not yet checked against source totals.</b> We
-              confirm the chart has no missing values, not yet that its figures
-              match the data service&rsquo;s own totals. Whether the
-              reply&rsquo;s figures match the chart is tracked but not yet
-              scored.
+              <b>
+                Numbers are checked against the data Horizon fetched, not an
+                independent source.
+              </b>{" "}
+              Each asked figure is recalculated from the data Horizon itself
+              pulled, which catches wrong arithmetic and misreported figures but
+              assumes that data is right. Whether the data matches an
+              independent fetch is tested in the internal regression suite, not
+              here. Whether the reply&rsquo;s figures match the chart is tracked
+              but not yet scored.
             </>,
             <>
               <b>Clarifying questions are scored separately.</b> The check for
