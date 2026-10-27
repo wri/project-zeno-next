@@ -169,6 +169,19 @@ describe("groupChecks", () => {
     expect(keys(groups.unused)).toContain("charts_answer_judge");
   });
 
+  it("lists the alternative-answer checks under their steps", () => {
+    const groups = groupChecks([
+      makeQuestion({ expected: { accept_aoi_nudge_offering: "BRA.14" } }),
+      makeQuestion({ expected: { accept_blog_sources: "a-post" } }),
+    ]);
+    const stage = (key: string) =>
+      groups.byStage
+        .filter((s) => s.checks.some((c) => c.key === key))
+        .map((s) => s.stage);
+    expect(stage("accepted_nudge_match")).toEqual(["scope"]);
+    expect(stage("accepted_blog_match")).toEqual(["explanation"]);
+  });
+
   it("marks the AI reviewer's checks as judged", () => {
     expect(checkLabel("expected_text_match")).toBe(
       "Reply says what it must (judged)"
