@@ -149,7 +149,7 @@ function FlowChart({
             fontWeight="600"
             fill="var(--chakra-colors-fg)"
           >
-            Questions scored · {total}
+            All questions scored
           </text>
           {trunk.map((seg) => (
             <rect
@@ -168,9 +168,8 @@ function FlowChart({
             return (
               <g key={mode.key}>
                 <text
-                  x={px}
-                  y={TOP + BODY + 14}
-                  textAnchor="middle"
+                  x={px + 5}
+                  y={TOP - 10}
                   fontSize="11"
                   fill="var(--chakra-colors-fg-muted)"
                 >
@@ -179,7 +178,7 @@ function FlowChart({
                 <line
                   x1={px}
                   x2={px}
-                  y1={TOP - 4}
+                  y1={TOP - 22}
                   y2={TOP + BODY + 4}
                   stroke="var(--chakra-colors-border)"
                 />
@@ -206,7 +205,7 @@ function FlowChart({
                 >
                   {leafPhrase(mode)}{" "}
                   <tspan fontWeight="600">
-                    {mode.count} · {pct(mode.share)}
+                    {mode.count} · {pct(mode.share, 1)}
                   </tspan>
                 </text>
               </g>
