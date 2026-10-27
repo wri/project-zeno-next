@@ -1,19 +1,13 @@
 /** The page's views live in `?view=`, the run in `?run=`, so a view
  * of a given run can be bookmarked and shared. */
 
-export const VIEWS = [
-  "dashboard",
-  "questions",
-  "methodology",
-  "checks",
-] as const;
+export const VIEWS = ["dashboard", "questions", "methodology"] as const;
 export type View = (typeof VIEWS)[number];
 
 export const VIEW_LABELS: Readonly<Record<View, string>> = {
   dashboard: "Dashboard",
   questions: "All questions",
   methodology: "Methodology",
-  checks: "Checks",
 };
 
 export function isView(value: string | null): value is View {

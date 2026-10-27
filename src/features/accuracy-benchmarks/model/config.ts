@@ -39,26 +39,26 @@ export interface StageCopy {
   readonly notYet: string;
 }
 
-/** Wording from the published accuracy page, including the team's edits. */
+/** Wording from the team's methodology draft, including its in-page edits. */
 export const STAGE_COPY: Readonly<Record<StageKey, StageCopy>> = {
   scope: {
     question:
-      "Does it choose the right response: answer, ask a clarifying question, or decline?",
-    what: "Whether Horizon answers when it should, asks a clarifying question when a request is ambiguous, and declines when it cannot answer safely, rather than guessing.",
+      "Does it choose the right response: answer, ask a clarifying question or decline?",
+    what: "Whether Horizon answers when it should, asks a clarifying question when a request is ambiguous and declines when it cannot answer safely, rather than guessing.",
     why: "A confident answer to the wrong question looks exactly like a right answer, which makes scope failures the hardest to spot.",
     notYet:
       "Asking back when one dataset clearly fits currently counts as a retrieval failure, because no data was fetched. Scope across multi-turn conversations is not tested.",
   },
   retrieval: {
     question: "Does it get the right data: place, dataset, settings and dates?",
-    what: "Whether Horizon finds the right place, chooses the right dataset, applies the right settings (thresholds, forest filters), uses the requested dates, and fetches the data.",
+    what: "Whether Horizon finds the right place, chooses the right dataset, applies the right settings (thresholds, forest filters), uses the requested dates and fetches the data.",
     why: "Correct math on the wrong place, dataset or years gives a confident answer about the wrong thing, which is worse than no answer.",
     notYet:
       "User-drawn custom areas and saved-area portfolios are not in the benchmark yet; they need seeded test accounts.",
   },
   analysis: {
     question: "Does it calculate correctly from that data?",
-    what: "Whether the figures hold together: every value the chart plots is present. Checked by code, not by a model, whenever an answer includes a chart.",
+    what: "Whether the figures hold together: the chart has no missing values. Checked by code, not by a model, whenever an answer includes a chart. Whether the reply's figures match the chart is tracked but not yet scored.",
     why: "Analysis failures produce precise-looking numbers that are wrong, which could lead to users confidently citing incorrect numbers.",
     notYet:
       "Comparing figures with the data service's own totals is not yet in the benchmark; it is being built before the November freeze.",
@@ -69,7 +69,7 @@ export const STAGE_COPY: Readonly<Record<StageKey, StageCopy>> = {
     what: "Whether the written answer says what the data says: no web sources used in place of the data, and required statements present where a question needs them (for example, not naming a commodity the driver data does not identify).",
     why: "The text is the part users read. A correct chart under text that over-claims a cause misleads even a careful reader.",
     notYet:
-      "Dataset caveats are required by the system's instructions but not yet scored everywhere. Whether the reply's main figure matches its chart is tracked, not yet scored.",
+      "Dataset caveats are required by the system's instructions but not yet scored everywhere.",
   },
   output: {
     question: "Does it return the right chart, map layer or table?",

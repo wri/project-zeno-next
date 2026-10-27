@@ -4,8 +4,9 @@ Superuser-only page at `/accuracy-benchmarks` showing how accurately Horizon
 answers the BENCHMARK questions of [gnw-gold-evals](https://github.com/wri/gnw-gold-evals):
 the headline (questions right on every one of three tries), where wrong
 answers fail, accuracy by priority use case and by question type, every
-question with what the agent did on each attempt, the methodology, and a
-plain-language reference of every check. It is the in-app version of the
+question with what the agent did on each attempt, and the methodology, with a
+plain-language reference of every check under "Show all checks". It is the
+in-app version of the
 published accuracy artifact, and a standalone page: no app header, only a link
 back to the Horizon homepage.
 
@@ -43,12 +44,12 @@ while the benchmark is a draft (AJ, 2026-10-23): the data is public on GitHub.
 
 ## Segments
 
-| Segment  | Contents                                                                                             |
-| -------- | ---------------------------------------------------------------------------------------------------- |
-| `model/` | Normalised page types, the gateway port, stage labels, the check reference                           |
-| `lib/`   | Pure presentation helpers (tiers, failure breakdown, filters, run picking)                           |
-| `api/`   | GitHub raw gateway: zod schemas for the wire page, mapping                                           |
-| `ui/`    | Screen, four views in the URL (`?view=`, `?run=`; `?uc=` opens All questions filtered to a use case) |
+| Segment  | Contents                                                                                                                          |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `model/` | Normalised page types, the gateway port, stage labels, the check reference                                                        |
+| `lib/`   | Pure presentation helpers (tiers, failure breakdown, filters, run picking)                                                        |
+| `api/`   | GitHub raw gateway: zod schemas for the wire page, mapping                                                                        |
+| `ui/`    | Screen, three views in the URL (`?view=`, `?run=`; `?uc=` opens All questions filtered to a use case; `#checks` opens the checks) |
 
 ## Invariants (mirrored from gnw-gold-evals; update both together)
 

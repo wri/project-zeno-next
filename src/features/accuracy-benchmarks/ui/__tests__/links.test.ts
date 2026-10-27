@@ -15,11 +15,12 @@ describe("pageHref", () => {
     );
   });
 
-  it("recognises only the four views", () => {
+  it("recognises only the three views", () => {
+    // The checks moved into the methodology; the screen maps old links.
     expect(
       ["dashboard", "questions", "methodology", "checks", "runs", null].map(
         isView
       )
-    ).toEqual([true, true, true, true, false, false]);
+    ).toEqual([true, true, true, false, false, false]);
   });
 });

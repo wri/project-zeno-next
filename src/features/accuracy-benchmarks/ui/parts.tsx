@@ -109,21 +109,38 @@ export function Section({
   );
 }
 
-/** A titled block of a reading view (methodology, checks). */
+/** A titled block of the methodology: a section (h2) or a part of one (h3). */
 export function Block({
   id,
   title,
+  lead,
+  level = "h2",
   children,
 }: {
   readonly id?: string;
   readonly title: string;
-  readonly children: ReactNode;
+  readonly lead?: ReactNode;
+  readonly level?: "h2" | "h3";
+  readonly children?: ReactNode;
 }) {
+  const section = level === "h2";
   return (
-    <Box as="section" id={id} py={6} borderTopWidth="1px" borderColor="border">
-      <Heading as="h2" size="lg" mb={3}>
+    <Box
+      as="section"
+      id={id}
+      py={6}
+      borderTopWidth={section ? "2px" : "1px"}
+      borderColor={section ? "border.emphasized" : "border"}
+      scrollMarginTop={SCROLL_MARGIN}
+    >
+      <Heading as={level} size={section ? "xl" : "lg"} mb={3}>
         {title}
       </Heading>
+      {lead ? (
+        <Text color="fg.muted" mb={4} maxW="72ch">
+          {lead}
+        </Text>
+      ) : null}
       {children}
     </Box>
   );
