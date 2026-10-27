@@ -30,6 +30,11 @@ export const ANALYSIS_TEMPLATE_CARDS: readonly AnalysisTemplateCard[] = [
     label: "Post-2020 forest loss",
     image: "/analysis_template_post_2020_forest_loss.jpg",
   },
+  {
+    name: "forest-loss-drivers",
+    label: "Forest loss and its drivers",
+    image: "/analysis_template_forest_loss_drivers.jpg",
+  },
 ];
 
 /**
