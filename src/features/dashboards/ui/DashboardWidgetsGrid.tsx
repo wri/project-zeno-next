@@ -11,12 +11,14 @@ import {
 import { computeWidgetMove } from "../model/widget-move";
 import type { PendingInsightWidget } from "../model/pending-insight-widgets-store";
 import {
+  noteSource,
   topLevelWidgetSize,
   unresolvedPendingInsightWidgets,
   widgetText,
   withSize,
   withText,
   withWidgetTitle,
+  type NoteSource,
 } from "../lib/widgets";
 import {
   mapWidgetLayer,
@@ -58,6 +60,8 @@ import {
 interface StandaloneBody {
   map?: MapWidgetLayer;
   text?: string;
+  /** Who wrote a note; set for every text widget. */
+  source?: NoteSource;
   placeholder?: string;
 }
 
@@ -70,7 +74,10 @@ function standaloneBody(widget: DashboardWidget): StandaloneBody {
   }
   if (widget.widget_type === "text") {
     const text = widgetText(widget.config);
-    return text ? { text } : { placeholder: "This note is empty." };
+    const source = noteSource(widget.config);
+    return text
+      ? { text, source }
+      : { placeholder: "This note is empty.", source };
   }
   return {
     placeholder: `This ${widget.widget_type} widget isn't supported here yet.`,
@@ -312,11 +319,13 @@ function ContainerGrid({
             print ? (
               <DashboardNoteDocument
                 text={body?.text ?? null}
+                source={body?.source ?? "ai"}
                 placeholder={body?.placeholder ?? null}
               />
             ) : (
               <DashboardTextWidgetCard
                 text={body?.text ?? null}
+                source={body?.source ?? "ai"}
                 placeholder={body?.placeholder ?? null}
                 isOwner={isOwner}
                 isDouble={standalone.isDouble}

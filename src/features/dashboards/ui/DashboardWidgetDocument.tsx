@@ -1,13 +1,14 @@
 import { Box, Flex, Text } from "@chakra-ui/react";
 
-import InsightCaption from "@/app/components/InsightCaption";
 import { AnalysisParamsChips } from "@/app/components/widgets/AnalysisParameters";
 import { buildChips } from "@/app/components/widgets/analysis-params-utils";
 import type { InsightWidget } from "@/app/types/chat";
 import type { MapAreaAoi, MapWidgetLayer } from "../lib/mapWidgets";
+import type { NoteSource } from "../lib/widgets";
 import DashboardTextWidget from "./DashboardTextWidget";
 import DashboardWidgetBody from "./DashboardWidgetBody";
 import { WIDGET_TITLE_PROPS } from "./DashboardWidgetCard";
+import NoteCaption from "./NoteCaption";
 
 // A widget is never split across pages. A card taller than a page still is:
 // the browser treats this as a preference.
@@ -73,9 +74,12 @@ export default function DashboardWidgetDocument({
  */
 export function DashboardNoteDocument({
   text,
+  source,
   placeholder,
 }: {
   text: string | null;
+  /** Who wrote the note, which picks its caption. */
+  source: NoteSource;
   /** Copy shown when the note is empty; the grid sets it whenever `text` is null. */
   placeholder: string | null;
 }) {
@@ -88,7 +92,7 @@ export function DashboardNoteDocument({
         borderBottomWidth="1px"
         borderColor="#E0E2E5"
       >
-        <InsightCaption />
+        <NoteCaption source={source} />
       </Flex>
       {text ? (
         <DashboardTextWidget text={text} print />
