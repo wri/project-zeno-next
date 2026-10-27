@@ -16,6 +16,7 @@ import { checkLabel } from "../model/checks";
 import { STAGE_LABELS } from "../model/config";
 import type {
   Attempt,
+  AttemptError,
   BenchmarkPage,
   Question,
   QuestionStatus,
@@ -74,17 +75,25 @@ function patternText(perTrial: readonly (boolean | null)[]): string {
     .join(" · ");
 }
 
+const ATTEMPT_ERRORS: Readonly<Record<AttemptError["kind"], string>> = {
+  no_answer: "no reply, counted as wrong",
+  unscored: "could not be scored, left out",
+};
+
 function AttemptDetail({
   attempt,
+  error,
   index,
 }: {
   readonly attempt: Attempt | null;
+  readonly error: AttemptError | null;
   readonly index: number;
 }) {
+  const note = error ? `${ATTEMPT_ERRORS[error.kind]} (${error.reason})` : null;
   if (!attempt) {
     return (
       <Box fontSize="xs">
-        <b>Attempt {index + 1}</b>: no record
+        <b>Attempt {index + 1}</b>: {note ?? "no record"}
       </Box>
     );
   }
@@ -108,6 +117,7 @@ function AttemptDetail({
   return (
     <Box fontSize="xs" borderLeftWidth="2px" borderColor="border" pl={3}>
       <Text fontWeight="semibold">Attempt {index + 1}</Text>
+      {note ? <Text color="fg.error">{note}</Text> : null}
       <Text color="fg.muted" fontFamily="mono" wordBreak="break-word">
         {bits.join(" · ")}
       </Text>
@@ -193,7 +203,12 @@ function QuestionDetail({ q }: { readonly q: Question }) {
         </Heading>
         <Box display="grid" gap={3}>
           {q.attempts.map((a, i) => (
-            <AttemptDetail key={i} attempt={a} index={i} />
+            <AttemptDetail
+              key={i}
+              attempt={a}
+              error={q.attemptErrors[i] ?? null}
+              index={i}
+            />
           ))}
         </Box>
       </Box>

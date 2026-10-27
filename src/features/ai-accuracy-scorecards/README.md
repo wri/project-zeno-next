@@ -56,7 +56,10 @@ while the benchmark is a draft (AJ, 2026-10-23): the data is public on GitHub.
 - Headline = share of scored questions right on **every** trial. The flow
   chart opens on the same measure and switches to "right on at least 2 of 3"
   (the North Star, the page data's own attribution) or "at least 1 of 3".
-- Errored questions leave every denominator.
+- An attempt that got no reply counts as a wrong attempt (the hero notes how
+  many of all attempts got none). An attempt the harness could not score is
+  left out; a question with no scored attempt is errored, and errored
+  questions leave every denominator.
 - A failed question counts once, at its earliest failing stage in the order
   scope, retrieval, analysis, explanation, output; "unattributed" when only
   shared checks failed. A question wrong on fewer than most trials counts at

@@ -671,9 +671,12 @@ export function MethodologyView({
               time and never.
             </>,
             <>
-              <b>Errors are reported separately.</b> A question that errors or
-              times out is left out of the score and counted under availability
-              instead.
+              <b>No reply counts as wrong.</b> An attempt that gets no answer,
+              because the reply stalls, breaks off or the service fails, is a
+              wrong attempt: the user got nothing. An attempt the testing tool
+              itself could not score is left out, and a question is reported
+              separately as an error only when none of its attempts could be
+              scored.
             </>,
             <>
               <b>Where answers fail.</b> Each wrong answer is counted once, at

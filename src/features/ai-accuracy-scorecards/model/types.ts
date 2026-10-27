@@ -23,7 +23,12 @@ export interface GroupStats {
   readonly total: number;
   /** Questions with a pass or fail verdict (errors excluded). */
   readonly scored: number;
+  /** Questions with no attempt the harness could score. */
   readonly errors: number;
+  /** Every attempt at every question in the group. */
+  readonly attempts: number;
+  /** Attempts that got no reply; each counts as a wrong attempt. */
+  readonly noAnswer: number;
   /** Questions right on the majority of trials (the North Star count). */
   readonly passed: number;
   readonly failed: number;
@@ -94,6 +99,13 @@ export interface Attempt {
   readonly answerExcerpt: string;
 }
 
+/** Why an attempt has no verdict of its own: it got no reply (counted as
+ * wrong), or the harness could not score it (left out). */
+export interface AttemptError {
+  readonly kind: "no_answer" | "unscored";
+  readonly reason: string;
+}
+
 export interface FailedCheck {
   readonly check: string;
   readonly stage: StageKey | "shared";
@@ -120,6 +132,8 @@ export interface Question {
   readonly drafted: boolean;
   /** One entry per trial; null when no agent state was recorded. */
   readonly attempts: readonly (Attempt | null)[];
+  /** One entry per trial; null when the attempt was scored normally. */
+  readonly attemptErrors: readonly (AttemptError | null)[];
   readonly traceUrl: string | null;
   readonly place: string;
   readonly useCases: readonly string[];

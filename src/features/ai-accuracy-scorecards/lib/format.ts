@@ -1,3 +1,5 @@
+import type { GroupStats } from "../model/types";
+
 const MONTHS = [
   "Jan",
   "Feb",
@@ -41,4 +43,19 @@ export function parseVersion(
   const set = match?.[1] ?? version;
   if (!isDraft) return { set, draftLabel: null };
   return { set, draftLabel: match?.[2] ? `draft ${match[2]}` : "draft" };
+}
+
+/**
+ * A note for the questions line: attempts that got no reply (each counted
+ * as wrong) and questions the harness could not score; null when neither.
+ */
+export function availabilityNote(stats: GroupStats): string | null {
+  const parts: string[] = [];
+  if (stats.noAnswer) {
+    parts.push(
+      `${stats.noAnswer} of ${stats.attempts} attempts got no reply, counted as wrong`
+    );
+  }
+  if (stats.errors) parts.push(`${stats.errors} could not be scored`);
+  return parts.length ? parts.join("; ") : null;
 }

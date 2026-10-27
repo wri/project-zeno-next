@@ -2,7 +2,13 @@ import { describe, expect, it } from "vitest";
 import { checkLabel } from "../../model/checks";
 import { groupChecks } from "../checks";
 import { failureBreakdown, failureFlow, failurePhrase } from "../failures";
-import { formatDay, parseVersion, pct, share } from "../format";
+import {
+  availabilityNote,
+  formatDay,
+  parseVersion,
+  pct,
+  share,
+} from "../format";
 import { mixSentence } from "../mix";
 import { filterQuestions, NO_FILTER } from "../questions";
 import { monthsSinceOrigin, pickRun, trendRuns } from "../runs";
@@ -295,6 +301,16 @@ describe("format", () => {
     expect(pct(null)).toBe("–");
     expect(share(1, 0)).toBeNull();
     expect(formatDay("2026-10-23T09:44:47Z")).toBe("23 Oct 2026");
+  });
+
+  it("notes attempts with no reply and unscored questions", () => {
+    expect(availabilityNote(makeStats())).toBeNull();
+    expect(availabilityNote(makeStats({ attempts: 807, noAnswer: 1 }))).toBe(
+      "1 of 807 attempts got no reply, counted as wrong"
+    );
+    expect(availabilityNote(makeStats({ noAnswer: 2, errors: 1 }))).toBe(
+      "2 of 30 attempts got no reply, counted as wrong; 1 could not be scored"
+    );
   });
 
   it("names a version by its set and draft", () => {

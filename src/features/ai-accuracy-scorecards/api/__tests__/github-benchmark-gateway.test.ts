@@ -170,6 +170,32 @@ describe("parseBenchmarkPage", () => {
       dates: ["2026-09-23", null],
     });
     expect(q.attempts[1]).toBeNull();
+    // A page from before 27 Oct 2026 carries no attempt counts or errors.
+    expect(page.summary).toMatchObject({ attempts: 6, noAnswer: 0 });
+    expect(q.attemptErrors).toEqual([null, null, null]);
+  });
+
+  it("reads attempts that got no reply", () => {
+    const [q] = WIRE_PAGE.questions;
+    const page = parseBenchmarkPage({
+      ...WIRE_PAGE,
+      summary: { ...WIRE_PAGE.summary, attempts: 6, no_answer: 1 },
+      questions: [
+        {
+          ...q,
+          attempt_errors: [
+            null,
+            { kind: "no_answer", reason: "ReadTimeout" },
+            null,
+          ],
+        },
+      ],
+    });
+    expect(page.summary).toMatchObject({ attempts: 6, noAnswer: 1 });
+    expect(page.questions[0].attemptErrors[1]).toEqual({
+      kind: "no_answer",
+      reason: "ReadTimeout",
+    });
   });
 
   it("refuses a page written for another schema version", () => {
