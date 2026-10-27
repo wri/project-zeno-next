@@ -8,9 +8,6 @@ import type { NoteSource } from "../lib/widgets";
  */
 export default function NoteCaption({ source }: { source: NoteSource }) {
   if (source === "user") return null;
-  return source === "template" ? (
-    <InsightCaption curated showLearnMore={false} />
-  ) : (
-    <InsightCaption />
-  );
+  const curated = source === "template";
+  return <InsightCaption curated={curated} showLearnMore={!curated} />;
 }
