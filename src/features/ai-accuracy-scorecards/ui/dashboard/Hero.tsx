@@ -8,7 +8,7 @@ import {
 } from "@chakra-ui/react";
 import { Link } from "@/src/shared/lib/router";
 import type { BenchmarkPage } from "../../model/types";
-import { availabilityNote, formatDay, pct } from "../../lib/format";
+import { formatDay, pct } from "../../lib/format";
 import { TIERS, tiersOf } from "../../lib/tiers";
 import {
   Eyebrow,
@@ -30,7 +30,6 @@ export function Hero({
 }) {
   const { summary, benchmark } = page;
   const tiers = tiersOf(summary);
-  const availability = availabilityNote(summary);
   const draft = benchmark.draftLabel !== null;
   return (
     <Grid
@@ -143,17 +142,6 @@ export function Hero({
             </Text>
             <Text as="dd" fontWeight="semibold">
               {benchmark.members}, asked {page.run.numTrials} times
-              {availability ? (
-                <Text
-                  as="span"
-                  display="block"
-                  fontWeight="normal"
-                  fontSize="xs"
-                  color="fg.subtle"
-                >
-                  {availability}
-                </Text>
-              ) : null}
             </Text>
           </Box>
           <Box>
