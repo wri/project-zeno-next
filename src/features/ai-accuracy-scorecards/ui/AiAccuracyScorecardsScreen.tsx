@@ -1,7 +1,7 @@
 /**
- * The accuracy-benchmarks page: how accurately Horizon answers the
+ * The AI accuracy scorecards page: how accurately Horizon answers the
  * BENCHMARK questions, per run. Its views share one route
- * (`/accuracy-benchmarks?view=…&run=…`), so each view of a run can be
+ * (`/ai-accuracy-scorecards?view=…&run=…`), so each view of a run can be
  * bookmarked. A standalone page: no app header, only a link home. Data is
  * precomputed page data from the public gnw-gold-evals repo; the superuser
  * gate lives in the route page and is UX-only.
@@ -113,7 +113,7 @@ function Dashboard({
   );
 }
 
-export function AccuracyBenchmarksScreen() {
+export function AiAccuracyScorecardsScreen() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const viewParam = searchParams?.get("view") ?? null;

@@ -13,8 +13,8 @@ import { GithubBenchmarkGateway } from "../api/github-benchmark-gateway";
 const defaultGateway: BenchmarkGateway = new GithubBenchmarkGateway();
 
 const benchmarkKeys = {
-  runs: ["accuracy-benchmarks", "runs"] as const,
-  page: (path: string) => ["accuracy-benchmarks", "page", path] as const,
+  runs: ["ai-accuracy-scorecards", "runs"] as const,
+  page: (path: string) => ["ai-accuracy-scorecards", "page", path] as const,
 };
 
 const RUNS_OPTIONS = {

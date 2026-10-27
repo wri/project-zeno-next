@@ -54,8 +54,8 @@ export const routes: RouteObject[] = [
         children: [
           { index: true, ...page(() => import("@/app/(home)/page")) },
           {
-            path: "accuracy-benchmarks",
-            ...page(() => import("@/app/accuracy-benchmarks/page")),
+            path: "ai-accuracy-scorecards",
+            ...page(() => import("@/app/ai-accuracy-scorecards/page")),
           },
           { path: "amazonia", ...page(() => import("@/app/amazonia/page")) },
           {

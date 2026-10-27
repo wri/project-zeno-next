@@ -122,9 +122,9 @@ export default function SettingsShell({
           )}
           {userType === "superuser" && (
             <Button asChild>
-              <Link href="/accuracy-benchmarks">
+              <Link href="/ai-accuracy-scorecards">
                 <TargetIcon />
-                Accuracy Benchmarks
+                AI Accuracy Scorecards
               </Link>
             </Button>
           )}

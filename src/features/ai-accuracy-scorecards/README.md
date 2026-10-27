@@ -1,6 +1,6 @@
-# accuracy-benchmarks
+# ai-accuracy-scorecards
 
-Superuser-only page at `/accuracy-benchmarks` showing how accurately Horizon
+Superuser-only page at `/ai-accuracy-scorecards` showing how accurately Horizon
 answers the BENCHMARK questions of [gnw-gold-evals](https://github.com/wri/gnw-gold-evals):
 the headline (questions right on every one of three tries), where wrong
 answers fail, accuracy by priority use case and by question type, every
@@ -39,7 +39,7 @@ The check reference (`model/checks.ts`) mirrors the BENCHMARK branch's
 `goldset.registry`, `goldset.buckets` and `src/goldset/evaluators/README.md`;
 a check is listed as used when a question's expected fields switch it on.
 
-The superuser gate (`app/accuracy-benchmarks/page.tsx`) is UX-only and holds
+The superuser gate (`app/ai-accuracy-scorecards/page.tsx`) is UX-only and holds
 while the benchmark is a draft (AJ, 2026-10-23): the data is public on GitHub.
 
 ## Segments

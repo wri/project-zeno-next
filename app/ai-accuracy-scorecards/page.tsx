@@ -2,11 +2,11 @@ import { Center, Heading, Text, VStack } from "@chakra-ui/react";
 import { useAuthGuard } from "@/app/hooks/useAuthGuard";
 import useAuthStore from "@/app/store/authStore";
 import {
-  AccuracyBenchmarksScreen,
+  AiAccuracyScorecardsScreen,
   HomeLink,
-} from "@/src/features/accuracy-benchmarks";
+} from "@/src/features/ai-accuracy-scorecards";
 
-export default function AccuracyBenchmarksPage() {
+export default function AiAccuracyScorecardsPage() {
   const isReady = useAuthGuard();
   const { userType, userEmail } = useAuthStore();
 
@@ -20,8 +20,8 @@ export default function AccuracyBenchmarksPage() {
         <VStack gap={2} maxW="md" textAlign="center">
           <Heading size="md">Superuser access required</Heading>
           <Text color="fg.muted">
-            You are signed in as {userEmail ?? "an unknown user"}, but the
-            accuracy benchmarks are only available to GNW superusers while the
+            You are signed in as {userEmail ?? "an unknown user"}, but the AI
+            accuracy scorecards are only available to GNW superusers while the
             benchmark is in draft.
           </Text>
           <HomeLink />
@@ -31,5 +31,5 @@ export default function AccuracyBenchmarksPage() {
   }
 
   // A standalone page: no app header (AJ, 2026-10-24).
-  return <AccuracyBenchmarksScreen />;
+  return <AiAccuracyScorecardsScreen />;
 }
