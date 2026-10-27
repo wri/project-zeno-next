@@ -170,8 +170,7 @@ describe("parseBenchmarkPage", () => {
       dates: ["2026-09-23", null],
     });
     expect(q.attempts[1]).toBeNull();
-    // A page from before 27 Oct 2026 carries no attempt counts or errors.
-    expect(page.summary).toMatchObject({ attempts: 6, noAnswer: 0 });
+    // A page from before 27 Oct 2026 carries no attempt errors.
     expect(q.attemptErrors).toEqual([null, null, null]);
   });
 
@@ -179,7 +178,6 @@ describe("parseBenchmarkPage", () => {
     const [q] = WIRE_PAGE.questions;
     const page = parseBenchmarkPage({
       ...WIRE_PAGE,
-      summary: { ...WIRE_PAGE.summary, attempts: 6, no_answer: 1 },
       questions: [
         {
           ...q,
@@ -191,7 +189,6 @@ describe("parseBenchmarkPage", () => {
         },
       ],
     });
-    expect(page.summary).toMatchObject({ attempts: 6, noAnswer: 1 });
     expect(page.questions[0].attemptErrors[1]).toEqual({
       kind: "no_answer",
       reason: "ReadTimeout",

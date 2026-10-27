@@ -19,8 +19,6 @@ export function makeStats(overrides: Partial<GroupStats> = {}): GroupStats {
     total: 10,
     scored: 10,
     errors: 0,
-    attempts: 30,
-    noAnswer: 0,
     passed: 6,
     failed: 4,
     majority: 0.6,

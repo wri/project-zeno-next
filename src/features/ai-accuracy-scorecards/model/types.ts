@@ -25,10 +25,6 @@ export interface GroupStats {
   readonly scored: number;
   /** Questions with no attempt the harness could score. */
   readonly errors: number;
-  /** Every attempt at every question in the group. */
-  readonly attempts: number;
-  /** Attempts that got no reply; each counts as a wrong attempt. */
-  readonly noAnswer: number;
   /** Questions right on the majority of trials (the North Star count). */
   readonly passed: number;
   readonly failed: number;

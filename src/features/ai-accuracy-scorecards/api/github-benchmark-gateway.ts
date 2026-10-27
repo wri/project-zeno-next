@@ -57,13 +57,9 @@ const RawIndex = z.looseObject({
   sets: z.looseObject({ benchmark: z.array(RawIndexRun).default([]) }),
 });
 
-// `attempts` and `no_answer` arrived on 27 Oct 2026; earlier pages have
-// neither (and counted any errored attempt as an errored question).
 const RawStats = z.object({
   scored: z.number(),
   errors: z.number(),
-  attempts: z.number().optional(),
-  no_answer: z.number().optional(),
   passed: z.number(),
   majority: z.number().nullable(),
   every_time: z.number().nullable(),
@@ -176,13 +172,11 @@ const RawPage = z.looseObject({
 
 // ── Mapping ────────────────────────────────────────────────────────────────
 
-function toStats(raw: z.infer<typeof RawStats>, numTrials: number): GroupStats {
+function toStats(raw: z.infer<typeof RawStats>): GroupStats {
   return {
     total: raw.scored + raw.errors,
     scored: raw.scored,
     errors: raw.errors,
-    attempts: raw.attempts ?? (raw.scored + raw.errors) * numTrials,
-    noAnswer: raw.no_answer ?? 0,
     passed: raw.passed,
     failed: raw.scored - raw.passed,
     majority: raw.majority,
@@ -224,7 +218,6 @@ function statusOf(raw: z.infer<typeof RawQuestion>): QuestionStatus {
 /** Parse a page file's JSON into the normalised page. Throws on drift. */
 export function parseBenchmarkPage(json: unknown): BenchmarkPage {
   const raw = RawPage.parse(json);
-  const numTrials = raw.run.num_trials;
   const typeLabels = new Map(raw.types.map((t) => [t.key, t.label]));
   function typeLabel(key: string): string {
     const label = typeLabels.get(key);
@@ -238,7 +231,7 @@ export function parseBenchmarkPage(json: unknown): BenchmarkPage {
       key: t.key,
       label: t.label,
       description: t.description,
-      stats: toStats(t, numTrials),
+      stats: toStats(t),
       examplePass: t.example_pass,
       exampleFail: t.example_fail && {
         query: t.example_fail.query,
@@ -259,7 +252,7 @@ export function parseBenchmarkPage(json: unknown): BenchmarkPage {
       members: raw.benchmark.members,
       excluded: raw.benchmark.excluded,
     },
-    summary: toStats(raw.summary, numTrials),
+    summary: toStats(raw.summary),
     stages: raw.stages.map((s) => ({
       key: s.key,
       checked: s.checked,
@@ -272,7 +265,7 @@ export function parseBenchmarkPage(json: unknown): BenchmarkPage {
     useCases: raw.use_cases.map((u) => ({
       key: u.key,
       label: u.label,
-      stats: toStats(u, numTrials),
+      stats: toStats(u),
       composition: {
         types: toCounts(u.composition.types, typeLabel),
         places: toCounts(u.composition.places),
