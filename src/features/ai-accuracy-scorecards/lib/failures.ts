@@ -68,6 +68,8 @@ function attributionOf(q: Question): AttributionKey {
 export interface FailureFlow {
   readonly scored: number;
   readonly accurate: number;
+  /** accurate / scored, alongside each mode's share. */
+  readonly accurateShare: number | null;
   readonly modes: readonly FailureMode[];
 }
 
@@ -86,9 +88,11 @@ export function failureFlow(
     if (!isAccurate(q, standard)) counts[attributionOf(q)] += 1;
   }
   const modes = modesOf(counts, scored);
+  const accurate = scored - modes.reduce((sum, m) => sum + m.count, 0);
   return {
     scored,
-    accurate: scored - modes.reduce((sum, m) => sum + m.count, 0),
+    accurate,
+    accurateShare: share(accurate, scored),
     modes,
   };
 }

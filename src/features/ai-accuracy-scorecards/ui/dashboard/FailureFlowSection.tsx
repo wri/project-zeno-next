@@ -9,7 +9,7 @@ import {
   type FailureMode,
   type Standard,
 } from "../../lib/failures";
-import { pct, share } from "../../lib/format";
+import { pct } from "../../lib/format";
 import { PASS_COLOR, STAGE_COLORS } from "../palette";
 import { Panel, Section, Segmented } from "../parts";
 
@@ -23,6 +23,14 @@ const LEAF_W = 10;
 const LEAF_MIN = 6;
 const LEAF_SPACING = 14;
 const MAX_STAGE_GAP = 180;
+/** Decimal places for every share the chart shows. */
+const PCT_DIGITS = 1;
+/** Baseline of the header row above the flow: the trunk title and each
+ * stage's label, which starts just right of its break line. */
+const HEADER_Y = TOP - 10;
+const LABEL_DX = 5;
+/** Break lines reach up past the header row to meet their labels. */
+const RULE_TOP = HEADER_Y - 12;
 /** Room right of the flow for the leaf labels. */
 const LABEL_BUDGET = 300;
 
@@ -123,7 +131,7 @@ function FlowChart({
     total
   );
   const height = bottom + 6;
-  const accurate = `${flow.accurate} · ${pct(share(flow.accurate, total))}`;
+  const accurate = `${flow.accurate} · ${pct(flow.accurateShare, PCT_DIGITS)}`;
   const { tries, leaf } = STANDARD_COPY[standard];
 
   return (
@@ -144,7 +152,7 @@ function FlowChart({
         >
           <text
             x={X0}
-            y={TOP - 10}
+            y={HEADER_Y}
             fontSize="12.5"
             fontWeight="600"
             fill="var(--chakra-colors-fg)"
@@ -168,8 +176,8 @@ function FlowChart({
             return (
               <g key={mode.key}>
                 <text
-                  x={px + 5}
-                  y={TOP - 10}
+                  x={px + LABEL_DX}
+                  y={HEADER_Y}
                   fontSize="11"
                   fill="var(--chakra-colors-fg-muted)"
                 >
@@ -178,7 +186,7 @@ function FlowChart({
                 <line
                   x1={px}
                   x2={px}
-                  y1={TOP - 22}
+                  y1={RULE_TOP}
                   y2={TOP + BODY + 4}
                   stroke="var(--chakra-colors-border)"
                 />
@@ -205,7 +213,7 @@ function FlowChart({
                 >
                   {leafPhrase(mode)}{" "}
                   <tspan fontWeight="600">
-                    {mode.count} · {pct(mode.share, 1)}
+                    {mode.count} · {pct(mode.share, PCT_DIGITS)}
                   </tspan>
                 </text>
               </g>

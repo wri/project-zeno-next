@@ -136,9 +136,10 @@ describe("failureFlow", () => {
     expect(counts("some")).toEqual([3, [["unattributed", 1]]]);
   });
 
-  it("gives each failure's share of the scored questions", () => {
+  it("gives each failure's and the accurate share of the scored questions", () => {
     const flow = failureFlow(questions, "most");
     expect(flow.modes.find((m) => m.key === "explanation")?.share).toBe(1 / 4);
+    expect(flow.accurateShare).toBe(2 / 4);
   });
 });
 
