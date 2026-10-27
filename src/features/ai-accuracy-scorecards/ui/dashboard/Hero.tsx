@@ -7,9 +7,19 @@ import {
   Text,
 } from "@chakra-ui/react";
 import { Link } from "@/src/shared/lib/router";
-import type { BenchmarkPage } from "../../model/types";
+import type { BenchmarkPage, GroupStats } from "../../model/types";
 import { formatDay, pct } from "../../lib/format";
-import { TIERS, tiersOf } from "../../lib/tiers";
+import { TIERS, tiersOf, type Tier, type TierKey } from "../../lib/tiers";
+import { PASS_COLOR, TIER_OPACITY } from "../palette";
+import {
+  FADE,
+  MOTION_SAFE,
+  TipKey,
+  TipNote,
+  TipRule,
+  TipValue,
+  useChartHover,
+} from "../chart-hover";
 import {
   Eyebrow,
   Legend,
@@ -18,6 +28,41 @@ import {
   tierSwatchStyle,
 } from "../parts";
 import { TrendChart, type TrendPoint } from "./TrendChart";
+
+/** A tier's tooltip: its share, then the running total it brings. */
+function TierTip({
+  tier,
+  stats,
+}: {
+  readonly tier: Tier;
+  readonly stats: GroupStats;
+}) {
+  const running =
+    tier.key === "most"
+      ? `${pct(stats.majority, 1)} accurate at least most of the time`
+      : tier.key === "some" || tier.key === "never"
+        ? `${pct(stats.anyTime, 1)} accurate at least once`
+        : null;
+  return (
+    <>
+      <TipValue>
+        {pct(tier.share, 1)} · {tier.count} questions
+      </TipValue>
+      <TipKey
+        color={tier.key === "never" ? "currentColor" : PASS_COLOR}
+        opacity={TIER_OPACITY[tier.key] || 0.5}
+      >
+        {tier.label} ({tier.attempts})
+      </TipKey>
+      {running ? (
+        <>
+          <TipRule />
+          <TipNote>{running}</TipNote>
+        </>
+      ) : null}
+    </>
+  );
+}
 
 export function Hero({
   page,
@@ -30,6 +75,7 @@ export function Hero({
 }) {
   const { summary, benchmark } = page;
   const tiers = tiersOf(summary);
+  const hover = useChartHover<TierKey>();
   const draft = benchmark.draftLabel !== null;
   return (
     <Grid
@@ -63,7 +109,13 @@ export function Hero({
         </Text>
 
         <Box mt={6} role="group" aria-label="How often answers were accurate">
-          <TierSegments stats={summary} height="14px" />
+          <TierSegments
+            stats={summary}
+            height="14px"
+            hover={hover}
+            tip={(t) => <TierTip tier={t} stats={summary} />}
+          />
+          {hover.tooltip}
           <Box as="ul" listStyleType="none" mt={3} display="grid" gap={1.5}>
             {tiers.map((t) => (
               <Grid
@@ -74,6 +126,15 @@ export function Hero({
                 alignItems="baseline"
                 fontSize="sm"
                 color="fg.muted"
+                px={1.5}
+                mx={-1.5}
+                py={0.5}
+                borderRadius="sm"
+                bg={hover.active === t.key ? "bg.muted" : undefined}
+                opacity={hover.dimmed(t.key) ? 0.45 : 1}
+                transition={`${FADE}, background 140ms`}
+                css={MOTION_SAFE}
+                {...hover.target(t.key)}
               >
                 <Box
                   w="12px"

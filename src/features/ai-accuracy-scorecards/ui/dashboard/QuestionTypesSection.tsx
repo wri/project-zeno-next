@@ -1,17 +1,29 @@
-import { useState, type Ref } from "react";
+import { useMemo, useState, type Ref } from "react";
 import { Box, Flex, Grid, Text } from "@chakra-ui/react";
 import { Swatch } from "@/src/shared/ui/Swatch";
 import { checkLabel } from "../../model/checks";
 import { ATTRIBUTION_ORDER, STAGE_LABELS } from "../../model/config";
 import type {
+  AttributionKey,
   BenchmarkPage,
   GroupStats,
   MeasuredType,
 } from "../../model/types";
-import { failureBreakdown, failurePhrase } from "../../lib/failures";
+import { failurePhrase } from "../../lib/failures";
 import { pct } from "../../lib/format";
 import { tierLines } from "../../lib/tiers";
 import { PASS_COLOR, STAGE_COLORS } from "../palette";
+import {
+  DIMMED,
+  FADE,
+  MOTION_SAFE,
+  TipKey,
+  TipNote,
+  TipRule,
+  TipValue,
+  useChartHover,
+  type ChartHover,
+} from "../chart-hover";
 import {
   Caption,
   DetailPanel,
@@ -33,8 +45,14 @@ const BAR_VIEWS: readonly (readonly [BarView, string])[] = [
   ["modes", "Where it failed"],
 ];
 
+type ModeKey = "pass" | AttributionKey;
+
 /** Accurate answers and each failure stage, for the "Where it failed" bars. */
-const MODES = [
+const MODES: readonly {
+  readonly key: ModeKey;
+  readonly label: string;
+  readonly color: string;
+}[] = [
   { key: "pass", label: "Accurate", color: PASS_COLOR },
   ...ATTRIBUTION_ORDER.map((key) => ({
     key,
@@ -43,19 +61,72 @@ const MODES = [
   })),
 ];
 
-function ModesBar({ t }: { readonly t: MeasuredType }) {
-  const segments = [
-    {
-      key: "pass",
-      label: "Accurate",
-      count: t.stats.passed,
-      color: PASS_COLOR,
-    },
-    ...failureBreakdown(t.stats).map((m) => ({
-      ...m,
-      color: STAGE_COLORS[m.key],
-    })),
-  ].filter((s) => s.count > 0);
+/** A mode's count across every measured type, for scale in its tooltip. */
+function modeTotals(types: readonly MeasuredType[]): Record<ModeKey, number> {
+  return Object.fromEntries(
+    MODES.map((m) => [
+      m.key,
+      types.reduce(
+        (sum, t) =>
+          sum +
+          (m.key === "pass" ? t.stats.passed : t.stats.failureModes[m.key]),
+        0
+      ),
+    ])
+  ) as Record<ModeKey, number>;
+}
+
+function ModeTip({
+  t,
+  mode,
+  count,
+  total,
+}: {
+  readonly t: MeasuredType;
+  readonly mode: (typeof MODES)[number];
+  readonly count: number;
+  readonly total: number;
+}) {
+  const pass = mode.key === "pass";
+  return (
+    <>
+      <TipValue>
+        {count} of {t.stats.scored} · {pct(count / t.stats.scored, 1)}
+      </TipValue>
+      <TipKey color={mode.color}>
+        {t.label}:{" "}
+        {pass
+          ? "accurate at least most of the time"
+          : `failed first at ${mode.label.toLowerCase()}`}
+      </TipKey>
+      <TipRule />
+      <TipNote>
+        {pass
+          ? `${total} accurate across all types`
+          : `${total} ${mode.label.toLowerCase()} failures across all types`}
+      </TipNote>
+    </>
+  );
+}
+
+/** Accurate answers and each failure stage of a type as one bar. Hovering
+ * a segment lights that stage in every row. The bar sits inside a row
+ * button, which carries the same facts as its label, so it takes no
+ * focus. */
+function ModesBar({
+  t,
+  hover,
+  totals,
+}: {
+  readonly t: MeasuredType;
+  readonly hover: ChartHover<ModeKey>;
+  readonly totals: Readonly<Record<ModeKey, number>>;
+}) {
+  const counts: Record<ModeKey, number> = {
+    pass: t.stats.passed,
+    ...t.stats.failureModes,
+  };
+  const segments = MODES.filter((m) => counts[m.key] > 0);
   return (
     <Flex
       h="22px"
@@ -64,21 +135,32 @@ function ModesBar({ t }: { readonly t: MeasuredType }) {
       gap="1px"
       aria-hidden
       w="100%"
+      css={MOTION_SAFE}
     >
-      {segments.map((s) => (
+      {segments.map((m) => (
         <Flex
-          key={s.key}
-          flex={`${s.count} 1 0`}
-          bg={s.color}
+          key={m.key}
+          flex={`${counts[m.key]} 1 0`}
+          bg={m.color}
           color="white"
           fontSize="2xs"
           fontWeight="semibold"
           align="center"
           justify="center"
           minW="3px"
-          title={`${t.label} · ${s.label}: ${s.count} of ${t.stats.scored} questions${s.key === "pass" ? " answered accurately" : " failed here first"}`}
+          opacity={hover.dimmed(m.key) ? DIMMED : 1}
+          transition={FADE}
+          {...hover.target(
+            m.key,
+            <ModeTip
+              t={t}
+              mode={m}
+              count={counts[m.key]}
+              total={totals[m.key]}
+            />
+          )}
         >
-          {s.count >= 2 ? s.count : null}
+          {counts[m.key] >= 2 ? counts[m.key] : null}
         </Flex>
       ))}
     </Flex>
@@ -160,6 +242,8 @@ export function QuestionTypesSection({
 }) {
   const [view, setView] = useState<BarView>("rate");
   const { selected, select, detailRef } = useRowSelection(page.types);
+  const hover = useChartHover<ModeKey>();
+  const totals = useMemo(() => modeTotals(page.types), [page.types]);
   if (!selected) return null;
   return (
     <Section
@@ -181,6 +265,7 @@ export function QuestionTypesSection({
           <TierLegend />
         ) : (
           <Legend
+            hover={hover}
             items={MODES.map((m) => ({
               key: m.key,
               label: m.label,
@@ -204,11 +289,12 @@ export function QuestionTypesSection({
             {view === "rate" ? (
               <TierBar stats={t.stats} label={t.label} />
             ) : (
-              <ModesBar t={t} />
+              <ModesBar t={t} hover={hover} totals={totals} />
             )}
           </SelectableRow>
         ))}
       </Box>
+      {hover.tooltip}
       <Text mt={3} fontSize="xs" color="fg.subtle">
         Types with fewer than 20 questions can swing a lot between runs.
         {page.unmeasuredTypes.length

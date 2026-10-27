@@ -13,8 +13,15 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { Link } from "@/src/shared/lib/router";
 import type { GroupStats } from "../model/types";
 import { pct } from "../lib/format";
-import { tierLines, TIERS, tiersOf, type TierKey } from "../lib/tiers";
+import {
+  tierLines,
+  TIERS,
+  tiersOf,
+  type Tier,
+  type TierKey,
+} from "../lib/tiers";
 import { PASS_COLOR, TIER_OPACITY } from "./palette";
+import { DIMMED, FADE, MOTION_SAFE, type ChartHover } from "./chart-hover";
 
 /** Room above a panel scrolled into view (the page has no sticky header). */
 const SCROLL_MARGIN = "16px";
@@ -164,19 +171,29 @@ export function tierSwatchStyle(key: TierKey) {
       };
 }
 
-export function Legend({
+/** A legend; with a hover, pointing at an item highlights its marks. */
+export function Legend<K extends string>({
   items,
+  hover,
 }: {
   readonly items: readonly {
-    readonly key: string;
+    readonly key: K;
     readonly label: string;
     readonly swatch: ReactNode;
   }[];
+  readonly hover?: ChartHover<K>;
 }) {
   return (
     <HStack gap={4} wrap="wrap" fontSize="xs" color="fg.muted">
       {items.map((item) => (
-        <HStack key={item.key} gap={1.5}>
+        <HStack
+          key={item.key}
+          gap={1.5}
+          opacity={hover?.dimmed(item.key) ? 0.45 : 1}
+          color={hover?.active === item.key ? "fg" : undefined}
+          transition={FADE}
+          {...hover?.target(item.key)}
+        >
           {item.swatch}
           <span>{item.label}</span>
         </HStack>
@@ -204,13 +221,20 @@ export function TierLegend() {
   );
 }
 
-/** The four reliability tiers of a group as one stacked bar (decorative). */
+/**
+ * The four reliability tiers of a group as one stacked bar (decorative).
+ * With a hover, each segment dims the others and shows its tooltip.
+ */
 export function TierSegments({
   stats,
   height = "12px",
+  hover,
+  tip,
 }: {
   readonly stats: GroupStats;
   readonly height?: string;
+  readonly hover?: ChartHover<TierKey>;
+  readonly tip?: (tier: Tier) => ReactNode;
 }) {
   return (
     <Flex
@@ -220,17 +244,24 @@ export function TierSegments({
       overflow="hidden"
       w="100%"
       aria-hidden
+      css={MOTION_SAFE}
     >
-      {tiersOf(stats).map((t) =>
-        t.count ? (
+      {tiersOf(stats).map((t) => {
+        if (!t.count) return null;
+        // The "never" swatch is an opaque outline; the others are tints.
+        const opacity = TIER_OPACITY[t.key] || 1;
+        return (
           <Box
             key={t.key}
             flex={`${t.count} 1 0`}
             minW="2px"
             {...tierSwatchStyle(t.key)}
+            opacity={hover?.dimmed(t.key) ? opacity * DIMMED : opacity}
+            transition={FADE}
+            {...hover?.target(t.key, tip?.(t))}
           />
-        ) : null
-      )}
+        );
+      })}
     </Flex>
   );
 }

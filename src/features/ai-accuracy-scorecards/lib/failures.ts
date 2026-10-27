@@ -1,5 +1,10 @@
 import { ATTRIBUTION_ORDER, STAGE_LABELS, STAGE_ORDER } from "../model/config";
-import type { AttributionKey, GroupStats, Question } from "../model/types";
+import type {
+  AttributionKey,
+  Count,
+  GroupStats,
+  Question,
+} from "../model/types";
 import { share } from "./format";
 
 export interface FailureMode {
@@ -65,12 +70,18 @@ function attributionOf(q: Question): AttributionKey {
   return STAGE_ORDER.find((s) => failed.has(s)) ?? "unattributed";
 }
 
+/** A stage of the flow, with the question types its failures came from. */
+export interface FlowMode extends FailureMode {
+  /** Most failures first. */
+  readonly types: readonly Count[];
+}
+
 export interface FailureFlow {
   readonly scored: number;
   readonly accurate: number;
   /** accurate / scored, alongside each mode's share. */
   readonly accurateShare: number | null;
-  readonly modes: readonly FailureMode[];
+  readonly modes: readonly FlowMode[];
 }
 
 /** The failure flow of a run's scored questions under one standard. */
@@ -81,13 +92,29 @@ export function failureFlow(
   const counts = Object.fromEntries(
     ATTRIBUTION_ORDER.map((k) => [k, 0])
   ) as Record<AttributionKey, number>;
+  const types = new Map<AttributionKey, Map<string, Count>>();
   let scored = 0;
   for (const q of questions) {
     if (q.verdict !== "pass" && q.verdict !== "fail") continue;
     scored += 1;
-    if (!isAccurate(q, standard)) counts[attributionOf(q)] += 1;
+    if (isAccurate(q, standard)) continue;
+    const key = attributionOf(q);
+    counts[key] += 1;
+    const byType = types.get(key) ?? new Map<string, Count>();
+    const prev = byType.get(q.type);
+    byType.set(q.type, {
+      key: q.type,
+      label: q.typeLabel,
+      count: (prev?.count ?? 0) + 1,
+    });
+    types.set(key, byType);
   }
-  const modes = modesOf(counts, scored);
+  const modes = modesOf(counts, scored).map((m) => ({
+    ...m,
+    types: [...(types.get(m.key)?.values() ?? [])].sort(
+      (a, b) => b.count - a.count
+    ),
+  }));
   const accurate = scored - modes.reduce((sum, m) => sum + m.count, 0);
   return {
     scored,

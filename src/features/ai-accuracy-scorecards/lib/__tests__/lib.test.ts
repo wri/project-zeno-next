@@ -141,6 +141,27 @@ describe("failureFlow", () => {
     expect(flow.modes.find((m) => m.key === "explanation")?.share).toBe(1 / 4);
     expect(flow.accurateShare).toBe(2 / 4);
   });
+
+  it("names the question types each stage's failures came from, most first", () => {
+    const wrong = (id: string, type: string) =>
+      makeQuestion({
+        id,
+        type,
+        typeLabel: type,
+        verdict: "fail",
+        status: "fail",
+        trialsRight: [false, false, false],
+        primaryFailure: "retrieval",
+      });
+    const flow = failureFlow(
+      [wrong("a", "Trend"), wrong("b", "Causal"), wrong("c", "Causal")],
+      "every"
+    );
+    expect(flow.modes[0].types).toEqual([
+      { key: "Causal", label: "Causal", count: 2 },
+      { key: "Trend", label: "Trend", count: 1 },
+    ]);
+  });
 });
 
 describe("groupChecks", () => {
