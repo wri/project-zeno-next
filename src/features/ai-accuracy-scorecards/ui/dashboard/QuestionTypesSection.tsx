@@ -164,7 +164,6 @@ export function QuestionTypesSection({
   return (
     <Section
       id="types"
-      eyebrow="By question type"
       title="Accuracy by question type"
       sub="Each question type has its own definition of a right answer. Select a type for examples."
       action={

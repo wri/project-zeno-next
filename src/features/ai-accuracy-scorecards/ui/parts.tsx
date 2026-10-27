@@ -63,17 +63,15 @@ export function Panel(props: ComponentProps<typeof Box>) {
   );
 }
 
-/** A dashboard section: eyebrow, heading, one-line explanation. */
+/** A dashboard section: heading, one-line explanation. */
 export function Section({
   id,
-  eyebrow,
   title,
   sub,
   action,
   children,
 }: {
   readonly id: string;
-  readonly eyebrow: string;
   readonly title: string;
   readonly sub: ReactNode;
   readonly action?: ReactNode;
@@ -88,14 +86,7 @@ export function Section({
     >
       <Flex mb={5} gap={4} align="flex-end" justify="space-between" wrap="wrap">
         <Box maxW="760px">
-          <Eyebrow>{eyebrow}</Eyebrow>
-          <Heading
-            as="h2"
-            id={`${id}-title`}
-            size="xl"
-            mt={1}
-            textWrap="balance"
-          >
+          <Heading as="h2" id={`${id}-title`} size="xl" textWrap="balance">
             {title}
           </Heading>
           <Text mt={2} color="fg.muted" fontSize="sm">

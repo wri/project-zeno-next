@@ -220,7 +220,6 @@ export function UseCasesSection({
   return (
     <Section
       id="usecases"
-      eyebrow="Priority use cases"
       title="Accuracy by use case"
       sub={
         <>

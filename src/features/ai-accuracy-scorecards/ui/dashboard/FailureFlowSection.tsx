@@ -242,8 +242,7 @@ export function FailureFlowSection({ page }: { readonly page: BenchmarkPage }) {
   return (
     <Section
       id="fail"
-      eyebrow="Where answers fail"
-      title="Where do wrong answers go wrong?"
+      title="Where answers fail"
       sub="Horizon answers in five steps. Each wrong answer is counted once, at the step where it first went wrong."
       action={
         <Segmented
