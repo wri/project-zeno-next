@@ -1,9 +1,6 @@
 import { DATASET_CARDS } from "@/app/constants/datasets";
 import type { DatasetParameter } from "@/app/types/chat";
-import {
-  legendParameters,
-  resolveContextTileUrl,
-} from "@/app/utils/datasetLayerContext";
+import { legendParameters } from "@/app/utils/datasetLayerContext";
 import { patchPrimaryForestTileUrl } from "@/app/utils/primaryForestTileProtocol";
 import type { DateRange } from "@/src/shared/lib/iso-date";
 import type { DashboardAoi } from "../api/schemas";
@@ -80,7 +77,7 @@ export function mapWidgetLayer(
       );
       const entryUrl = str(entry?.tile_url);
       if (entryUrl) {
-        contextTileUrl = resolveContextTileUrl(activeName, entryUrl);
+        contextTileUrl = patchPrimaryForestTileUrl(entryUrl);
         contextLayerName = activeName;
       }
     }
