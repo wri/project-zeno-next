@@ -24,7 +24,7 @@ export interface TrendPoint {
   readonly anyTime: number | null;
 }
 
-// Axis: Sep 2026 to Dec 2027 in months; the v2026 freeze is in November 2026.
+// Axis: Sep 2026 to Dec 2027 in months.
 const W = 680;
 const H = 490;
 const L = 46;
@@ -37,7 +37,6 @@ const BAR_W_ACTIVE = 14;
 const DOT_R = 6.5;
 const DOT_R_ACTIVE = 8;
 const MONTHS = 15;
-const FREEZE_MONTH = 2;
 const TICKS: readonly [number, string][] = [
   [0, "Sep 26"],
   [3, "Dec"],
@@ -112,7 +111,8 @@ function RunTip({
  * upwards from it, tinted like the tier bar: up to "most of the time", then
  * on to "some of the time". A crosshair snaps to the run nearest the
  * pointer (or steps through runs with the arrow keys) and one tooltip lists
- * all three shares.
+ * all three shares. A dotted line across the chart marks the first run's
+ * every-time share as the v2026 baseline (AJ, 2026-10-29).
  */
 export function TrendChart({
   points,
@@ -125,7 +125,6 @@ export function TrendChart({
   const x = (m: number) =>
     L + (Math.max(0, Math.min(MONTHS, m)) / MONTHS) * (W - L - R);
   const y = (v: number) => T + ((100 - v) / 100) * (B - T);
-  const fx = x(FREEZE_MONTH);
   const placed = points.map((p) => ({
     ...p,
     px: x(monthsSinceOrigin(p.started)),
@@ -136,6 +135,7 @@ export function TrendChart({
       bottom: y(s.from * 100),
     })),
   }));
+  const first = placed[0];
   const last = placed[placed.length - 1];
   const svgRef = useRef<SVGSVGElement>(null);
   const hover = useChartHover<string>();
@@ -232,24 +232,29 @@ export function TrendChart({
             {label}
           </text>
         ))}
-        <line
-          x1={fx}
-          x2={fx}
-          y1={T}
-          y2={B}
-          stroke="var(--chakra-colors-primary-solid)"
-          strokeWidth={1.5}
-          strokeDasharray="4 4"
-        />
-        <text
-          x={fx + 8}
-          y={T + 16}
-          fontSize="11.5"
-          fontWeight="600"
-          fill="var(--chakra-colors-fg)"
-        >
-          Nov 2026: v2026 baseline, set frozen
-        </text>
+        {first ? (
+          <>
+            <line
+              x1={L}
+              x2={W - R}
+              y1={first.py}
+              y2={first.py}
+              stroke="var(--chakra-colors-primary-solid)"
+              strokeWidth={1.5}
+              strokeDasharray="4 4"
+            />
+            <text
+              x={W - R}
+              y={first.py - 8}
+              textAnchor="end"
+              fontSize="11.5"
+              fontWeight="600"
+              fill="var(--chakra-colors-fg)"
+            >
+              Nov 2026: v2026 baseline, set frozen
+            </text>
+          </>
+        ) : null}
         {placed.flatMap((p) => {
           const barW = p.runId === hover.active ? BAR_W_ACTIVE : BAR_W;
           return p.segments.map((s) => (
@@ -270,7 +275,7 @@ export function TrendChart({
         })}
         {placed.length < 2 ? (
           <text
-            x={(fx + W - R) / 2}
+            x={(L + W - R) / 2}
             y={(T + B) / 2 + 5}
             textAnchor="middle"
             fontSize="15"
@@ -313,10 +318,11 @@ export function TrendChart({
           />
         ) : null}
         {last ? (
+          // Below the point, clear of the baseline that runs through it.
           <>
             <text
               x={last.px + 15}
-              y={last.py + 4}
+              y={last.py + 18}
               fontSize="12.5"
               fontWeight="650"
               fill="var(--chakra-colors-fg)"
@@ -325,7 +331,7 @@ export function TrendChart({
             </text>
             <text
               x={last.px + 15}
-              y={last.py + 19}
+              y={last.py + 32}
               fontSize="10.5"
               fontFamily="monospace"
               fill="var(--chakra-colors-fg-muted)"
