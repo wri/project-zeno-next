@@ -206,7 +206,7 @@ function QuestionDetail({ q }: { readonly q: Question }) {
             <AttemptDetail
               key={i}
               attempt={a}
-              error={q.attemptErrors[i] ?? null}
+              error={q.attemptErrors[i]}
               index={i}
             />
           ))}

@@ -105,7 +105,7 @@ const RawQuestion = z.object({
   query: z.string(),
   verdict: z.enum(["pass", "fail", "error", "uncovered"]),
   trials_right: z.array(z.boolean()),
-  attempt_errors: z.array(RawAttemptError.nullable()).optional(),
+  attempt_errors: z.array(RawAttemptError.nullable()),
   consistent: z.boolean(),
   primary_failure: Attribution.nullable(),
   failed_checks: z.array(
@@ -290,7 +290,7 @@ export function parseBenchmarkPage(
         expected: q.expected,
         drafted: draft && q.drafted,
         attempts: q.attempts.map(toAttempt),
-        attemptErrors: q.attempt_errors ?? q.trials_right.map(() => null),
+        attemptErrors: q.attempt_errors,
         traceUrl: q.trace_url,
         place: q.place,
         useCases: q.use_cases,

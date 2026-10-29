@@ -100,6 +100,7 @@ const WIRE_PAGE = {
       query: "Alerts in Pará?",
       verdict: "pass",
       trials_right: [true, true, false],
+      attempt_errors: [null, null, null],
       consistent: false,
       primary_failure: null,
       failed_checks: [
@@ -169,7 +170,6 @@ describe("parseBenchmarkPage", () => {
       dates: ["2026-09-23", null],
     });
     expect(q.attempts[1]).toBeNull();
-    // A page from before 27 Oct 2026 carries no attempt errors.
     expect(q.attemptErrors).toEqual([null, null, null]);
   });
 
