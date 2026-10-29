@@ -2,6 +2,7 @@
 
 - **Status:** Proposed
 - **Date:** 2026-10-27
+- **Updated:** 2026-10-29 (product feedback from AJ)
 
 **Story:** PZB-1533 (email toggle), part of the email alerts MVP (PZB-1531).
 
@@ -28,16 +29,41 @@ What exists today (code):
 1. **Only the dashboard owner can change email status, with no admin override.** Email is a personal consent; an admin cannot opt someone in. Status is one value per dashboard, not per viewer.
 2. **Email status is returned only to the owner.** Viewers of a public dashboard don't see whether the owner receives email.
 3. **Email starts off** on every dashboard (PZB-1533).
-4. **The email switch is only allowed on eligible dashboards**: an integrated-alerts chart and a GADM admin area, the same rule as the derived monitoring today.
+4. **The email switch is only allowed on eligible dashboards**: for now, an integrated-alerts chart and a GADM admin area, the same rule as the derived monitoring today (code: `supports_alerts`, `project-zeno/src/api/services/dashboard_alerts.py:81-84`). Product wants custom areas to qualify too, hopefully by the end of the sprint (open question 15). That would change the rule, not the storage, because the status is per dashboard whatever its area type (inferred).
 5. **The coupling rule is enforced in the backend**, in one place, so the in-app toggle, the email toggle and the unsubscribe link all go through it.
 6. **Store when and how email status last changed**: the time, and whether it came from the app or an unsubscribe link. No full history.
 7. **Scope is email and in-app only.** No structure for other channels.
 8. **How "already sent" is tracked is left to the pipeline owner.** Options are judged only on whether they have a natural place for a per-dashboard marker.
+9. **Email requires in-app.** If in-app is off, email is off. If in-app is on, email can be on or off, and the two are controlled independently. Turning in-app off therefore turns email off, and turning email on while in-app is off turns in-app on too. Confirmed by AJ (product), 2026-10-29, on condition that the UI explains it clearly (open question 16).
+10. **Deleting a dashboard stops its email subscription.** The status is deleted with the dashboard, and no further email is sent for it. Confirmed by AJ, 2026-10-29. The delete flow must make clear that the user loses both the dashboard and its email alerts (open question 16).
 
 ### Conditional decisions
 
-- **C1 — Turning in-app off also turns email off (email requires in-app).** Turning email on also turns in-app on (known). This is not in any ticket. **Must be confirmed by AJ (product).** If rejected, the coupling becomes one-way and the database constraint in the options below is dropped.
 - **C2 — A user's explicit in-app choice sticks; storage tells "never set" apart from "explicitly off".** Removing and re-adding the alerts chart does not reset in-app to on. **Must be confirmed by the PZB-1452 owner**, because it depends on whether the in-app default is stored when the dashboard is created or computed when read.
+
+C1 (email requires in-app) was confirmed by AJ on 2026-10-29 and is now decision 9.
+
+### Allowed states
+
+```mermaid
+stateDiagram-v2
+    direction LR
+    state "In-app on · email off" as InApp
+    state "In-app on · email on" as Both
+    state "In-app off · email off" as Off
+    [*] --> InApp: dashboard created (in-app default on, PZB-1452)
+    InApp --> Both: turn email on (eligible only)
+    Both --> InApp: turn email off, or unsubscribe
+    InApp --> Off: turn in-app off
+    Off --> InApp: turn in-app on
+    Both --> Off: turn in-app off (email goes off too)
+    Off --> Both: turn email on (eligible only, in-app goes on too)
+    InApp --> [*]: delete dashboard
+    Both --> [*]: delete dashboard (subscription stops)
+    Off --> [*]: delete dashboard
+```
+
+There is no "in-app off · email on" state; in options A and B a database `CHECK` rules it out (decision 9). The starting state depends on PZB-1452's default (assumed on).
 
 ## Write path (proposed)
 
@@ -51,7 +77,7 @@ Everything in this section is a proposal for PZB-1533 (inferred), shaped after t
 { "email_alerts_enabled": true }
 ```
 
-This mirrors `PATCH …/public`, whose body is `{ "is_public": bool }` and whose response is the full dashboard (code: `DashboardPublicToggleRequest` and `DashboardPublicToggleResponse(DashboardResponse)`, `project-zeno/src/api/schemas.py:746`, `:1032`). The in-app header toggle belongs to PZB-1452 and is not designed here. The proposal only requires that both endpoints call the same backend function, which applies the coupling rule (decision 5) and records the source (`'app'`).
+This mirrors `PATCH …/public`, whose body is `{ "is_public": bool }` and whose response is the full dashboard (code: `DashboardPublicToggleRequest` and `DashboardPublicToggleResponse(DashboardResponse)`, `project-zeno/src/api/schemas.py:746`, `:1032`). The in-app header toggle belongs to PZB-1452 and is not designed here. The proposal only requires that both endpoints call the same backend function, which applies the coupling rule (decisions 5 and 9) and records the source (`'app'`).
 
 ### Response
 
@@ -80,17 +106,17 @@ The endpoint returns the updated dashboard, like `PATCH …/public`. Every dashb
 | Turning email **on** while in-app is off                                                                | Both are turned on in one write. The response shows `in_app_enabled: true`, so the frontend updates the header toggle from the response, with no separate field or warning.                                                                                                                                                                                                                    |
 | Turning email **off**                                                                                   | In-app is unchanged.                                                                                                                                                                                                                                                                                                                                                                           |
 | Setting the value it already has                                                                        | `200` with the unchanged dashboard; `email_alerts_changed_at` and `_source` are **not** touched.                                                                                                                                                                                                                                                                                               |
-| Turning in-app off (PZB-1452's endpoint)                                                                | Also turns email off, with source `'app'`. **Conditional on C1** (AJ to confirm).                                                                                                                                                                                                                                                                                                              |
+| Turning in-app off (PZB-1452's endpoint)                                                                | Also turns email off, with source `'app'` (decision 9).                                                                                                                                                                                                                                                                                                                                        |
 
 ### What the pipeline can rely on
 
 After any write through this path:
 
-- **Email on** means the owner turned it on in the app while the dashboard was eligible, and in-app is on (if C1 is confirmed, a database `CHECK` guarantees it in options A and B; in C only the backend function does).
+- **Email on** means the owner turned it on in the app while the dashboard was eligible, and in-app is on (decision 9; a database `CHECK` guarantees it in options A and B; in C only the backend function does).
 - **Email on does not mean "still eligible".** Eligibility is checked only when email is turned on; the pipeline applies its own filter (see Consequences).
-- **Email off** means one of: never turned on, turned off in the app, turned off because in-app was turned off (C1), or unsubscribed. `email_alerts_changed_source` tells `'app'` from `'unsubscribe'`; a never-set flag has no source and no time.
+- **Email off** means one of: never turned on, turned off in the app, turned off because in-app was turned off (decision 9), or unsubscribed. `email_alerts_changed_source` tells `'app'` from `'unsubscribe'`; a never-set flag has no source and no time.
 - **`email_alerts_changed_at` changes only when the value changes.** It uses the same timestamp convention as the existing dashboard columns: naive `DateTime`, `datetime.now` on the server (code: `project-zeno/src/api/data_models.py:562-567`).
-- **A deleted dashboard has no status left** (option A: deleted with the row; option B: by the cascade).
+- **A deleted dashboard has no status left** (decision 10; option A: deleted with the row; option B: by the cascade).
 - **Writes don't change `dashboards.updated_at`.** In option A and C the write must set it to its current value (see the catch under Option A); option B never touches the row.
 
 ### How the option changes the write
@@ -128,7 +154,7 @@ Add to `dashboards`:
 
 - `email_alerts_enabled boolean NOT NULL DEFAULT false`
 - `email_alerts_changed_at timestamp NULL` and `email_alerts_changed_source text NULL` (`'app' | 'unsubscribe'`)
-- In-app lives on the same row (PZB-1452's column), so the coupling can also be a database guard: `CHECK (NOT email_alerts_enabled OR <in-app is on>)` (conditional on C1).
+- In-app lives on the same row (PZB-1452's column), so the coupling can also be a database guard: `CHECK (NOT email_alerts_enabled OR <in-app is on>)` (decision 9).
 
 | Driver         | Assessment                                                                                                        |
 | -------------- | ----------------------------------------------------------------------------------------------------------------- |
@@ -148,7 +174,7 @@ Add to `dashboards`:
 
 ### Option B — One-to-one `dashboard_alert_settings` table
 
-A new table whose primary key `dashboard_id` references `dashboards.id ON DELETE CASCADE`, plus the ORM `cascade="all, delete-orphan"` the other children use. Columns: `in_app_enabled`, `email_enabled boolean NOT NULL DEFAULT false`, `email_changed_at`, `email_changed_source`, and the same `CHECK` (conditional on C1). This requires PZB-1452 to put its in-app switch in this table too.
+A new table whose primary key `dashboard_id` references `dashboards.id ON DELETE CASCADE`, plus the ORM `cascade="all, delete-orphan"` the other children use. Columns: `in_app_enabled`, `email_enabled boolean NOT NULL DEFAULT false`, `email_changed_at`, `email_changed_source`, and the same `CHECK` (decision 9). This requires PZB-1452 to put its in-app switch in this table too.
 
 | Driver         | Assessment                                                                                                                       |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------- |
@@ -197,6 +223,7 @@ Same `updated_at` catch as A.
 - **One backend function sets in-app and email together** and applies the coupling. The toggle endpoint and the unsubscribe endpoint both call it, passing their source (`'app'` or `'unsubscribe'`).
 - **Unsubscribe needs a signing secret** in backend config. Rotating it invalidates all links already sent.
 - **Eligibility is checked when email is turned on, not kept in sync.** A dashboard that later loses its alerts chart keeps email on; the pipeline must apply the eligibility filter (pipeline owner to confirm).
+- **The UI must explain two side effects** (AJ): turning in-app off stops email, and deleting a dashboard stops its email alerts (open question 16).
 - **Risk, stale recipient:** `users.email` is written on first login only, so alerts can go to an old address after the user changes it in Resource Watch.
 - **Risk, hectares vs counts:** the backend computes hectares today, while PZB-1452 and PZB-1531 specify alert counts. This doesn't change storage but does change what the pipeline computes.
 - **myGFW migration:** A and B both tie a subscription to a dashboard. If PZB-1471 brings over subscriptions that have no dashboard, each would first need a dashboard, or a different table. Neither option makes that harder than the other (inferred).
@@ -207,7 +234,7 @@ Same `updated_at` catch as A.
 
 1. **PZB-1452 owner: where does the in-app switch live?** On `dashboards` (favours A) or in a separate table (favours B)?
 2. **PZB-1452 owner: is the in-app default stored on creation or computed on read?** This decides the shape of C2, and computed-on-read favours B.
-3. **AJ (product): does turning in-app off also turn email off (C1)?** If not, the database `CHECK` becomes one-way.
+3. ~~**AJ (product): does turning in-app off also turn email off (C1)?**~~ **Resolved 2026-10-29:** yes, see decision 9.
 4. **Pipeline owner: what is the dedup key, and is it one marker per dashboard?** PZB-1452 counts alerts by the date they were added to GNW, not the alert date, so dedup likely follows the same rule. If the pipeline needs more than one marker per dashboard, prefer B or a pipeline-owned table.
 5. **Pipeline owner: does the pipeline run in project-zeno or as a separate service reading the same database?** A separate service reads the schema directly, which favours plain columns (A or B) over JSON (C).
 
@@ -222,3 +249,5 @@ Same `updated_at` catch as A.
 12. **Product:** on ineligible dashboards, hide the toggle or show it disabled with an explanation?
 13. **Product:** is the myGFW migration (PZB-1471) happening, and in what shape?
 14. **Unsubscribe story owner:** confirm the assumed token rules: one dashboard, turns email off only, no expiry, POST only, and succeeds for deleted dashboards. Suggestion, not a decision: a signed, non-expiring token (`itsdangerous.URLSafeSerializer` with a dedicated salt, payload = dashboard id). It needs no storage, the HMAC prevents tampering, and since it can only turn email off, not being able to revoke it is acceptable (inferred). Rotating the signing secret would invalidate every link already sent (inferred). `itsdangerous==2.2.0` is already a backend dependency but unused (code).
+15. **jterry64 (per AJ):** will custom areas be eligible by the end of the sprint? If so, only the eligibility rule changes (`supports_alerts`, code), not the storage (inferred).
+16. **Product and design:** how do the in-app toggle and the delete dialog explain that turning in-app off stops email, and that deleting a dashboard stops its email alerts?
