@@ -28,8 +28,8 @@ schema mismatch throws rather than being papered over.
 2. Add `{ runId, ref, draft }` to `RELEASES` in `model/releases.ts`, with
    `ref` the full sha of a pushed commit that holds the page as you want it
    shown. `draft` alone decides whether the page marks the run as a draft
-   (header and hero badges, trend, footer); the version name in the page
-   data does not.
+   (header and hero badges, trend, footer, the questions' unreviewed
+   expected answers); the version name in the page data does not.
 3. Open a PR to `develop`, check the page on staging, then release to `main`.
 
 The dropdown names each release by the month in its run id ("October 2026");

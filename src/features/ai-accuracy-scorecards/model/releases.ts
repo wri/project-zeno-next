@@ -14,7 +14,8 @@ export interface Release {
   readonly runId: string;
   /** The full gnw-gold-evals commit sha the run's page is read at. */
   readonly ref: string;
-  /** Marks the run as a draft: header and hero badges, trend, footer. */
+  /** Marks the run as a draft: header and hero badges, trend, footer, and
+   * the questions whose expected answers are not yet reviewed. */
   readonly draft: boolean;
 }
 
@@ -23,6 +24,6 @@ export const RELEASES: readonly Release[] = [
   {
     runId: "20261028T124051Z_prod",
     ref: "f7c138e514c4780ed84003b13a7decdfede8ff21",
-    draft: true,
+    draft: false,
   },
 ];

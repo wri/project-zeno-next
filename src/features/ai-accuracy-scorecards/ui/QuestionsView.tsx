@@ -128,7 +128,14 @@ function AttemptDetail({
   );
 }
 
-function QuestionDetail({ q }: { readonly q: Question }) {
+function QuestionDetail({
+  q,
+  draft,
+}: {
+  readonly q: Question;
+  /** The run is a draft, so unreviewed expected answers are marked. */
+  readonly draft: boolean;
+}) {
   return (
     <Grid
       templateColumns={{ base: "1fr", lg: "repeat(2, minmax(0, 1fr))" }}
@@ -169,7 +176,8 @@ function QuestionDetail({ q }: { readonly q: Question }) {
           <Text fontSize="xs">Every check passed on every attempt.</Text>
         )}
         <Heading as="h4" size="xs" mt={4} mb={2}>
-          Expected answer{q.drafted ? " (drafted, not yet reviewed)" : ""}
+          Expected answer
+          {draft && q.drafted ? " (drafted, not yet reviewed)" : ""}
         </Heading>
         <Box
           fontSize="xs"
@@ -222,10 +230,12 @@ const QuestionRow = memo(function QuestionRow({
   q,
   isOpen,
   onToggle,
+  draft,
 }: {
   readonly q: Question;
   readonly isOpen: boolean;
   readonly onToggle: (id: string) => void;
+  readonly draft: boolean;
 }) {
   const [badgeLabel, badgeColor] = STATUS_BADGE[q.status];
   return (
@@ -251,7 +261,7 @@ const QuestionRow = memo(function QuestionRow({
         <Table.Cell maxW="28rem" whiteSpace="normal">
           <Text>
             {q.query}
-            {q.drafted ? (
+            {draft && q.drafted ? (
               <Badge
                 ml={2}
                 size="xs"
@@ -307,7 +317,7 @@ const QuestionRow = memo(function QuestionRow({
       {isOpen ? (
         <Table.Row bg="bg.subtle">
           <Table.Cell colSpan={6} whiteSpace="normal">
-            <QuestionDetail q={q} />
+            <QuestionDetail q={q} draft={draft} />
           </Table.Cell>
         </Table.Row>
       ) : null}
@@ -317,9 +327,12 @@ const QuestionRow = memo(function QuestionRow({
 
 export function QuestionsView({
   page,
+  draft,
   initialUseCase,
 }: {
   readonly page: BenchmarkPage;
+  /** The run's release is a draft (`model/releases.ts`). */
+  readonly draft: boolean;
   readonly initialUseCase: string;
 }) {
   const [filter, setFilter] = useState<QuestionFilter>({
@@ -438,6 +451,7 @@ export function QuestionsView({
                 q={q}
                 isOpen={open.has(q.id)}
                 onToggle={toggle}
+                draft={draft}
               />
             ))}
           </Table.Body>

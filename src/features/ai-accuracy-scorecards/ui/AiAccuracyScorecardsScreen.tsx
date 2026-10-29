@@ -217,6 +217,7 @@ export function AiAccuracyScorecardsScreen() {
             <QuestionsView
               key={useCaseParam}
               page={data}
+              draft={run.draft}
               initialUseCase={useCaseParam}
             />
           ) : null}
