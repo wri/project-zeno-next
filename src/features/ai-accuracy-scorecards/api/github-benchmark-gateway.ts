@@ -210,8 +210,7 @@ function toAttempt(raw: z.infer<typeof RawAttempt> | null): Attempt | null {
 }
 
 function statusOf(raw: z.infer<typeof RawQuestion>): QuestionStatus {
-  if (raw.verdict === "error") return "error";
-  if (raw.verdict !== "pass") return "fail";
+  if (raw.verdict !== "pass") return raw.verdict;
   return raw.consistent ? "pass" : "inconsistent";
 }
 
@@ -291,7 +290,6 @@ export function parseBenchmarkPage(
         type: q.type,
         typeLabel: typeLabel(q.type),
         query: q.query,
-        verdict: q.verdict,
         status: statusOf(q),
         trialsRight: q.trials_right,
         primaryFailure: q.primary_failure,

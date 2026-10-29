@@ -14,10 +14,18 @@ export type StageKey = (typeof STAGE_ORDER)[number];
  * "unattributed" when only shared checks failed. */
 export type AttributionKey = StageKey | "unattributed";
 
-export type Verdict = "pass" | "fail" | "error" | "uncovered";
-
-/** "inconsistent": right overall, but not right on every try. */
-export type QuestionStatus = "pass" | "inconsistent" | "fail" | "error";
+/**
+ * A question's result: "pass" right overall and on every try,
+ * "inconsistent" right overall but not every try, "fail" wrong overall;
+ * "error" when no try could be scored, "uncovered" when no check ran.
+ * Only the first three are scored.
+ */
+export type QuestionStatus =
+  | "pass"
+  | "inconsistent"
+  | "fail"
+  | "error"
+  | "uncovered";
 
 /** The reliability tiers: right on all, 2, 1 or none of the 3 tries. */
 export type TierKey = "every" | "most" | "some" | "never";
@@ -122,7 +130,6 @@ export interface Question {
   readonly type: string;
   readonly typeLabel: string;
   readonly query: string;
-  readonly verdict: Verdict;
   readonly status: QuestionStatus;
   readonly trialsRight: readonly boolean[];
   readonly primaryFailure: AttributionKey | null;

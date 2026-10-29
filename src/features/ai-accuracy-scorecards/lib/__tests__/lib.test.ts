@@ -94,7 +94,6 @@ describe("failureFlow", () => {
     // failed on one try.
     makeQuestion({
       id: "some",
-      verdict: "fail",
       status: "fail",
       trialsRight: [false, false, true],
       primaryFailure: "explanation",
@@ -105,13 +104,13 @@ describe("failureFlow", () => {
     }),
     makeQuestion({
       id: "never",
-      verdict: "fail",
       status: "fail",
       trialsRight: [false, false, false],
       primaryFailure: "unattributed",
       failedChecks: [failed("agent_answer", "shared", "fail")],
     }),
-    makeQuestion({ id: "error", verdict: "error", status: "error" }),
+    makeQuestion({ id: "error", status: "error" }),
+    makeQuestion({ id: "uncovered", status: "uncovered" }),
   ];
   const counts = (standard: Parameters<typeof failureFlow>[1]) => {
     const flow = failureFlow(questions, standard);
@@ -149,7 +148,6 @@ describe("failureFlow", () => {
         id,
         type,
         typeLabel: type,
-        verdict: "fail",
         status: "fail",
         trialsRight: [false, false, false],
         primaryFailure: "retrieval",
@@ -243,14 +241,15 @@ describe("filterQuestions", () => {
   });
   const failed = makeQuestion({
     id: "c",
-    verdict: "fail",
     status: "fail",
     useCases: ["UC2"],
     type: "causal",
     query: "Why is Riau burning?",
   });
-  const errored = makeQuestion({ id: "d", verdict: "error", status: "error" });
-  const all = [pass, flaky, failed, errored];
+  const errored = makeQuestion({ id: "d", status: "error" });
+  // No check ran: neither scored nor a failure.
+  const unchecked = makeQuestion({ id: "e", status: "uncovered" });
+  const all = [pass, flaky, failed, errored, unchecked];
   const ids = (f: Partial<typeof NO_FILTER>) =>
     filterQuestions(all, { ...NO_FILTER, ...f }).map((q) => q.id);
 

@@ -204,6 +204,24 @@ describe("parseBenchmarkPage", () => {
     expect(parseBenchmarkPage(WIRE_PAGE, true).questions[0].drafted).toBe(true);
   });
 
+  it.each([
+    ["pass", true, "pass"],
+    ["pass", false, "inconsistent"],
+    ["fail", true, "fail"],
+    ["error", true, "error"],
+    ["uncovered", true, "uncovered"],
+  ] as const)(
+    "settles a %s question (consistent: %s) as %s",
+    (verdict, consistent, status) => {
+      const [q] = WIRE_PAGE.questions;
+      const page = parseBenchmarkPage(
+        { ...WIRE_PAGE, questions: [{ ...q, verdict, consistent }] },
+        true
+      );
+      expect(page.questions[0].status).toBe(status);
+    }
+  );
+
   it("settles the tier counts once from the shares", () => {
     const summary = {
       ...STATS,

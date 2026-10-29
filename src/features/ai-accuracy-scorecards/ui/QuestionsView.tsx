@@ -41,6 +41,7 @@ const STATUS_BADGE: Readonly<Record<QuestionStatus, [string, string]>> = {
   inconsistent: ["Inconsistent", "yellow"],
   fail: ["Failed", "red"],
   error: ["Error", "red"],
+  uncovered: ["Unchecked", "gray"],
 };
 
 function AttemptMarks({ trials }: { readonly trials: readonly boolean[] }) {

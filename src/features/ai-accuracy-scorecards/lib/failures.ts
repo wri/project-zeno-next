@@ -6,6 +6,7 @@ import type {
   Question,
 } from "../model/types";
 import { share } from "./format";
+import { isScored } from "./questions";
 import type { Standard } from "./tiers";
 
 /** A count for every attribution key, all zero. */
@@ -59,7 +60,8 @@ export function failurePhrase(stats: GroupStats): string {
  * (the page data's `majority`); the other two read the tries, as
  * `every_time` and `any_time` do. */
 function isAccurate(q: Question, standard: Standard): boolean {
-  if (standard === "most") return q.verdict === "pass";
+  if (standard === "most")
+    return q.status === "pass" || q.status === "inconsistent";
   return standard === "every"
     ? q.trialsRight.every(Boolean)
     : q.trialsRight.some(Boolean);
@@ -104,7 +106,7 @@ export function failureFlow(
   const types = new Map<AttributionKey, Map<string, Count>>();
   let scored = 0;
   for (const q of questions) {
-    if (q.verdict !== "pass" && q.verdict !== "fail") continue;
+    if (!isScored(q)) continue;
     scored += 1;
     if (isAccurate(q, standard)) continue;
     const key = attributionOf(q);

@@ -36,7 +36,6 @@ export function makeQuestion(overrides: Partial<Question> = {}): Question {
     type: "monitoring",
     typeLabel: "Monitoring",
     query: "Any alerts in Pará this week?",
-    verdict: "pass",
     status: "pass",
     trialsRight: [true, true, true],
     primaryFailure: null,

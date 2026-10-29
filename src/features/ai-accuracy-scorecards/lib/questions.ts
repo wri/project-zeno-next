@@ -19,6 +19,11 @@ export const NO_FILTER: QuestionFilter = {
   search: "",
 };
 
+/** Whether a question counts in the rates: not errored, and checked. */
+export function isScored(q: Question): boolean {
+  return q.status !== "error" && q.status !== "uncovered";
+}
+
 function haystack(q: Question): string {
   const checks = q.failedChecks.map((f) => `${f.check} ${checkLabel(f.check)}`);
   return [q.id, q.query, ...checks].join(" ").toLowerCase();
