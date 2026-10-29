@@ -1,6 +1,6 @@
 import { useRef, type KeyboardEvent, type PointerEvent } from "react";
 import { Box } from "@chakra-ui/react";
-import { formatDay, pct } from "../../lib/format";
+import { formatDay, formatMonth, pct } from "../../lib/format";
 import { monthsSinceOrigin } from "../../lib/runs";
 import { PASS_COLOR, TIER_OPACITY } from "../palette";
 import {
@@ -38,9 +38,9 @@ const DOT_R = 6.5;
 const DOT_R_ACTIVE = 8;
 const MONTHS = 15;
 const TICKS: readonly [number, string][] = [
-  [0, "Sep 26"],
+  [0, "Sep"],
   [3, "Dec"],
-  [6, "Mar 27"],
+  [6, "Mar"],
   [9, "Jun"],
   [12, "Sep"],
   [15, "Dec"],
@@ -112,7 +112,8 @@ function RunTip({
  * on to "some of the time". A crosshair snaps to the run nearest the
  * pointer (or steps through runs with the arrow keys) and one tooltip lists
  * all three shares. A dotted line across the chart marks the first run's
- * every-time share as the v2026 baseline (AJ, 2026-10-29).
+ * every-time share as the baseline, named by that run's month (AJ,
+ * 2026-10-29).
  */
 export function TrendChart({
   points,
@@ -245,13 +246,13 @@ export function TrendChart({
             />
             <text
               x={W - R}
-              y={first.py - 8}
+              y={first.py + 17}
               textAnchor="end"
               fontSize="11.5"
               fontWeight="600"
               fill="var(--chakra-colors-fg)"
             >
-              Nov 2026: v2026 baseline, set frozen
+              {formatMonth(first.started)} baseline
             </text>
           </>
         ) : null}
@@ -274,12 +275,13 @@ export function TrendChart({
           ));
         })}
         {placed.length < 2 ? (
+          // Centred between the baseline and the x-axis.
           <text
             x={(L + W - R) / 2}
-            y={(T + B) / 2 + 5}
+            y={((first?.py ?? T) + B) / 2 + 4}
             textAnchor="middle"
-            fontSize="15"
-            fill="var(--chakra-colors-fg-muted)"
+            fontSize="13"
+            fill="var(--chakra-colors-fg-subtle)"
           >
             Scores from future runs will be added here
           </text>

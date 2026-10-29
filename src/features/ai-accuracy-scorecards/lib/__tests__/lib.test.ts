@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { checkLabel } from "../../model/checks";
 import { groupChecks } from "../checks";
 import { failureBreakdown, failureFlow, failurePhrase } from "../failures";
-import { formatDay, pct, share, versionSet } from "../format";
+import { formatDay, formatMonth, pct, share, versionSet } from "../format";
 import { mixSentence } from "../mix";
 import { filterQuestions, NO_FILTER } from "../questions";
 import { monthsSinceOrigin, pickRun, releasedRuns } from "../runs";
@@ -328,6 +328,7 @@ describe("format", () => {
     expect(pct(null)).toBe("–");
     expect(share(1, 0)).toBeNull();
     expect(formatDay("2026-10-23T09:44:47Z")).toBe("23 Oct 2026");
+    expect(formatMonth("2026-10-28T12:40:51Z")).toBe("Oct 2026");
   });
 
   it("names the Benchmark Set a version belongs to", () => {

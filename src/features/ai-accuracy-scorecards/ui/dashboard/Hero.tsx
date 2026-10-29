@@ -219,12 +219,9 @@ export function Hero({
       </Box>
 
       <Panel minW={0}>
-        <Flex justify="space-between" align="baseline" gap={3} mb={2}>
-          <Text fontWeight="semibold">Accuracy over time</Text>
-          <Text fontSize="xs" color="fg.subtle">
-            Benchmark Set v{benchmark.set}
-          </Text>
-        </Flex>
+        <Text fontWeight="semibold" mb={2}>
+          Accuracy over time
+        </Text>
         <TrendChart points={trend} draft={draft} />
         <Box mt={2}>
           <Legend

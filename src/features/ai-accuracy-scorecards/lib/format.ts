@@ -23,6 +23,12 @@ export function pct(value: number | null, digits = 0): string {
   return value == null ? "–" : `${(value * 100).toFixed(digits)}%`;
 }
 
+/** "2026-10-23T09:44:47Z" -> "Oct 2026". */
+export function formatMonth(iso: string): string {
+  const [year, month] = iso.slice(0, 7).split("-").map(Number);
+  return `${MONTHS[month - 1]} ${year}`;
+}
+
 /** "2026-10-23T09:44:47Z" -> "23 Oct 2026". */
 export function formatDay(iso: string): string {
   const [year, month, day] = iso.slice(0, 10).split("-").map(Number);
