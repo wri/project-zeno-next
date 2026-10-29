@@ -28,9 +28,9 @@ const DOT_R = 6.5;
 const DOT_R_ACTIVE = 8;
 const MONTHS = 15;
 const TICKS: readonly [number, string][] = [
-  [0, "Sep"],
+  [0, "Sep ’26"],
   [3, "Dec"],
-  [6, "Mar"],
+  [6, "Mar ’27"],
   [9, "Jun"],
   [12, "Sep"],
   [15, "Dec"],
@@ -181,6 +181,17 @@ export function TrendChart({
             : "Accuracy over time: no comparable runs yet."
         }
       >
+        {last ? (
+          // Still to come: from the newest run to the end of the axis.
+          <rect
+            x={last.px}
+            y={T}
+            width={W - R - last.px}
+            height={B - T}
+            fill="var(--chakra-colors-bg-subtle)"
+            fillOpacity={0.6}
+          />
+        ) : null}
         {Y_TICKS.map((v) => (
           <g key={v}>
             <line
@@ -188,11 +199,14 @@ export function TrendChart({
               x2={W - R}
               y1={y(v)}
               y2={y(v)}
+              // A faint dark tone rather than a light grey, so a gridline
+              // reads slightly darker than both the panel and the grey area.
               stroke={
                 v === 0
                   ? "var(--chakra-colors-fg-subtle)"
-                  : "var(--chakra-colors-border-muted)"
+                  : "var(--chakra-colors-fg)"
               }
+              strokeOpacity={v === 0 ? 1 : 0.07}
               strokeWidth={1}
             />
             <text
@@ -243,26 +257,37 @@ export function TrendChart({
         ) : null}
         {placed.flatMap((p) => {
           const barW = p.runId === hover.active ? BAR_W_ACTIVE : BAR_W;
+          // Each tint sits on a panel-coloured backing, so it reads the same
+          // over the still-to-come area as over the plain chart.
           return p.segments.map((s) => (
-            <rect
-              key={`${p.runId}-${s.tier}`}
-              x={p.px - barW / 2}
-              y={s.top}
-              width={barW}
-              height={s.bottom - s.top}
-              rx={2}
-              fill={PASS_COLOR}
-              opacity={
-                TIER_OPACITY[s.tier] * (hover.dimmed(p.runId) ? DIMMED : 1)
-              }
-              style={{ transition: FADE }}
-            />
+            <g key={`${p.runId}-${s.tier}`}>
+              <rect
+                x={p.px - barW / 2}
+                y={s.top}
+                width={barW}
+                height={s.bottom - s.top}
+                rx={2}
+                fill="var(--chakra-colors-bg-panel)"
+              />
+              <rect
+                x={p.px - barW / 2}
+                y={s.top}
+                width={barW}
+                height={s.bottom - s.top}
+                rx={2}
+                fill={PASS_COLOR}
+                opacity={
+                  TIER_OPACITY[s.tier] * (hover.dimmed(p.runId) ? DIMMED : 1)
+                }
+                style={{ transition: FADE }}
+              />
+            </g>
           ));
         })}
         {placed.length < 2 ? (
-          // Centred between the baseline and the x-axis.
+          // Centred in the still-to-come area, between baseline and x-axis.
           <text
-            x={(L + W - R) / 2}
+            x={((last?.px ?? L) + W - R) / 2}
             y={((first?.py ?? T) + B) / 2 + 4}
             textAnchor="middle"
             fontSize="13"
