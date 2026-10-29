@@ -145,7 +145,6 @@ const RawPage = z.looseObject({
     z.looseObject({
       key: Stage,
       checked: z.number(),
-      first_failures: z.number(),
     })
   ),
   types: z.array(RawType),
@@ -252,7 +251,6 @@ export function parseBenchmarkPage(
     stages: raw.stages.map((s) => ({
       key: s.key,
       checked: s.checked,
-      firstFailures: s.first_failures,
     })),
     types: measured,
     unmeasuredTypes: raw.types

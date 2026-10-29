@@ -42,8 +42,6 @@ export interface StageSummary {
   readonly key: StageKey;
   /** Questions where the stage had at least one evaluated gating check. */
   readonly checked: number;
-  /** Failed questions whose earliest failing stage is this one. */
-  readonly firstFailures: number;
 }
 
 export interface FailExample {
