@@ -1,38 +1,23 @@
 import { formatLongDay, formatLongMonth } from "./format";
-import type { Releases } from "../model/releases";
+import type { Release } from "../model/releases";
 import type {
   BenchmarkPage,
   BenchmarkRunRef,
   TrendPoint,
 } from "../model/types";
 
-type Runs = readonly [BenchmarkRunRef, ...BenchmarkRunRef[]];
-
-const RUN_ID = /^(\d{4})(\d{2})(\d{2})T\d{6}Z_/;
-const COMMIT_SHA = /^[0-9a-f]{40}$/;
-
 /**
- * The released runs, oldest first, each named by the month in its run id;
- * every release in a month that has more than one is named by its day.
- * Throws on a run id that is not a gnw-gold-evals one, a ref that is not a
- * full commit sha, or a run released twice.
+ * The released runs, oldest first, each named by the month in its run id
+ * ("20261028T…" is October 2026); every release in a month that has more
+ * than one is named by its day. The list's shape (run ids, full commit
+ * shas, each run once) is checked by a unit test over RELEASES.
  */
-export function releasedRuns(releases: Releases): Runs {
-  const seen = new Set<string>();
+export function releasedRuns(releases: readonly Release[]): BenchmarkRunRef[] {
   const dated = releases.map((release) => {
-    const match = RUN_ID.exec(release.runId);
-    if (!match) throw new Error(`release ${release.runId}: not a run id`);
-    if (!COMMIT_SHA.test(release.ref)) {
-      throw new Error(`release ${release.runId}: ref is not a commit sha`);
-    }
-    if (seen.has(release.runId)) {
-      throw new Error(`release ${release.runId}: listed twice`);
-    }
-    seen.add(release.runId);
-    const day = `${match[1]}-${match[2]}-${match[3]}`;
+    const id = release.runId;
+    const day = `${id.slice(0, 4)}-${id.slice(4, 6)}-${id.slice(6, 8)}`;
     return { release, day, month: formatLongMonth(day) };
   });
-  // Mapping keeps the length, so the list is still non-empty.
   return dated
     .map(({ release, day, month }) => ({
       ...release,
@@ -41,14 +26,17 @@ export function releasedRuns(releases: Releases): Runs {
           ? formatLongDay(day)
           : month,
     }))
-    .sort((a, b) => a.runId.localeCompare(b.runId)) as unknown as Runs;
+    .sort((a, b) => a.runId.localeCompare(b.runId));
 }
 
 /**
  * The run the page opens on: the requested one when it is released, else
- * the newest release. Runs come oldest first.
+ * the newest release. Runs come oldest first, and RELEASES is never empty.
  */
-export function pickRun(runs: Runs, requested: string | null): BenchmarkRunRef {
+export function pickRun(
+  runs: readonly BenchmarkRunRef[],
+  requested: string | null
+): BenchmarkRunRef {
   return runs.find((r) => r.runId === requested) ?? runs[runs.length - 1];
 }
 

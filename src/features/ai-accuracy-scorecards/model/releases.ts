@@ -20,9 +20,7 @@ export interface Release {
 }
 
 /** At least one: the page always has a run to open on. */
-export type Releases = readonly [Release, ...Release[]];
-
-export const RELEASES: Releases = [
+export const RELEASES: readonly [Release, ...Release[]] = [
   // 2026-draft-5, scored by attempt majority.
   {
     runId: "20261028T124051Z_prod",

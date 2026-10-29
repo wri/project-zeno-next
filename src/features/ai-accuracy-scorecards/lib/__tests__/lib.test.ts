@@ -287,19 +287,13 @@ describe("runs", () => {
     ]);
   });
 
-  it("refuses a bad run id, a short ref or a run released twice", () => {
-    const ok = { runId: "20261028T124051Z_prod", ref: ref(2), draft: false };
-    expect(() => releasedRuns([{ ...ok, runId: "latest" }])).toThrow(
-      /not a run id/
-    );
-    expect(() => releasedRuns([{ ...ok, ref: "f7c138e" }])).toThrow(
-      /not a commit sha/
-    );
-    expect(() => releasedRuns([ok, ok])).toThrow(/listed twice/);
-  });
-
-  it("accepts the releases the page ships", () => {
-    expect(releasedRuns(RELEASES)).toHaveLength(RELEASES.length);
+  it("ships well-formed releases: run ids, full commit shas, each once", () => {
+    for (const release of RELEASES) {
+      expect(release.runId).toMatch(/^\d{8}T\d{6}Z_/);
+      expect(release.ref).toMatch(/^[0-9a-f]{40}$/);
+    }
+    const ids = RELEASES.map((r) => r.runId);
+    expect(new Set(ids).size).toBe(ids.length);
   });
 
   it("opens on the requested release, else the newest", () => {
