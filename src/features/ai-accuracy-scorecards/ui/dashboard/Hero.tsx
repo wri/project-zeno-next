@@ -66,17 +66,19 @@ function TierTip({
 
 export function Hero({
   page,
+  draft,
   trend,
   methodologyHref,
 }: {
   readonly page: BenchmarkPage;
+  /** The run's release is a draft (`model/releases.ts`). */
+  readonly draft: boolean;
   readonly trend: readonly TrendPoint[];
   readonly methodologyHref: string;
 }) {
   const { summary, benchmark } = page;
   const tiers = tiersOf(summary);
   const hover = useChartHover<TierKey>();
-  const draft = benchmark.draftLabel !== null;
   return (
     <Grid
       as="section"
@@ -192,7 +194,7 @@ export function Hero({
               v{benchmark.set}{" "}
               {draft ? (
                 <Badge size="sm" colorPalette="yellow" variant="subtle">
-                  draft
+                  Draft
                 </Badge>
               ) : null}
             </Text>

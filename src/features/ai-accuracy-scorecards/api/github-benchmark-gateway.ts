@@ -21,17 +21,16 @@ import type {
   Question,
   QuestionStatus,
 } from "../model/types";
-import { parseVersion } from "../lib/format";
-import { BENCHMARK_DATA_BRANCH, RUN_INDEX_PATH, rawUrl } from "./github";
+import { versionSet } from "../lib/format";
+import { pagePath, rawUrl } from "./github";
 
 const PAGE_SCHEMA_VERSION = 1;
 
 export class BenchmarkDataUnavailableError extends Error {
   constructor(url: string) {
     super(
-      `Benchmark data not found: ${url}. The page reads branch ` +
-        `"${BENCHMARK_DATA_BRANCH}" of wri/gnw-gold-evals; a recently added ` +
-        `file may not be merged to that branch yet.`
+      `Benchmark data not found: ${url}. Check the release's commit is ` +
+        `pushed to wri/gnw-gold-evals and holds the run's page.`
     );
     this.name = "BenchmarkDataUnavailableError";
   }
@@ -42,21 +41,6 @@ export class BenchmarkDataUnavailableError extends Error {
 const Stage = z.enum(STAGE_ORDER);
 const Attribution = z.enum([...STAGE_ORDER, "unattributed"]);
 const Status = z.enum(["draft", "frozen", "retired"]);
-
-const RawIndexRun = z.looseObject({
-  run_id: z.string(),
-  started: z.string(),
-  canonical: z.boolean().default(false),
-  benchmark: z.looseObject({
-    version: z.string(),
-    status: Status.default("draft"),
-  }),
-  page: z.string().optional(),
-});
-
-const RawIndex = z.looseObject({
-  sets: z.looseObject({ benchmark: z.array(RawIndexRun).default([]) }),
-});
 
 const RawStats = z.object({
   scored: z.number(),
@@ -254,7 +238,7 @@ export function parseBenchmarkPage(json: unknown): BenchmarkPage {
     },
     benchmark: {
       version: raw.benchmark.version,
-      ...parseVersion(raw.benchmark.version, raw.benchmark.status === "draft"),
+      set: versionSet(raw.benchmark.version),
       members: raw.benchmark.members,
       excluded: raw.benchmark.excluded,
     },
@@ -310,29 +294,6 @@ export function parseBenchmarkPage(json: unknown): BenchmarkPage {
   };
 }
 
-/** Benchmark runs with committed page data, oldest first. */
-export function parseBenchmarkRuns(json: unknown): BenchmarkRunRef[] {
-  return RawIndex.parse(json)
-    .sets.benchmark.flatMap((r) => {
-      if (!r.page) return [];
-      const { set, draftLabel } = parseVersion(
-        r.benchmark.version,
-        r.benchmark.status === "draft"
-      );
-      return [
-        {
-          runId: r.run_id,
-          started: r.started,
-          version: r.benchmark.version,
-          versionLabel: draftLabel ?? `v${set}`,
-          canonical: r.canonical,
-          pagePath: r.page,
-        },
-      ];
-    })
-    .sort((a, b) => a.runId.localeCompare(b.runId));
-}
-
 type FetchFn = (url: string, init?: RequestInit) => Promise<Response>;
 
 export class GithubBenchmarkGateway implements BenchmarkGateway {
@@ -340,24 +301,20 @@ export class GithubBenchmarkGateway implements BenchmarkGateway {
     private readonly fetchFn: FetchFn = (url, init) => fetch(url, init)
   ) {}
 
-  private async getJson(
-    repoPath: string,
+  async page(
+    run: BenchmarkRunRef,
     signal?: AbortSignal
-  ): Promise<unknown> {
-    const url = rawUrl(repoPath);
+  ): Promise<BenchmarkPage> {
+    const url = rawUrl(run.ref, pagePath(run.runId));
     const response = await this.fetchFn(url, { signal });
     if (response.status === 404) throw new BenchmarkDataUnavailableError(url);
     if (!response.ok) {
       throw new Error(`Failed to fetch ${url}: HTTP ${response.status}`);
     }
-    return response.json();
-  }
-
-  async runs(signal?: AbortSignal): Promise<BenchmarkRunRef[]> {
-    return parseBenchmarkRuns(await this.getJson(RUN_INDEX_PATH, signal));
-  }
-
-  async page(path: string, signal?: AbortSignal): Promise<BenchmarkPage> {
-    return parseBenchmarkPage(await this.getJson(path, signal));
+    const page = parseBenchmarkPage(await response.json());
+    if (page.run.runId !== run.runId) {
+      throw new Error(`${url} holds run ${page.run.runId}, not ${run.runId}`);
+    }
+    return page;
   }
 }

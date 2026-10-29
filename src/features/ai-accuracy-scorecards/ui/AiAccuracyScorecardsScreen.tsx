@@ -3,8 +3,9 @@
  * BENCHMARK questions, per run. Its views share one route
  * (`/ai-accuracy-scorecards?view=…&run=…`), so each view of a run can be
  * bookmarked. A standalone page: no app header, only a link home. Data is
- * precomputed page data from the public gnw-gold-evals repo; the superuser
- * gate lives in the route page and is UX-only.
+ * precomputed page data from the public gnw-gold-evals repo, for the runs
+ * `model/releases.ts` lists; the superuser gate lives in the route page and
+ * is UX-only.
  */
 
 import {
@@ -18,10 +19,10 @@ import {
   Text,
 } from "@chakra-ui/react";
 import { Link, useRouter, useSearchParams } from "@/src/shared/lib/router";
+import { RELEASES } from "../model/releases";
 import type { BenchmarkPage, BenchmarkRunRef } from "../model/types";
-import { BENCHMARK_DATA_BRANCH } from "../api/github";
-import { formatDay } from "../lib/format";
-import { pickRun, trendRuns } from "../lib/runs";
+import { resultsUrl } from "../api/github";
+import { pickRun, releasedRuns } from "../lib/runs";
 import { FailureFlowSection } from "./dashboard/FailureFlowSection";
 import { Hero } from "./dashboard/Hero";
 import { QuestionTypesSection } from "./dashboard/QuestionTypesSection";
@@ -32,41 +33,40 @@ import { MethodologyView } from "./MethodologyView";
 import { QueryState } from "./QueryState";
 import { QuestionsView } from "./QuestionsView";
 import { HomeLink, Panel } from "./parts";
-import {
-  useBenchmarkPage,
-  useBenchmarkRuns,
-  useBenchmarkSummaries,
-} from "./use-benchmark-data";
+import { useBenchmarkPage, useBenchmarkPages } from "./use-benchmark-data";
 
-/** The headline of every canonical run of the page's version; a point
+const RUNS = releasedRuns(RELEASES);
+
+/** The headline of every released run of the page's version; a point
  * appears once its page has loaded. */
 function useTrend(
   runs: readonly BenchmarkRunRef[],
   page: BenchmarkPage
 ): TrendPoint[] {
-  const points = trendRuns(runs, page.benchmark.version);
-  const summaries = useBenchmarkSummaries(points.map((r) => r.pagePath));
-  return points.flatMap((run, i) => {
-    const summary = summaries[i];
-    return summary?.everyTime == null
+  const pages = useBenchmarkPages(runs);
+  return pages.flatMap((p) =>
+    p?.benchmark.version !== page.benchmark.version ||
+    p.summary.everyTime == null
       ? []
       : [
           {
-            runId: run.runId,
-            started: run.started,
-            everyTime: summary.everyTime,
-            majority: summary.majority,
-            anyTime: summary.anyTime,
+            runId: p.run.runId,
+            started: p.run.started,
+            everyTime: p.summary.everyTime,
+            majority: p.summary.majority,
+            anyTime: p.summary.anyTime,
           },
-        ];
-  });
+        ]
+  );
 }
 
 function Dashboard({
   page,
+  run,
   runs,
 }: {
   readonly page: BenchmarkPage;
+  readonly run: BenchmarkRunRef;
   readonly runs: readonly BenchmarkRunRef[];
 }) {
   const trend = useTrend(runs, page);
@@ -75,6 +75,7 @@ function Dashboard({
     <>
       <Hero
         page={page}
+        draft={run.draft}
         trend={trend}
         methodologyHref={pageHref({ view: "methodology", run: runId })}
       />
@@ -124,11 +125,8 @@ export function AiAccuracyScorecardsScreen() {
     : isView(viewParam)
       ? viewParam
       : "dashboard";
-  const runs = useBenchmarkRuns();
-  const run = runs.data
-    ? pickRun(runs.data, searchParams?.get("run") ?? null)
-    : null;
-  const page = useBenchmarkPage(run?.pagePath ?? null);
+  const run = pickRun(RUNS, searchParams?.get("run") ?? null);
+  const page = useBenchmarkPage(run);
   const useCaseParam = searchParams?.get("uc") ?? "";
 
   function go(next: { view?: View; run?: string }) {
@@ -156,20 +154,17 @@ export function AiAccuracyScorecardsScreen() {
         <HStack gap={3} wrap="wrap">
           <HomeLink />
           <Text color="fg.muted">AI accuracy: priority use cases</Text>
-          {data ? (
+          {data && run ? (
             <Badge
-              colorPalette={data.benchmark.draftLabel ? "yellow" : "green"}
+              colorPalette={run.draft ? "yellow" : "green"}
               variant="subtle"
             >
-              {data.benchmark.draftLabel
-                ? `${data.benchmark.draftLabel} · `
-                : ""}
-              Benchmark Set v{data.benchmark.set}
+              {run.draft ? "Draft · " : ""}Benchmark Set v{data.benchmark.set}
             </Badge>
           ) : null}
         </HStack>
         <HStack gap={3} wrap="wrap">
-          {runs.data && runs.data.length > 1 && run ? (
+          {RUNS.length > 1 && run ? (
             <NativeSelect.Root size="sm" width="auto">
               <NativeSelect.Field
                 id="benchmark-run"
@@ -177,15 +172,18 @@ export function AiAccuracyScorecardsScreen() {
                 value={run.runId}
                 onChange={(e) => go({ run: e.target.value })}
               >
-                {runs.data.toReversed().map((r) => (
+                {RUNS.toReversed().map((r) => (
                   <option key={r.runId} value={r.runId}>
-                    {formatDay(r.started)} · {r.versionLabel}
-                    {r.canonical ? "" : " (not canonical)"}
+                    {r.label}
                   </option>
                 ))}
               </NativeSelect.Field>
               <NativeSelect.Indicator />
             </NativeSelect.Root>
+          ) : run ? (
+            <Text fontSize="sm" color="fg.muted">
+              {run.label}
+            </Text>
           ) : null}
           <HStack as="nav" aria-label="Views" gap={1}>
             {VIEWS.map((v) => (
@@ -203,21 +201,17 @@ export function AiAccuracyScorecardsScreen() {
         </HStack>
       </Flex>
 
-      <QueryState
-        isLoading={runs.isLoading || page.isLoading}
-        error={runs.error ?? page.error}
-      />
-      {runs.data && !run ? (
+      <QueryState isLoading={page.isLoading} error={page.error} />
+      {!run ? (
         <Text py={12} color="fg.muted">
-          No benchmark run has page data on branch &ldquo;
-          {BENCHMARK_DATA_BRANCH}&rdquo; yet.
+          No benchmark run has been released yet.
         </Text>
       ) : null}
 
-      {data && runs.data ? (
+      {data && run ? (
         <>
           {view === "dashboard" ? (
-            <Dashboard page={data} runs={runs.data} />
+            <Dashboard page={data} run={run} runs={RUNS} />
           ) : null}
           {view === "questions" ? (
             <QuestionsView
@@ -229,7 +223,7 @@ export function AiAccuracyScorecardsScreen() {
           {view === "methodology" ? (
             <MethodologyView
               page={data}
-              dashboardHref={pageHref({ run: run?.runId })}
+              dashboardHref={pageHref({ run: run.runId })}
               openChecks={legacyChecks}
             />
           ) : null}
@@ -242,16 +236,13 @@ export function AiAccuracyScorecardsScreen() {
             borderColor="border"
           >
             Benchmark Set v{data.benchmark.set}
-            {data.benchmark.draftLabel
-              ? `, ${data.benchmark.draftLabel}`
-              : ""}{" "}
-            ({data.benchmark.members} questions). Run {data.run.runId} on
-            production, default tools, {data.run.numTrials} attempts per
-            question
+            {run.draft ? ", draft" : ""} ({data.benchmark.members} questions).
+            Run {data.run.runId} on production, default tools,{" "}
+            {data.run.numTrials} attempts per question
             {data.run.harnessSha ? `, harness ${data.run.harnessSha}` : ""}.
             Source:{" "}
             <ChakraLink
-              href={`https://github.com/wri/gnw-gold-evals/tree/${BENCHMARK_DATA_BRANCH}/results/benchmark`}
+              href={resultsUrl(run.ref)}
               target="_blank"
               rel="noopener noreferrer"
             >

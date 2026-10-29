@@ -3,8 +3,8 @@ import {
   BenchmarkDataUnavailableError,
   GithubBenchmarkGateway,
   parseBenchmarkPage,
-  parseBenchmarkRuns,
 } from "../github-benchmark-gateway";
+import type { BenchmarkRunRef } from "../../model/types";
 
 const STATS = {
   scored: 2,
@@ -148,10 +148,7 @@ describe("parseBenchmarkPage", () => {
       output: 0,
       unattributed: 0,
     });
-    expect(page.benchmark).toMatchObject({
-      set: "2026",
-      draftLabel: "draft 3",
-    });
+    expect(page.benchmark).toMatchObject({ set: "2026" });
     expect(page.types.map((t) => t.key)).toEqual(["monitoring"]);
     expect(page.unmeasuredTypes.map((t) => t.key)).toEqual(["refusal"]);
     expect(page.types[0].exampleFail?.failedChecks).toEqual(["aoi_id_match"]);
@@ -218,62 +215,42 @@ describe("parseBenchmarkPage", () => {
   });
 });
 
-describe("parseBenchmarkRuns", () => {
-  it("keeps only benchmark runs with page data, oldest first", () => {
-    const runs = parseBenchmarkRuns({
-      sets: {
-        gold: [{ run_id: "g" }],
-        benchmark: [
-          {
-            run_id: "b2",
-            started: "2026-10-23T00:00:00Z",
-            canonical: true,
-            benchmark: { version: "2026-draft-3" },
-            page: "results/benchmark/pages/b2.json",
-          },
-          {
-            run_id: "b1",
-            started: "2026-10-01T00:00:00Z",
-            canonical: true,
-            benchmark: { version: "2026-draft-2" },
-          },
-          {
-            run_id: "b0",
-            started: "2026-09-29T00:00:00Z",
-            canonical: false,
-            benchmark: { version: "2026-draft" },
-            page: "results/benchmark/pages/b0.json",
-          },
-        ],
-      },
-    });
-    expect(runs.map((r) => [r.runId, r.canonical, r.pagePath])).toEqual([
-      ["b0", false, "results/benchmark/pages/b0.json"],
-      ["b2", true, "results/benchmark/pages/b2.json"],
-    ]);
-  });
-});
-
 describe("GithubBenchmarkGateway", () => {
-  it("names the branch when a file is missing", async () => {
-    const gateway = new GithubBenchmarkGateway(
-      async () => new Response("", { status: 404 })
-    );
-    await expect(
-      gateway.page("results/benchmark/pages/x.json")
-    ).rejects.toBeInstanceOf(BenchmarkDataUnavailableError);
-  });
+  const RUN: BenchmarkRunRef = {
+    runId: "r1",
+    label: "October 2026",
+    ref: "f7c138e514c4780ed84003b13a7decdfede8ff21",
+    draft: true,
+  };
 
-  it("fetches and parses a page from GitHub raw", async () => {
+  it("reads a run's page at the commit its release pins", async () => {
     const urls: string[] = [];
     const gateway = new GithubBenchmarkGateway(async (url) => {
       urls.push(url);
       return new Response(JSON.stringify(WIRE_PAGE), { status: 200 });
     });
-    const page = await gateway.page("results/benchmark/pages/r1.json");
+    const page = await gateway.page(RUN);
     expect(page.run.runId).toBe("r1");
-    expect(urls[0]).toMatch(
-      /^https:\/\/raw\.githubusercontent\.com\/wri\/gnw-gold-evals\/[^/]+\/results\/benchmark\/pages\/r1\.json$/
+    expect(urls).toEqual([
+      "https://raw.githubusercontent.com/wri/gnw-gold-evals/f7c138e514c4780ed84003b13a7decdfede8ff21/results/benchmark/pages/r1.json",
+    ]);
+  });
+
+  it("says the data is missing when the commit has no such page", async () => {
+    const gateway = new GithubBenchmarkGateway(
+      async () => new Response("", { status: 404 })
+    );
+    await expect(gateway.page(RUN)).rejects.toBeInstanceOf(
+      BenchmarkDataUnavailableError
+    );
+  });
+
+  it("refuses a page that holds another run", async () => {
+    const gateway = new GithubBenchmarkGateway(
+      async () => new Response(JSON.stringify(WIRE_PAGE), { status: 200 })
+    );
+    await expect(gateway.page({ ...RUN, runId: "r2" })).rejects.toThrow(
+      /holds run r1, not r2/
     );
   });
 });

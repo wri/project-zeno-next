@@ -2,12 +2,13 @@ import { describe, expect, it } from "vitest";
 import { checkLabel } from "../../model/checks";
 import { groupChecks } from "../checks";
 import { failureBreakdown, failureFlow, failurePhrase } from "../failures";
-import { formatDay, parseVersion, pct, share } from "../format";
+import { formatDay, pct, share, versionSet } from "../format";
 import { mixSentence } from "../mix";
 import { filterQuestions, NO_FILTER } from "../questions";
-import { monthsSinceOrigin, pickRun, trendRuns } from "../runs";
+import { monthsSinceOrigin, pickRun, releasedRuns } from "../runs";
 import { tierLines, tiersOf } from "../tiers";
-import type { BenchmarkRunRef, FailedCheck } from "../../model/types";
+import { RELEASES } from "../../model/releases";
+import type { FailedCheck } from "../../model/types";
 import { makeQuestion, makeStats, makeUseCase } from "./fixtures";
 
 describe("tiersOf", () => {
@@ -272,37 +273,47 @@ describe("mixSentence", () => {
 });
 
 describe("runs", () => {
-  const run = (
-    runId: string,
-    version: string,
-    canonical: boolean
-  ): BenchmarkRunRef => ({
-    runId,
-    started: `${runId.slice(0, 4)}-${runId.slice(4, 6)}-${runId.slice(6, 8)}T00:00:00Z`,
-    version,
-    versionLabel: version,
-    canonical,
-    pagePath: `results/benchmark/pages/${runId}.json`,
-  });
-  const runs = [
-    run("20261001T144123Z_prod", "2026-draft-2", true),
-    run("20261023T094447Z_prod", "2026-draft-3", true),
-    run("20261024T090000Z_staging", "2026-draft-3", false),
-  ];
+  const ref = (n: number) => String(n).repeat(40);
 
-  it("opens on the requested run, else the newest canonical one", () => {
-    expect(pickRun(runs, "20261001T144123Z_prod")?.runId).toBe(
-      "20261001T144123Z_prod"
-    );
-    expect(pickRun(runs, "missing")?.runId).toBe("20261023T094447Z_prod");
-    expect(pickRun(runs, null)?.runId).toBe("20261023T094447Z_prod");
-    expect(pickRun([], null)).toBeNull();
-  });
-
-  it("draws the trend from canonical runs of one version only", () => {
-    expect(trendRuns(runs, "2026-draft-3").map((r) => r.runId)).toEqual([
-      "20261023T094447Z_prod",
+  it("names each release by its month (by its day when it shares one) and keeps its draft flag", () => {
+    const runs = releasedRuns([
+      { runId: "20261128T090000Z_prod", ref: ref(3), draft: true },
+      { runId: "20261014T090000Z_prod", ref: ref(1), draft: false },
+      { runId: "20261028T124051Z_prod", ref: ref(2), draft: false },
     ]);
+    expect(runs.map((r) => [r.runId, r.label, r.draft])).toEqual([
+      ["20261014T090000Z_prod", "14 October 2026", false],
+      ["20261028T124051Z_prod", "28 October 2026", false],
+      ["20261128T090000Z_prod", "November 2026", true],
+    ]);
+  });
+
+  it("refuses a bad run id, a short ref or a run released twice", () => {
+    const ok = { runId: "20261028T124051Z_prod", ref: ref(2), draft: false };
+    expect(() => releasedRuns([{ ...ok, runId: "latest" }])).toThrow(
+      /not a run id/
+    );
+    expect(() => releasedRuns([{ ...ok, ref: "f7c138e" }])).toThrow(
+      /not a commit sha/
+    );
+    expect(() => releasedRuns([ok, ok])).toThrow(/listed twice/);
+  });
+
+  it("accepts the releases the page ships", () => {
+    expect(releasedRuns(RELEASES)).toHaveLength(RELEASES.length);
+  });
+
+  it("opens on the requested release, else the newest", () => {
+    const runs = releasedRuns([
+      { runId: "20261014T090000Z_prod", ref: ref(1), draft: false },
+      { runId: "20261028T124051Z_prod", ref: ref(2), draft: false },
+    ]);
+    expect(pickRun(runs, "20261014T090000Z_prod")?.runId).toBe(
+      "20261014T090000Z_prod"
+    );
+    expect(pickRun(runs, "missing")?.runId).toBe("20261028T124051Z_prod");
+    expect(pickRun(runs, null)?.runId).toBe("20261028T124051Z_prod");
+    expect(pickRun([], null)).toBeNull();
   });
 
   it("places dates on the axis in months since September 2026", () => {
@@ -319,18 +330,9 @@ describe("format", () => {
     expect(formatDay("2026-10-23T09:44:47Z")).toBe("23 Oct 2026");
   });
 
-  it("names a version by its set and draft", () => {
-    expect(parseVersion("2026-draft-3", true)).toEqual({
-      set: "2026",
-      draftLabel: "draft 3",
-    });
-    expect(parseVersion("2026-draft", true)).toEqual({
-      set: "2026",
-      draftLabel: "draft",
-    });
-    expect(parseVersion("2026", false)).toEqual({
-      set: "2026",
-      draftLabel: null,
-    });
+  it("names the Benchmark Set a version belongs to", () => {
+    expect(versionSet("2026-draft-3")).toBe("2026");
+    expect(versionSet("2026-draft")).toBe("2026");
+    expect(versionSet("2026")).toBe("2026");
   });
 });

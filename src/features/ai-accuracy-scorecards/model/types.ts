@@ -147,8 +147,6 @@ export interface BenchmarkPage {
     readonly version: string;
     /** The Benchmark Set year, e.g. "2026". */
     readonly set: string;
-    /** "draft 3" for a draft version, null once frozen. */
-    readonly draftLabel: string | null;
     readonly members: number;
     /** Sheet rows left out of the version (e.g. waiting for a test account). */
     readonly excluded: number;
@@ -161,14 +159,13 @@ export interface BenchmarkPage {
   readonly questions: readonly Question[];
 }
 
-/** A committed benchmark run that has page data (from results/index.json). */
+/** A released run (`model/releases.ts`), as the page lists it. */
 export interface BenchmarkRunRef {
   readonly runId: string;
-  readonly started: string;
-  readonly version: string;
-  /** "draft 3", or "v2026" once frozen. */
-  readonly versionLabel: string;
-  /** A trend point: prod, default tools, 3 trials, every member present. */
-  readonly canonical: boolean;
-  readonly pagePath: string;
+  /** "October 2026", or "28 October 2026" when another release shares
+   * the month. */
+  readonly label: string;
+  /** The gnw-gold-evals commit its page is read at. */
+  readonly ref: string;
+  readonly draft: boolean;
 }

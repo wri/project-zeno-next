@@ -13,19 +13,29 @@ back to the Horizon homepage.
 ## Data source
 
 There is no backend. gnw-gold-evals precomputes the numbers for each benchmark
-run (`tools/benchmark_page.py`) and commits them; the page fetches them from
-GitHub raw:
-
-| Artefact                                | Purpose                                                  |
-| --------------------------------------- | -------------------------------------------------------- |
-| `results/index.json`                    | Benchmark runs, their version, canonical flag and `page` |
-| `results/benchmark/pages/<run_id>.json` | One run's page data (`schema_version` 1)                 |
-
-The branch defaults to `benchmark`, where BENCHMARK lives (decision
-2026-10-21); `NEXT_PUBLIC_BENCHMARK_DATA_BRANCH` overrides it. The page file is
+run (`tools/benchmark_page.py`) and commits them as
+`results/benchmark/pages/<run_id>.json` (`schema_version` 1). The page shows
+only the runs listed in `model/releases.ts`, and fetches each one's page file
+from GitHub raw at the gnw-gold-evals commit its release pins, never at a
+branch: a page can be rebuilt in place on the `benchmark` branch, so pinning
+is what keeps a deployed page unchanged until an FE release. The page file is
 parsed once in `api/` into the normalised types in `model/types.ts`, and a
-schema mismatch throws rather than being papered over. GitHub raw caches
-about 5 minutes per path.
+schema mismatch throws rather than being papered over.
+
+### Releasing a run
+
+1. Push the canonical run and its page file to gnw-gold-evals `benchmark`.
+2. Add `{ runId, ref, draft }` to `RELEASES` in `model/releases.ts`, with
+   `ref` the full sha of a pushed commit that holds the page as you want it
+   shown. `draft` alone decides whether the page marks the run as a draft
+   (header and hero badges, trend, footer); the version name in the page
+   data does not.
+3. Open a PR to `develop`, check the page on staging, then release to `main`.
+
+The dropdown names each release by the month in its run id ("October 2026");
+when a month has more than one release, each of them is named by its day
+("28 October 2026"). With one release the name shows in place of the
+dropdown. A `?run=` that is not released opens the newest release.
 
 Unlike `/evals`, this slice computes no scores: the page data already carries
 the tiers, failure attribution and per-group stats, so the numbers match the
@@ -46,9 +56,9 @@ while the benchmark is a draft (AJ, 2026-10-23): the data is public on GitHub.
 
 | Segment  | Contents                                                                                                                          |
 | -------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `model/` | Normalised page types, the gateway port, stage labels, use-case names, the check reference                                        |
-| `lib/`   | Pure presentation helpers (tiers, failure breakdown, filters, run picking)                                                        |
-| `api/`   | GitHub raw gateway: zod schemas for the wire page, mapping                                                                        |
+| `model/` | Normalised page types, the gateway port, the release list, stage labels, use-case names, the check reference                      |
+| `lib/`   | Pure presentation helpers (tiers, failure breakdown, filters, release naming and run picking)                                     |
+| `api/`   | GitHub raw gateway at pinned commits: zod schemas for the wire page, mapping                                                      |
 | `ui/`    | Screen, three views in the URL (`?view=`, `?run=`; `?uc=` opens All questions filtered to a use case; `#checks` opens the checks) |
 
 ## Invariants (mirrored from gnw-gold-evals; update both together)
@@ -66,4 +76,4 @@ while the benchmark is a draft (AJ, 2026-10-23): the data is public on GitHub.
   the earliest stage among the checks that failed on any trial, so it sits at
   the same stage under every standard.
 - Rates are comparable only within a benchmark version: the trend draws the
-  canonical runs of the open run's version.
+  released runs of the open run's version.

@@ -1,27 +1,20 @@
 /**
  * Composition root for the slice's data (ADR 0003): TanStack Query over the
- * gateway port, with the GitHub adapter as the default. The run index
- * changes on a git push (and GitHub raw caches about 5 minutes); a run's
- * page file never changes once committed, so it is never refetched.
+ * gateway port, with the GitHub adapter as the default. Each page is read at
+ * the commit its release pins, so it never changes and is never refetched.
  */
 
 import { useQueries, useQuery } from "@tanstack/react-query";
 import type { BenchmarkGateway } from "../model/benchmark-gateway";
-import type { GroupStats } from "../model/types";
+import type { BenchmarkPage, BenchmarkRunRef } from "../model/types";
 import { GithubBenchmarkGateway } from "../api/github-benchmark-gateway";
 
 const defaultGateway: BenchmarkGateway = new GithubBenchmarkGateway();
 
 const benchmarkKeys = {
-  runs: ["ai-accuracy-scorecards", "runs"] as const,
-  page: (path: string) => ["ai-accuracy-scorecards", "page", path] as const,
+  page: (run: BenchmarkRunRef | null) =>
+    ["ai-accuracy-scorecards", "page", run?.ref, run?.runId] as const,
 };
-
-const RUNS_OPTIONS = {
-  staleTime: 5 * 60_000,
-  refetchOnWindowFocus: false,
-  retry: 1,
-} as const;
 
 const PAGE_OPTIONS = {
   staleTime: Infinity,
@@ -29,43 +22,35 @@ const PAGE_OPTIONS = {
   retry: 1,
 } as const;
 
-export function useBenchmarkRuns(gateway: BenchmarkGateway = defaultGateway) {
-  return useQuery({
-    queryKey: benchmarkKeys.runs,
-    queryFn: ({ signal }) => gateway.runs(signal),
-    ...RUNS_OPTIONS,
-  });
-}
-
 /** One run's page data; pass null to disable. */
 export function useBenchmarkPage(
-  path: string | null,
+  run: BenchmarkRunRef | null,
   gateway: BenchmarkGateway = defaultGateway
 ) {
   return useQuery({
-    queryKey: benchmarkKeys.page(path ?? ""),
-    queryFn: ({ signal }) => gateway.page(path!, signal),
-    enabled: !!path,
+    queryKey: benchmarkKeys.page(run),
+    queryFn: ({ signal }) => gateway.page(run!, signal),
+    enabled: !!run,
     ...PAGE_OPTIONS,
   });
 }
 
 /**
- * The summaries of several runs' pages (the trend points of one version),
- * aligned with `paths`; undefined while a page loads. Combined so callers
- * re-render only when a summary arrives.
+ * Several runs' pages (the trend's candidates), aligned with `runs`;
+ * undefined while a page loads. Combined so callers re-render only when a
+ * page arrives.
  */
-export function useBenchmarkSummaries(
-  paths: readonly string[],
+export function useBenchmarkPages(
+  runs: readonly BenchmarkRunRef[],
   gateway: BenchmarkGateway = defaultGateway
-): (GroupStats | undefined)[] {
+): (BenchmarkPage | undefined)[] {
   return useQueries({
-    queries: paths.map((path) => ({
-      queryKey: benchmarkKeys.page(path),
+    queries: runs.map((run) => ({
+      queryKey: benchmarkKeys.page(run),
       queryFn: ({ signal }: { signal: AbortSignal }) =>
-        gateway.page(path, signal),
+        gateway.page(run, signal),
       ...PAGE_OPTIONS,
     })),
-    combine: (results) => results.map((r) => r.data?.summary),
+    combine: (results) => results.map((r) => r.data),
   });
 }

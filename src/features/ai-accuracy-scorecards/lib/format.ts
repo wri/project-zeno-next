@@ -30,15 +30,10 @@ export function formatDay(iso: string): string {
 }
 
 /**
- * A benchmark version as the page names it: "2026-draft-3" is draft 3 of
- * Benchmark Set 2026; a frozen "2026" has no draft label.
+ * The Benchmark Set a version belongs to: "2026-draft-3" and "2026" are
+ * both set 2026. Whether a run is a draft is its release's call
+ * (`model/releases.ts`), not the version's.
  */
-export function parseVersion(
-  version: string,
-  isDraft: boolean
-): { readonly set: string; readonly draftLabel: string | null } {
-  const match = /^(\d{4})(?:-draft(?:-(\d+))?)?$/.exec(version);
-  const set = match?.[1] ?? version;
-  if (!isDraft) return { set, draftLabel: null };
-  return { set, draftLabel: match?.[2] ? `draft ${match[2]}` : "draft" };
+export function versionSet(version: string): string {
+  return /^(\d{4})(?:-draft(?:-\d+)?)?$/.exec(version)?.[1] ?? version;
 }
