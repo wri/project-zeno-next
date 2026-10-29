@@ -1,23 +1,12 @@
-const MONTHS = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-] as const;
+import { format, parseISO } from "date-fns";
 
-/** Day, month name and year of an ISO date: "2026-10-23..." -> 23,
- * "October", 2026. */
-function dateParts(iso: string) {
-  const [year, month, day] = iso.slice(0, 10).split("-").map(Number);
-  return { year, month: MONTHS[month - 1], day };
+/**
+ * The calendar date an ISO timestamp names in UTC, as a local date: run
+ * timestamps are UTC, and formatting only the date part keeps a run near
+ * midnight on its own day in every viewer's time zone.
+ */
+export function calendarDate(iso: string): Date {
+  return parseISO(iso.slice(0, 10));
 }
 
 /** count / of, or null for an empty group. */
@@ -32,26 +21,22 @@ export function pct(value: number | null, digits = 0): string {
 
 /** "2026-10-23T09:44:47Z" -> "Oct 2026". */
 export function formatMonth(iso: string): string {
-  const { year, month } = dateParts(iso);
-  return `${month.slice(0, 3)} ${year}`;
+  return format(calendarDate(iso), "MMM yyyy");
 }
 
 /** "2026-10-23" -> "October 2026". */
 export function formatLongMonth(iso: string): string {
-  const { year, month } = dateParts(iso);
-  return `${month} ${year}`;
+  return format(calendarDate(iso), "MMMM yyyy");
 }
 
 /** "2026-10-23" -> "23 October 2026". */
 export function formatLongDay(iso: string): string {
-  const { year, month, day } = dateParts(iso);
-  return `${day} ${month} ${year}`;
+  return format(calendarDate(iso), "d MMMM yyyy");
 }
 
 /** "2026-10-23T09:44:47Z" -> "23 Oct 2026". */
 export function formatDay(iso: string): string {
-  const { year, month, day } = dateParts(iso);
-  return `${day} ${month.slice(0, 3)} ${year}`;
+  return format(calendarDate(iso), "d MMM yyyy");
 }
 
 /**

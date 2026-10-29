@@ -1,4 +1,5 @@
-import { formatLongDay, formatLongMonth } from "./format";
+import { differenceInCalendarMonths, getDate } from "date-fns";
+import { calendarDate, formatLongDay, formatLongMonth } from "./format";
 import type { Release } from "../model/releases";
 import type {
   BenchmarkPage,
@@ -64,11 +65,16 @@ export function trendPoints(
   );
 }
 
+/** The trend axis origin: 1 September 2026. */
+const AXIS_ORIGIN = new Date(2026, 8, 1);
+
 /**
- * Months since 1 Sep 2026 (the trend axis origin), with the day as a
- * fraction of the month: "2026-10-23..." -> about 1.7.
+ * Months since the trend axis origin, with the day as a fraction of the
+ * month: "2026-10-23..." -> about 1.7.
  */
 export function monthsSinceOrigin(iso: string): number {
-  const [year, month, day] = iso.slice(0, 10).split("-").map(Number);
-  return (year - 2026) * 12 + (month - 9) + (day - 1) / 30;
+  const date = calendarDate(iso);
+  return (
+    differenceInCalendarMonths(date, AXIS_ORIGIN) + (getDate(date) - 1) / 30
+  );
 }
