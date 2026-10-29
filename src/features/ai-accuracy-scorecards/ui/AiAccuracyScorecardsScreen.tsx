@@ -4,8 +4,8 @@
  * (`/ai-accuracy-scorecards?view=…&run=…`), so each view of a run can be
  * bookmarked. A standalone page: no app header, only a link home. Data is
  * precomputed page data from the public gnw-gold-evals repo, for the runs
- * `model/releases.ts` lists; the superuser gate lives in the route page and
- * is UX-only.
+ * `model/releases.ts` lists. Open to everyone, signed in or not (AJ,
+ * 2026-10-29).
  */
 
 import {

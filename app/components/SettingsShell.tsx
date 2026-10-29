@@ -14,7 +14,6 @@ import {
   ExamIcon,
   LifebuoyIcon,
   SignOutIcon,
-  TargetIcon,
   UserCircleIcon,
   UserIcon,
   UsersThreeIcon,
@@ -117,14 +116,6 @@ export default function SettingsShell({
               <Link href="/evals">
                 <ExamIcon />
                 Evals
-              </Link>
-            </Button>
-          )}
-          {userType === "superuser" && (
-            <Button asChild>
-              <Link href="/ai-accuracy-scorecards">
-                <TargetIcon />
-                AI Accuracy Scorecards
               </Link>
             </Button>
           )}
