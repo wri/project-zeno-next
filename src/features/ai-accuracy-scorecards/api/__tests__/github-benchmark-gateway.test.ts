@@ -210,6 +210,15 @@ describe("parseBenchmarkPage", () => {
     ).toThrow();
   });
 
+  it("refuses a run that is not three tries per question", () => {
+    expect(() =>
+      parseBenchmarkPage(
+        { ...WIRE_PAGE, run: { ...WIRE_PAGE.run, num_trials: 5 } },
+        true
+      )
+    ).toThrow();
+  });
+
   it("refuses a question whose type the page does not list", () => {
     const [q] = WIRE_PAGE.questions;
     expect(() =>

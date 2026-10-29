@@ -132,7 +132,9 @@ const RawPage = z.looseObject({
   run: z.looseObject({
     run_id: z.string(),
     started: z.string(),
-    num_trials: z.number(),
+    // The page's wording assumes three tries ("2 of 3 tries", "all 3
+    // tries"), so a run with another count is refused, not mislabelled.
+    num_trials: z.literal(3),
     harness_sha: z.string().nullable(),
   }),
   benchmark: z.looseObject({
