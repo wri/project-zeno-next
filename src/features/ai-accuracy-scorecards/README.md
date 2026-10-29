@@ -46,7 +46,7 @@ while the benchmark is a draft (AJ, 2026-10-23): the data is public on GitHub.
 
 | Segment  | Contents                                                                                                                          |
 | -------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `model/` | Normalised page types, the gateway port, stage labels, the check reference                                                        |
+| `model/` | Normalised page types, the gateway port, stage labels, use-case names, the check reference                                        |
 | `lib/`   | Pure presentation helpers (tiers, failure breakdown, filters, run picking)                                                        |
 | `api/`   | GitHub raw gateway: zod schemas for the wire page, mapping                                                                        |
 | `ui/`    | Screen, three views in the URL (`?view=`, `?run=`; `?uc=` opens All questions filtered to a use case; `#checks` opens the checks) |

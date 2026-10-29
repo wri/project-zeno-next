@@ -21,7 +21,12 @@ import {
 import { CaretDownIcon, CaretRightIcon } from "@phosphor-icons/react";
 import { Swatch } from "@/src/shared/ui/Swatch";
 import { pct, share } from "../lib/format";
-import { STAGE_COPY, STAGE_LABELS, STAGE_ORDER } from "../model/config";
+import {
+  STAGE_COPY,
+  STAGE_LABELS,
+  STAGE_ORDER,
+  USE_CASES,
+} from "../model/config";
 import type { BenchmarkPage, MeasuredType, StageKey } from "../model/types";
 import { AllChecks } from "./AllChecks";
 import { STAGE_COLORS } from "./palette";
@@ -44,45 +49,6 @@ const SECTION_TITLES = Object.fromEntries(SECTIONS) as Record<
   SectionId,
   string
 >;
-
-const USE_CASES: readonly {
-  readonly key: string;
-  readonly title: string;
-  readonly text: string;
-  readonly more?: string;
-}[] = [
-  {
-    key: "UC1",
-    title: "Monitor and respond to change in an area",
-    text: "Users track recent disturbances, alerts and fires in an area they are responsible for, so they can patrol, respond or enforce or document illegal activity.",
-  },
-  {
-    key: "UC2",
-    title: "Monitor a portfolio of areas",
-    text: "Users track and compare many areas (sourcing regions, suppliers, concessions, investments, protected-area networks, project sites) to spot risks and trends, screen for due diligence and compliance (for example, against a deforestation cut-off date under DCF commitments or regulations such as the EUDR) and decide where to focus resources.",
-  },
-  {
-    key: "UC3",
-    title: "Investigate change and build evidence",
-    text: "Users quantify how a place has changed, what is driving that change and what the data can and cannot show, to support advocacy, journalism, land tenure claims or legal action, and communicate findings to the public and decision-makers through maps, statistics and visuals.",
-  },
-  {
-    key: "UC4",
-    title: "Set baselines and track progress against targets",
-    text: "Users establish a starting point and measure change against it, for project implementation, corporate commitments, results-based payments and national or global targets, including land-sector emissions and removals.",
-    more: "Data also serve as independent benchmarks for national GHG inventories and global assessments (e.g., IPCC, UNFCCC, the Forest Declaration Assessment).",
-  },
-  {
-    key: "UC5",
-    title: "Decide where and how to intervene",
-    text: "Users identify issues and trends, explore and analyze data and compare areas for conservation, restoration, land-use planning, permitting or policy, using data on land cover, natural land, tree cover and drivers of loss.",
-  },
-  {
-    key: "UC6",
-    title: "Find, evaluate and access data for independent analysis",
-    text: "Users discover what data exists for their question, understand how it was made (methods, accuracy, versions and limits), run preliminary analysis and get results in a form they can use in their own work (tables, downloads, API access), so they can produce independent, citable analysis or integrate data and methods into their own systems, standards and indicators (e.g., national forest monitoring systems, corporate accounting standards, biodiversity and forest indicators).",
-  },
-];
 
 /** What each question type asks, with an example from the benchmark, in the
  * draft's order. */

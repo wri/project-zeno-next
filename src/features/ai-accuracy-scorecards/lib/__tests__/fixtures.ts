@@ -63,7 +63,7 @@ export function makeUseCase(
 ): UseCaseResult {
   return {
     key: "UC1",
-    label: "Alert monitoring and response",
+    label: "Monitor and respond to change",
     stats: makeStats(),
     composition: {
       types: [

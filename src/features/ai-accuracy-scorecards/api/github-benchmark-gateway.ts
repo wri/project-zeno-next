@@ -3,12 +3,13 @@
  * only place that knows the page file's snake_case wire shape: it is
  * parsed once here into the normalised types in `model/types.ts` (labels
  * resolved, failure modes zero-filled, question status settled). A schema
- * mismatch or an unknown query type throws: the page is a derived artefact
- * with a schema_version, so drift is a bug to see, not to paper over.
+ * mismatch, an unknown query type or an unknown use case throws: the page
+ * is a derived artefact with a schema_version, so drift is a bug to see,
+ * not to paper over.
  */
 
 import { z } from "zod";
-import { ATTRIBUTION_ORDER, STAGE_ORDER } from "../model/config";
+import { ATTRIBUTION_ORDER, STAGE_ORDER, USE_CASES } from "../model/config";
 import type { BenchmarkGateway } from "../model/benchmark-gateway";
 import type {
   Attempt,
@@ -87,9 +88,9 @@ const RawType = z.discriminatedUnion("measured", [
 
 const RawCount = z.tuple([z.string(), z.number()]);
 
+// The page's own use-case label is not read: the names are the FE's.
 const RawUseCase = z.object({
   key: z.string(),
-  label: z.string(),
   ...RawStats.shape,
   composition: z.object({
     types: z.array(RawCount),
@@ -224,6 +225,11 @@ export function parseBenchmarkPage(json: unknown): BenchmarkPage {
     if (label === undefined) throw new Error(`unknown query type ${key}`);
     return label;
   }
+  function useCaseName(key: string): string {
+    const useCase = USE_CASES.find((u) => u.key === key);
+    if (useCase === undefined) throw new Error(`unknown use case ${key}`);
+    return useCase.name;
+  }
   const measured: MeasuredType[] = [];
   for (const t of raw.types) {
     if (!t.measured) continue;
@@ -264,7 +270,7 @@ export function parseBenchmarkPage(json: unknown): BenchmarkPage {
       .map(({ key, label, description }) => ({ key, label, description })),
     useCases: raw.use_cases.map((u) => ({
       key: u.key,
-      label: u.label,
+      label: useCaseName(u.key),
       stats: toStats(u),
       composition: {
         types: toCounts(u.composition.types, typeLabel),

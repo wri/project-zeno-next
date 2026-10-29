@@ -155,6 +155,8 @@ describe("parseBenchmarkPage", () => {
     expect(page.types.map((t) => t.key)).toEqual(["monitoring"]);
     expect(page.unmeasuredTypes.map((t) => t.key)).toEqual(["refusal"]);
     expect(page.types[0].exampleFail?.failedChecks).toEqual(["aoi_id_match"]);
+    // The FE's use-case name, not the label the page carries.
+    expect(page.useCases[0].label).toBe("Monitor and respond to change");
     expect(page.useCases[0].composition.types).toEqual([
       { key: "monitoring", label: "Monitoring", count: 2 },
     ]);
@@ -206,6 +208,13 @@ describe("parseBenchmarkPage", () => {
     expect(() =>
       parseBenchmarkPage({ ...WIRE_PAGE, questions: [{ ...q, type: "risk" }] })
     ).toThrow(/unknown query type risk/);
+  });
+
+  it("refuses a use case the FE has no name for", () => {
+    const [uc] = WIRE_PAGE.use_cases;
+    expect(() =>
+      parseBenchmarkPage({ ...WIRE_PAGE, use_cases: [{ ...uc, key: "UC7" }] })
+    ).toThrow(/unknown use case UC7/);
   });
 });
 
