@@ -32,6 +32,11 @@ export const STAGE_LABELS: Readonly<Record<AttributionKey | "shared", string>> =
   };
 
 export interface StageCopy {
+  /**
+   * The step card's line under the failure flow: which questions the step
+   * checks, then what it asks of them (AJ, 2026-10-29).
+   */
+  readonly card: string;
   /** The question the check asks of every answer. */
   readonly question: string;
   readonly what: string;
@@ -42,6 +47,7 @@ export interface StageCopy {
 /** Wording from the team's methodology draft, including its in-page edits. */
 export const STAGE_COPY: Readonly<Record<StageKey, StageCopy>> = {
   scope: {
+    card: "On questions where the right move is to ask a clarifying question or decline: did it do that instead of guessing?",
     question:
       "Does it choose the right response: answer, ask a clarifying question or decline?",
     what: "Whether Horizon answers when it should, asks a clarifying question when a request is ambiguous and declines when it cannot answer safely, rather than guessing.",
@@ -50,6 +56,7 @@ export const STAGE_COPY: Readonly<Record<StageKey, StageCopy>> = {
       "Asking back when one dataset clearly fits counts as a retrieval failure, because no data was fetched, unless the question lists asking back as a fair answer. Scope across multi-turn conversations is not tested.",
   },
   retrieval: {
+    card: "On questions that name a place, dataset, setting or period: did it fetch data for exactly those?",
     question: "Does it get the right data: place, dataset, settings and dates?",
     what: "Whether Horizon finds the right place, chooses the right dataset, applies the right settings (thresholds, forest filters), uses the requested dates and fetches the data.",
     why: "Correct math on the wrong place, dataset or years gives a confident answer about the wrong thing, which is worse than no answer.",
@@ -57,6 +64,7 @@ export const STAGE_COPY: Readonly<Record<StageKey, StageCopy>> = {
       "User-drawn custom areas and saved-area portfolios are not in the benchmark yet; they need seeded test accounts.",
   },
   analysis: {
+    card: "On questions with a figure to work out or a chart to draw: are the numbers right for the data it fetched and the period asked?",
     question: "Does it calculate correctly from that data?",
     what: "Whether Horizon calculates correctly from the data it fetched: code recalculates the figure the question asks for from that same data and looks for it in the reply, an AI reviewer checks the reply's figures are for the period asked, and code checks the chart has no missing values. Whether the reply's figures match the chart is tracked but not yet scored; the figure check already tests the reply against the data itself.",
     why: "Analysis failures produce precise-looking numbers that are wrong, which could lead to users confidently citing incorrect numbers.",
@@ -64,6 +72,7 @@ export const STAGE_COPY: Readonly<Record<StageKey, StageCopy>> = {
       "Whether the fetched data is itself right is out of scope: the figure check assumes it is and tests what Horizon does with it. Comparing figures with an independent fetch of the same data is part of the internal regression suite, not this benchmark.",
   },
   explanation: {
+    card: "On questions with a statement the answer must make or a conclusion to test: does the written answer say what the data says, and no more?",
     question:
       "Does the written answer describe the data accurately, with the right caveats?",
     what: "Whether the written answer says what the data says: no web sources used in place of the data, and required statements present where a question needs them (for example, not naming a commodity the driver data does not identify).",
@@ -72,6 +81,7 @@ export const STAGE_COPY: Readonly<Record<StageKey, StageCopy>> = {
       "Dataset caveats are required by the system's instructions but not yet scored everywhere.",
   },
   output: {
+    card: "On answers where it drew a chart: is the chart well formed?",
     question: "Does it return the right chart, map layer or table?",
     what: "Whether the answer includes the right chart or map layer, and whether charts are well-formed and match the answer.",
     why: "A missing or broken chart makes a right answer unusable; the wrong chart type invites the wrong conclusion from correct data.",

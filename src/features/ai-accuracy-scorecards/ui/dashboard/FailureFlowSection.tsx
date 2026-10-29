@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { Grid, Text } from "@chakra-ui/react";
+import { Grid, HStack, Text } from "@chakra-ui/react";
+import { InfoTooltip } from "@/src/shared/ui/InfoTooltip";
 import { STAGE_COPY, STAGE_LABELS } from "../../model/config";
 import type { BenchmarkPage } from "../../model/types";
 import { failureFlow, STANDARDS, type Standard } from "../../lib/failures";
@@ -11,6 +12,13 @@ import {
   flowStages,
   STANDARD_COPY,
 } from "./FailureFlowChart";
+
+// "Checked" comes from the checks that ran, so a step can check fewer
+// questions than the flow carries through it; and a question wrong at two
+// steps counts only at the first, so this is not the step's own failure
+// rate (AJ, 2026-10-29).
+const FAILED_FIRST_INFO =
+  "Of the questions where this step had something to check, how many went wrong here first. A question with nothing to check at a step counts as passing it. A question already wrong at an earlier step is counted there, not here.";
 
 const STANDARD_OPTIONS = STANDARDS.map(
   (s) => [s, STANDARD_COPY[s].option] as const
@@ -45,17 +53,19 @@ export function FailureFlowSection({ page }: { readonly page: BenchmarkPage }) {
       }
     >
       <Panel>
-        <Text fontSize="sm" color="fg.muted" mb={3}>
-          <b>
-            A question counts as accurate when it was right on{" "}
-            {STANDARD_COPY[standard].tries}
-          </b>
+        <Text fontWeight="semibold">
+          Where the {flow.scored} scored questions end up
+        </Text>
+        <Text fontSize="sm" color="fg.muted" mb={1}>
+          A question counts as accurate when it was right on{" "}
+          {STANDARD_COPY[standard].tries}
           {standard === "every" ? ", the same measure as the headline" : ""}. A
           wrong question stays at the same step whichever measure you pick; a
           stricter measure only adds questions.
         </Text>
-        <Text fontWeight="semibold" mb={2}>
-          Where the {flow.scored} scored questions end up
+        <Text fontSize="sm" color="fg.muted" mb={3}>
+          Not every check applies to every question. Questions skip checks that
+          don&rsquo;t apply to them, and count as passing those steps.
         </Text>
         <FailureFlowChart
           flow={flow}
@@ -90,17 +100,21 @@ export function FailureFlowSection({ page }: { readonly page: BenchmarkPage }) {
             </Text>
             <Text fontWeight="semibold">{STAGE_LABELS[s.key]}</Text>
             <Text color="fg.muted" fontSize="xs" flex="1">
-              {STAGE_COPY[s.key].question}
+              {STAGE_COPY[s.key].card}
             </Text>
-            <Text display="flex" justifyContent="space-between" fontSize="xs">
-              <span>Applies to</span>
-              <b>
-                {s.checked} of {flow.scored}
-              </b>
-            </Text>
-            <Text display="flex" justifyContent="space-between" fontSize="xs">
-              <span>Failed here first</span>
-              <b>{firstFailures.get(s.key) ?? 0}</b>
+            {/* Label and count stacked: side by side they wrap into each
+                other on the five-column cards. */}
+            <HStack gap={1} fontSize="xs" mt={1}>
+              Failed here first
+              <InfoTooltip
+                size={12}
+                about={`"Failed here first" for ${STAGE_LABELS[s.key]}`}
+              >
+                {FAILED_FIRST_INFO}
+              </InfoTooltip>
+            </HStack>
+            <Text fontSize="xs">
+              <b>{firstFailures.get(s.key) ?? 0}</b> of {s.checked} checked
             </Text>
           </Panel>
         ))}
