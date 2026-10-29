@@ -1,10 +1,12 @@
 import { DATASET_CARDS } from "@/app/constants/datasets";
 import type { DatasetParameter } from "@/app/types/chat";
-import {
-  legendParameters,
-  resolveContextTileUrl,
-} from "@/app/utils/datasetLayerContext";
+import { legendParameters } from "@/app/utils/datasetLayerContext";
 import { patchPrimaryForestTileUrl } from "@/app/utils/primaryForestTileProtocol";
+import type { DateRange } from "@/src/shared/lib/iso-date";
+import type { DashboardAoi } from "../api/schemas";
+
+/** The dashboard's area as a map body needs it: outline, label and viewport fit. */
+export type MapAreaAoi = Pick<DashboardAoi, "source" | "src_id" | "name">;
 
 /**
  * A renderable map-widget layer parsed from a `widget_type: "map"` config
@@ -29,7 +31,8 @@ export interface MapWidgetLayer {
   endDate?: string;
 }
 
-const str = (value: unknown): string | undefined =>
+/** A non-blank string from an unchecked config value, else undefined. */
+export const str = (value: unknown): string | undefined =>
   typeof value === "string" && value.trim() ? value : undefined;
 
 // Config parameters are `[{ name, values }]` (per the handoff), unchecked.
@@ -74,7 +77,7 @@ export function mapWidgetLayer(
       );
       const entryUrl = str(entry?.tile_url);
       if (entryUrl) {
-        contextTileUrl = resolveContextTileUrl(activeName, entryUrl);
+        contextTileUrl = patchPrimaryForestTileUrl(entryUrl);
         contextLayerName = activeName;
       }
     }
@@ -129,9 +132,9 @@ export function mapWidgetLayer(
  */
 export function mapWidgetViewportBbox(
   config: Record<string, unknown>
-): [number, number, number, number] | null {
+): [number, number, number, number] | undefined {
   const viewport = config.viewport;
-  if (!viewport || typeof viewport !== "object") return null;
+  if (!viewport || typeof viewport !== "object") return undefined;
   const bbox = (viewport as { bbox?: unknown }).bbox;
   if (
     Array.isArray(bbox) &&
@@ -140,5 +143,40 @@ export function mapWidgetViewportBbox(
   ) {
     return bbox as [number, number, number, number];
   }
-  return null;
+  return undefined;
+}
+
+/**
+ * Sets one query parameter on a tile URL template, in place when present and
+ * appended otherwise. A string edit on purpose: `new URL()` would percent-
+ * encode the `{z}/{x}/{y}` placeholders in the path.
+ */
+function withQueryParam(url: string, key: string, value: string): string {
+  const present = new RegExp(`([?&])${key}=[^&#]*`);
+  if (present.test(url)) return url.replace(present, `$1${key}=${value}`);
+  return `${url}${url.includes("?") ? "&" : "?"}${key}=${value}`;
+}
+
+/**
+ * A dated layer for a period: the snapshot's tile URL with its
+ * `start_date`/`end_date` rewritten (the integrated alerts tile service reads
+ * them as query parameters, and the snapshot already carries the build-time
+ * pair), and the legend's dates to match. A snapshot whose URL lacks the
+ * parameters gets them appended rather than drawing every alert since the
+ * dataset began. The context sub-layer carries no dates and is left alone.
+ */
+export function withTileDates(
+  layer: MapWidgetLayer,
+  range: DateRange
+): MapWidgetLayer {
+  return {
+    ...layer,
+    tileUrl: withQueryParam(
+      withQueryParam(layer.tileUrl, "start_date", range.start),
+      "end_date",
+      range.end
+    ),
+    startDate: range.start,
+    endDate: range.end,
+  };
 }

@@ -29,11 +29,14 @@ export default function InsightChartPills({
   siblings,
   groupKey,
   showDivider = false,
+  print = false,
 }: {
   widget: InsightWidget;
   siblings?: InsightWidget[];
   groupKey?: string;
   showDivider?: boolean;
+  /** The export: each net-flux roll-up is labelled with its own detail. */
+  print?: boolean;
 }) {
   if (isNetFluxWidget(widget)) {
     return (
@@ -42,6 +45,7 @@ export default function InsightChartPills({
         siblings={siblings}
         groupKey={groupKey}
         showDivider={showDivider}
+        print={print}
       />
     );
   }

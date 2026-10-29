@@ -37,6 +37,8 @@ interface LegendProps {
   onRemoveBoundary?: () => void;
   /** Tighter type and spacing for small hosts (dashboard map widgets). */
   compact?: boolean;
+  /** Every layer in full, with no height cap or scroll (a printed report). */
+  uncapped?: boolean;
   /** Rendered in the header beside the collapse caret (e.g. a Datasets button). */
   headerAction?: ReactNode;
 }
@@ -56,6 +58,7 @@ export function Legend(props: LegendProps) {
     boundary,
     onRemoveBoundary,
     compact,
+    uncapped,
     headerAction,
   } = props;
 
@@ -193,8 +196,8 @@ export function Legend(props: LegendProps) {
               p={0}
               m={0}
               w="100%"
-              overflowY="auto"
-              maxH={compact ? "160px" : "200px"}
+              overflowY={uncapped ? "visible" : "auto"}
+              maxH={uncapped ? "none" : compact ? "160px" : "200px"}
             >
               {layers.map((item) => (
                 <Item
