@@ -5,10 +5,10 @@ import { failureBreakdown, failureFlow, failurePhrase } from "../failures";
 import { formatDay, formatMonth, pct, share, versionSet } from "../format";
 import { mixSentence } from "../mix";
 import { filterQuestions, NO_FILTER } from "../questions";
-import { monthsSinceOrigin, pickRun, releasedRuns } from "../runs";
+import { monthsSinceOrigin, pickRun, releasedRuns, trendPoints } from "../runs";
 import { tierLines, tiersOf } from "../tiers";
 import { RELEASES } from "../../model/releases";
-import type { FailedCheck } from "../../model/types";
+import type { BenchmarkPage, FailedCheck } from "../../model/types";
 import { makeQuestion, makeStats, makeUseCase } from "./fixtures";
 
 describe("tiersOf", () => {
@@ -308,12 +308,34 @@ describe("runs", () => {
       { runId: "20261014T090000Z_prod", ref: ref(1), draft: false },
       { runId: "20261028T124051Z_prod", ref: ref(2), draft: false },
     ]);
-    expect(pickRun(runs, "20261014T090000Z_prod")?.runId).toBe(
+    expect(pickRun(runs, "20261014T090000Z_prod").runId).toBe(
       "20261014T090000Z_prod"
     );
-    expect(pickRun(runs, "missing")?.runId).toBe("20261028T124051Z_prod");
-    expect(pickRun(runs, null)?.runId).toBe("20261028T124051Z_prod");
-    expect(pickRun([], null)).toBeNull();
+    expect(pickRun(runs, "missing").runId).toBe("20261028T124051Z_prod");
+    expect(pickRun(runs, null).runId).toBe("20261028T124051Z_prod");
+  });
+
+  it("draws the trend from loaded pages of one version only", () => {
+    const page = (runId: string, version: string, draft: boolean) =>
+      ({
+        run: { runId, started: "2026-10-28T00:00:00Z", draft },
+        benchmark: { version },
+        summary: makeStats({ everyTime: 0.6, majority: 0.7, anyTime: 0.8 }),
+      }) as unknown as BenchmarkPage;
+    expect(
+      trendPoints(
+        [
+          page("a", "2026", false),
+          undefined,
+          page("b", "2027", false),
+          page("c", "2026", true),
+        ],
+        "2026"
+      ).map((p) => [p.runId, p.draft])
+    ).toEqual([
+      ["a", false],
+      ["c", true],
+    ]);
   });
 
   it("places dates on the axis in months since September 2026", () => {

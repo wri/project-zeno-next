@@ -1,20 +1,15 @@
-import type { Release } from "../model/releases";
-import type { BenchmarkRunRef } from "../model/types";
+import { formatLongDay, formatLongMonth } from "./format";
+import type { Releases } from "../model/releases";
+import type {
+  BenchmarkPage,
+  BenchmarkRunRef,
+  TrendPoint,
+} from "../model/types";
+
+type Runs = readonly [BenchmarkRunRef, ...BenchmarkRunRef[]];
 
 const RUN_ID = /^(\d{4})(\d{2})(\d{2})T\d{6}Z_/;
 const COMMIT_SHA = /^[0-9a-f]{40}$/;
-
-const MONTH = new Intl.DateTimeFormat("en-GB", {
-  month: "long",
-  year: "numeric",
-  timeZone: "UTC",
-});
-const DAY = new Intl.DateTimeFormat("en-GB", {
-  day: "numeric",
-  month: "long",
-  year: "numeric",
-  timeZone: "UTC",
-});
 
 /**
  * The released runs, oldest first, each named by the month in its run id;
@@ -22,7 +17,7 @@ const DAY = new Intl.DateTimeFormat("en-GB", {
  * Throws on a run id that is not a gnw-gold-evals one, a ref that is not a
  * full commit sha, or a run released twice.
  */
-export function releasedRuns(releases: readonly Release[]): BenchmarkRunRef[] {
+export function releasedRuns(releases: Releases): Runs {
   const seen = new Set<string>();
   const dated = releases.map((release) => {
     const match = RUN_ID.exec(release.runId);
@@ -34,33 +29,51 @@ export function releasedRuns(releases: readonly Release[]): BenchmarkRunRef[] {
       throw new Error(`release ${release.runId}: listed twice`);
     }
     seen.add(release.runId);
-    const [, year, month, day] = match.map(Number);
-    const date = new Date(Date.UTC(year, month - 1, day));
-    return { release, date, month: MONTH.format(date) };
+    const day = `${match[1]}-${match[2]}-${match[3]}`;
+    return { release, day, month: formatLongMonth(day) };
   });
-  const perMonth = new Map<string, number>();
-  for (const { month } of dated) {
-    perMonth.set(month, (perMonth.get(month) ?? 0) + 1);
-  }
+  // Mapping keeps the length, so the list is still non-empty.
   return dated
-    .map(({ release, date, month }) => ({
-      runId: release.runId,
-      label: perMonth.get(month)! > 1 ? DAY.format(date) : month,
-      ref: release.ref,
-      draft: release.draft,
+    .map(({ release, day, month }) => ({
+      ...release,
+      label:
+        dated.filter((d) => d.month === month).length > 1
+          ? formatLongDay(day)
+          : month,
     }))
-    .sort((a, b) => a.runId.localeCompare(b.runId));
+    .sort((a, b) => a.runId.localeCompare(b.runId)) as unknown as Runs;
 }
 
 /**
  * The run the page opens on: the requested one when it is released, else
  * the newest release. Runs come oldest first.
  */
-export function pickRun(
-  runs: readonly BenchmarkRunRef[],
-  requested: string | null
-): BenchmarkRunRef | null {
-  return runs.find((r) => r.runId === requested) ?? runs.at(-1) ?? null;
+export function pickRun(runs: Runs, requested: string | null): BenchmarkRunRef {
+  return runs.find((r) => r.runId === requested) ?? runs[runs.length - 1];
+}
+
+/**
+ * The trend's points: the headline of each loaded page of `version`, in
+ * the pages' order. Rates are only comparable within a version.
+ */
+export function trendPoints(
+  pages: readonly (BenchmarkPage | undefined)[],
+  version: string
+): TrendPoint[] {
+  return pages.flatMap((p) =>
+    p?.benchmark.version !== version || p.summary.everyTime == null
+      ? []
+      : [
+          {
+            runId: p.run.runId,
+            started: p.run.started,
+            draft: p.run.draft,
+            everyTime: p.summary.everyTime,
+            majority: p.summary.majority,
+            anyTime: p.summary.anyTime,
+          },
+        ]
+  );
 }
 
 /**

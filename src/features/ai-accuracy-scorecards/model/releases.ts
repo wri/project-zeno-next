@@ -1,5 +1,5 @@
 /**
- * The benchmark runs the page shows, oldest first (AJ, 2026-10-29). Each
+ * The benchmark runs the page shows, in any order (AJ, 2026-10-29). Each
  * pins the gnw-gold-evals commit its page is read at, because a run's page
  * can be rebuilt in place on the `benchmark` branch (draft-5's was, on
  * 28 Oct, at f7c138e). So what a deployed page shows changes only with an
@@ -19,7 +19,10 @@ export interface Release {
   readonly draft: boolean;
 }
 
-export const RELEASES: readonly Release[] = [
+/** At least one: the page always has a run to open on. */
+export type Releases = readonly [Release, ...Release[]];
+
+export const RELEASES: Releases = [
   // 2026-draft-5, scored by attempt majority.
   {
     runId: "20261028T124051Z_prod",

@@ -2,6 +2,7 @@ import { useRef, type KeyboardEvent, type PointerEvent } from "react";
 import { Box } from "@chakra-ui/react";
 import { formatDay, formatMonth, pct } from "../../lib/format";
 import { monthsSinceOrigin } from "../../lib/runs";
+import type { TrendPoint } from "../../model/types";
 import { PASS_COLOR, TIER_OPACITY } from "../palette";
 import {
   DIMMED,
@@ -12,17 +13,6 @@ import {
   TipRule,
   useChartHover,
 } from "../chart-hover";
-
-export interface TrendPoint {
-  readonly runId: string;
-  readonly started: string;
-  /** Share right on every try, in [0, 1]. */
-  readonly everyTime: number;
-  /** Share right on at least 2 of 3 tries. */
-  readonly majority: number | null;
-  /** Share right on at least 1 of 3 tries. */
-  readonly anyTime: number | null;
-}
 
 // Axis: Sep 2026 to Dec 2027 in months.
 const W = 680;
@@ -61,11 +51,9 @@ function rangeSegments(p: TrendPoint) {
 function RunTip({
   point,
   previous,
-  draft,
 }: {
   readonly point: TrendPoint;
   readonly previous: TrendPoint | undefined;
-  readonly draft: boolean;
 }) {
   const rows = [
     { key: "every", label: "Every time", value: point.everyTime },
@@ -77,7 +65,7 @@ function RunTip({
     <>
       <TipNote>
         {formatDay(point.started)}
-        {draft ? " · draft run" : ""}
+        {point.draft ? " · draft run" : ""}
       </TipNote>
       <TipRows
         rows={rows
@@ -117,11 +105,8 @@ function RunTip({
  */
 export function TrendChart({
   points,
-  draft,
 }: {
   readonly points: readonly TrendPoint[];
-  /** Label the points as draft runs. */
-  readonly draft: boolean;
 }) {
   const x = (m: number) =>
     L + (Math.max(0, Math.min(MONTHS, m)) / MONTHS) * (W - L - R);
@@ -146,7 +131,7 @@ export function TrendChart({
     const p = placed[i];
     const box = svgRef.current?.getBoundingClientRect();
     if (!p || !box) return;
-    const tip = <RunTip point={p} previous={placed[i - 1]} draft={draft} />;
+    const tip = <RunTip point={p} previous={placed[i - 1]} />;
     hover.show(
       p.runId,
       tip,
@@ -338,7 +323,7 @@ export function TrendChart({
               fontFamily="monospace"
               fill="var(--chakra-colors-fg-muted)"
             >
-              {draft ? "draft · every time" : "every time"}
+              {last.draft ? "draft · every time" : "every time"}
             </text>
           </>
         ) : null}

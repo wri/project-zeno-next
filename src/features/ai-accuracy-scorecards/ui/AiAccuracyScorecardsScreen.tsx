@@ -20,13 +20,12 @@ import {
 } from "@chakra-ui/react";
 import { Link, useRouter, useSearchParams } from "@/src/shared/lib/router";
 import { RELEASES } from "../model/releases";
-import type { BenchmarkPage, BenchmarkRunRef } from "../model/types";
+import type { BenchmarkPage, TrendPoint } from "../model/types";
 import { resultsUrl } from "../api/github";
-import { pickRun, releasedRuns } from "../lib/runs";
+import { pickRun, releasedRuns, trendPoints } from "../lib/runs";
 import { FailureFlowSection } from "./dashboard/FailureFlowSection";
 import { Hero } from "./dashboard/Hero";
 import { QuestionTypesSection } from "./dashboard/QuestionTypesSection";
-import type { TrendPoint } from "./dashboard/TrendChart";
 import { UseCasesSection } from "./dashboard/UseCasesSection";
 import { isView, pageHref, VIEW_LABELS, VIEWS, type View } from "./links";
 import { MethodologyView } from "./MethodologyView";
@@ -39,43 +38,17 @@ const RUNS = releasedRuns(RELEASES);
 
 /** The headline of every released run of the page's version; a point
  * appears once its page has loaded. */
-function useTrend(
-  runs: readonly BenchmarkRunRef[],
-  page: BenchmarkPage
-): TrendPoint[] {
-  const pages = useBenchmarkPages(runs);
-  return pages.flatMap((p) =>
-    p?.benchmark.version !== page.benchmark.version ||
-    p.summary.everyTime == null
-      ? []
-      : [
-          {
-            runId: p.run.runId,
-            started: p.run.started,
-            everyTime: p.summary.everyTime,
-            majority: p.summary.majority,
-            anyTime: p.summary.anyTime,
-          },
-        ]
-  );
+function useTrend(page: BenchmarkPage): TrendPoint[] {
+  return trendPoints(useBenchmarkPages(RUNS), page.benchmark.version);
 }
 
-function Dashboard({
-  page,
-  run,
-  runs,
-}: {
-  readonly page: BenchmarkPage;
-  readonly run: BenchmarkRunRef;
-  readonly runs: readonly BenchmarkRunRef[];
-}) {
-  const trend = useTrend(runs, page);
+function Dashboard({ page }: { readonly page: BenchmarkPage }) {
+  const trend = useTrend(page);
   const runId = page.run.runId;
   return (
     <>
       <Hero
         page={page}
-        draft={run.draft}
         trend={trend}
         methodologyHref={pageHref({ view: "methodology", run: runId })}
       />
@@ -131,7 +104,7 @@ export function AiAccuracyScorecardsScreen() {
 
   function go(next: { view?: View; run?: string }) {
     router.replace(
-      pageHref({ view: next.view ?? view, run: next.run ?? run?.runId }),
+      pageHref({ view: next.view ?? view, run: next.run ?? run.runId }),
       {
         scroll: next.view !== undefined && next.view !== view,
       }
@@ -154,17 +127,18 @@ export function AiAccuracyScorecardsScreen() {
         <HStack gap={3} wrap="wrap">
           <HomeLink />
           <Text color="fg.muted">AI accuracy: priority use cases</Text>
-          {data && run ? (
+          {data ? (
             <Badge
-              colorPalette={run.draft ? "yellow" : "green"}
+              colorPalette={data.run.draft ? "yellow" : "green"}
               variant="subtle"
             >
-              {run.draft ? "Draft · " : ""}Benchmark Set v{data.benchmark.set}
+              {data.run.draft ? "Draft · " : ""}Benchmark Set v
+              {data.benchmark.set}
             </Badge>
           ) : null}
         </HStack>
         <HStack gap={3} wrap="wrap">
-          {RUNS.length > 1 && run ? (
+          {RUNS.length > 1 ? (
             <NativeSelect.Root size="sm" width="auto">
               <NativeSelect.Field
                 id="benchmark-run"
@@ -180,11 +154,11 @@ export function AiAccuracyScorecardsScreen() {
               </NativeSelect.Field>
               <NativeSelect.Indicator />
             </NativeSelect.Root>
-          ) : run ? (
+          ) : (
             <Text fontSize="sm" color="fg.muted">
               {run.label}
             </Text>
-          ) : null}
+          )}
           <HStack as="nav" aria-label="Views" gap={1}>
             {VIEWS.map((v) => (
               <Button
@@ -202,22 +176,14 @@ export function AiAccuracyScorecardsScreen() {
       </Flex>
 
       <QueryState isLoading={page.isLoading} error={page.error} />
-      {!run ? (
-        <Text py={12} color="fg.muted">
-          No benchmark run has been released yet.
-        </Text>
-      ) : null}
 
-      {data && run ? (
+      {data ? (
         <>
-          {view === "dashboard" ? (
-            <Dashboard page={data} run={run} runs={RUNS} />
-          ) : null}
+          {view === "dashboard" ? <Dashboard page={data} /> : null}
           {view === "questions" ? (
             <QuestionsView
               key={useCaseParam}
               page={data}
-              draft={run.draft}
               initialUseCase={useCaseParam}
             />
           ) : null}
@@ -237,8 +203,8 @@ export function AiAccuracyScorecardsScreen() {
             borderColor="border"
           >
             Benchmark Set v{data.benchmark.set}
-            {run.draft ? ", draft" : ""} ({data.benchmark.members} questions).
-            Run {data.run.runId} on production, default tools,{" "}
+            {data.run.draft ? ", draft" : ""} ({data.benchmark.members}{" "}
+            questions). Run {data.run.runId} on production, default tools,{" "}
             {data.run.numTrials} attempts per question
             {data.run.harnessSha ? `, harness ${data.run.harnessSha}` : ""}.
             Source:{" "}

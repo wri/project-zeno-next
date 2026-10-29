@@ -89,7 +89,7 @@ export const STAGE_COPY: Readonly<Record<StageKey, StageCopy>> = {
   },
 };
 
-export interface UseCaseCopy {
+interface UseCaseCopy {
   readonly key: string;
   /** The short name the dashboard and All questions use. */
   readonly name: string;

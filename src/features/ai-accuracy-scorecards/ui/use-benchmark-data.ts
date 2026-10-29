@@ -11,28 +11,22 @@ import { GithubBenchmarkGateway } from "../api/github-benchmark-gateway";
 
 const defaultGateway: BenchmarkGateway = new GithubBenchmarkGateway();
 
-const benchmarkKeys = {
-  page: (run: BenchmarkRunRef | null) =>
-    ["ai-accuracy-scorecards", "page", run?.ref, run?.runId] as const,
-};
+function pageQuery(run: BenchmarkRunRef, gateway: BenchmarkGateway) {
+  return {
+    queryKey: ["ai-accuracy-scorecards", "page", run.ref, run.runId],
+    queryFn: ({ signal }: { signal: AbortSignal }) => gateway.page(run, signal),
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  } as const;
+}
 
-const PAGE_OPTIONS = {
-  staleTime: Infinity,
-  refetchOnWindowFocus: false,
-  retry: 1,
-} as const;
-
-/** One run's page data; pass null to disable. */
+/** One run's page data. */
 export function useBenchmarkPage(
-  run: BenchmarkRunRef | null,
+  run: BenchmarkRunRef,
   gateway: BenchmarkGateway = defaultGateway
 ) {
-  return useQuery({
-    queryKey: benchmarkKeys.page(run),
-    queryFn: ({ signal }) => gateway.page(run!, signal),
-    enabled: !!run,
-    ...PAGE_OPTIONS,
-  });
+  return useQuery(pageQuery(run, gateway));
 }
 
 /**
@@ -45,12 +39,7 @@ export function useBenchmarkPages(
   gateway: BenchmarkGateway = defaultGateway
 ): (BenchmarkPage | undefined)[] {
   return useQueries({
-    queries: runs.map((run) => ({
-      queryKey: benchmarkKeys.page(run),
-      queryFn: ({ signal }: { signal: AbortSignal }) =>
-        gateway.page(run, signal),
-      ...PAGE_OPTIONS,
-    })),
+    queries: runs.map((run) => pageQuery(run, gateway)),
     combine: (results) => results.map((r) => r.data),
   });
 }

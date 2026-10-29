@@ -22,7 +22,7 @@ import type {
   QuestionStatus,
 } from "../model/types";
 import { versionSet } from "../lib/format";
-import { pagePath, rawUrl } from "./github";
+import { pageUrl } from "./github";
 
 const PAGE_SCHEMA_VERSION = 1;
 
@@ -40,7 +40,6 @@ export class BenchmarkDataUnavailableError extends Error {
 
 const Stage = z.enum(STAGE_ORDER);
 const Attribution = z.enum([...STAGE_ORDER, "unattributed"]);
-const Status = z.enum(["draft", "frozen", "retired"]);
 
 const RawStats = z.object({
   scored: z.number(),
@@ -138,7 +137,6 @@ const RawPage = z.looseObject({
   }),
   benchmark: z.looseObject({
     version: z.string(),
-    status: Status,
     members: z.number(),
     excluded: z.number(),
   }),
@@ -200,8 +198,15 @@ function statusOf(raw: z.infer<typeof RawQuestion>): QuestionStatus {
   return raw.consistent ? "pass" : "inconsistent";
 }
 
-/** Parse a page file's JSON into the normalised page. Throws on drift. */
-export function parseBenchmarkPage(json: unknown): BenchmarkPage {
+/**
+ * Parse a page file's JSON into the normalised page. Throws on drift.
+ * `draft` is the run's release flag: it alone decides whether the page
+ * marks the run, or any question, as a draft.
+ */
+export function parseBenchmarkPage(
+  json: unknown,
+  draft: boolean
+): BenchmarkPage {
   const raw = RawPage.parse(json);
   const typeLabels = new Map(raw.types.map((t) => [t.key, t.label]));
   function typeLabel(key: string): string {
@@ -235,6 +240,7 @@ export function parseBenchmarkPage(json: unknown): BenchmarkPage {
       started: raw.run.started,
       numTrials: raw.run.num_trials,
       harnessSha: raw.run.harness_sha,
+      draft,
     },
     benchmark: {
       version: raw.benchmark.version,
@@ -282,7 +288,7 @@ export function parseBenchmarkPage(json: unknown): BenchmarkPage {
           reason: f.reason,
         })),
         expected: q.expected,
-        drafted: q.drafted,
+        drafted: draft && q.drafted,
         attempts: q.attempts.map(toAttempt),
         attemptErrors: q.attempt_errors ?? q.trials_right.map(() => null),
         traceUrl: q.trace_url,
@@ -305,13 +311,13 @@ export class GithubBenchmarkGateway implements BenchmarkGateway {
     run: BenchmarkRunRef,
     signal?: AbortSignal
   ): Promise<BenchmarkPage> {
-    const url = rawUrl(run.ref, pagePath(run.runId));
+    const url = pageUrl(run);
     const response = await this.fetchFn(url, { signal });
     if (response.status === 404) throw new BenchmarkDataUnavailableError(url);
     if (!response.ok) {
       throw new Error(`Failed to fetch ${url}: HTTP ${response.status}`);
     }
-    const page = parseBenchmarkPage(await response.json());
+    const page = parseBenchmarkPage(await response.json(), run.draft);
     if (page.run.runId !== run.runId) {
       throw new Error(`${url} holds run ${page.run.runId}, not ${run.runId}`);
     }

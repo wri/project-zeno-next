@@ -7,7 +7,7 @@ import {
   Text,
 } from "@chakra-ui/react";
 import { Link } from "@/src/shared/lib/router";
-import type { BenchmarkPage, GroupStats } from "../../model/types";
+import type { BenchmarkPage, GroupStats, TrendPoint } from "../../model/types";
 import { formatDay, pct } from "../../lib/format";
 import { TIERS, tiersOf, type Tier, type TierKey } from "../../lib/tiers";
 import { PASS_COLOR, TIER_OPACITY } from "../palette";
@@ -27,7 +27,7 @@ import {
   TierSegments,
   tierSwatchStyle,
 } from "../parts";
-import { TrendChart, type TrendPoint } from "./TrendChart";
+import { TrendChart } from "./TrendChart";
 
 /** A tier's tooltip: its share, then the running total it brings. */
 function TierTip({
@@ -66,17 +66,15 @@ function TierTip({
 
 export function Hero({
   page,
-  draft,
   trend,
   methodologyHref,
 }: {
   readonly page: BenchmarkPage;
-  /** The run's release is a draft (`model/releases.ts`). */
-  readonly draft: boolean;
   readonly trend: readonly TrendPoint[];
   readonly methodologyHref: string;
 }) {
   const { summary, benchmark } = page;
+  const { draft } = page.run;
   const tiers = tiersOf(summary);
   const hover = useChartHover<TierKey>();
   return (
@@ -222,7 +220,7 @@ export function Hero({
         <Text fontWeight="semibold" mb={2}>
           Accuracy over time
         </Text>
-        <TrendChart points={trend} draft={draft} />
+        <TrendChart points={trend} />
         <Box mt={2}>
           <Legend
             items={[
@@ -258,7 +256,7 @@ export function Hero({
         {draft ? (
           <Text fontSize="xs" color="fg.muted" mt={2}>
             <b>Draft run:</b> expected answers for new questions are still under
-            review. The official baseline is in November.
+            review.
           </Text>
         ) : null}
       </Panel>

@@ -138,7 +138,7 @@ const WIRE_PAGE = {
 
 describe("parseBenchmarkPage", () => {
   it("normalises the wire page once: settled stats, resolved labels and status", () => {
-    const page = parseBenchmarkPage(WIRE_PAGE);
+    const page = parseBenchmarkPage(WIRE_PAGE, true);
     expect(page.summary).toMatchObject({ everyTime: 0, total: 2, failed: 1 });
     expect(page.summary.failureModes).toEqual({
       scope: 0,
@@ -175,42 +175,58 @@ describe("parseBenchmarkPage", () => {
 
   it("reads attempts that got no reply", () => {
     const [q] = WIRE_PAGE.questions;
-    const page = parseBenchmarkPage({
-      ...WIRE_PAGE,
-      questions: [
-        {
-          ...q,
-          attempt_errors: [
-            null,
-            { kind: "no_answer", reason: "ReadTimeout" },
-            null,
-          ],
-        },
-      ],
-    });
+    const page = parseBenchmarkPage(
+      {
+        ...WIRE_PAGE,
+        questions: [
+          {
+            ...q,
+            attempt_errors: [
+              null,
+              { kind: "no_answer", reason: "ReadTimeout" },
+              null,
+            ],
+          },
+        ],
+      },
+      true
+    );
     expect(page.questions[0].attemptErrors[1]).toEqual({
       kind: "no_answer",
       reason: "ReadTimeout",
     });
   });
 
+  it("marks nothing as a draft on a run not released as one", () => {
+    const page = parseBenchmarkPage(WIRE_PAGE, false);
+    expect(page.run.draft).toBe(false);
+    expect(page.questions.map((q) => q.drafted)).toEqual([false]);
+    expect(parseBenchmarkPage(WIRE_PAGE, true).questions[0].drafted).toBe(true);
+  });
+
   it("refuses a page written for another schema version", () => {
     expect(() =>
-      parseBenchmarkPage({ ...WIRE_PAGE, schema_version: 2 })
+      parseBenchmarkPage({ ...WIRE_PAGE, schema_version: 2 }, true)
     ).toThrow();
   });
 
   it("refuses a question whose type the page does not list", () => {
     const [q] = WIRE_PAGE.questions;
     expect(() =>
-      parseBenchmarkPage({ ...WIRE_PAGE, questions: [{ ...q, type: "risk" }] })
+      parseBenchmarkPage(
+        { ...WIRE_PAGE, questions: [{ ...q, type: "risk" }] },
+        true
+      )
     ).toThrow(/unknown query type risk/);
   });
 
   it("refuses a use case the FE has no name for", () => {
     const [uc] = WIRE_PAGE.use_cases;
     expect(() =>
-      parseBenchmarkPage({ ...WIRE_PAGE, use_cases: [{ ...uc, key: "UC7" }] })
+      parseBenchmarkPage(
+        { ...WIRE_PAGE, use_cases: [{ ...uc, key: "UC7" }] },
+        true
+      )
     ).toThrow(/unknown use case UC7/);
   });
 });

@@ -6,6 +6,7 @@
  */
 
 import type { STAGE_ORDER } from "./config";
+import type { Release } from "./releases";
 
 export type StageKey = (typeof STAGE_ORDER)[number];
 
@@ -124,7 +125,8 @@ export interface Question {
   readonly primaryFailure: AttributionKey | null;
   readonly failedChecks: readonly FailedCheck[];
   readonly expected: Readonly<Record<string, string>>;
-  /** Expected answer drafted and not yet reviewed. */
+  /** Expected answer drafted and not yet reviewed; always false on a run
+   * not released as a draft. */
   readonly drafted: boolean;
   /** One entry per trial; null when no agent state was recorded. */
   readonly attempts: readonly (Attempt | null)[];
@@ -142,6 +144,9 @@ export interface BenchmarkPage {
     readonly started: string;
     readonly numTrials: number;
     readonly harnessSha: string | null;
+    /** Its release is a draft (`model/releases.ts`); every draft mark on
+     * the page follows this, not the page data. */
+    readonly draft: boolean;
   };
   readonly benchmark: {
     readonly version: string;
@@ -160,12 +165,21 @@ export interface BenchmarkPage {
 }
 
 /** A released run (`model/releases.ts`), as the page lists it. */
-export interface BenchmarkRunRef {
-  readonly runId: string;
+export interface BenchmarkRunRef extends Release {
   /** "October 2026", or "28 October 2026" when another release shares
    * the month. */
   readonly label: string;
-  /** The gnw-gold-evals commit its page is read at. */
-  readonly ref: string;
+}
+
+/** One run's headline on the accuracy-over-time chart. */
+export interface TrendPoint {
+  readonly runId: string;
+  readonly started: string;
   readonly draft: boolean;
+  /** Share right on every try, in [0, 1]. */
+  readonly everyTime: number;
+  /** Share right on at least 2 of 3 tries. */
+  readonly majority: number | null;
+  /** Share right on at least 1 of 3 tries. */
+  readonly anyTime: number | null;
 }

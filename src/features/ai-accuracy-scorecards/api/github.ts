@@ -5,14 +5,13 @@
  * what a deployed page shows.
  */
 
+import type { Release } from "../model/releases";
+
 const REPO = "wri/gnw-gold-evals";
 
-export function pagePath(runId: string): string {
-  return `results/benchmark/pages/${runId}.json`;
-}
-
-export function rawUrl(ref: string, repoPath: string): string {
-  return `https://raw.githubusercontent.com/${REPO}/${ref}/${repoPath}`;
+/** A released run's page file, at the commit its release pins. */
+export function pageUrl({ runId, ref }: Release): string {
+  return `https://raw.githubusercontent.com/${REPO}/${ref}/results/benchmark/pages/${runId}.json`;
 }
 
 /** The benchmark results folder at a commit, for the page's source link. */

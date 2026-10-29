@@ -1,17 +1,24 @@
 const MONTHS = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
+  "January",
+  "February",
+  "March",
+  "April",
   "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ] as const;
+
+/** Day, month name and year of an ISO date: "2026-10-23..." -> 23,
+ * "October", 2026. */
+function dateParts(iso: string) {
+  const [year, month, day] = iso.slice(0, 10).split("-").map(Number);
+  return { year, month: MONTHS[month - 1], day };
+}
 
 /** count / of, or null for an empty group. */
 export function share(count: number, of: number): number | null {
@@ -25,14 +32,26 @@ export function pct(value: number | null, digits = 0): string {
 
 /** "2026-10-23T09:44:47Z" -> "Oct 2026". */
 export function formatMonth(iso: string): string {
-  const [year, month] = iso.slice(0, 7).split("-").map(Number);
-  return `${MONTHS[month - 1]} ${year}`;
+  const { year, month } = dateParts(iso);
+  return `${month.slice(0, 3)} ${year}`;
+}
+
+/** "2026-10-23" -> "October 2026". */
+export function formatLongMonth(iso: string): string {
+  const { year, month } = dateParts(iso);
+  return `${month} ${year}`;
+}
+
+/** "2026-10-23" -> "23 October 2026". */
+export function formatLongDay(iso: string): string {
+  const { year, month, day } = dateParts(iso);
+  return `${day} ${month} ${year}`;
 }
 
 /** "2026-10-23T09:44:47Z" -> "23 Oct 2026". */
 export function formatDay(iso: string): string {
-  const [year, month, day] = iso.slice(0, 10).split("-").map(Number);
-  return `${day} ${MONTHS[month - 1]} ${year}`;
+  const { year, month, day } = dateParts(iso);
+  return `${day} ${month.slice(0, 3)} ${year}`;
 }
 
 /**
