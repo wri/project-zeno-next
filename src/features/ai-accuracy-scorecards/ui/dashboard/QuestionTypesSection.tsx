@@ -11,7 +11,7 @@ import type {
 } from "../../model/types";
 import { failurePhrase } from "../../lib/failures";
 import { pct, share } from "../../lib/format";
-import { tierLines } from "../../lib/tiers";
+import { TIER_COPY, tierLines } from "../../lib/tiers";
 import { PASS_COLOR, STAGE_COLORS } from "../palette";
 import {
   DIMMED,
@@ -284,7 +284,7 @@ export function QuestionTypesSection({
             title={t.label}
             sub={`${t.description} · ${t.stats.scored}`}
             value={rowValue(view, t.stats)}
-            caption={view === "rate" ? "every time" : "2 of 3 tries"}
+            caption={view === "rate" ? "every time" : TIER_COPY.most.attempts}
           >
             {view === "rate" ? (
               <TierBar stats={t.stats} label={t.label} />

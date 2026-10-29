@@ -2,6 +2,7 @@ import { useRef, type KeyboardEvent, type PointerEvent } from "react";
 import { Box } from "@chakra-ui/react";
 import { formatDay, formatMonth, pct } from "../../lib/format";
 import { monthsSinceOrigin } from "../../lib/runs";
+import { TIER_COPY } from "../../lib/tiers";
 import type { TrendPoint } from "../../model/types";
 import { PASS_COLOR, TIER_OPACITY } from "../palette";
 import {
@@ -56,9 +57,9 @@ function RunTip({
   readonly previous: TrendPoint | undefined;
 }) {
   const rows = [
-    { key: "every", label: "Every time", value: point.everyTime },
-    { key: "most", label: "At least most of the time", value: point.majority },
-    { key: "some", label: "At least some of the time", value: point.anyTime },
+    { key: "every", value: point.everyTime },
+    { key: "most", value: point.majority },
+    { key: "some", value: point.anyTime },
   ] as const;
   const change = previous ? (point.everyTime - previous.everyTime) * 100 : null;
   return (
@@ -74,7 +75,7 @@ function RunTip({
             key: row.key,
             color: PASS_COLOR,
             opacity: TIER_OPACITY[row.key],
-            label: row.label,
+            label: `Accurate on ${TIER_COPY[row.key].tries}`,
             value: pct(row.value, 1),
           }))}
       />

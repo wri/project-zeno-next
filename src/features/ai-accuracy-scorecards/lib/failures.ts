@@ -6,6 +6,7 @@ import type {
   Question,
 } from "../model/types";
 import { share } from "./format";
+import type { Standard } from "./tiers";
 
 /** A count for every attribution key, all zero. */
 export function zeroCounts(): Record<AttributionKey, number> {
@@ -53,11 +54,6 @@ export function failurePhrase(stats: GroupStats): string {
     .map((m) => `${m.count} at ${m.label.toLowerCase()}`)
     .join(", ");
 }
-
-/** How many of the tries must be right for a question to count as
- * accurate: all, most, or at least one. */
-export const STANDARDS = ["every", "most", "some"] as const;
-export type Standard = (typeof STANDARDS)[number];
 
 /** "most" is the run's verdict, which judges each check over the tries
  * (the page data's `majority`); the other two read the tries, as

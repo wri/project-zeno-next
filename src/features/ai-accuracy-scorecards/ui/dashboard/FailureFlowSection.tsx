@@ -3,15 +3,11 @@ import { Grid, HStack, Text } from "@chakra-ui/react";
 import { InfoTooltip } from "@/src/shared/ui/InfoTooltip";
 import { STAGE_COPY, STAGE_LABELS } from "../../model/config";
 import type { BenchmarkPage } from "../../model/types";
-import { failureFlow, STANDARDS, type Standard } from "../../lib/failures";
+import { failureFlow } from "../../lib/failures";
+import { STANDARDS, TIER_COPY, type Standard } from "../../lib/tiers";
 import { STAGE_COLORS } from "../palette";
 import { Panel, Section, Segmented } from "../parts";
-import {
-  FailureFlowChart,
-  flowHeight,
-  flowStages,
-  STANDARD_COPY,
-} from "./FailureFlowChart";
+import { FailureFlowChart, flowHeight, flowStages } from "./FailureFlowChart";
 
 // "Checked" comes from the checks that ran, so a step can check fewer
 // questions than the flow carries through it; and a question wrong at two
@@ -21,7 +17,7 @@ const FAILED_FIRST_INFO =
   "Of the questions where this step had something to check, how many went wrong here first. A question with nothing to check at a step counts as passing it. A question already wrong at an earlier step is counted there, not here.";
 
 const STANDARD_OPTIONS = STANDARDS.map(
-  (s) => [s, STANDARD_COPY[s].option] as const
+  (s) => [s, TIER_COPY[s].option] as const
 );
 
 export function FailureFlowSection({ page }: { readonly page: BenchmarkPage }) {
@@ -58,7 +54,7 @@ export function FailureFlowSection({ page }: { readonly page: BenchmarkPage }) {
         </Text>
         <Text fontSize="sm" color="fg.muted" mb={1}>
           A question counts as accurate when it was right on{" "}
-          {STANDARD_COPY[standard].tries}
+          {TIER_COPY[standard].tries}
           {standard === "every" ? ", the same measure as the headline" : ""}. A
           wrong question stays at the same step whichever measure you pick; a
           stricter measure only adds questions.

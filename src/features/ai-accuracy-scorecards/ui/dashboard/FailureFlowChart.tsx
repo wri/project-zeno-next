@@ -5,12 +5,8 @@ import {
   STAGE_LABELS,
 } from "../../model/config";
 import type { AttributionKey } from "../../model/types";
-import {
-  STANDARDS,
-  type FailureFlow,
-  type FlowMode,
-  type Standard,
-} from "../../lib/failures";
+import type { FailureFlow, FlowMode } from "../../lib/failures";
+import { STANDARDS, TIER_COPY, type Standard } from "../../lib/tiers";
 import { pct, share } from "../../lib/format";
 import { PASS_COLOR, STAGE_COLORS } from "../palette";
 import {
@@ -53,30 +49,6 @@ const BAND_ACTIVE = 0.62;
 const ROUTE_OPACITY = 0.55;
 /** How many question types a stage's tooltip names. */
 const TOP_TYPES = 3;
-
-export const STANDARD_COPY: Readonly<
-  Record<
-    Standard,
-    {
-      readonly option: string;
-      readonly tries: string;
-      /** The short form for the chart, which has little room for labels. */
-      readonly leaf: string;
-    }
-  >
-> = {
-  every: { option: "Every time", tries: "all 3 tries", leaf: "3 of 3 tries" },
-  most: {
-    option: "Most of the time",
-    tries: "at least 2 of 3 tries",
-    leaf: "2+ of 3 tries",
-  },
-  some: {
-    option: "Some of the time",
-    tries: "at least 1 of 3 tries",
-    leaf: "1+ of 3 tries",
-  },
-};
 
 type FlowKey = AttributionKey | "accurate";
 type Counts = Readonly<Record<AttributionKey, number>>;
@@ -220,7 +192,7 @@ function StageTip({
           />
         </>
       ) : null}
-      <TipNote>Measure: accurate on {STANDARD_COPY[standard].tries}</TipNote>
+      <TipNote>Measure: accurate on {TIER_COPY[standard].tries}</TipNote>
     </>
   );
 }
@@ -238,7 +210,7 @@ function AccurateTip({
         {flow.accurate} questions · {pct(flow.accurateShare, PCT_DIGITS)}
       </TipValue>
       <TipKey color={PASS_COLOR}>
-        Accurate on {STANDARD_COPY[standard].tries}
+        Accurate on {TIER_COPY[standard].tries}
       </TipKey>
       <TipNote>Passed every check at every step on those tries.</TipNote>
     </>
@@ -270,7 +242,7 @@ export function FailureFlowChart({
   );
   const hover = useChartHover<FlowKey>();
   const modes = new Map(flow.modes.map((m) => [m.key, m]));
-  const { tries, leaf } = STANDARD_COPY[standard];
+  const { tries, leaf } = TIER_COPY[standard];
   const route = (() => {
     if (hover.active === "accurate") {
       return { y: TOP, h: accurateHeight, x2: passX, color: PASS_COLOR };

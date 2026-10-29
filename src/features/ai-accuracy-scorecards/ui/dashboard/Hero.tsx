@@ -9,7 +9,13 @@ import {
 import { Link } from "@/src/shared/lib/router";
 import type { BenchmarkPage, GroupStats, TrendPoint } from "../../model/types";
 import { formatDay, pct } from "../../lib/format";
-import { TIERS, tiersOf, type Tier, type TierKey } from "../../lib/tiers";
+import {
+  TIER_COPY,
+  TIERS,
+  tiersOf,
+  type Tier,
+  type TierKey,
+} from "../../lib/tiers";
 import { PASS_COLOR, TIER_OPACITY } from "../palette";
 import {
   FADE,
@@ -226,7 +232,7 @@ export function Hero({
             items={[
               {
                 key: "every",
-                label: "Accurate every time",
+                label: TIER_COPY.every.label,
                 swatch: (
                   <Box
                     w="10px"
