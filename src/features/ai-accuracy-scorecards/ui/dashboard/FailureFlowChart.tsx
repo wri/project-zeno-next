@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { Box, Text } from "@chakra-ui/react";
 import {
   ATTRIBUTION_ORDER,
@@ -101,13 +100,6 @@ function leafPhrase(key: AttributionKey): string {
     : `Failed at ${STAGE_LABELS[key].toLowerCase()}`;
 }
 
-function countsOf(flow: FailureFlow): Counts {
-  const counts = new Map(flow.modes.map((m) => [m.key, m.count]));
-  return Object.fromEntries(
-    ATTRIBUTION_ORDER.map((k) => [k, counts.get(k) ?? 0])
-  ) as Record<AttributionKey, number>;
-}
-
 /** The stages any measure has failures at. The chart draws all of them
  * under every measure, so its break lines stay put when the measure
  * changes. */
@@ -181,7 +173,7 @@ export function flowHeight(
   return (
     Math.max(
       ...STANDARDS.map(
-        (s) => layoutFlow(stages, countsOf(flows[s]), flows[s].scored).bottom
+        (s) => layoutFlow(stages, flows[s].counts, flows[s].scored).bottom
       )
     ) + 6
   );
@@ -270,8 +262,7 @@ export function FailureFlowChart({
   readonly standard: Standard;
 }) {
   const total = flow.scored;
-  const target = useMemo(() => countsOf(flow), [flow]);
-  const counts = useTween(target);
+  const counts = useTween(flow.counts);
   const { trunk, bands, gap, passX, accurate, accurateHeight } = layoutFlow(
     stages,
     counts,

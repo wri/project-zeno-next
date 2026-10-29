@@ -38,7 +38,6 @@ export function FailureFlowSection({ page }: { readonly page: BenchmarkPage }) {
   const stages = useMemo(() => flowStages(flows), [flows]);
   const height = useMemo(() => flowHeight(stages, flows), [stages, flows]);
   const flow = flows[standard];
-  const firstFailures = new Map(flow.modes.map((m) => [m.key, m.count]));
   return (
     <Section
       id="fail"
@@ -115,7 +114,7 @@ export function FailureFlowSection({ page }: { readonly page: BenchmarkPage }) {
               </InfoTooltip>
             </HStack>
             <Text fontSize="xs">
-              <b>{firstFailures.get(s.key) ?? 0}</b> of {s.checked} checked
+              <b>{flow.counts[s.key]}</b> of {s.checked} checked
             </Text>
           </Panel>
         ))}

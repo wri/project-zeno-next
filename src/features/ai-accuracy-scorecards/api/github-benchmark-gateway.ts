@@ -9,7 +9,7 @@
  */
 
 import { z } from "zod";
-import { ATTRIBUTION_ORDER, STAGE_ORDER, USE_CASES } from "../model/config";
+import { STAGE_ORDER, USE_CASES } from "../model/config";
 import type { BenchmarkGateway } from "../model/benchmark-gateway";
 import type {
   Attempt,
@@ -21,6 +21,7 @@ import type {
   Question,
   QuestionStatus,
 } from "../model/types";
+import { zeroCounts } from "../lib/failures";
 import { versionSet } from "../lib/format";
 import { pageUrl } from "./github";
 
@@ -166,9 +167,7 @@ function toStats(raw: z.infer<typeof RawStats>): GroupStats {
     majority: raw.majority,
     everyTime: raw.every_time,
     anyTime: raw.any_time,
-    failureModes: Object.fromEntries(
-      ATTRIBUTION_ORDER.map((k) => [k, raw.failure_modes[k] ?? 0])
-    ) as GroupStats["failureModes"],
+    failureModes: { ...zeroCounts(), ...raw.failure_modes },
   };
 }
 

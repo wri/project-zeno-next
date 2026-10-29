@@ -7,6 +7,18 @@ import type {
 } from "../model/types";
 import { share } from "./format";
 
+/** A count for every attribution key, all zero. */
+export function zeroCounts(): Record<AttributionKey, number> {
+  return {
+    scope: 0,
+    retrieval: 0,
+    analysis: 0,
+    explanation: 0,
+    output: 0,
+    unattributed: 0,
+  };
+}
+
 export interface FailureMode {
   readonly key: AttributionKey;
   readonly label: string;
@@ -81,6 +93,9 @@ export interface FailureFlow {
   readonly accurate: number;
   /** accurate / scored, alongside each mode's share. */
   readonly accurateShare: number | null;
+  /** Wrong questions per attribution key, zero where none. */
+  readonly counts: Readonly<Record<AttributionKey, number>>;
+  /** The non-empty keys, in attribution order. */
   readonly modes: readonly FlowMode[];
 }
 
@@ -89,9 +104,7 @@ export function failureFlow(
   questions: readonly Question[],
   standard: Standard
 ): FailureFlow {
-  const counts = Object.fromEntries(
-    ATTRIBUTION_ORDER.map((k) => [k, 0])
-  ) as Record<AttributionKey, number>;
+  const counts = zeroCounts();
   const types = new Map<AttributionKey, Map<string, Count>>();
   let scored = 0;
   for (const q of questions) {
@@ -120,6 +133,7 @@ export function failureFlow(
     scored,
     accurate,
     accurateShare: share(accurate, scored),
+    counts,
     modes,
   };
 }
