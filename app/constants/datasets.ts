@@ -243,6 +243,26 @@ function sbtnSingleClassLayer({
   };
 }
 
+/**
+ * The SBTN natural-forest classes (natural forests 2, mangroves 5, wet
+ * natural forests 8, natural peat forests 9) as one swatch, under whichever
+ * name and explanation a dataset restricts itself by.
+ */
+function naturalForestLayer({
+  label,
+  info,
+}: {
+  label: string;
+  info: string;
+}): ContextLayerMetadata {
+  return sbtnSingleClassLayer({
+    title: "SBTN Natural forest (2020)",
+    label,
+    color: SBTN_NATURAL_CLASSES[0].color,
+    info,
+  });
+}
+
 // The colour the UMD tiles actually paint (sampled from the published v201901
 // PNGs), so the legend matches the map.
 const PRIMARY_FOREST_COLOR = "#668636";
@@ -313,11 +333,16 @@ export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
   // natural forest (project-zeno#853): only the four classes the analysis
   // counts (natural forests 2, mangroves 5, wet natural forests 8, natural peat
   // forests 9), as one swatch in the card's natural-forests colour.
-  natural_forest: sbtnSingleClassLayer({
-    title: "SBTN Natural forest (2020)",
+  natural_forest: naturalForestLayer({
     label: "Natural forest",
-    color: SBTN_NATURAL_CLASSES[0].color,
     info: "Tree cover loss is restricted to natural forest in the SBTN Natural Lands Map (2020 baseline): natural forests, natural peat forests, mangroves and wet natural forests. Covers loss from 2021 onward; no canopy cover threshold applies.",
+  }),
+  // The same four classes under the analytics API's own name for its
+  // `land_filter`, which the alerts widget's Intersects dropdown sends and
+  // the alerts layer snapshot carries as a context layer (PZB-1468).
+  natural_forests: naturalForestLayer({
+    label: "Natural forests",
+    info: "Alerts are restricted to natural forest in the SBTN Natural Lands Map (2020 baseline): natural forests, natural peat forests, mangroves and wet natural forests.",
   }),
 };
 
@@ -326,6 +351,9 @@ export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
  * reviewed (PZB-1247/1248). Opt in with `?ff=net-flux`.
  */
 export const NET_FLUX_FEATURE_FLAG = "net-flux";
+
+/** The Tree cover loss card, the map's default dataset. */
+export const TREE_COVER_LOSS_DATASET_ID = 4;
 
 /** Same URL the backend hands back as the `primary_forest` context layer. */
 const PRIMARY_FOREST_TILE_URL =
@@ -457,7 +485,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     tile_url:
       "https://tiles.globalforestwatch.org/gfw_integrated_dist_alerts/latest/dynamic/{z}/{x}/{y}.png?render_type=true_color",
     legend: {
-      title: "Integrated Deforestation Alerts",
+      title: "Integrated Disturbance Alerts",
       color: "#C92A6D",
       items: [
         { label: "Low confidence", color: "#EDA4C2" },
@@ -589,7 +617,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     legend: CONTEXT_LAYER_METADATA.primary_forest.legend,
   },
   {
-    dataset_id: 4,
+    dataset_id: TREE_COVER_LOSS_DATASET_ID,
     dataset_name: "Tree cover loss",
     data_layer: "Tree cover loss",
     context_layer: null,

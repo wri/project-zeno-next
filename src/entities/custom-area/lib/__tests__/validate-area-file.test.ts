@@ -128,7 +128,8 @@ describe("validateAreaFile", () => {
     });
   });
 
-  it("rejects areas below the minimum size", async () => {
+  // The backend sets no minimum, so neither does the upload.
+  it("accepts a very small area", async () => {
     const tiny = structuredClone(VALID_POLYGON);
     tiny.geometry.coordinates = [
       [
@@ -140,10 +141,7 @@ describe("validateAreaFile", () => {
       ],
     ];
     const result = await validateAreaFile(geoJsonFile(tiny));
-    expect(result).toMatchObject({
-      ok: false,
-      errorType: "file-area-too-small",
-    });
+    expect(result).toMatchObject({ ok: true, kind: "geojson" });
   });
 
   it("rejects areas above the maximum size", async () => {

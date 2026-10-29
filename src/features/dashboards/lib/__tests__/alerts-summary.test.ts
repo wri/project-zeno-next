@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 
+import { IntegratedAlertsLatestResponseSchema } from "../../api/schemas";
 import {
+  awaitingPeriodData,
   countWithNewAlerts,
   formatAlertArea,
-  formatCheckedAt,
-  formatWeekRange,
+  formatFreshness,
+  formatPeriodRange,
   hasNewAlerts,
+  toAlertsFreshness,
   toAlertsSummary,
   updatableChartsLabel,
 } from "../alerts-summary";
@@ -24,7 +27,7 @@ const wire = {
 };
 
 describe("toAlertsSummary", () => {
-  it("settles the wire into the week, the assessed count and the areas with alerts", () => {
+  it("settles the wire into the period, the assessed count and the areas with alerts", () => {
     expect(toAlertsSummary(wire)).toEqual({
       startDate: "2026-10-05",
       endDate: "2026-10-11",
@@ -55,7 +58,7 @@ describe("toAlertsSummary", () => {
 describe("new alerts", () => {
   const summary = toAlertsSummary(wire);
 
-  it("flags only the dashboards whose week carried alerts", () => {
+  it("flags only the dashboards whose period carried alerts", () => {
     expect(hasNewAlerts(summary, "parana")).toBe(true);
     expect(hasNewAlerts(summary, "quiet")).toBe(false);
     expect(hasNewAlerts(summary, "broken")).toBe(false);
@@ -69,17 +72,19 @@ describe("new alerts", () => {
   });
 });
 
-describe("formatWeekRange", () => {
-  it("collapses a week inside one month", () => {
-    expect(formatWeekRange("2026-10-05", "2026-10-11")).toBe("Oct 5–11");
+describe("formatPeriodRange", () => {
+  it("collapses a period inside one month", () => {
+    expect(formatPeriodRange("2026-10-05", "2026-10-11")).toBe("Oct 5–11");
   });
 
-  it("names both months when the week crosses one", () => {
-    expect(formatWeekRange("2026-10-26", "2026-11-01")).toBe("Oct 26 – Nov 1");
+  it("names both months when the period crosses one", () => {
+    expect(formatPeriodRange("2026-10-26", "2026-11-01")).toBe(
+      "Oct 26 – Nov 1"
+    );
   });
 
-  it("names both years when the week crosses a year end", () => {
-    expect(formatWeekRange("2025-12-28", "2026-01-03")).toBe(
+  it("names both years when the period crosses a year end", () => {
+    expect(formatPeriodRange("2025-12-28", "2026-01-03")).toBe(
       "Dec 28, 2025 – Jan 3, 2026"
     );
   });
@@ -99,14 +104,76 @@ describe("formatAlertArea", () => {
   });
 });
 
-describe("formatCheckedAt", () => {
-  it("prints the UTC date and 24-hour time the design shows", () => {
-    expect(formatCheckedAt(Date.UTC(2026, 9, 9, 14, 0))).toBe(
-      "Oct 9, 2026 · 14:00 UTC"
+describe("toAlertsFreshness", () => {
+  // Through the schema, since it owns the alert_date check.
+  const latest = (alert_date: string, version: string) =>
+    toAlertsFreshness(
+      IntegratedAlertsLatestResponseSchema.parse({
+        data: { alert_date, version },
+      })
     );
-    expect(formatCheckedAt(Date.UTC(2026, 0, 1, 0, 5))).toBe(
-      "Jan 1, 2026 · 00:05 UTC"
-    );
+
+  it("reads the detection date and the release date from its version", () => {
+    // The analytics API's response on 2026-10-22.
+    expect(latest("2026-10-16", "v20261018")).toEqual({
+      latestAlertDate: "2026-10-16",
+      updatedOn: "2026-10-18",
+    });
+  });
+
+  it.each([["20261018"], ["v2026-10-18"], ["v20261018.1"], ["v20260230"]])(
+    "throws on a version that is not a release date: %s",
+    (version) => {
+      expect(() => latest("2026-10-16", version)).toThrow(
+        `Unexpected integrated alerts version: ${version}`
+      );
+    }
+  );
+
+  it.each([["20261016"], ["2026-10-16T00:00:00"], ["2026-02-30"]])(
+    "rejects an alert date that is not a calendar date: %s",
+    (alertDate) => {
+      expect(() => latest(alertDate, "v20261018")).toThrow();
+    }
+  );
+});
+
+describe("awaitingPeriodData", () => {
+  it.each([
+    ["2026-10-16", true],
+    ["2026-10-17", true],
+    ["2026-10-18", false],
+    ["2026-10-20", false],
+  ])(
+    "period from 2026-10-18, detections up to %s: %s",
+    (latestAlertDate, expected) => {
+      expect(
+        awaitingPeriodData("2026-10-18", {
+          latestAlertDate,
+          updatedOn: "2026-10-21",
+        })
+      ).toBe(expected);
+    }
+  );
+});
+
+describe("formatFreshness", () => {
+  it("prints both dates, the release without its year", () => {
+    expect(
+      formatFreshness({
+        latestAlertDate: "2026-10-16",
+        updatedOn: "2026-10-18",
+      })
+    ).toBe("Latest alert detected Oct 16, 2026 · updated Oct 18");
+  });
+
+  it("gives the release its year when it falls in the next one", () => {
+    expect(
+      formatFreshness({
+        latestAlertDate: "2026-12-30",
+        updatedOn: "2027-01-01",
+      })
+    ).toBe("Latest alert detected Dec 30, 2026 · updated Jan 1, 2027");
   });
 });
 

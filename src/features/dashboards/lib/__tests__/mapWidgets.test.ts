@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { mapWidgetLayer, mapWidgetViewportBbox } from "../mapWidgets";
+import {
+  mapWidgetLayer,
+  mapWidgetViewportBbox,
+  withTileDates,
+  type MapWidgetLayer,
+} from "../mapWidgets";
 
 const datasetConfig = (overrides: Record<string, unknown> = {}) => ({
   default_view: "map",
@@ -185,14 +190,76 @@ describe("mapWidgetViewportBbox", () => {
     ).toEqual([-54, -27, -48, -22]);
   });
 
-  it("returns null for absent or malformed viewports", () => {
-    expect(mapWidgetViewportBbox({})).toBeNull();
-    expect(mapWidgetViewportBbox({ viewport: { zoom: 4 } })).toBeNull();
+  it("returns undefined for absent or malformed viewports", () => {
+    expect(mapWidgetViewportBbox({})).toBeUndefined();
+    expect(mapWidgetViewportBbox({ viewport: { zoom: 4 } })).toBeUndefined();
     expect(
       mapWidgetViewportBbox({ viewport: { bbox: [-54, -27, -48] } })
-    ).toBeNull();
+    ).toBeUndefined();
     expect(
       mapWidgetViewportBbox({ viewport: { bbox: [-54, -27, -48, "x"] } })
-    ).toBeNull();
+    ).toBeUndefined();
+  });
+});
+
+describe("withTileDates", () => {
+  const ALERTS_TILE_URL =
+    "https://tiles.globalforestwatch.org/gfw_integrated_dist_alerts/latest/dynamic/{z}/{x}/{y}.png?render_type=true_color&start_date=2026-09-17&end_date=2026-10-16";
+  const layer: MapWidgetLayer = {
+    kind: "dataset",
+    title: "Integrated alerts",
+    tileUrl: ALERTS_TILE_URL,
+    datasetId: 11,
+    startDate: "2026-09-17",
+    endDate: "2026-10-16",
+  };
+  const range = { start: "2026-10-04", end: "2026-10-10" };
+
+  it("rewrites the snapshot's date parameters and the legend dates", () => {
+    const dated = withTileDates(layer, range);
+    expect(dated.tileUrl).toBe(
+      "https://tiles.globalforestwatch.org/gfw_integrated_dist_alerts/latest/dynamic/{z}/{x}/{y}.png?render_type=true_color&start_date=2026-10-04&end_date=2026-10-10"
+    );
+    expect(dated.startDate).toBe("2026-10-04");
+    expect(dated.endDate).toBe("2026-10-10");
+    // The input is not mutated.
+    expect(layer.tileUrl).toBe(ALERTS_TILE_URL);
+  });
+
+  it("is idempotent", () => {
+    const once = withTileDates(layer, range);
+    expect(withTileDates(once, range)).toEqual(once);
+  });
+
+  it("appends the parameters when the snapshot's URL lacks them", () => {
+    const bare = {
+      ...layer,
+      tileUrl:
+        "https://tiles.example.org/alerts/{z}/{x}/{y}.png?render_type=true_color",
+    };
+    expect(withTileDates(bare, range).tileUrl).toBe(
+      "https://tiles.example.org/alerts/{z}/{x}/{y}.png?render_type=true_color&start_date=2026-10-04&end_date=2026-10-10"
+    );
+    const noQuery = {
+      ...layer,
+      tileUrl: "https://tiles.example.org/alerts/{z}/{x}/{y}.png",
+    };
+    expect(withTileDates(noQuery, range).tileUrl).toBe(
+      "https://tiles.example.org/alerts/{z}/{x}/{y}.png?start_date=2026-10-04&end_date=2026-10-10"
+    );
+  });
+
+  it("leaves the context sub-layer and the primary-forest protocol alone", () => {
+    const withContext = {
+      ...layer,
+      tileUrl: `pf://${ALERTS_TILE_URL}`,
+      contextTileUrl: "https://tiles.example.org/natural-lands/{z}/{x}/{y}.png",
+      contextLayerName: "natural_lands",
+    };
+    const dated = withTileDates(withContext, range);
+    expect(dated.tileUrl.startsWith("pf://https://")).toBe(true);
+    expect(dated.tileUrl).toContain("start_date=2026-10-04");
+    expect(dated.contextTileUrl).toBe(withContext.contextTileUrl);
+    expect(dated.contextLayerName).toBe("natural_lands");
   });
 });

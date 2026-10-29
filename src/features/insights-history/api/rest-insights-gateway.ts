@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { apiFetch } from "@/app/lib/api-client";
 import {
+  chartId,
   isCuratedInsight,
   type Chart,
   type InsightRecord,
@@ -12,7 +13,6 @@ import type { InsightQuery, InsightsGateway } from "../model/insights-gateway";
 // missing/!string `id` drops the row (it's unrenderable without one).
 
 const RawChartSchema = z.object({
-  id: z.string().optional(),
   title: z.string().default(""),
   chart_type: z.string().default("bar"),
   x_axis: z.string().default(""),
@@ -42,7 +42,10 @@ type RawInsight = z.infer<typeof RawInsightSchema>;
 
 function toInsightRecord(raw: RawInsight): InsightRecord {
   const charts: Chart[] = raw.charts.map((c, i) => ({
-    id: c.id ?? `${raw.id}-chart-${i}`,
+    // Not the API's chart uuid: the id generate_insights streams (see
+    // `chartId`), or the Analyses pane lists the live copy and the stored copy
+    // as two cards.
+    id: chartId(raw.id, i),
     position: i,
     title: c.title,
     type: c.chart_type,

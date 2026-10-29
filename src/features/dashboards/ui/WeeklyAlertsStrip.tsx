@@ -50,7 +50,7 @@ export default function WeeklyAlertsStrip({
       />
       <Flex flex="1" minW={0} align="center" gap="12px" wrap="wrap">
         <Text fontSize="14px" fontWeight="medium" color="#B91C1C">
-          {formatAlertArea(areaHa)} of new integrated alerts this week
+          {formatAlertArea(areaHa)} of new integrated alerts
         </Text>
         <Text fontSize="13px" color="#565E7B">
           ·{" "}

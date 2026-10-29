@@ -1,4 +1,4 @@
-import { formatDistanceToNowStrict } from "date-fns";
+import { format, formatDistanceToNowStrict } from "date-fns";
 
 export function updatedLabel(isoDate: string): string {
   const date = new Date(isoDate);
@@ -6,6 +6,16 @@ export function updatedLabel(isoDate: string): string {
     return "Updated recently";
   }
   return `Updated ${formatDistanceToNowStrict(date, { addSuffix: true })}`;
+}
+
+/**
+ * The export's dateline. A calendar date, not `updatedLabel`'s relative one:
+ * a PDF outlives "3 days ago".
+ */
+export function updatedOnLabel(isoDate: string): string {
+  const date = new Date(isoDate);
+  if (Number.isNaN(date.getTime())) return "Updated recently";
+  return `Updated ${format(date, "d MMMM yyyy")}`;
 }
 
 /** How long the header shows the "Created just now" pill instead of "Updated …". */

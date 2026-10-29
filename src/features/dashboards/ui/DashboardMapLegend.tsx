@@ -33,10 +33,13 @@ export default function DashboardMapLegend({
   layer,
   opacity,
   onOpacityChange,
+  print = false,
 }: {
   layer: MapWidgetLayer;
   opacity: MapWidgetOpacity;
   onOpacityChange: (target: keyof MapWidgetOpacity, value: number) => void;
+  /** The export: the whole legend, uncapped, as paper cannot scroll. */
+  print?: boolean;
 }) {
   const card =
     layer.datasetId != null
@@ -80,6 +83,7 @@ export default function DashboardMapLegend({
     <Legend
       layers={[entry]}
       compact
+      uncapped={print}
       onLayerAction={({ action, payload }) => {
         if (action === "opacity") {
           onOpacityChange(

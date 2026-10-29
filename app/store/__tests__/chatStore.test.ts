@@ -188,7 +188,7 @@ describe("chatStore view_context", () => {
     expect(sentBody()).not.toHaveProperty("view_context");
   });
 
-  it("enriches the map surface with live viewport + visible insights", async () => {
+  it("enriches the map surface with live viewport + visible and focused insights", async () => {
     useViewContextStore.getState().setViewContext({ page: "map" });
     useInsightStore.getState().addInsights([
       {
@@ -198,9 +198,12 @@ describe("chatStore view_context", () => {
         data: [],
         xAxis: "x",
         yAxis: "y",
+        id: "i1-chart-0",
         insightId: "i1",
+        chartPosition: 0,
       },
     ]);
+    useInsightStore.getState().setFocusedWidgetId("i1-chart-0");
     useMapStore.setState({
       mapRef: {
         getMap: () => ({
@@ -221,6 +224,7 @@ describe("chatStore view_context", () => {
       page: "map",
       viewport: { bbox: [-73.9876, 40.7661, -73.9397, 40.8002], zoom: 5 },
       visible_insights: ["i1"],
+      focused_insight: { id: "i1", chart_position: 0 },
     });
   });
 });

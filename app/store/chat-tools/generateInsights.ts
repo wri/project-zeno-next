@@ -111,7 +111,7 @@ export function generateInsightsTool(
 
       const widgets: InsightWidget[] = (
         streamMessage.charts_data as ChartData[]
-      ).map((chart: ChartData) => {
+      ).map((chart: ChartData, position) => {
         const seriesFields = getSeriesFields(chart);
         const curated = isCuratedInsight(streamMessage.codeact_parts);
         const parts = codeActParts(streamMessage.codeact_parts);
@@ -141,6 +141,8 @@ export function generateInsightsTool(
           ...(streamMessage.insight_id
             ? { insightId: streamMessage.insight_id }
             : {}),
+          // The backend streams charts_data in position order.
+          chartPosition: position,
         };
       });
 

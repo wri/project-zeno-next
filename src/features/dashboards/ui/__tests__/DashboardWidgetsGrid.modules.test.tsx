@@ -19,6 +19,11 @@ vi.mock("@/app/components/WidgetMessage", () => ({
 vi.mock("../DashboardMapWidget", () => ({
   default: () => <div data-testid="map-widget" />,
 }));
+vi.mock("../DashboardAlertsWidget", () => ({
+  default: ({ isDouble }: { isDouble: boolean }) => (
+    <div data-testid="alerts-widget">{isDouble ? "double" : "single"}</div>
+  ),
+}));
 
 import DashboardWidgetsGrid from "../DashboardWidgetsGrid";
 import type { Dashboard, DashboardWidget } from "../../api/schemas";
@@ -96,22 +101,26 @@ const dashboard: Dashboard = {
   widgets: [insightWidget, mapWidget],
 };
 
+const renderGrid = ({ print = false } = {}) =>
+  render(
+    <QueryClientProvider
+      client={
+        new QueryClient({ defaultOptions: { queries: { retry: false } } })
+      }
+    >
+      <ChakraProvider value={defaultSystem}>
+        <DashboardWidgetsGrid dashboard={dashboard} print={print} />
+      </ChakraProvider>
+    </QueryClientProvider>
+  );
+
 describe("DashboardWidgetsGrid grouping", () => {
   beforeEach(() => {
     useAuthStore.setState({ userId: "u1" });
   });
 
   it("renders an insight widget as one card, beside standalone widgets", () => {
-    const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false } },
-    });
-    render(
-      <QueryClientProvider client={queryClient}>
-        <ChakraProvider value={defaultSystem}>
-          <DashboardWidgetsGrid dashboard={dashboard} />
-        </ChakraProvider>
-      </QueryClientProvider>
-    );
+    renderGrid();
 
     // The insight is one card: the narrative and the first of its charts,
     // with the rest a page away — not one card per chart.
@@ -123,6 +132,23 @@ describe("DashboardWidgetsGrid grouping", () => {
     expect(screen.getByTestId("map-widget")).toBeTruthy();
     // Two widgets, so two cards — the insight has no extra remove of its own.
     expect(screen.getAllByLabelText("Remove from dashboard")).toHaveLength(2);
+  });
+
+  it("prints every chart of an insight, read-only even for the owner", () => {
+    renderGrid({ print: true });
+
+    // No pager on paper: each shown chart in turn, the narrative once.
+    const cards = screen.getAllByTestId("widget-message");
+    expect(cards.map((c) => c.textContent)).toEqual([
+      "Alerts trend",
+      "Alerts by driver",
+    ]);
+    expect(screen.getAllByText(/Alerts spiked in July\./)).toHaveLength(1);
+    expect(screen.queryByText(/of 2 charts/)).toBeNull();
+    expect(screen.getByTestId("map-widget")).toBeTruthy();
+    expect(screen.queryByLabelText("Remove from dashboard")).toBeNull();
+    expect(screen.queryByLabelText("Drag to reposition")).toBeNull();
+    expect(screen.queryByLabelText("View map full screen")).toBeNull();
   });
 
   // The post-2020 forest loss template's layout: a section holds the chart at
@@ -188,5 +214,39 @@ describe("DashboardWidgetsGrid grouping", () => {
     expect(
       cell("w-imagery").getByLabelText("Expand to full width")
     ).toBeTruthy();
+  });
+
+  // The NRT template's alerts widget renders through its own component, full
+  // width by default, beside the other widgets.
+  it("renders an alerts widget through its own component at full width", () => {
+    const alertsWidget: DashboardWidget = {
+      id: "w-alerts",
+      position: 2,
+      widget_type: "alerts",
+      config: { alerts: { aoi: {}, days: 30 }, dataset: {} },
+      created_at: "2026-10-16T00:00:00Z",
+      insight: null,
+    };
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ChakraProvider value={defaultSystem}>
+          <DashboardWidgetsGrid
+            dashboard={{
+              ...dashboard,
+              widgets: [...dashboard.widgets, alertsWidget],
+            }}
+          />
+        </ChakraProvider>
+      </QueryClientProvider>
+    );
+
+    const alerts = screen.getByTestId("alerts-widget");
+    expect(alerts.textContent).toBe("double");
+    expect(alerts.closest('[data-widget-id="w-alerts"]')).toBeTruthy();
+    expect(screen.getByTestId("map-widget")).toBeTruthy();
+    expect(screen.queryByText(/isn't supported here yet/)).toBeNull();
   });
 });

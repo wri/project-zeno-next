@@ -11,15 +11,12 @@ import {
 import { computeWidgetMove } from "../model/widget-move";
 import type { PendingInsightWidget } from "../model/pending-insight-widgets-store";
 import {
-  insightWidgetSize,
-  mapWidgetSize,
+  topLevelWidgetSize,
   unresolvedPendingInsightWidgets,
-  widgetSize,
   widgetText,
   withSize,
   withText,
   withWidgetTitle,
-  type WidgetSize,
 } from "../lib/widgets";
 import {
   mapWidgetLayer,
@@ -33,12 +30,16 @@ import {
   useUpdateWidget,
 } from "./dashboardQueries";
 import { GRID_GAP_PX, TWO_COLUMN_QUERY } from "./gridLayout";
+import DashboardAlertsWidget from "./DashboardAlertsWidget";
 import DashboardInsightModule from "./DashboardInsightModule";
 import DashboardPendingInsightCard from "./DashboardPendingInsightCard";
 import DashboardSection from "./DashboardSection";
 import DashboardWidgetCard from "./DashboardWidgetCard";
 import DashboardTextWidgetCard from "./DashboardTextWidgetCard";
 import DashboardWidgetBoundary from "./DashboardWidgetBoundary";
+import DashboardWidgetDocument, {
+  DashboardNoteDocument,
+} from "./DashboardWidgetDocument";
 import { usePendingInsightWidgets } from "./usePendingInsightWidget";
 import { useDeleteSection, useRenameSection } from "./useSectionEdits";
 import {
@@ -55,40 +56,25 @@ import {
  * can't be rendered.
  */
 interface StandaloneBody {
-  map: MapWidgetLayer | null;
-  text: string | null;
-  placeholder: string | null;
+  map?: MapWidgetLayer;
+  text?: string;
+  placeholder?: string;
 }
 
 function standaloneBody(widget: DashboardWidget): StandaloneBody {
   if (widget.widget_type === "map") {
     const map = mapWidgetLayer(widget.config);
-    return {
-      map,
-      text: null,
-      placeholder: map ? null : "This map widget can't be displayed.",
-    };
+    return map
+      ? { map }
+      : { placeholder: "This map widget can't be displayed." };
   }
   if (widget.widget_type === "text") {
     const text = widgetText(widget.config);
-    return {
-      map: null,
-      text,
-      placeholder: text ? null : "This note is empty.",
-    };
+    return text ? { text } : { placeholder: "This note is empty." };
   }
   return {
-    map: null,
-    text: null,
     placeholder: `This ${widget.widget_type} widget isn't supported here yet.`,
   };
-}
-
-/** The persisted column span for a top-level item. */
-function topLevelSize(widget: DashboardWidget): WidgetSize {
-  if (widget.widget_type === "insight") return insightWidgetSize(widget.config);
-  if (widget.widget_type === "map") return mapWidgetSize(widget.config);
-  return widgetSize(widget.config);
 }
 
 /**
@@ -199,6 +185,7 @@ function ContainerGrid({
   liftedRef,
   onDragStart,
   onSettle,
+  print,
 }: {
   dashboard: Dashboard;
   container: WidgetContainer;
@@ -219,6 +206,8 @@ function ContainerGrid({
   pending: PendingInsightWidget[];
   onDragStart: (event: React.PointerEvent, widget: DashboardWidget) => void;
   onSettle: () => void;
+  /** The export rendering (see `DashboardWidgetsGrid`). */
+  print: boolean;
 }) {
   const updateWidget = useUpdateWidget(dashboard.id);
   const deleteWidget = useDeleteWidget(dashboard.id);
@@ -236,7 +225,7 @@ function ContainerGrid({
       patch: {
         config: withSize(
           widget.config,
-          topLevelSize(widget) === "double" ? "single" : "double"
+          topLevelWidgetSize(widget) === "double" ? "single" : "double"
         ),
       },
     });
@@ -245,19 +234,32 @@ function ContainerGrid({
     <DropSlot
       data-testid="widget-drop-slot"
       height={drag?.rect.height ?? 0}
-      css={cellCss(!!dragged && topLevelSize(dragged) === "double")}
+      css={cellCss(!!dragged && topLevelWidgetSize(dragged) === "double")}
     />
   );
 
   const renderWidget = (widget: DashboardWidget) => {
-    const size = topLevelSize(widget);
+    const size = topLevelWidgetSize(widget);
+    // Insight and alerts widgets parse their own configs.
     const body =
-      widget.widget_type === "insight" ? null : standaloneBody(widget);
-    const title =
-      body?.map?.title ??
-      (typeof widget.config.title === "string" ? widget.config.title : "");
+      widget.widget_type === "insight" || widget.widget_type === "alerts"
+        ? null
+        : standaloneBody(widget);
     const lifted = drag?.id === widget.id ? drag : null;
     const armDrag = (event: React.PointerEvent) => onDragStart(event, widget);
+    // What a map or placeholder cell shows, on the dashboard and on paper.
+    const standalone = {
+      title:
+        body?.map?.title ??
+        (typeof widget.config.title === "string" ? widget.config.title : ""),
+      map: body?.map,
+      aoi: areaAoi,
+      viewportBbox: body?.map
+        ? mapWidgetViewportBbox(widget.config)
+        : undefined,
+      placeholder: body?.placeholder,
+      isDouble: size === "double",
+    };
 
     return (
       <Box
@@ -281,6 +283,7 @@ function ContainerGrid({
               areaAoi={areaAoi}
               isOwner={isOwner}
               isDouble={size === "double"}
+              print={print}
               onArmDrag={armDrag}
               onToggleSize={() => toggleSize(widget)}
               onUpdateConfig={(config) =>
@@ -288,39 +291,57 @@ function ContainerGrid({
               }
               onRemove={() => deleteWidget.mutate(widget.id)}
             />
-          ) : widget.widget_type === "text" ? (
-            <DashboardTextWidgetCard
-              text={body?.text ?? null}
-              placeholder={body?.placeholder ?? null}
+          ) : widget.widget_type === "alerts" ? (
+            <DashboardAlertsWidget
+              widget={widget}
+              print={print}
+              areaAoi={areaAoi}
               isOwner={isOwner}
               isDouble={size === "double"}
               onArmDrag={armDrag}
               onToggleSize={() => toggleSize(widget)}
-              onSaveText={(next) =>
+              onRename={(name) =>
                 updateWidget.mutate({
                   widgetId: widget.id,
-                  patch: { config: withText(widget.config, next) },
+                  patch: { config: withWidgetTitle(widget.config, name) },
                 })
               }
               onRemove={() => deleteWidget.mutate(widget.id)}
             />
+          ) : widget.widget_type === "text" ? (
+            print ? (
+              <DashboardNoteDocument
+                text={body?.text ?? null}
+                placeholder={body?.placeholder ?? null}
+              />
+            ) : (
+              <DashboardTextWidgetCard
+                text={body?.text ?? null}
+                placeholder={body?.placeholder ?? null}
+                isOwner={isOwner}
+                isDouble={standalone.isDouble}
+                onArmDrag={armDrag}
+                onToggleSize={() => toggleSize(widget)}
+                onSaveText={(next) =>
+                  updateWidget.mutate({
+                    widgetId: widget.id,
+                    patch: { config: withText(widget.config, next) },
+                  })
+                }
+                onRemove={() => deleteWidget.mutate(widget.id)}
+              />
+            )
+          ) : print ? (
+            <DashboardWidgetDocument {...standalone} />
           ) : (
             <DashboardWidgetCard
-              title={title}
-              card={null}
-              map={body?.map}
-              aoi={areaAoi}
-              viewportBbox={
-                body?.map ? mapWidgetViewportBbox(widget.config) : null
-              }
-              placeholder={body?.placeholder ?? null}
+              {...standalone}
               removeMode="widget"
               isOwner={isOwner}
-              isDouble={size === "double"}
               onArmDrag={armDrag}
               onToggleSize={() => toggleSize(widget)}
               onRename={
-                body?.placeholder
+                standalone.placeholder
                   ? undefined
                   : (name) =>
                       updateWidget.mutate({
@@ -391,14 +412,21 @@ function ContainerGrid({
  * in a section is a `section_id` PATCH alongside the renumbering of both
  * containers (`computeWidgetMove`). A section drag reorders the panels
  * themselves (`computeSectionMove`); the top-level panel always stays first.
+ *
+ * `print` is the export rendering (the report route): a read-only document,
+ * even for the owner, with no curated analyses mid-add and no empty sections.
+ * Widgets drop their boxes, and sections their panels: each opens with a rule
+ * above its heading instead, which paginates where a box would be cut open.
  */
 export default function DashboardWidgetsGrid({
   dashboard,
+  print = false,
 }: {
   dashboard: Dashboard;
+  print?: boolean;
 }) {
   const userId = useAuthStore((s) => s.userId);
-  const isOwner = !!userId && userId === dashboard.user_id;
+  const isOwner = !print && !!userId && userId === dashboard.user_id;
   const moveWidgets = useMoveWidgets(dashboard.id);
   const moveSections = useMoveSections(dashboard.id);
   const renameSection = useRenameSection(dashboard.id);
@@ -467,8 +495,11 @@ export default function DashboardWidgetsGrid({
   // here rather than shown twice.
   const pendingEntries = usePendingInsightWidgets(dashboard.id);
   const pendingCards = useMemo(
-    () => unresolvedPendingInsightWidgets(pendingEntries, dashboard.widgets),
-    [pendingEntries, dashboard.widgets]
+    () =>
+      print
+        ? []
+        : unresolvedPendingInsightWidgets(pendingEntries, dashboard.widgets),
+    [print, pendingEntries, dashboard.widgets]
   );
 
   // A drag keeps every container on screen, the empty ones included: the panel
@@ -513,7 +544,8 @@ export default function DashboardWidgetsGrid({
           only grey a widget ever sits next to. */}
       <Flex
         direction="column"
-        gap="12px"
+        // On paper the sections' rules part them, so they need air instead.
+        gap={print ? "40px" : "12px"}
         align="stretch"
         {...{ [SECTION_ZONE_ATTR]: "sections" }}
       >
@@ -544,6 +576,7 @@ export default function DashboardWidgetsGrid({
                 <DashboardSection
                   section={section}
                   isOwner={isOwner}
+                  print={print}
                   isDropTarget={!!dragState && dragState.key === container.key}
                   dropZoneKey={container.key}
                   onMove={
@@ -596,6 +629,7 @@ export default function DashboardWidgetsGrid({
                     landed={drag.landed}
                     liftedRef={drag.liftedRef}
                     pending={container.section ? [] : pendingCards}
+                    print={print}
                     onSettle={drag.settle}
                     onDragStart={(event, widget) => {
                       const next =
