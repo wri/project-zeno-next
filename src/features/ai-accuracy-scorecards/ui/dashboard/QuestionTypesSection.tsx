@@ -10,7 +10,7 @@ import type {
   MeasuredType,
 } from "../../model/types";
 import { failurePhrase } from "../../lib/failures";
-import { pct } from "../../lib/format";
+import { pct, share } from "../../lib/format";
 import { tierLines } from "../../lib/tiers";
 import { PASS_COLOR, STAGE_COLORS } from "../palette";
 import {
@@ -91,7 +91,7 @@ function ModeTip({
   return (
     <>
       <TipValue>
-        {count} of {t.stats.scored} · {pct(count / t.stats.scored, 1)}
+        {count} of {t.stats.scored} · {pct(share(count, t.stats.scored), 1)}
       </TipValue>
       <TipKey color={mode.color}>
         {t.label}:{" "}
