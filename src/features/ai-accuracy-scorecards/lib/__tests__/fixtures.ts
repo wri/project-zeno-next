@@ -25,6 +25,7 @@ export function makeStats(overrides: Partial<GroupStats> = {}): GroupStats {
     everyTime: 0.4,
     anyTime: 0.8,
     failureModes: { ...NO_FAILURES, retrieval: 3, explanation: 1 },
+    tiers: { every: 4, most: 2, some: 2, never: 2 },
     ...overrides,
   };
 }

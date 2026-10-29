@@ -157,6 +157,22 @@ const RawPage = z.looseObject({
 
 // ── Mapping ────────────────────────────────────────────────────────────────
 
+/**
+ * The page carries cumulative shares (every time ⊆ majority ⊆ any time)
+ * and the majority count; the tiers are their differences, rounded once
+ * here so every chart and sentence agrees.
+ */
+function tiersOf(raw: z.infer<typeof RawStats>): GroupStats["tiers"] {
+  const every = Math.round((raw.every_time ?? 0) * raw.scored);
+  const any = Math.round((raw.any_time ?? 0) * raw.scored);
+  return {
+    every,
+    most: raw.passed - every,
+    some: any - raw.passed,
+    never: raw.scored - any,
+  };
+}
+
 function toStats(raw: z.infer<typeof RawStats>): GroupStats {
   return {
     total: raw.scored + raw.errors,
@@ -168,6 +184,7 @@ function toStats(raw: z.infer<typeof RawStats>): GroupStats {
     everyTime: raw.every_time,
     anyTime: raw.any_time,
     failureModes: { ...zeroCounts(), ...raw.failure_modes },
+    tiers: tiersOf(raw),
   };
 }
 

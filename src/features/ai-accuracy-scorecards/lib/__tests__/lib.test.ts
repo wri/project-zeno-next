@@ -12,13 +12,11 @@ import type { BenchmarkPage, FailedCheck } from "../../model/types";
 import { makeQuestion, makeStats, makeUseCase } from "./fixtures";
 
 describe("tiersOf", () => {
-  it("splits the cumulative shares into four tiers that sum to the scored total", () => {
+  it("lists the four tiers best first, with their share of the scored", () => {
     const tiers = tiersOf(
       makeStats({
         scored: 269,
-        everyTime: 135 / 269,
-        majority: 170 / 269,
-        anyTime: 191 / 269,
+        tiers: { every: 135, most: 35, some: 21, never: 78 },
       })
     );
     expect(tiers.map((t) => [t.key, t.count])).toEqual([
@@ -27,13 +25,15 @@ describe("tiersOf", () => {
       ["some", 21],
       ["never", 78],
     ]);
-    expect(tiers.reduce((sum, t) => sum + t.count, 0)).toBe(269);
     expect(tiers[0].share).toBeCloseTo(135 / 269);
   });
 
   it("treats a group with no scored question as empty", () => {
     const tiers = tiersOf(
-      makeStats({ scored: 0, everyTime: null, majority: null, anyTime: null })
+      makeStats({
+        scored: 0,
+        tiers: { every: 0, most: 0, some: 0, never: 0 },
+      })
     );
     expect(tiers.every((t) => t.count === 0 && t.share === null)).toBe(true);
   });

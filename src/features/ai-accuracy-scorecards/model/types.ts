@@ -19,6 +19,9 @@ export type Verdict = "pass" | "fail" | "error" | "uncovered";
 /** "inconsistent": right overall, but not right on every try. */
 export type QuestionStatus = "pass" | "inconsistent" | "fail" | "error";
 
+/** The reliability tiers: right on all, 2, 1 or none of the 3 tries. */
+export type TierKey = "every" | "most" | "some" | "never";
+
 export interface GroupStats {
   /** Every question in the group, errored ones included. */
   readonly total: number;
@@ -36,6 +39,8 @@ export interface GroupStats {
   readonly anyTime: number | null;
   /** Failed questions per earliest failing stage; zero where none. */
   readonly failureModes: Readonly<Record<AttributionKey, number>>;
+  /** Scored questions per tier, settled once from the shares. */
+  readonly tiers: Readonly<Record<TierKey, number>>;
 }
 
 export interface StageSummary {

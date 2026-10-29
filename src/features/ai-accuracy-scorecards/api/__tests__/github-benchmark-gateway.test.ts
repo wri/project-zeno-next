@@ -204,6 +204,20 @@ describe("parseBenchmarkPage", () => {
     expect(parseBenchmarkPage(WIRE_PAGE, true).questions[0].drafted).toBe(true);
   });
 
+  it("settles the tier counts once from the shares", () => {
+    const summary = {
+      ...STATS,
+      scored: 269,
+      passed: 170,
+      majority: 170 / 269,
+      every_time: 135 / 269,
+      any_time: 191 / 269,
+    };
+    expect(
+      parseBenchmarkPage({ ...WIRE_PAGE, summary }, true).summary.tiers
+    ).toEqual({ every: 135, most: 35, some: 21, never: 78 });
+  });
+
   it("refuses a page written for another schema version", () => {
     expect(() =>
       parseBenchmarkPage({ ...WIRE_PAGE, schema_version: 2 }, true)
