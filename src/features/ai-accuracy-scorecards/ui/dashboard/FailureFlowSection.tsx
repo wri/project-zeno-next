@@ -28,10 +28,11 @@ export function FailureFlowSection({ page }: { readonly page: BenchmarkPage }) {
   // The headline's measure by default, so the two agree on first read.
   const [standard, setStandard] = useState<Standard>("every");
   const flows = useMemo(
-    () =>
-      Object.fromEntries(
-        STANDARDS.map((s) => [s, failureFlow(page.questions, s)])
-      ) as Record<Standard, ReturnType<typeof failureFlow>>,
+    () => ({
+      every: failureFlow(page.questions, "every"),
+      most: failureFlow(page.questions, "most"),
+      some: failureFlow(page.questions, "some"),
+    }),
     [page.questions]
   );
   const stages = useMemo(() => flowStages(flows), [flows]);
