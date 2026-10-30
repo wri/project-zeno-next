@@ -9,19 +9,20 @@ import {
   Link as ChakraLink,
   Text,
 } from "@chakra-ui/react";
-import { Tooltip } from "@/components/ui/tooltip";
 import { Link } from "@/src/shared/lib/router";
 import type { GroupStats } from "../model/types";
 import { pct } from "../lib/format";
+import { TIERS, tiersOf, type Tier, type TierKey } from "../lib/tiers";
+import { TIER_COLORS } from "./palette";
 import {
-  tierLines,
-  TIERS,
-  tiersOf,
-  type Tier,
-  type TierKey,
-} from "../lib/tiers";
-import { PASS_COLOR, TIER_OPACITY } from "./palette";
-import { DIMMED, FADE, MOTION_SAFE, type ChartHover } from "./chart-hover";
+  DIMMED,
+  FADE,
+  MOTION_SAFE,
+  TipNote,
+  TipRows,
+  useChartHover,
+  type ChartHover,
+} from "./chart-hover";
 
 /** Room above a panel scrolled into view (the page has no sticky header). */
 const SCROLL_MARGIN = "16px";
@@ -162,13 +163,11 @@ export function BackLink({ href }: { readonly href: string }) {
 }
 
 export function tierSwatchStyle(key: TierKey) {
-  const opacity = TIER_OPACITY[key];
-  return opacity
-    ? { bg: PASS_COLOR, opacity }
-    : {
-        bg: "bg.muted",
-        boxShadow: "inset 0 0 0 1px var(--chakra-colors-border)",
-      };
+  const bg = TIER_COLORS[key];
+  // The empty "never" swatch needs an outline to show against the page.
+  return key === "never"
+    ? { bg, boxShadow: "inset 0 0 0 1px var(--chakra-colors-border)" }
+    : { bg };
 }
 
 /** A legend; with a hover, pointing at an item highlights its marks. */
@@ -248,15 +247,13 @@ export function TierSegments({
     >
       {tiersOf(stats).map((t) => {
         if (!t.count) return null;
-        // The "never" swatch is an opaque outline; the others are tints.
-        const opacity = TIER_OPACITY[t.key] || 1;
         return (
           <Box
             key={t.key}
             flex={`${t.count} 1 0`}
             minW="2px"
             {...tierSwatchStyle(t.key)}
-            opacity={hover?.dimmed(t.key) ? opacity * DIMMED : opacity}
+            opacity={hover?.dimmed(t.key) ? DIMMED : 1}
             transition={FADE}
             {...hover?.target(t.key, tip?.(t))}
           />
@@ -267,9 +264,9 @@ export function TierSegments({
 }
 
 /**
- * A group's tier bar with the breakdown on hover. It sits inside a row
- * button, which carries the same words as its label, so the bar itself
- * takes no focus.
+ * A group's tier bar with the breakdown on hover, in the charts' tooltip.
+ * It sits inside a row button, which carries the same words as its label,
+ * so the bar itself takes no focus.
  */
 export function TierBar({
   stats,
@@ -278,21 +275,25 @@ export function TierBar({
   readonly stats: GroupStats;
   readonly label: string;
 }) {
+  const hover = useChartHover<"bar">();
+  const tip = (
+    <>
+      <TipNote>{label}</TipNote>
+      <TipRows
+        rows={tiersOf(stats).map((t) => ({
+          key: t.key,
+          color: TIER_COLORS[t.key],
+          label: t.label,
+          value: `${pct(t.share)} (${t.count})`,
+        }))}
+      />
+    </>
+  );
   return (
-    <Tooltip
-      content={
-        <Box fontSize="xs">
-          <Text fontWeight="semibold">{label}</Text>
-          {tierLines(stats).map((line) => (
-            <Text key={line}>{line}</Text>
-          ))}
-        </Box>
-      }
-    >
-      <Box w="100%">
-        <TierSegments stats={stats} />
-      </Box>
-    </Tooltip>
+    <Box w="100%" {...hover.target("bar", tip)}>
+      <TierSegments stats={stats} />
+      {hover.tooltip}
+    </Box>
   );
 }
 

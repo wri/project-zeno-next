@@ -4,7 +4,7 @@ import { formatDay, formatMonth, pct } from "../../lib/format";
 import { monthsSinceOrigin } from "../../lib/runs";
 import { TIER_COPY } from "../../lib/tiers";
 import type { TrendPoint } from "../../model/types";
-import { PASS_COLOR, TIER_OPACITY } from "../palette";
+import { PASS_COLOR, TIER_COLORS } from "../palette";
 import {
   DIMMED,
   FADE,
@@ -73,8 +73,7 @@ function RunTip({
           .filter((row) => row.value != null)
           .map((row) => ({
             key: row.key,
-            color: PASS_COLOR,
-            opacity: TIER_OPACITY[row.key],
+            color: TIER_COLORS[row.key],
             label: `Accurate on ${TIER_COPY[row.key].tries}`,
             value: pct(row.value, 1),
           }))}
@@ -258,31 +257,18 @@ export function TrendChart({
         ) : null}
         {placed.flatMap((p) => {
           const barW = p.runId === hover.active ? BAR_W_ACTIVE : BAR_W;
-          // Each tint sits on a panel-coloured backing, so it reads the same
-          // over the still-to-come area as over the plain chart.
           return p.segments.map((s) => (
-            <g key={`${p.runId}-${s.tier}`}>
-              <rect
-                x={p.px - barW / 2}
-                y={s.top}
-                width={barW}
-                height={s.bottom - s.top}
-                rx={2}
-                fill="var(--chakra-colors-bg-panel)"
-              />
-              <rect
-                x={p.px - barW / 2}
-                y={s.top}
-                width={barW}
-                height={s.bottom - s.top}
-                rx={2}
-                fill={PASS_COLOR}
-                opacity={
-                  TIER_OPACITY[s.tier] * (hover.dimmed(p.runId) ? DIMMED : 1)
-                }
-                style={{ transition: FADE }}
-              />
-            </g>
+            <rect
+              key={`${p.runId}-${s.tier}`}
+              x={p.px - barW / 2}
+              y={s.top}
+              width={barW}
+              height={s.bottom - s.top}
+              rx={2}
+              fill={TIER_COLORS[s.tier]}
+              opacity={hover.dimmed(p.runId) ? DIMMED : 1}
+              style={{ transition: FADE }}
+            />
           ));
         })}
         {placed.length < 2 ? (

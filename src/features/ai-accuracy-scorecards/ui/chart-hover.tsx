@@ -198,40 +198,29 @@ export function TipNote({ children }: { readonly children: ReactNode }) {
   );
 }
 
-function KeyLine({
-  color,
-  opacity = 1,
-}: {
-  readonly color: string;
-  readonly opacity?: number;
-}) {
+/** A series key. It takes no opacity: a faded colour darkens over the
+ * tooltip's dark ground, so pass an opaque tint (palette `tint`) instead. */
+function KeyLine({ color }: { readonly color: string }) {
   return (
-    <Box
-      as="span"
-      flex="none"
-      w="12px"
-      h="3px"
-      borderRadius="2px"
-      bg={color}
-      opacity={opacity}
-    />
+    <Box as="span" flex="none" w="12px" h="3px" borderRadius="2px" bg={color} />
   );
 }
 
-/** Names what the value is, keyed with the mark's colour. */
+/** Names what the value is, keyed with the mark's colour; only the words
+ * are muted, so the key matches its mark. */
 export function TipKey({
   color,
-  opacity,
   children,
 }: {
   readonly color: string;
-  readonly opacity?: number;
   readonly children: ReactNode;
 }) {
   return (
-    <HStack gap={2} opacity={0.85}>
-      <KeyLine color={color} opacity={opacity} />
-      <span>{children}</span>
+    <HStack gap={2}>
+      <KeyLine color={color} />
+      <Text as="span" opacity={0.85}>
+        {children}
+      </Text>
     </HStack>
   );
 }
@@ -247,7 +236,6 @@ export function TipRows({
   readonly rows: readonly {
     readonly key: string;
     readonly color: string;
-    readonly opacity?: number;
     readonly label: string;
     readonly value: ReactNode;
   }[];
@@ -256,7 +244,7 @@ export function TipRows({
     <Box display="grid" gap={1} mt={1.5}>
       {rows.map((r) => (
         <HStack key={r.key} gap={2} fontVariantNumeric="tabular-nums">
-          <KeyLine color={r.color} opacity={r.opacity} />
+          <KeyLine color={r.color} />
           <Text flex="1">{r.label}</Text>
           <Text fontWeight="semibold">{r.value}</Text>
         </HStack>
