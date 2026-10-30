@@ -16,7 +16,7 @@ import {
   type Tier,
   type TierKey,
 } from "../../lib/tiers";
-import { PASS_COLOR, TIER_OPACITY } from "../palette";
+import { TIER_COLORS } from "../palette";
 import {
   FADE,
   MOTION_SAFE,
@@ -54,10 +54,7 @@ function TierTip({
       <TipValue>
         {pct(tier.share, 1)} · {tier.count} questions
       </TipValue>
-      <TipKey
-        color={tier.key === "never" ? "currentColor" : PASS_COLOR}
-        opacity={TIER_OPACITY[tier.key] || 0.5}
-      >
+      <TipKey color={TIER_COLORS[tier.key]}>
         {tier.label} ({tier.attempts})
       </TipKey>
       {running ? (
