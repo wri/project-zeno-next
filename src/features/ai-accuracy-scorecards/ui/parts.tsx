@@ -12,7 +12,13 @@ import {
 import { Link } from "@/src/shared/lib/router";
 import type { GroupStats } from "../model/types";
 import { pct } from "../lib/format";
-import { TIERS, tiersOf, type Tier, type TierKey } from "../lib/tiers";
+import {
+  TIERS,
+  tierFigure,
+  tiersOf,
+  type Tier,
+  type TierKey,
+} from "../lib/tiers";
 import { TIER_COLORS } from "./palette";
 import {
   DIMMED,
@@ -284,7 +290,7 @@ export function TierBar({
           key: t.key,
           color: TIER_COLORS[t.key],
           label: t.label,
-          value: `${pct(t.share)} (${t.count})`,
+          value: tierFigure(t),
         }))}
       />
     </>

@@ -62,9 +62,12 @@ export function tiersOf(stats: GroupStats): Tier[] {
   }));
 }
 
-/** One line per tier, e.g. "58% accurate every time (65)". */
+/** A tier's share and count, e.g. "58% (65)". */
+export function tierFigure(t: Tier): string {
+  return `${pct(t.share)} (${t.count})`;
+}
+
+/** One line per tier, e.g. "accurate every time 58% (65)". */
 export function tierLines(stats: GroupStats): string[] {
-  return tiersOf(stats).map(
-    (t) => `${pct(t.share)} ${t.label.toLowerCase()} (${t.count})`
-  );
+  return tiersOf(stats).map((t) => `${t.label.toLowerCase()} ${tierFigure(t)}`);
 }
