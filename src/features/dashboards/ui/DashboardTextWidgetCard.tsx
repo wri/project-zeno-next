@@ -27,7 +27,6 @@ import {
   XIcon,
 } from "@phosphor-icons/react";
 
-import InsightCaption from "@/app/components/InsightCaption";
 import { toaster } from "@/app/components/ui/toaster";
 import {
   bulletApply,
@@ -37,7 +36,9 @@ import {
   wrapSelection,
   type EditResult,
 } from "../lib/markdown-toolbar";
+import type { NoteSource } from "../lib/widgets";
 import DashboardTextWidget from "./DashboardTextWidget";
+import NoteCaption from "./NoteCaption";
 
 // Notes are the only dashboard content with unbounded height (tables
 // paginate, maps and charts are fixed) — cap the body at the tall-map
@@ -49,7 +50,7 @@ const NOTE_BODY_MIN_H = "80px";
 /**
  * A `widget_type: "text"` dashboard card — a white note per the Figma
  * "text widget" frames. Unlike the analysis/map card it has no title: the
- * header carries an AI-assisted caption and (for owners) the actions. The
+ * header carries the note's provenance caption and (for owners) the actions. The
  * pencil enters a raw-markdown edit mode (grey header, blue focus border, a
  * syntax toolbar, and a Done button) rather than a title rename; Done persists
  * `config.text` via `onSaveText`. Mutations are owned by the grid and passed as
@@ -57,6 +58,7 @@ const NOTE_BODY_MIN_H = "80px";
  */
 export default function DashboardTextWidgetCard({
   text,
+  source,
   placeholder,
   isOwner,
   isDouble,
@@ -67,6 +69,8 @@ export default function DashboardTextWidgetCard({
 }: {
   /** The note's markdown body, or null when empty (shows `placeholder`). */
   text: string | null;
+  /** Who wrote the note, which picks its caption. */
+  source: NoteSource;
   /** Copy shown in the body when the note is empty. */
   placeholder: string | null;
   isOwner: boolean;
@@ -294,7 +298,7 @@ export default function DashboardTextWidgetCard({
                   onPointerDown={onArmDrag}
                 />
               )}
-              <InsightCaption />
+              <NoteCaption source={source} />
             </Flex>
             {isOwner && (
               <Flex align="center" gap="4px" flexShrink={0}>

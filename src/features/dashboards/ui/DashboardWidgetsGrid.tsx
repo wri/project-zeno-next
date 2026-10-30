@@ -11,6 +11,7 @@ import {
 import { computeWidgetMove } from "../model/widget-move";
 import type { PendingInsightWidget } from "../model/pending-insight-widgets-store";
 import {
+  noteSource,
   topLevelWidgetSize,
   unresolvedPendingInsightWidgets,
   widgetText,
@@ -312,11 +313,13 @@ function ContainerGrid({
             print ? (
               <DashboardNoteDocument
                 text={body?.text ?? null}
+                source={noteSource(widget.config)}
                 placeholder={body?.placeholder ?? null}
               />
             ) : (
               <DashboardTextWidgetCard
                 text={body?.text ?? null}
+                source={noteSource(widget.config)}
                 placeholder={body?.placeholder ?? null}
                 isOwner={isOwner}
                 isDouble={standalone.isDouble}

@@ -252,11 +252,15 @@ export async function addInsightWidget(
 // The backend's `validate_text_config` requires `config.text` to be a
 // string (any string, including empty) — an empty string still renders as
 // a blank note client-side (`widgetText` treats a blank string as "no text").
+// The owner writes it, so its source is "user": no AI-assisted caption.
 export async function addTextWidget(dashboardId: string): Promise<void> {
   await readJson<unknown>(`/api/dashboards/${dashboardId}/widgets`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ widget_type: "text", config: { text: "" } }),
+    body: JSON.stringify({
+      widget_type: "text",
+      config: { text: "", source: "user" },
+    }),
   });
 }
 
