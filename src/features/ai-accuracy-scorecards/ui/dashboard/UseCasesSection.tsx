@@ -15,6 +15,7 @@ import { failureBreakdown, failurePhrase } from "../../lib/failures";
 import { pct, share } from "../../lib/format";
 import { mixSentence } from "../../lib/mix";
 import { tierLines } from "../../lib/tiers";
+import { useChartHover } from "../chart-hover";
 import {
   Caption,
   DetailPanel,
@@ -216,6 +217,7 @@ export function UseCasesSection({
     a.key.localeCompare(b.key, "en", { numeric: true })
   );
   const { selected, select, detailRef } = useRowSelection(ordered);
+  const hover = useChartHover<string>();
   if (!selected) return null;
   return (
     <Section
@@ -255,7 +257,7 @@ export function UseCasesSection({
               caption="every time"
             >
               <Box display="grid" gap={2}>
-                <TierBar stats={uc.stats} label={uc.label} />
+                <TierBar group={uc} hover={hover} />
                 <Flex justify="space-between" align="center" gap={3}>
                   <MixChips uc={uc} />
                   <Text
@@ -272,6 +274,7 @@ export function UseCasesSection({
           );
         })}
       </Box>
+      {hover.tooltip}
     </Section>
   );
 }

@@ -26,7 +26,6 @@ import {
   MOTION_SAFE,
   TipNote,
   TipRows,
-  useChartHover,
   type ChartHover,
 } from "./chart-hover";
 
@@ -270,23 +269,26 @@ export function TierSegments({
 }
 
 /**
- * A group's tier bar with the breakdown on hover, in the charts' tooltip.
+ * A group's tier bar with the breakdown on hover, in its section's tooltip.
  * It sits inside a row button, which carries the same words as its label,
  * so the bar itself takes no focus.
  */
 export function TierBar({
-  stats,
-  label,
+  group,
+  hover,
 }: {
-  readonly stats: GroupStats;
-  readonly label: string;
+  readonly group: {
+    readonly key: string;
+    readonly label: string;
+    readonly stats: GroupStats;
+  };
+  readonly hover: ChartHover<string>;
 }) {
-  const hover = useChartHover<"bar">();
   const tip = (
     <>
-      <TipNote>{label}</TipNote>
+      <TipNote>{group.label}</TipNote>
       <TipRows
-        rows={tiersOf(stats).map((t) => ({
+        rows={tiersOf(group.stats).map((t) => ({
           key: t.key,
           color: TIER_COLORS[t.key],
           label: t.label,
@@ -296,9 +298,8 @@ export function TierBar({
     </>
   );
   return (
-    <Box w="100%" {...hover.target("bar", tip)}>
-      <TierSegments stats={stats} />
-      {hover.tooltip}
+    <Box w="100%" {...hover.target(group.key, tip)}>
+      <TierSegments stats={group.stats} />
     </Box>
   );
 }

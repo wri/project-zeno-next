@@ -242,7 +242,8 @@ export function QuestionTypesSection({
 }) {
   const [view, setView] = useState<BarView>("rate");
   const { selected, select, detailRef } = useRowSelection(page.types);
-  const hover = useChartHover<ModeKey>();
+  const tierHover = useChartHover<string>();
+  const modeHover = useChartHover<ModeKey>();
   const totals = useMemo(() => modeTotals(page.types), [page.types]);
   if (!selected) return null;
   return (
@@ -265,7 +266,7 @@ export function QuestionTypesSection({
           <TierLegend />
         ) : (
           <Legend
-            hover={hover}
+            hover={modeHover}
             items={MODES.map((m) => ({
               key: m.key,
               label: m.label,
@@ -287,14 +288,15 @@ export function QuestionTypesSection({
             caption={view === "rate" ? "every time" : TIER_COPY.most.attempts}
           >
             {view === "rate" ? (
-              <TierBar stats={t.stats} label={t.label} />
+              <TierBar group={t} hover={tierHover} />
             ) : (
-              <ModesBar t={t} hover={hover} totals={totals} />
+              <ModesBar t={t} hover={modeHover} totals={totals} />
             )}
           </SelectableRow>
         ))}
       </Box>
-      {hover.tooltip}
+      {tierHover.tooltip}
+      {modeHover.tooltip}
       <Text mt={3} fontSize="xs" color="fg.subtle">
         Types with fewer than 20 questions can swing a lot between runs.
         {page.unmeasuredTypes.length
