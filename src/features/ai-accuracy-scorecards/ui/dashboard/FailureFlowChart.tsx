@@ -8,7 +8,7 @@ import type { AttributionKey } from "../../model/types";
 import type { FailureFlow, FlowMode } from "../../lib/failures";
 import { STANDARDS, TIER_COPY, type Standard } from "../../lib/tiers";
 import { pct, share } from "../../lib/format";
-import { PASS_COLOR, STAGE_COLORS } from "../palette";
+import { PASS_COLOR, STAGE_COLORS, tint } from "../palette";
 import {
   DIMMED,
   FADE,
@@ -184,8 +184,7 @@ function StageTip({
           <TipRows
             rows={types.map((t) => ({
               key: t.key,
-              color: STAGE_COLORS[stage],
-              opacity: 0.6,
+              color: tint(STAGE_COLORS[stage], 60),
               label: t.label,
               value: t.count,
             }))}

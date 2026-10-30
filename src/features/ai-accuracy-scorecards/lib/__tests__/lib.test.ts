@@ -6,7 +6,7 @@ import { formatDay, formatMonth, pct, share, versionSet } from "../format";
 import { mixSentence } from "../mix";
 import { filterQuestions, NO_FILTER } from "../questions";
 import { monthsSinceOrigin, pickRun, releasedRuns, trendPoints } from "../runs";
-import { tierLines, tiersOf } from "../tiers";
+import { tierFigure, tierLines, tiersOf } from "../tiers";
 import { RELEASES } from "../../model/releases";
 import type { BenchmarkPage, FailedCheck } from "../../model/types";
 import { makeQuestion, makeStats, makeUseCase } from "./fixtures";
@@ -39,7 +39,9 @@ describe("tiersOf", () => {
   });
 
   it("words each tier once for labels and tooltips", () => {
-    expect(tierLines(makeStats())[0]).toBe("40% accurate every time (4)");
+    const stats = makeStats();
+    expect(tierFigure(tiersOf(stats)[0])).toBe("40% (4)");
+    expect(tierLines(stats)[0]).toBe("accurate every time 40% (4)");
   });
 });
 

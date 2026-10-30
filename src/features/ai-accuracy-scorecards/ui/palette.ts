@@ -17,11 +17,20 @@ export const STAGE_COLORS: Readonly<Record<AttributionKey, string>> = {
   unattributed: "#8a8f98",
 };
 
-/** Reliability tiers: the pass colour at falling opacity; "never" is an
- * outlined empty swatch. */
-export const TIER_OPACITY: Readonly<Record<TierKey, number>> = {
-  every: 1,
-  most: 0.55,
-  some: 0.25,
-  never: 0,
+/**
+ * `color` at `percent` strength, mixed into the panel colour rather than
+ * faded with opacity: an opaque tint reads the same on any ground (the
+ * chart, its still-to-come area, the dark tooltip) instead of darkening over
+ * a dark one.
+ */
+export const tint = (color: string, percent: number) =>
+  `color-mix(in srgb, ${color} ${percent}%, var(--chakra-colors-bg-panel))`;
+
+/** Reliability tiers: the pass colour at falling strength, down to the
+ * empty "never" swatch. */
+export const TIER_COLORS: Readonly<Record<TierKey, string>> = {
+  every: PASS_COLOR,
+  most: tint(PASS_COLOR, 55),
+  some: tint(PASS_COLOR, 25),
+  never: "var(--chakra-colors-bg-muted)",
 };
