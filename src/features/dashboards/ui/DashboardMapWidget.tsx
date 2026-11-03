@@ -1,7 +1,7 @@
 import "maplibre-gl/dist/maplibre-gl.css";
 import "@/app/utils/maplibreWorker";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Box, Tag } from "@chakra-ui/react";
+import { Box, Flex, Tag } from "@chakra-ui/react";
 import { PolygonIcon } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import turfBbox from "@turf/bbox";
@@ -183,12 +183,14 @@ export default function DashboardMapWidget({
     <Box
       ref={containerRef}
       {...{ [PRINT_READY_ATTR]: print ? String(drawn) : undefined }}
+      // A filling map takes the height its legend leaves free.
+      flex={fill || stretch ? "1" : undefined}
       h={
         fill || stretch
-          ? "100%"
+          ? undefined
           : { base: "280px", md: tall ? "520px" : "360px" }
       }
-      minH={stretch ? "280px" : undefined}
+      minH={stretch ? "280px" : 0}
       rounded="md"
       overflow="hidden"
       borderWidth="1px"
@@ -217,8 +219,7 @@ export default function DashboardMapWidget({
           print ? { preserveDrawingBuffer: true } : undefined
         }
       >
-        {/* Bottom-left so the legend can occupy the design's bottom-right
-            slot; the attribution stacks beneath the zoom buttons. */}
+        {/* The attribution stacks beneath the zoom buttons. */}
         {!print && (
           <NavigationControl position="bottom-left" showCompass={false} />
         )}
@@ -319,33 +320,16 @@ export default function DashboardMapWidget({
             </Tag.Root>
           </Marker>
         )}
-        {/* Non-map children render as DOM overlays inside the map container
-            (same pattern as the explorer's Map.tsx). On paper the legend
-            goes below the map instead, where it is not clipped. */}
-        {!print && (
-          <Box
-            position="absolute"
-            bottom="8px"
-            right="8px"
-            zIndex={1}
-            w="300px"
-            maxW="calc(100% - 16px)"
-          >
-            {legend}
-          </Box>
-        )}
       </MapGl>
     </Box>
   );
 
-  return print ? (
-    <>
+  // The legend goes under the map, on screen and on paper: a dashboard map
+  // is small, and nothing should cover it.
+  return (
+    <Flex direction="column" h={fill || stretch ? "100%" : undefined}>
       {map}
-      <Box pt="8px" w="300px" maxW="100%">
-        {legend}
-      </Box>
-    </>
-  ) : (
-    map
+      {legend}
+    </Flex>
   );
 }

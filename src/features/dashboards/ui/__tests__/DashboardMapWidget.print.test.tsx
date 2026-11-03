@@ -64,10 +64,12 @@ vi.mock("@/app/utils/geometryClient", () => ({
   fetchGeometry: vi.fn(() => new Promise(() => {})),
 }));
 
+import { TREE_COVER_LOSS_DATASET_ID } from "@/app/constants/datasets";
+import type { MapWidgetLayer } from "../../lib/mapWidgets";
 import DashboardMapWidget, { PRINT_READY_ATTR } from "../DashboardMapWidget";
 
-const layer = {
-  kind: "dataset" as const,
+const layer: MapWidgetLayer = {
+  kind: "dataset",
   title: "Tree cover loss",
   tileUrl: "https://example.test/{z}/{x}/{y}.png",
 };
@@ -75,7 +77,7 @@ const layer = {
 const renderMap = (props: {
   print?: boolean;
   aoi?: { source: string; src_id: string; name: string };
-  layer?: typeof layer & { datasetId?: number };
+  layer?: MapWidgetLayer;
 }) =>
   render(
     <QueryClientProvider client={new QueryClient()}>
@@ -137,40 +139,60 @@ describe("DashboardMapWidget print readiness", () => {
 });
 
 describe("DashboardMapWidget legend", () => {
-  // Integrated alerts: a dataset card with a legend.
+  // Real dataset cards: integrated alerts (3 classes), land cover (9).
   const alertsLayer = { ...layer, datasetId: 11 };
-  it("prints the legend whole, below the map rather than clipped inside it", () => {
-    renderMap({ print: true, layer: alertsLayer });
+  const landCoverLayer = { ...layer, datasetId: 1 };
+  const alertsNote = /^Near-real-time integrated disturbance alerts/;
 
-    const title = screen.getByText("Integrated Disturbance Alerts");
-    expect(screen.getByTestId("maplibre").contains(title)).toBe(false);
-    const list = title.closest("ul");
-    expect(list && getComputedStyle(list).overflowY).toBe("visible");
-  });
-
-  it("keeps the dashboard legend over the map, capped", () => {
+  it("puts the legend under the map, not over it", () => {
     renderMap({ layer: alertsLayer });
 
-    const title = screen.getByText("Integrated Disturbance Alerts");
-    expect(screen.getByTestId("maplibre").contains(title)).toBe(true);
-    const list = title.closest("ul");
-    expect(list && getComputedStyle(list).overflowY).toBe("auto");
+    const item = screen.getByText("Low confidence");
+    expect(screen.getByTestId("maplibre").contains(item)).toBe(false);
   });
 
-  it("starts the dashboard legend minimised, and opens it on request", () => {
+  it("starts collapsed to one line, and opens on request", () => {
     renderMap({ layer: alertsLayer });
 
-    fireEvent.click(screen.getByRole("button", { name: "Expand legend" }));
-    expect(
-      screen.getByRole("button", { name: "Collapse legend" })
-    ).toBeTruthy();
+    expect(screen.queryByText(alertsNote)).toBeNull();
+    const expand = screen.getByRole("button", { name: "Show full legend" });
+    expect(expand.getAttribute("aria-expanded")).toBe("false");
+
+    fireEvent.click(expand);
+    expect(screen.getByText(alertsNote)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Show less" }));
+    expect(screen.queryByText(alertsNote)).toBeNull();
   });
 
-  it("prints the legend open, as paper cannot expand it", () => {
-    renderMap({ print: true, layer: alertsLayer });
+  it("shows three classes collapsed, and the rest on request", () => {
+    renderMap({ layer: landCoverLayer });
 
-    expect(
-      screen.getByRole("button", { name: "Collapse legend" })
-    ).toBeTruthy();
+    expect(screen.getByText("short vegetation")).toBeTruthy();
+    expect(screen.queryByText("water")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "+6 more" }));
+    expect(screen.getByText("water")).toBeTruthy();
+  });
+
+  it("prints the legend open, with every class and the note, and no buttons", () => {
+    renderMap({ print: true, layer: landCoverLayer });
+
+    expect(screen.getByText("built-up")).toBeTruthy();
+    expect(screen.getByText(/^Single-year global land cover/)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Show less" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Layer opacity" })).toBeNull();
+  });
+
+  it("names the context layer the data sits within", () => {
+    renderMap({
+      layer: {
+        ...layer,
+        datasetId: TREE_COVER_LOSS_DATASET_ID,
+        contextTileUrl: "https://example.test/pf/{z}/{x}/{y}.png",
+        contextLayerName: "primary_forest",
+      },
+    });
+
+    expect(screen.getByText("within")).toBeTruthy();
+    expect(screen.getByText("Primary Forests (2001)")).toBeTruthy();
   });
 });
