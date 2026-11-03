@@ -36,8 +36,6 @@ export function LayerEntry(
     onLayerAction: LayerActionHandler;
     expanded?: boolean;
     onToggleExpand?: () => void;
-    /** Tighter type and spacing for small hosts (dashboard map widgets). */
-    compact?: boolean;
   }
 ) {
   const {
@@ -49,12 +47,10 @@ export function LayerEntry(
     children,
     opacity,
     hideOpacityControl,
-    hideRemoveControl,
     onLayerAction,
     info,
     expanded = false,
     onToggleExpand,
-    compact,
   } = props;
 
   return (
@@ -91,7 +87,7 @@ export function LayerEntry(
           >
             <CaretDownIcon size={12} />
           </IconButton>
-          <Heading as="h3" size={compact ? "xs" : "sm"} m={0} truncate>
+          <Heading as="h3" size="sm" m={0} truncate>
             {title}
           </Heading>
         </Flex>
@@ -102,8 +98,8 @@ export function LayerEntry(
           flexShrink={0}
           css={{
             "& button": {
-              h: compact ? 5 : 6,
-              minW: compact ? 5 : 6,
+              h: 6,
+              minW: 6,
             },
           }}
         >
@@ -144,27 +140,20 @@ export function LayerEntry(
               </IconButton>
             </OpacityControl>
           )}
-          {!hideRemoveControl && (
-            <IconButton
-              onClick={() =>
-                onLayerAction({ action: "remove", payload: { id: id } })
-              }
-            >
-              <XIcon />
-            </IconButton>
-          )}
+          <IconButton
+            onClick={() =>
+              onLayerAction({ action: "remove", payload: { id: id } })
+            }
+          >
+            <XIcon />
+          </IconButton>
         </ButtonGroup>
       </Flex>
 
       {/* Collapsible body — symbology → params → within → notes */}
       <Collapsible.Root open={expanded}>
         <Collapsible.Content css={{ transition: "height 0.15s ease" }}>
-          <Flex
-            flexDir="column"
-            gap={compact ? 1.5 : 2}
-            pt={compact ? 1.5 : 2}
-            pr={compact ? 2 : 4}
-          >
+          <Flex flexDir="column" gap={2} pt={2} pr={4}>
             {symbology}
             {params && params.length > 0 && (
               <Flex gap={1} flexWrap="wrap" alignItems="center">

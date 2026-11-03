@@ -41,8 +41,6 @@ export function ImageryLegendEntry(
     onLayerAction: LayerActionHandler;
     expanded?: boolean;
     onToggleExpand?: () => void;
-    /** Tighter type and spacing for small hosts (dashboard map widgets). */
-    compact?: boolean;
   }
 ) {
   const {
@@ -62,7 +60,6 @@ export function ImageryLegendEntry(
     onLayerAction,
     expanded = false,
     onToggleExpand,
-    compact,
   } = props;
 
   // "Collapse state as default" (Figma) — captures expand on demand.
@@ -113,7 +110,7 @@ export function ImageryLegendEntry(
           >
             <CaretDownIcon size={12} />
           </IconButton>
-          <Heading as="h3" size={compact ? "xs" : "sm"} m={0} truncate>
+          <Heading as="h3" size="sm" m={0} truncate>
             {title}
           </Heading>
           {/* IMAGERY badge — secondary/200 per Figma */}
@@ -143,8 +140,8 @@ export function ImageryLegendEntry(
           flexShrink={0}
           css={{
             "& button": {
-              h: compact ? 5 : 6,
-              minW: compact ? 5 : 6,
+              h: 6,
+              minW: 6,
             },
           }}
         >
@@ -204,16 +201,11 @@ export function ImageryLegendEntry(
       <Collapsible.Root open={expanded}>
         <Collapsible.Content css={{ transition: "height 0.15s ease" }}>
           {updating ? (
-            <UpdatingBody compact={compact} />
+            <UpdatingBody />
           ) : (
-            <Flex
-              flexDir="column"
-              gap={compact ? 1.5 : 2}
-              pt={compact ? 1.5 : 2}
-              pr={compact ? 2 : 4}
-            >
+            <Flex flexDir="column" gap={2} pt={2} pr={4}>
               {/* Summary row: thumbnail + source/rendering label */}
-              <Flex gap={2} alignItems="center" pl={compact ? 2 : 3}>
+              <Flex gap={2} alignItems="center" pl={3}>
                 <ImageryThumbnail src={thumbnailUrl} size={32} captioned />
                 <Text fontSize="xs" color="#44505A" truncate>
                   {subtitle}
@@ -236,7 +228,7 @@ export function ImageryLegendEntry(
               {note && <Text fontSize="xs">{note}</Text>}
               {captures.length > 0 && (
                 <>
-                  <Box h="1px" bg="border" mx={compact ? -2 : -4} />
+                  <Box h="1px" bg="border" mx={-4} />
                   {/* Captures summary row — toggles the captures list */}
                   <Flex
                     alignItems="center"
@@ -277,13 +269,7 @@ export function ImageryLegendEntry(
                     <Collapsible.Content
                       css={{ transition: "height 0.15s ease" }}
                     >
-                      <Flex
-                        flexDir="column"
-                        gap="10px"
-                        pl={compact ? 2 : 4}
-                        pt={1}
-                        pb={1}
-                      >
+                      <Flex flexDir="column" gap="10px" pl={4} pt={1} pb={1}>
                         {areaGroups.map((group, index) => (
                           <Fragment key={group.areaLabel}>
                             {index > 0 && <Box h="1px" bg="border" />}
@@ -456,16 +442,10 @@ function ImageryThumbnail(props: {
 }
 
 /** Body shown while the agent is rebuilding the mosaic (Figma 1473:8197). */
-function UpdatingBody(props: { compact?: boolean }) {
-  const { compact } = props;
+function UpdatingBody() {
   return (
-    <Flex
-      flexDir="column"
-      gap={compact ? 1.5 : 2}
-      pt={compact ? 1.5 : 2}
-      pr={compact ? 2 : 4}
-    >
-      <Flex gap={2} alignItems="center" pl={compact ? 2 : 3}>
+    <Flex flexDir="column" gap={2} pt={2} pr={4}>
+      <Flex gap={2} alignItems="center" pl={3}>
         <Box
           w="32px"
           h="32px"
