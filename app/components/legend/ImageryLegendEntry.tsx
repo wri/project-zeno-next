@@ -7,8 +7,6 @@ import {
   Heading,
   IconButton,
   Image,
-  Popover,
-  Portal,
   Spinner,
   Switch,
   Text,
@@ -21,6 +19,7 @@ import {
   PolygonIcon,
   XIcon,
 } from "@phosphor-icons/react";
+import { LayerInfoPopover } from "@/src/shared/ui/LayerInfoPopover";
 import { OpacityControl } from "./OpacityControl";
 import { ImageryInfoDialog } from "./ImageryInfoDialog";
 import type {
@@ -153,26 +152,11 @@ export function ImageryLegendEntry(
             </ImageryInfoDialog>
           ) : (
             info && (
-              <Popover.Root>
-                <Popover.Trigger asChild>
-                  <IconButton>
-                    <InfoIcon />
-                  </IconButton>
-                </Popover.Trigger>
-                <Portal>
-                  <Popover.Positioner>
-                    <Popover.Content>
-                      <Popover.Arrow />
-                      <Popover.Body>
-                        <Popover.Title fontWeight="medium">
-                          Layer information
-                        </Popover.Title>
-                        <Text my="4">{info}</Text>
-                      </Popover.Body>
-                    </Popover.Content>
-                  </Popover.Positioner>
-                </Portal>
-              </Popover.Root>
+              <LayerInfoPopover info={info}>
+                <IconButton>
+                  <InfoIcon />
+                </IconButton>
+              </LayerInfoPopover>
             )
           )}
           <OpacityControl

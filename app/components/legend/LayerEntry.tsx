@@ -5,8 +5,6 @@ import {
   Box,
   ButtonGroup,
   IconButton,
-  Popover,
-  Portal,
   Collapsible,
 } from "@chakra-ui/react";
 import {
@@ -16,6 +14,7 @@ import {
   CaretDownIcon,
   ArrowBendDownRightIcon,
 } from "@phosphor-icons/react";
+import { LayerInfoPopover } from "@/src/shared/ui/LayerInfoPopover";
 import { OpacityControl } from "./OpacityControl";
 import type {
   LegendLayer,
@@ -104,26 +103,11 @@ export function LayerEntry(
           }}
         >
           {info && (
-            <Popover.Root>
-              <Popover.Trigger asChild>
-                <IconButton>
-                  <InfoIcon />
-                </IconButton>
-              </Popover.Trigger>
-              <Portal>
-                <Popover.Positioner>
-                  <Popover.Content>
-                    <Popover.Arrow />
-                    <Popover.Body>
-                      <Popover.Title fontWeight="medium">
-                        Layer information
-                      </Popover.Title>
-                      <Text my="4">{info}</Text>
-                    </Popover.Body>
-                  </Popover.Content>
-                </Popover.Positioner>
-              </Portal>
-            </Popover.Root>
+            <LayerInfoPopover info={info}>
+              <IconButton>
+                <InfoIcon />
+              </IconButton>
+            </LayerInfoPopover>
           )}
           {!hideOpacityControl && (
             <OpacityControl
@@ -225,26 +209,11 @@ function ContextLayerRow(props: {
           css={{ "& button": { h: 5, minW: 5 } }}
         >
           {contextLayer.info && (
-            <Popover.Root>
-              <Popover.Trigger asChild>
-                <IconButton>
-                  <InfoIcon />
-                </IconButton>
-              </Popover.Trigger>
-              <Portal>
-                <Popover.Positioner>
-                  <Popover.Content>
-                    <Popover.Arrow />
-                    <Popover.Body>
-                      <Popover.Title fontWeight="medium">
-                        Layer information
-                      </Popover.Title>
-                      <Text my="4">{contextLayer.info}</Text>
-                    </Popover.Body>
-                  </Popover.Content>
-                </Popover.Positioner>
-              </Portal>
-            </Popover.Root>
+            <LayerInfoPopover info={contextLayer.info}>
+              <IconButton>
+                <InfoIcon />
+              </IconButton>
+            </LayerInfoPopover>
           )}
           <OpacityControl
             value={contextLayer.opacity}
