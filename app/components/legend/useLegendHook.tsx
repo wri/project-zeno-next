@@ -50,8 +50,8 @@ const PARAMETER_FORMATTERS: Record<string, (v: unknown) => string> = {
 /**
  * Converts a layer's raw parameters object into structured LegendParam chips.
  * Each entry becomes a { label, value } pair rendered as a badge in the card.
- * Exported for the dashboard map-widget legend, which builds its entries from
- * widget configs instead of mapStore layers.
+ * Exported for `mapLegendFor`, the dashboard map legend, which reads widget
+ * layers instead of mapStore layers.
  */
 export function buildParams(
   params: Record<string, unknown>,
@@ -73,7 +73,7 @@ export function buildParams(
   return result;
 }
 
-export function renderLegendSymbology(legend: DatasetLegendConfig) {
+function renderLegendSymbology(legend: DatasetLegendConfig) {
   const { type, items, color, unit } = legend;
 
   return type === "categorical" && items ? (

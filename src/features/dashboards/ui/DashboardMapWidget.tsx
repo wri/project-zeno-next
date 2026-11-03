@@ -168,6 +168,8 @@ export default function DashboardMapWidget({
     return () => observer.disconnect();
   }, []);
 
+  const fills = fill || stretch;
+
   const legend = (
     <DashboardMapLegend
       layer={layer}
@@ -184,12 +186,8 @@ export default function DashboardMapWidget({
       ref={containerRef}
       {...{ [PRINT_READY_ATTR]: print ? String(drawn) : undefined }}
       // A filling map takes the height its legend leaves free.
-      flex={fill || stretch ? "1" : undefined}
-      h={
-        fill || stretch
-          ? undefined
-          : { base: "280px", md: tall ? "520px" : "360px" }
-      }
+      flex={fills ? "1" : undefined}
+      h={fills ? undefined : { base: "280px", md: tall ? "520px" : "360px" }}
       minH={stretch ? "280px" : 0}
       rounded="md"
       overflow="hidden"
@@ -327,7 +325,7 @@ export default function DashboardMapWidget({
   // The legend goes under the map, on screen and on paper: a dashboard map
   // is small, and nothing should cover it.
   return (
-    <Flex direction="column" h={fill || stretch ? "100%" : undefined}>
+    <Flex direction="column" h={fills ? "100%" : undefined}>
       {map}
       {legend}
     </Flex>

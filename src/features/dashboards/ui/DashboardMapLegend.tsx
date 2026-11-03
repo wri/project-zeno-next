@@ -1,14 +1,5 @@
-import { useState } from "react";
-import {
-  Box,
-  Button,
-  Flex,
-  Grid,
-  IconButton,
-  Popover,
-  Portal,
-  Text,
-} from "@chakra-ui/react";
+import { useState, type ReactNode } from "react";
+import { Box, Button, Flex, Grid, IconButton, Text } from "@chakra-ui/react";
 import {
   CaretDownIcon,
   CaretUpIcon,
@@ -16,10 +7,12 @@ import {
   InfoIcon,
 } from "@phosphor-icons/react";
 
+import { ColorBar } from "@/app/components/legend/ColorBar";
 import { LegendDivergent } from "@/app/components/legend/LegendDivergent";
 import { LegendSequential } from "@/app/components/legend/LegendSequential";
 import { OpacityControl } from "@/app/components/legend/OpacityControl";
 import { makeColorRamp } from "@/app/components/legend/makeColorRamp";
+import { LayerInfoPopover } from "@/src/shared/ui/LayerInfoPopover";
 import {
   mapLegendFor,
   type MapLegend,
@@ -35,17 +28,20 @@ export interface MapWidgetOpacity {
   context: number;
 }
 
-type OpacityHandler = (target: keyof MapWidgetOpacity, value: number) => void;
-
 /** Classes on the collapsed line; the rest show when the legend opens. */
 const COLLAPSED_CLASSES = 3;
 
+const ICON_BUTTON_PROPS = {
+  variant: "ghost",
+  size: "2xs",
+  color: "fg.muted",
+} as const;
+
 /**
- * A dashboard map's legend, under the map so that nothing covers it.
- * Collapsed, it is one line: the first classes (or the colour scale), the
- * context layer and the layer's settings. Open, it shows every class and the
- * dataset note. Paper cannot expand it, so the export prints it open, without
- * buttons. Dataset widgets only: imagery has no DATASET_CARDS entry.
+ * A dashboard map's legend. Collapsed, it is one line: the first classes (or
+ * the colour scale), the context layer and the layer's settings. Open, it
+ * shows every class and the dataset note. Paper cannot expand it, so the
+ * export prints it open, without buttons.
  */
 export default function DashboardMapLegend({
   layer,
@@ -55,25 +51,57 @@ export default function DashboardMapLegend({
 }: {
   layer: MapWidgetLayer;
   opacity: MapWidgetOpacity;
-  onOpacityChange: OpacityHandler;
+  onOpacityChange: (target: keyof MapWidgetOpacity, value: number) => void;
   print?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const legend = mapLegendFor(layer);
   if (!legend) return null;
+  const { title, info, context } = legend;
+
+  const controls = print ? null : (
+    <Flex flexShrink={0}>
+      <InfoButton title={title} info={info} />
+      <OpacityButton
+        label="Layer opacity"
+        value={opacity.main}
+        onChange={(value) => onOpacityChange("main", value)}
+      />
+      <IconButton
+        aria-label={open ? "Show less" : "Show full legend"}
+        aria-expanded={open}
+        {...ICON_BUTTON_PROPS}
+        onClick={() => setOpen(!open)}
+      >
+        {open ? <CaretUpIcon /> : <CaretDownIcon />}
+      </IconButton>
+    </Flex>
+  );
+
+  const contextControls =
+    print || !context ? null : (
+      <>
+        {context.info && (
+          <InfoButton title={context.title} info={context.info} />
+        )}
+        <OpacityButton
+          label={`${context.title} opacity`}
+          value={opacity.context}
+          onChange={(value) => onOpacityChange("context", value)}
+        />
+      </>
+    );
 
   return print || open ? (
     <OpenLegend
       legend={legend}
-      opacity={opacity}
-      onOpacityChange={onOpacityChange}
-      onCollapse={print ? undefined : () => setOpen(false)}
+      controls={controls}
+      contextControls={contextControls}
     />
   ) : (
     <CollapsedLegend
       legend={legend}
-      opacity={opacity}
-      onOpacityChange={onOpacityChange}
+      controls={controls}
       onExpand={() => setOpen(true)}
     />
   );
@@ -81,17 +109,18 @@ export default function DashboardMapLegend({
 
 function CollapsedLegend({
   legend,
-  opacity,
-  onOpacityChange,
+  controls,
   onExpand,
 }: {
   legend: MapLegend;
-  opacity: MapWidgetOpacity;
-  onOpacityChange: OpacityHandler;
+  controls: ReactNode;
   onExpand: () => void;
 }) {
-  const { classes, scale, context, params } = legend;
-  const hidden = classes.length - COLLAPSED_CLASSES;
+  const { symbology, context, params } = legend;
+  const hidden =
+    symbology.kind === "classes"
+      ? symbology.classes.length - COLLAPSED_CLASSES
+      : 0;
 
   return (
     <Flex align="center" gap="12px" pt="8px" minH="32px" fontSize="xs">
@@ -103,15 +132,15 @@ function CollapsedLegend({
         overflow="hidden"
         whiteSpace="nowrap"
       >
-        {scale ? (
-          <InlineScale scale={scale} />
-        ) : (
+        {symbology.kind === "classes" ? (
           <ClassList
-            classes={classes.slice(0, COLLAPSED_CLASSES)}
+            classes={symbology.classes.slice(0, COLLAPSED_CLASSES)}
             ring={context?.color}
           />
+        ) : (
+          <InlineScale scale={symbology} />
         )}
-        {context && <Within context={context} truncate />}
+        {context && <Within context={context} />}
       </Flex>
       {hidden > 0 && (
         <Button
@@ -129,41 +158,21 @@ function CollapsedLegend({
       {params && (
         <Params text={params} display={{ base: "none", md: "block" }} />
       )}
-      <Flex flexShrink={0}>
-        <InfoButton title={legend.title} info={legend.info} />
-        <OpacityButton
-          label="Layer opacity"
-          value={opacity.main}
-          onChange={(value) => onOpacityChange("main", value)}
-        />
-        <IconButton
-          aria-label="Show full legend"
-          aria-expanded={false}
-          variant="ghost"
-          size="2xs"
-          color="fg.muted"
-          onClick={onExpand}
-        >
-          <CaretDownIcon />
-        </IconButton>
-      </Flex>
+      {controls}
     </Flex>
   );
 }
 
 function OpenLegend({
   legend,
-  opacity,
-  onOpacityChange,
-  onCollapse,
+  controls,
+  contextControls,
 }: {
   legend: MapLegend;
-  opacity: MapWidgetOpacity;
-  onOpacityChange: OpacityHandler;
-  /** Absent on paper, which gets no buttons. */
-  onCollapse: (() => void) | undefined;
+  controls: ReactNode;
+  contextControls: ReactNode;
 }) {
-  const { title, info, note, classes, scale, params, context } = legend;
+  const { title, note, symbology, params, context } = legend;
 
   return (
     <Flex direction="column" gap="8px" pt="8px" fontSize="xs">
@@ -172,46 +181,9 @@ function OpenLegend({
           {title}
         </Text>
         {params && <Params text={params} />}
-        {onCollapse && (
-          <Flex flexShrink={0}>
-            <InfoButton title={title} info={info} />
-            <OpacityButton
-              label="Layer opacity"
-              value={opacity.main}
-              onChange={(value) => onOpacityChange("main", value)}
-            />
-            <IconButton
-              aria-label="Show less"
-              aria-expanded
-              variant="ghost"
-              size="2xs"
-              color="fg.muted"
-              onClick={onCollapse}
-            >
-              <CaretUpIcon />
-            </IconButton>
-          </Flex>
-        )}
+        {controls}
       </Flex>
-      {scale ? (
-        <Box maxW="320px">
-          {scale.kind === "divergent" ? (
-            <LegendDivergent
-              unit={scale.unit ?? ""}
-              minLabel={scale.minLabel}
-              maxLabel={scale.maxLabel}
-              color={scale.colors}
-            />
-          ) : (
-            <LegendSequential
-              unit={scale.unit}
-              minLabel={scale.minLabel}
-              maxLabel={scale.maxLabel}
-              color={scale.colors}
-            />
-          )}
-        </Box>
-      ) : (
+      {symbology.kind === "classes" ? (
         <Grid
           as="ul"
           listStyleType="none"
@@ -221,24 +193,19 @@ function OpenLegend({
           columnGap="12px"
           rowGap="4px"
         >
-          {classes.map((c, i) => (
+          {symbology.classes.map((c, i) => (
             <ClassItem key={i} item={c} ring={context?.color} />
           ))}
         </Grid>
+      ) : (
+        <Box maxW="320px">
+          <ScaleLegend scale={symbology} />
+        </Box>
       )}
       {context && (
         <Flex align="center" gap="4px">
           <Within context={context} />
-          {onCollapse && context.info ? (
-            <InfoButton title={context.title} info={context.info} />
-          ) : null}
-          {onCollapse && (
-            <OpacityButton
-              label={`${context.title} opacity`}
-              value={opacity.context}
-              onChange={(value) => onOpacityChange("context", value)}
-            />
-          )}
+          {contextControls}
         </Flex>
       )}
       <Text color="fg.muted">{note}</Text>
@@ -266,25 +233,30 @@ function Swatch({ color, ring }: { color: string; ring?: string }) {
   );
 }
 
-function ClassItem({
-  item,
-  ring,
-  truncate = false,
-}: {
-  item: MapLegendClass;
-  ring?: string;
-  /** One line: the label ends in an ellipsis rather than spill over the next class. */
-  truncate?: boolean;
-}) {
+/**
+ * A class or context label. It wraps in the open legend; on the collapsed
+ * line, which does not wrap, a long label ends in an ellipsis rather than
+ * run over the next one.
+ */
+function Label({ text }: { text: string }) {
+  return (
+    <Text
+      as="span"
+      minW={0}
+      overflow="hidden"
+      textOverflow="ellipsis"
+      title={text}
+    >
+      {text}
+    </Text>
+  );
+}
+
+function ClassItem({ item, ring }: { item: MapLegendClass; ring?: string }) {
   return (
     <Flex as="li" align="center" gap="6px" minW={0}>
       <Swatch color={item.color} ring={ring} />
-      <Text
-        as="span"
-        {...(truncate ? { truncate: true, minW: 0, title: item.label } : {})}
-      >
-        {item.label}
-      </Text>
+      <Label text={item.label} />
     </Flex>
   );
 }
@@ -299,54 +271,47 @@ function ClassList({
   return (
     <Flex as="ul" listStyleType="none" m={0} p={0} gap="12px" minW={0}>
       {classes.map((c, i) => (
-        <ClassItem key={i} item={c} ring={ring} truncate />
+        <ClassItem key={i} item={c} ring={ring} />
       ))}
     </Flex>
   );
 }
 
 function InlineScale({ scale }: { scale: MapLegendScale }) {
+  const ramp = makeColorRamp(scale.colors);
   return (
     <Flex align="center" gap="6px" flexShrink={0}>
       <Text as="span">{scale.minLabel}</Text>
-      <Box
-        aria-hidden
-        w="96px"
-        h="8px"
-        borderRadius="2px"
-        bg={makeColorRamp(scale.colors)}
-      />
+      {ramp && (
+        <Box w="96px">
+          <ColorBar color={ramp} borderRadius="2px" />
+        </Box>
+      )}
       <Text as="span">{scale.maxLabel}</Text>
     </Flex>
   );
 }
 
-function Within({
-  context,
-  truncate = false,
-}: {
-  context: MapLegendContext;
-  /** One line: the title shrinks to an ellipsis so the classes keep their room. */
-  truncate?: boolean;
-}) {
+function ScaleLegend({ scale }: { scale: MapLegendScale }) {
+  const Scale = scale.kind === "divergent" ? LegendDivergent : LegendSequential;
   return (
-    <Flex
-      align="center"
-      gap="6px"
-      flexShrink={truncate ? 1 : 0}
-      minW={truncate ? 0 : undefined}
-      color="fg.muted"
-    >
+    <Scale
+      unit={scale.unit}
+      minLabel={scale.minLabel}
+      maxLabel={scale.maxLabel}
+      color={scale.colors}
+    />
+  );
+}
+
+function Within({ context }: { context: MapLegendContext }) {
+  return (
+    <Flex align="center" gap="6px" minW={0} color="fg.muted">
       <Text as="span" fontStyle="italic" flexShrink={0}>
         within
       </Text>
       <Swatch color={context.color} />
-      <Text
-        as="span"
-        {...(truncate ? { truncate: true, minW: 0, title: context.title } : {})}
-      >
-        {context.title}
-      </Text>
+      <Label text={context.title} />
     </Flex>
   );
 }
@@ -376,31 +341,11 @@ function Params({
 
 function InfoButton({ title, info }: { title: string; info: string }) {
   return (
-    <Popover.Root>
-      <Popover.Trigger asChild>
-        <IconButton
-          aria-label={`About ${title}`}
-          variant="ghost"
-          size="2xs"
-          color="fg.muted"
-        >
-          <InfoIcon />
-        </IconButton>
-      </Popover.Trigger>
-      <Portal>
-        <Popover.Positioner>
-          <Popover.Content>
-            <Popover.Arrow />
-            <Popover.Body>
-              <Popover.Title fontWeight="medium">
-                Layer information
-              </Popover.Title>
-              <Text my="4">{info}</Text>
-            </Popover.Body>
-          </Popover.Content>
-        </Popover.Positioner>
-      </Portal>
-    </Popover.Root>
+    <LayerInfoPopover info={info}>
+      <IconButton aria-label={`About ${title}`} {...ICON_BUTTON_PROPS}>
+        <InfoIcon />
+      </IconButton>
+    </LayerInfoPopover>
   );
 }
 
@@ -415,12 +360,7 @@ function OpacityButton({
 }) {
   return (
     <OpacityControl value={value} onValueChange={onChange}>
-      <IconButton
-        aria-label={label}
-        variant="ghost"
-        size="2xs"
-        color="fg.muted"
-      >
+      <IconButton aria-label={label} {...ICON_BUTTON_PROPS}>
         <CircleHalfIcon />
       </IconButton>
     </OpacityControl>

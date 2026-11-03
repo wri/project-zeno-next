@@ -1,7 +1,7 @@
 import { buildParams } from "@/app/components/legend/useLegendHook";
 import {
   CONTEXT_LAYER_METADATA,
-  DATASET_CARDS,
+  DATASET_CARD_BY_ID,
 } from "@/app/constants/datasets";
 import { buildYearParam } from "@/app/utils/formatYearRange";
 import type { MapWidgetLayer } from "./mapWidgets";
@@ -12,13 +12,20 @@ export interface MapLegendClass {
   color: string;
 }
 
+/** Colour classes, e.g. alert confidence levels or land cover types. */
+export interface MapLegendClasses {
+  kind: "classes";
+  classes: MapLegendClass[];
+}
+
 /** A colour scale: low to high (sequential) or either side of zero (divergent). */
 export interface MapLegendScale {
   kind: "sequential" | "divergent";
   colors: string[];
   minLabel: string;
   maxLabel: string;
-  unit: string | undefined;
+  /** Empty when the dataset has none. */
+  unit: string;
 }
 
 /** The context layer the data sits within, e.g. "Primary Forests (2001)". */
@@ -28,17 +35,12 @@ export interface MapLegendContext {
   info: string | undefined;
 }
 
-/**
- * A dashboard map's legend, settled once from the widget layer and its
- * dataset card. A legend has colour classes or a colour scale, never both.
- */
+/** A dashboard map's legend, settled once from the widget layer and its dataset card. */
 export interface MapLegend {
   title: string;
   info: string;
   note: string;
-  /** Empty when the legend is a scale. */
-  classes: MapLegendClass[];
-  scale: MapLegendScale | null;
+  symbology: MapLegendClasses | MapLegendScale;
   /** The layer's settings as one line, e.g. "YEARS 2001–25 · CANOPY 30%". Empty when none. */
   params: string;
   context: MapLegendContext | null;
@@ -50,28 +52,26 @@ export interface MapLegend {
  */
 export function mapLegendFor(layer: MapWidgetLayer): MapLegend | null {
   const card =
-    layer.datasetId != null
-      ? DATASET_CARDS.find((d) => d.dataset_id === layer.datasetId)
-      : undefined;
+    layer.datasetId != null ? DATASET_CARD_BY_ID[layer.datasetId] : undefined;
   if (!card?.legend) return null;
   const { title, info, note, type, items = [], color, unit } = card.legend;
 
-  const scale: MapLegendScale | null =
+  const symbology: MapLegend["symbology"] =
     type === "sequential" || type === "divergent"
       ? {
           kind: type,
           colors: items.length > 0 ? items.map((i) => i.color) : [color],
           minLabel: items[0]?.label ?? "",
           maxLabel: items[items.length - 1]?.label ?? "",
-          unit: unit ?? undefined,
+          unit: unit ?? "",
         }
-      : null;
-
-  const classes: MapLegendClass[] = scale
-    ? []
-    : items.length > 0
-      ? items.map((i) => ({ label: i.label ?? "", color: i.color }))
-      : [{ label: title, color }];
+      : {
+          kind: "classes",
+          classes:
+            items.length > 0
+              ? items.map((i) => ({ label: i.label ?? "", color: i.color }))
+              : [{ label: title, color }],
+        };
 
   const params = buildParams(
     layer.parameters ?? {},
@@ -90,5 +90,5 @@ export function mapLegendFor(layer: MapWidgetLayer): MapLegend | null {
     };
   }
 
-  return { title, info, note, classes, scale, params, context };
+  return { title, info, note, symbology, params, context };
 }
