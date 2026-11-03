@@ -97,6 +97,25 @@ export const AnalysisTemplateSchema = z.object({
 
 export const AnalysisTemplateListSchema = z.array(AnalysisTemplateSchema);
 
+// A dashboard's alert settings (ADR 0012), sent only to its owner and to
+// superusers. The wire is keyed by dataset and contact type; it settles into
+// two booleans here so that shape never leaves api/. `in_app_enabled` is
+// derived by the backend: true exactly when the dashboard is eligible.
+const DashboardAlertsSettingsSchema = z
+  .object({
+    in_app_enabled: z.boolean(),
+    // Absent or empty when email was never turned on.
+    integrated_alerts: z
+      .object({ contact_types: z.array(z.string()).default([]) })
+      .nullable()
+      .optional(),
+  })
+  .transform((alerts) => ({
+    inAppEnabled: alerts.in_app_enabled,
+    emailEnabled:
+      alerts.integrated_alerts?.contact_types.includes("email") ?? false,
+  }));
+
 export const DashboardResponseSchema = z.object({
   id: z.string(),
   user_id: z.string(),
@@ -111,6 +130,9 @@ export const DashboardResponseSchema = z.object({
   // Flat across every container, so `position` alone does NOT give render
   // order — group with `widgetContainers` (model/dashboard-sections).
   widgets: z.array(DashboardWidgetResponseSchema).default([]),
+  // Absent for other viewers and from a pre-subscriptions backend. A
+  // malformed value hides the email control rather than failing the page.
+  alerts: DashboardAlertsSettingsSchema.optional().catch(undefined),
 });
 
 export const DashboardListResponseSchema = z.array(DashboardResponseSchema);
