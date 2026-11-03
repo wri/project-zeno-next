@@ -117,6 +117,24 @@ export async function renameDashboard(
   });
 }
 
+// Integrated-alerts email on or off for one dashboard (owner only). The body
+// is the desired state: no contact types turns email off. The response (the
+// updated dashboard) is ignored; callers invalidate and refetch, as with
+// rename, so the backend's coupling rule has the last word.
+export async function setEmailAlerts(
+  dashboardId: string,
+  enabled: boolean
+): Promise<void> {
+  await readJson<unknown>(`/api/dashboards/${dashboardId}/subscriptions`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      datasets: ["integrated_alerts"],
+      contact_types: enabled ? ["email"] : [],
+    }),
+  });
+}
+
 export async function deleteDashboard(dashboardId: string): Promise<void> {
   // 204 No Content — bypass readJson, which would choke on the empty body.
   const res = await apiFetch(`/api/dashboards/${dashboardId}`, {

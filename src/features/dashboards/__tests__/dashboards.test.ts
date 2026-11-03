@@ -11,9 +11,11 @@ import {
   addTextWidget,
   applyAnalysisTemplate,
   fetchDashboardAlertsSummary,
+  setEmailAlerts,
 } from "../api/dashboards";
 import {
   DashboardListResponseSchema,
+  DashboardResponseSchema,
   DashboardSectionResponseSchema,
 } from "../api/schemas";
 import {
@@ -168,6 +170,83 @@ describe("dashboard date helpers", () => {
     const now = new Date("2026-08-13T12:00:00Z").getTime();
     expect(wasJustCreated("not-a-date", now)).toBe(false);
     expect(wasJustCreated("2026-08-13T12:01:00Z", now)).toBe(false);
+  });
+});
+
+describe("dashboard alerts settings", () => {
+  const body = {
+    id: "d1",
+    user_id: "u1",
+    name: "Paraná",
+    is_public: false,
+    created_at: "2026-09-01T00:00:00Z",
+    updated_at: "2026-09-01T00:00:00Z",
+  };
+  const parse = (alerts: unknown) =>
+    DashboardResponseSchema.parse({ ...body, alerts });
+
+  it("reads email as on only when the email contact type is listed", () => {
+    expect(
+      parse({
+        in_app_enabled: true,
+        integrated_alerts: { contact_types: ["email"] },
+      }).alerts
+    ).toEqual({ inAppEnabled: true, emailEnabled: true });
+    expect(
+      parse({ in_app_enabled: true, integrated_alerts: { contact_types: [] } })
+        .alerts
+    ).toEqual({ inAppEnabled: true, emailEnabled: false });
+  });
+
+  it("reads a never-set subscription as email off", () => {
+    expect(parse({ in_app_enabled: false }).alerts).toEqual({
+      inAppEnabled: false,
+      emailEnabled: false,
+    });
+  });
+
+  it("leaves alerts undefined when absent or malformed, and still parses the dashboard", () => {
+    expect(DashboardResponseSchema.parse(body).alerts).toBeUndefined();
+    const malformed = parse({ in_app_enabled: "yes" });
+    expect(malformed.alerts).toBeUndefined();
+    expect(malformed.name).toBe("Paraná");
+  });
+});
+
+describe("setEmailAlerts", () => {
+  beforeEach(() => vi.mocked(apiFetch).mockReset());
+
+  it.each([
+    [true, ["email"]],
+    [false, []],
+  ])("PUTs the desired state (enabled=%s)", async (enabled, contactTypes) => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      new Response(JSON.stringify({}), { status: 200 })
+    );
+
+    await setEmailAlerts("d1", enabled);
+
+    expect(apiFetch).toHaveBeenCalledWith("/api/dashboards/d1/subscriptions", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        datasets: ["integrated_alerts"],
+        contact_types: contactTypes,
+      }),
+    });
+  });
+
+  it("rejects with the status and detail of a 409", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      new Response(JSON.stringify({ detail: "Dashboard is not eligible" }), {
+        status: 409,
+      })
+    );
+
+    await expect(setEmailAlerts("d1", true)).rejects.toMatchObject({
+      status: 409,
+      detail: "Dashboard is not eligible",
+    });
   });
 });
 
