@@ -28,6 +28,10 @@ export interface MapWidgetOpacity {
  * imagery has no DATASET_CARDS entry — and no AOI chips (the dashboard's area
  * is fixed, not removable). The layer itself isn't removable either (the
  * card's ✕ removes the whole widget), so only opacity is actionable.
+ *
+ * On screen it starts collapsed to its header: a dashboard map has little
+ * room, and the open legend covers much of it. Paper cannot expand it, so
+ * the export prints it open.
  */
 export default function DashboardMapLegend({
   layer,
@@ -84,6 +88,7 @@ export default function DashboardMapLegend({
       layers={[entry]}
       compact
       uncapped={print}
+      defaultCollapsed={!print}
       onLayerAction={({ action, payload }) => {
         if (action === "opacity") {
           onOpacityChange(

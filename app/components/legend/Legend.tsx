@@ -41,6 +41,8 @@ interface LegendProps {
   uncapped?: boolean;
   /** Rendered in the header beside the collapse caret (e.g. a Datasets button). */
   headerAction?: ReactNode;
+  /** Start with only the header showing (small maps with little room). */
+  defaultCollapsed?: boolean;
 }
 
 /**
@@ -60,10 +62,11 @@ export function Legend(props: LegendProps) {
     compact,
     uncapped,
     headerAction,
+    defaultCollapsed = false,
   } = props;
 
   // Controls whether the whole legend body is collapsed to just the header.
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
 
   // Track which layers are expanded (multiple can be open).
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());

@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { useEffect, useImperativeHandle } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -155,5 +155,22 @@ describe("DashboardMapWidget legend", () => {
     expect(screen.getByTestId("maplibre").contains(title)).toBe(true);
     const list = title.closest("ul");
     expect(list && getComputedStyle(list).overflowY).toBe("auto");
+  });
+
+  it("starts the dashboard legend minimised, and opens it on request", () => {
+    renderMap({ layer: alertsLayer });
+
+    fireEvent.click(screen.getByRole("button", { name: "Expand legend" }));
+    expect(
+      screen.getByRole("button", { name: "Collapse legend" })
+    ).toBeTruthy();
+  });
+
+  it("prints the legend open, as paper cannot expand it", () => {
+    renderMap({ print: true, layer: alertsLayer });
+
+    expect(
+      screen.getByRole("button", { name: "Collapse legend" })
+    ).toBeTruthy();
   });
 });
