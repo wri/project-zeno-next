@@ -281,6 +281,7 @@ function ContainerGrid({
             <DashboardInsightModule
               widget={widget}
               areaAoi={areaAoi}
+              sectionTemplate={container.section?.template?.name}
               isOwner={isOwner}
               isDouble={size === "double"}
               print={print}

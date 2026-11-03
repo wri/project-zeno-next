@@ -1,16 +1,5 @@
 import { useState } from "react";
-import {
-  Box,
-  Button,
-  Flex,
-  Input,
-  Popover,
-  Portal,
-  Skeleton,
-  Table,
-  Text,
-} from "@chakra-ui/react";
-import { CaretDownIcon } from "@phosphor-icons/react";
+import { Box, Button, Flex, Skeleton, Table, Text } from "@chakra-ui/react";
 
 import InsightCaption from "@/app/components/InsightCaption";
 import DownloadMenu from "@/app/components/widgets/DownloadMenu";
@@ -19,7 +8,6 @@ import { InfoTooltip } from "@/src/shared/ui/InfoTooltip";
 import { Pill } from "@/src/shared/ui/Pill";
 import { isRetryable, type AlertsListError } from "../api/alerts";
 import {
-  customRangeProblem,
   formatAlertDate,
   formatHa,
   formatRangeCaps,
@@ -38,6 +26,7 @@ import {
 } from "../lib/alertsWidgets";
 import { pageNumbers, paginate } from "../lib/pagination";
 import { TWO_COLUMN_QUERY } from "./gridLayout";
+import { CustomPeriodPill, pillProps } from "./PeriodPills";
 
 const PAGE_SIZE = 10;
 
@@ -55,12 +44,6 @@ const CONFIDENCES: AlertsConfidence[] = ["all", "high", "highest"];
 const LAND_FILTER_OPTIONS = (
   Object.keys(LAND_FILTERS) as AlertsLandFilter[]
 ).map((value) => ({ value, label: LAND_FILTERS[value].label }));
-
-/** The Custom popover's two inputs, each editing one end of the range. */
-const CUSTOM_BOUNDS: { bound: keyof DateRange; label: string }[] = [
-  { bound: "start", label: "Start" },
-  { bound: "end", label: "End" },
-];
 
 /** A failed fetch, as the pane words it. */
 export type AlertsFailure = Pick<AlertsListError, "kind" | "detail">;
@@ -99,26 +82,6 @@ function rangeLabel(range: DateRange): string {
     ? `on ${formatAlertDate(range.start)}`
     : `from ${formatAlertDate(range.start)} to ${formatAlertDate(range.end)}`;
 }
-
-/** The design's filter pill: a rounded 24px chip, solid primary when on. */
-const pillProps = (selected: boolean) =>
-  ({
-    size: "xs",
-    h: "24px",
-    px: "10px",
-    gap: "6px",
-    rounded: "full",
-    fontSize: "12px",
-    fontWeight: "medium",
-    colorPalette: selected ? "primary" : undefined,
-    variant: selected ? "solid" : "outline",
-    bg: selected ? undefined : "white",
-    borderColor: selected ? undefined : "#E0E2E5",
-    color: selected ? undefined : "#131619",
-    // The button recipe sizes every descendant svg to 20px; the design's
-    // chevron is 10px.
-    _icon: { width: "auto", height: "auto" },
-  }) as const;
 
 /** The design's NEW pill: red on a pale red ground, with a dot. */
 function NewBadge() {
@@ -416,23 +379,6 @@ export default function DashboardAlertsList({
   const ready = view.kind === "ready";
   const range = ready ? view.range : undefined;
 
-  // The Custom dates open from the Custom pill, which also selects the chip,
-  // so the popover is controlled rather than toggled by its trigger.
-  const [customOpen, setCustomOpen] = useState(false);
-  const [customInverted, setCustomInverted] = useState(false);
-  const openCustom = () => {
-    onChip("custom");
-    setCustomInverted(false);
-    setCustomOpen(true);
-  };
-  const changeBound = (bound: keyof DateRange, value: string) => {
-    if (!custom || view.kind !== "ready" || !value) return;
-    const next = { ...custom, [bound]: value };
-    const problem = customRangeProblem(next, view.anchor);
-    setCustomInverted(problem === "inverted");
-    if (!problem) onCustomChange(next);
-  };
-
   // The page resets whenever the rows it indexes change identity (a chip, a
   // tier, a new period). Reconciled during render, not in an effect, so the
   // table never paints a stale page first.
@@ -494,89 +440,14 @@ export default function DashboardAlertsList({
             </Button>
           );
         })}
-        {/* Custom: the pill selects the chip and opens the dates under
-            itself. Mounted on open, so the inputs start from the committed
-            range each time (they are uncontrolled: a controlled date input
-            snaps a half-typed year back on every keystroke the handler
-            ignores). */}
-        <Popover.Root
-          open={customOpen}
-          onOpenChange={(e) => {
-            setCustomOpen(e.open);
-            if (!e.open) setCustomInverted(false);
-          }}
-          // Fixed, as the basemap selector's: the dashboard scrolls inside a
-          // container, and an absolute positioner lands off the page.
-          positioning={{ placement: "bottom-start", strategy: "fixed" }}
-          lazyMount
-          unmountOnExit
-        >
-          <Popover.Anchor asChild>
-            <Button
-              {...pillProps(chip === "custom")}
-              aria-pressed={chip === "custom"}
-              disabled={!ready}
-              onClick={openCustom}
-            >
-              Custom
-              <CaretDownIcon size={10} />
-            </Button>
-          </Popover.Anchor>
-          <Portal>
-            <Popover.Positioner>
-              <Popover.Content w="auto" zIndex={1400}>
-                <Popover.Body p={3}>
-                  {custom && view.kind === "ready" && (
-                    <Flex direction="column" gap="8px">
-                      <Flex gap="8px" align="center" wrap="wrap">
-                        {CUSTOM_BOUNDS.map(({ bound, label }) => (
-                          <Text
-                            key={bound}
-                            as="label"
-                            fontSize="12px"
-                            color="#565E7B"
-                          >
-                            {label}{" "}
-                            <Input
-                              type="date"
-                              size="xs"
-                              w="auto"
-                              display="inline-block"
-                              bg="white"
-                              defaultValue={custom[bound]}
-                              // Each input stops at the other's day: the
-                              // picker greys the rest, and a typed date past
-                              // it is refused below.
-                              min={
-                                bound === "start"
-                                  ? sinceRange(view.anchor).start
-                                  : custom.start
-                              }
-                              max={bound === "start" ? custom.end : view.anchor}
-                              aria-label={`Custom period ${bound}`}
-                              onChange={(e) =>
-                                changeBound(bound, e.target.value)
-                              }
-                            />
-                          </Text>
-                        ))}
-                      </Flex>
-                      {customInverted && (
-                        <Text
-                          fontSize="12px"
-                          color="#B91C1C"
-                          aria-live="polite"
-                        >
-                          End must be on or after start.
-                        </Text>
-                      )}
-                    </Flex>
-                  )}
-                </Popover.Body>
-              </Popover.Content>
-            </Popover.Positioner>
-          </Portal>
-        </Popover.Root>
+        <CustomPeriodPill
+          selected={chip === "custom"}
+          disabled={!ready}
+          custom={ready ? custom : undefined}
+          bounds={ready ? sinceRange(view.anchor) : undefined}
+          onOpen={() => onChip("custom")}
+          onChange={onCustomChange}
+        />
         <Box w="1px" h="20px" bg="#DDE2F5" aria-hidden />
         <Pill
           variant="text"

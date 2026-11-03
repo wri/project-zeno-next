@@ -2,6 +2,7 @@ import { format, parseISO } from "date-fns";
 
 import { rowsToCsv } from "@/src/shared/lib/csv";
 import { shiftIsoDate, type DateRange } from "@/src/shared/lib/iso-date";
+import { periodRangeProblem } from "./alertsChart";
 import {
   mapWidgetLayer,
   str,
@@ -256,10 +257,7 @@ export function customRangeProblem(
   range: DateRange,
   anchor: string
 ): "outside" | "inverted" | undefined {
-  const since = sinceRange(anchor);
-  const inside = (iso: string) => iso >= since.start && iso <= since.end;
-  if (!inside(range.start) || !inside(range.end)) return "outside";
-  return range.end < range.start ? "inverted" : undefined;
+  return periodRangeProblem(range, sinceRange(anchor));
 }
 
 /** Whether `range` reaches outside the window the rows were fetched for. */
