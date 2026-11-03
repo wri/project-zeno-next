@@ -215,19 +215,23 @@ function OpenLegend({
 
 /**
  * A class colour. Inside a context layer it sits on a ring of the context
- * colour, as the data's pixels sit on the context layer on the map.
+ * colour, as the data's pixels sit on the context layer on the map. The ring
+ * is drawn inside the box: the collapsed line clips what is outside it.
  */
 function Swatch({ color, ring }: { color: string; ring?: string }) {
+  const size = ring ? "14px" : "10px";
   return (
     <Box
       aria-hidden
-      w="10px"
-      h="10px"
+      w={size}
+      h={size}
       flexShrink={0}
-      borderRadius="2px"
+      borderRadius={ring ? "4px" : "2px"}
       bg={color}
       boxShadow={
-        ring ? `0 0 0 2px ${ring}` : "inset 0 0 0 1px rgba(19, 22, 25, 0.1)"
+        ring
+          ? `inset 0 0 0 2px ${ring}`
+          : "inset 0 0 0 1px rgba(19, 22, 25, 0.1)"
       }
     />
   );
