@@ -111,7 +111,7 @@ function CollapsedLegend({
             ring={context?.color}
           />
         )}
-        {context && <Within context={context} />}
+        {context && <Within context={context} truncate />}
       </Flex>
       {hidden > 0 && (
         <Button
@@ -266,11 +266,25 @@ function Swatch({ color, ring }: { color: string; ring?: string }) {
   );
 }
 
-function ClassItem({ item, ring }: { item: MapLegendClass; ring?: string }) {
+function ClassItem({
+  item,
+  ring,
+  truncate = false,
+}: {
+  item: MapLegendClass;
+  ring?: string;
+  /** One line: the label ends in an ellipsis rather than spill over the next class. */
+  truncate?: boolean;
+}) {
   return (
     <Flex as="li" align="center" gap="6px" minW={0}>
       <Swatch color={item.color} ring={ring} />
-      <Text as="span">{item.label}</Text>
+      <Text
+        as="span"
+        {...(truncate ? { truncate: true, minW: 0, title: item.label } : {})}
+      >
+        {item.label}
+      </Text>
     </Flex>
   );
 }
@@ -285,7 +299,7 @@ function ClassList({
   return (
     <Flex as="ul" listStyleType="none" m={0} p={0} gap="12px" minW={0}>
       {classes.map((c, i) => (
-        <ClassItem key={i} item={c} ring={ring} />
+        <ClassItem key={i} item={c} ring={ring} truncate />
       ))}
     </Flex>
   );
@@ -307,14 +321,32 @@ function InlineScale({ scale }: { scale: MapLegendScale }) {
   );
 }
 
-function Within({ context }: { context: MapLegendContext }) {
+function Within({
+  context,
+  truncate = false,
+}: {
+  context: MapLegendContext;
+  /** One line: the title shrinks to an ellipsis so the classes keep their room. */
+  truncate?: boolean;
+}) {
   return (
-    <Flex align="center" gap="6px" flexShrink={0} color="fg.muted">
-      <Text as="span" fontStyle="italic">
+    <Flex
+      align="center"
+      gap="6px"
+      flexShrink={truncate ? 1 : 0}
+      minW={truncate ? 0 : undefined}
+      color="fg.muted"
+    >
+      <Text as="span" fontStyle="italic" flexShrink={0}>
         within
       </Text>
       <Swatch color={context.color} />
-      <Text as="span">{context.title}</Text>
+      <Text
+        as="span"
+        {...(truncate ? { truncate: true, minW: 0, title: context.title } : {})}
+      >
+        {context.title}
+      </Text>
     </Flex>
   );
 }
