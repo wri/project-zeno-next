@@ -1,6 +1,6 @@
-import { InsightWidget, DatasetInfo } from "@/app/types/chat";
-import useMapStore from "@/app/store/mapStore";
+import { InsightWidget } from "@/app/types/chat";
 import { DATASET_BY_ID } from "@/app/constants/datasets";
+import { soleDataset } from "@/src/entities/insight/lib/analysis-inputs";
 
 export type AIProvider = "claude" | "chatgpt" | "gemini";
 
@@ -53,23 +53,15 @@ function buildMarkdownTable(data: unknown): string {
   return [header, sep, body].join("\n") + truncationNote;
 }
 
-function resolveDatasetMeta(): DatasetInfo | null {
-  // The visible dataset layer is the active dataset. Skip context sub-layers
-  // (parentLayerId set) so we resolve the main dataset's metadata.
-  const datasetLayer = useMapStore
-    .getState()
-    .layers.find((l) => typeof l.datasetId === "number" && !l.parentLayerId);
-  if (datasetLayer?.datasetId != null) {
-    return DATASET_BY_ID[datasetLayer.datasetId] ?? null;
-  }
-  return null;
-}
-
 export function buildExportPrompt(widget: InsightWidget): string {
-  const meta = resolveDatasetMeta();
+  // The analysis's recorded dataset, not whatever the map shows now; none
+  // when the inputs were not recorded or span several datasets.
+  const dataset = soleDataset(widget.analysisInputs);
+  const meta =
+    dataset?.id !== undefined ? DATASET_BY_ID[dataset.id] : undefined;
   const dataTable = buildMarkdownTable(widget.data);
 
-  const datasetName = meta?.dataset_name ?? widget.datasetName;
+  const datasetName = dataset?.name;
   const source = meta?.provider ?? meta?.source;
 
   const parts: string[] = [
@@ -86,7 +78,7 @@ export type ExportMethod = "url" | "clipboard";
 
 // Best-effort copy that also works where navigator.clipboard is missing
 // (non-HTTPS origins). Components use Chakra's useClipboard instead; this runs
-// outside React, and the prompt depends on map state at click time.
+// outside React.
 function copyText(text: string) {
   const clipboard = navigator.clipboard; // eslint-disable-line no-restricted-properties
   if (clipboard) {
