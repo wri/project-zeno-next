@@ -69,8 +69,7 @@ export function buildExportPrompt(widget: InsightWidget): string {
   const meta = resolveDatasetMeta();
   const dataTable = buildMarkdownTable(widget.data);
 
-  const datasetName =
-    meta?.dataset_name ?? widget.analysisParams?.dataset ?? widget.datasetName;
+  const datasetName = meta?.dataset_name ?? widget.datasetName;
   const source = meta?.provider ?? meta?.source;
 
   const parts: string[] = [

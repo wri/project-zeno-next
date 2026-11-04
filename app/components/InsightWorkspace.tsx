@@ -27,9 +27,8 @@ import {
 } from "./widgets/ChartCardSkeleton";
 import { Tooltip } from "./ui/tooltip";
 import AnalysisParametersToggle, {
-  AnalysisParamsChips,
+  AnalysisInputsChips,
 } from "./widgets/AnalysisParameters";
-import { buildChips } from "./widgets/analysis-params-utils";
 import {
   NetFluxChartInfo,
   collapseNetFluxSiblings,
@@ -164,8 +163,7 @@ export default function InsightWorkspace() {
   const widget = insights[currentIndex];
   const isNetFlux = isNetFluxWidget(widget);
   const isFluxTree = isFluxTreeWidget(widget);
-  const chips = widget.analysisParams ? buildChips(widget.analysisParams) : [];
-  const hasChips = chips.length > 0;
+  const inputs = widget.analysisInputs;
   // currentIndex 0 = newest (shown as "1 of N"). The Left/Prev arrow
   // disables at 1/N; Right/Next advances through the stack to older entries.
   const canGoPrev = currentIndex > 0;
@@ -326,7 +324,7 @@ export default function InsightWorkspace() {
                 {isNetFlux && <NetFluxChartInfo />}
                 {isFluxTree && <GhgFluxTreeChartInfo />}
               </Flex>
-              {hasChips && (
+              {inputs && (
                 <AnalysisParametersToggle
                   expanded={paramsExpanded}
                   onToggle={() => setParamsExpanded((v) => !v)}
@@ -334,10 +332,10 @@ export default function InsightWorkspace() {
               )}
             </Flex>
 
-            {/* Params chips section */}
-            {hasChips && paramsExpanded && (
+            {/* What was analysed: the recorded inputs, or a note */}
+            {inputs && paramsExpanded && (
               <Box px={4} py={2}>
-                <AnalysisParamsChips chips={chips} />
+                <AnalysisInputsChips inputs={inputs} />
               </Box>
             )}
 

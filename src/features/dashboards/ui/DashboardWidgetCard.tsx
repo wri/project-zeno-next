@@ -20,12 +20,10 @@ import {
 } from "@phosphor-icons/react";
 
 import AnalysisParametersToggle, {
+  AnalysisInputsChips,
   AnalysisParamsChips,
 } from "@/app/components/widgets/AnalysisParameters";
-import {
-  buildChips,
-  type ParamChipData,
-} from "@/app/components/widgets/analysis-params-utils";
+import type { ParamChipData } from "@/app/components/widgets/analysis-params-utils";
 import { toaster } from "@/app/components/ui/toaster";
 import type { InsightWidget } from "@/app/types/chat";
 import type { MapAreaAoi, MapWidgetLayer } from "../lib/mapWidgets";
@@ -159,9 +157,13 @@ export default function DashboardWidgetCard({
   // the prop is authoritative again. Runs before paint — no flash, no effect.
   if (pending !== null && title.trim() === pending) setPending(null);
   const displayTitle = pending ?? title;
-  const chips = card?.analysisParams
-    ? buildChips(card.analysisParams)
-    : (paramChips ?? []);
+  // An insight card shows its recorded inputs (or the not-recorded note);
+  // a widget with no insight, such as alerts, its caller's chips.
+  const inputsBody = card?.analysisInputs ? (
+    <AnalysisInputsChips inputs={card.analysisInputs} />
+  ) : paramChips?.length ? (
+    <AnalysisParamsChips chips={paramChips} />
+  ) : null;
 
   const commitRename = () => {
     const next = (draft ?? "").trim();
@@ -307,7 +309,7 @@ export default function DashboardWidgetCard({
       </Flex>
 
       {/* Params row — the "What was analysed" toggle over the input chips */}
-      {chips.length > 0 && (
+      {inputsBody && (
         <Box px="8px" pb="8px">
           <Flex
             borderTopWidth="1px"
@@ -323,11 +325,7 @@ export default function DashboardWidgetCard({
             />
             {paramsAside && <Box ml="auto">{paramsAside}</Box>}
           </Flex>
-          {paramsExpanded && (
-            <Box pt="8px">
-              <AnalysisParamsChips chips={chips} />
-            </Box>
-          )}
+          {paramsExpanded && <Box pt="8px">{inputsBody}</Box>}
         </Box>
       )}
 

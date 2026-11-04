@@ -1,7 +1,10 @@
 import { FeatureCollection } from "geojson";
 import type { BlogArticle } from "@/app/schemas/api/blogs/get";
 import type { ChartColorFields } from "@/app/types/chartColors";
-import type { AnalysisInputsWire } from "@/src/entities/insight";
+import type {
+  AnalysisInputs,
+  AnalysisInputsWire,
+} from "@/src/entities/insight";
 
 export type { BlogArticle };
 
@@ -118,7 +121,10 @@ export interface InsightWidget extends ChartColorFields {
   // undefined, the workspace falls back to treating a missing `generation` (the
   // direct/curated flow) as curated.
   curated?: boolean;
-  analysisParams?: AnalysisParams; // Parameters used by the agent to produce this insight
+  // What the analysis was computed from, as the backend recorded it. Set on
+  // every analysis widget (the "What was analysed" toggle); undefined on
+  // widgets that are not analyses, such as dataset cards.
+  analysisInputs?: AnalysisInputs;
   // Persisted insight UUID. All charts of one analysis share it; it is the
   // handle for REST widget adds (POST /api/dashboards/:id/widgets) and the id
   // the agent loads the insight by (view_context). generate_insights streams
@@ -128,15 +134,6 @@ export interface InsightWidget extends ChartColorFields {
   // `position`), so the agent can tell which chart of an analysis is on
   // screen.
   chartPosition?: number;
-}
-
-// Parameters the agent used to produce an insight (read-only transparency)
-export interface AnalysisParams {
-  areas?: string[]; // e.g. ["Pará, Brazil", "KBAs"]
-  dataset?: string; // e.g. "Tree cover loss"
-  canopyThreshold?: number; // e.g. 30 (percentage)
-  startYear?: number;
-  endYear?: number;
 }
 
 // Raw insight data from API (before conversion to InsightWidget)

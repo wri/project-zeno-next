@@ -65,6 +65,21 @@ describe("recordToGroup", () => {
     expect(group.verification).toBe("ai-generated");
   });
 
+  it("stamps the record's inputs on every chart", () => {
+    const recorded = {
+      recorded: true as const,
+      areas: [{ name: "Acre, Brazil" }],
+      datasets: [{ name: "Integrated alerts" }],
+      canopyCover: [],
+      years: [{ start: 2025, end: 2026 }],
+    };
+    const group = recordToGroup(record({ analysisInputs: recorded }));
+    expect(group.widgets.map((w) => w.analysisInputs)).toEqual([
+      recorded,
+      recorded,
+    ]);
+  });
+
   it("prefers the record title and keeps curated groups addable by their id", () => {
     const group = recordToGroup(
       record({
@@ -110,11 +125,25 @@ describe("analysisResultToGroup", () => {
       expect(widget.insightId).toBe("ins-7");
       expect(widget.curated).toBe(true);
       expect(widget.datasetName).toBe("Tree cover loss");
-      expect(widget.analysisParams).toEqual({
-        areas: ["Pará"],
-        dataset: "Tree cover loss",
-      });
     }
+  });
+
+  it("shows the stored insight's recorded inputs, not the requested area", () => {
+    const recorded = {
+      recorded: true as const,
+      areas: [{ name: "Pará, Brazil", source: "gadm", srcId: "BRA.14" }],
+      datasets: [{ name: "Tree cover loss", id: 4 }],
+      canopyCover: [30],
+      years: [{ start: 2001, end: 2024 }],
+    };
+    const group = analysisResultToGroup(
+      { ...result, analysisInputs: recorded },
+      ctx
+    );
+    expect(group.widgets.map((w) => w.analysisInputs)).toEqual([
+      recorded,
+      recorded,
+    ]);
   });
 
   it("keeps each chart's own title inside the group", () => {

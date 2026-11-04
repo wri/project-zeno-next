@@ -47,9 +47,8 @@ import InsightProvenanceDrawer from "./InsightProvenanceDrawer";
 import VisualizationDisclaimer from "./VisualizationDisclaimer";
 import WidgetErrorBoundary from "./widgets/WidgetErrorBoundary";
 import ScrollableTableWrapper from "./widgets/ScrollableTableWrapper";
-import { AnalysisParamsChips } from "./widgets/AnalysisParameters";
+import { AnalysisInputsChips } from "./widgets/AnalysisParameters";
 import DownloadMenu from "./widgets/DownloadMenu";
-import { buildChips } from "./widgets/analysis-params-utils";
 import { exportChartImage } from "@/app/utils/exportChartImage";
 import { csvFilename } from "@/app/utils/csvExport";
 import { downloadCsv, rowsToCsv } from "@/src/shared/lib/csv";
@@ -261,9 +260,6 @@ export default function WidgetMessage({
   const showDisclaimer = (isChartType || widget.type === "table") && hasData;
   const isCurated = isCuratedWidget(widget);
   const supportsAxisFit = AXIS_FIT_TYPES.has(widget.type);
-  const fullscreenChips = widget.analysisParams
-    ? buildChips(widget.analysisParams)
-    : [];
   return (
     <Box
       rounded="md"
@@ -596,7 +592,7 @@ export default function WidgetMessage({
                     </WidgetErrorBoundary>
                   </Box>
                   {(widget.description ||
-                    fullscreenChips.length > 0 ||
+                    widget.analysisInputs ||
                     widget.datasetName) && (
                     <Flex
                       direction="column"
@@ -620,12 +616,12 @@ export default function WidgetMessage({
                           </Text>
                         </Box>
                       )}
-                      {fullscreenChips.length > 0 && (
+                      {widget.analysisInputs && (
                         <Box>
                           <Heading size="xs" mb={2}>
                             What was analysed
                           </Heading>
-                          <AnalysisParamsChips chips={fullscreenChips} />
+                          <AnalysisInputsChips inputs={widget.analysisInputs} />
                         </Box>
                       )}
                       {widget.datasetName && (

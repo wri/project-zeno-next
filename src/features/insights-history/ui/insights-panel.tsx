@@ -107,16 +107,18 @@ interface InsightCardItem {
 
 function recordToItems(record: InsightRecord): InsightCardItem[] {
   const curated = record.verification === "verified";
-  return chartsToWidgets(record.charts, record.id).map((widget) => ({
-    widget: {
-      ...widget,
-      title: resolveInsightTitle(record, widget.title),
-      curated,
-    },
-    source: record.source ?? "",
-    createdAt: record.createdAt,
-    verification: record.verification,
-  }));
+  return chartsToWidgets(record.charts, record.id, record.analysisInputs).map(
+    (widget) => ({
+      widget: {
+        ...widget,
+        title: resolveInsightTitle(record, widget.title),
+        curated,
+      },
+      source: record.source ?? "",
+      createdAt: record.createdAt,
+      verification: record.verification,
+    })
+  );
 }
 
 function liveWidgetToItem(widget: InsightWidget): InsightCardItem {

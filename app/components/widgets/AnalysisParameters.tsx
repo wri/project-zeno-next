@@ -1,7 +1,11 @@
 import { chakra, Flex, Text } from "@chakra-ui/react";
 import { CaretDownIcon } from "@phosphor-icons/react";
 import { ParamChip } from "@/app/components/ui/ParamChip";
-import { ParamChipData } from "./analysis-params-utils";
+import type { AnalysisInputs } from "@/src/entities/insight";
+import { buildChips, ParamChipData } from "./analysis-params-utils";
+
+/** What an analysis whose inputs the backend did not record shows instead. */
+export const INPUTS_NOT_RECORDED = "Inputs were not recorded for this analysis";
 
 interface AnalysisParametersToggleProps {
   expanded: boolean;
@@ -71,4 +75,16 @@ export function AnalysisParamsChips({
       ))}
     </Flex>
   );
+}
+
+/** An analysis's recorded inputs as chips, or the not-recorded note. */
+export function AnalysisInputsChips({ inputs }: { inputs: AnalysisInputs }) {
+  if (!inputs.recorded) {
+    return (
+      <Text fontSize="xs" color="fg.muted">
+        {INPUTS_NOT_RECORDED}
+      </Text>
+    );
+  }
+  return <AnalysisParamsChips chips={buildChips(inputs)} />;
 }

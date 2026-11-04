@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { AnalysisInputs } from "../../model/analysis-inputs";
 import type { Chart } from "../../model/chart";
 import { chartsToWidgets } from "../charts-to-widgets";
 
@@ -16,13 +17,15 @@ const baseChart: Chart = {
   data: [{ year: "2020", value: 100 }],
 };
 
+const NOT_RECORDED: AnalysisInputs = { recorded: false };
+
 describe("chartsToWidgets", () => {
   it("returns an empty array when there are no charts", () => {
-    expect(chartsToWidgets([], "ins-1")).toEqual([]);
+    expect(chartsToWidgets([], "ins-1", NOT_RECORDED)).toEqual([]);
   });
 
   it("maps a chart to an InsightWidget", () => {
-    const widgets = chartsToWidgets([baseChart], "ins-1");
+    const widgets = chartsToWidgets([baseChart], "ins-1", NOT_RECORDED);
     expect(widgets).toHaveLength(1);
     expect(widgets[0]).toMatchObject({
       id: "c1",
@@ -50,7 +53,8 @@ describe("chartsToWidgets", () => {
           ],
         },
       ],
-      "ins-1"
+      "ins-1",
+      NOT_RECORDED
     );
     expect(widget.seriesFields).toEqual(["high", "low"]);
     expect(widget.data).toEqual([
@@ -76,7 +80,8 @@ describe("chartsToWidgets", () => {
           ],
         },
       ],
-      "ins-1"
+      "ins-1",
+      NOT_RECORDED
     );
     const { series } = formatChartData(
       widget.data,
@@ -92,37 +97,37 @@ describe("chartsToWidgets", () => {
   it("falls back to 'bar' for an unknown chart type", () => {
     const widgets = chartsToWidgets(
       [{ ...baseChart, type: "nonsense" }],
-      "ins-1"
+      "ins-1",
+      NOT_RECORDED
     );
     expect(widgets[0].type).toBe("bar");
   });
 
-  it("attaches analysisParams to every widget when supplied", () => {
+  it("stamps the insight's recorded inputs on every widget", () => {
+    const inputs: AnalysisInputs = {
+      recorded: true,
+      areas: [{ name: "Brazil", source: "gadm", srcId: "BRA" }],
+      datasets: [{ name: "Tree cover loss", id: 4 }],
+      canopyCover: [30],
+      years: [{ start: 2001, end: 2024 }],
+    };
     const widgets = chartsToWidgets(
       [baseChart, { ...baseChart, id: "c2", position: 1 }],
       "ins-1",
-      { areas: ["Brazil"] }
+      inputs
     );
-    expect(widgets.map((w) => w.analysisParams)).toEqual([
-      { areas: ["Brazil"] },
-      { areas: ["Brazil"] },
-    ]);
+    expect(widgets.map((w) => w.analysisInputs)).toEqual([inputs, inputs]);
   });
 
   it("stamps the insight id and each chart's position on every widget", () => {
     const widgets = chartsToWidgets(
       [baseChart, { ...baseChart, id: "c2", position: 1 }],
-      "ins-1"
+      "ins-1",
+      NOT_RECORDED
     );
     expect(widgets.map((w) => [w.insightId, w.chartPosition])).toEqual([
       ["ins-1", 0],
       ["ins-1", 1],
     ]);
-  });
-
-  it("omits analysisParams when none supplied", () => {
-    expect(
-      chartsToWidgets([baseChart], "ins-1")[0].analysisParams
-    ).toBeUndefined();
   });
 });

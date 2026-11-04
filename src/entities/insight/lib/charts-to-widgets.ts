@@ -1,5 +1,6 @@
+import type { AnalysisInputs } from "../model/analysis-inputs";
 import type { Chart } from "../model/chart";
-import type { AnalysisParams, InsightWidget } from "@/app/types/chat";
+import type { InsightWidget } from "@/app/types/chat";
 import { pickChartColors } from "@/app/utils/pickChartColors";
 import { pivotByColorField } from "./pivot-color-field";
 
@@ -22,12 +23,13 @@ const ALLOWED_TYPES = new Set<InsightWidget["type"]>([
  *
  * The single convergence point for every insight acquisition path — the direct
  * analysis LRO and the browse/history list both map through here, never at the
- * transport (ADR 0008). `analysisParams`, when supplied, is attached to every
- * widget in the batch.
+ * transport (ADR 0008).
  *
- * Every chart here belongs to a persisted insight, so `insightId` is required:
- * it is what the agent loads the insight by and what a dashboard adds, and
- * stamping it here means no acquisition path can forget it.
+ * Every chart here belongs to a persisted insight, so `insightId` and its
+ * recorded `analysisInputs` are required: the id is what the agent loads the
+ * insight by and what a dashboard adds, the inputs are what its "What was
+ * analysed" toggle shows, and stamping both here means no acquisition path can
+ * forget them.
  *
  * Unknown chart types fall back to "bar" so a bad type never blanks the widget.
  *
@@ -40,7 +42,7 @@ const ALLOWED_TYPES = new Set<InsightWidget["type"]>([
 export function chartsToWidgets(
   charts: Chart[],
   insightId: string,
-  analysisParams?: AnalysisParams
+  analysisInputs: AnalysisInputs
 ): InsightWidget[] {
   return charts.map((chart) => {
     const pivoted = pivotByColorField(chart);
@@ -55,7 +57,7 @@ export function chartsToWidgets(
       xAxis: chart.xAxis,
       yAxis: chart.yAxis,
       seriesFields: pivoted?.seriesFields ?? chart.seriesFields,
-      analysisParams,
+      analysisInputs,
       insightId,
       chartPosition: chart.position,
       ...pickChartColors(chart),
