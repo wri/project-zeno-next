@@ -110,9 +110,16 @@ export function toAlertsListError(error: unknown): AlertsListError {
 }
 
 /**
+ * The `land_filter` key of an alerts request: the Intersects dropdown's land
+ * class. The wire has no value for "any", so the key is left out.
+ */
+export function landFilterBody(landFilter: AlertsLandFilter) {
+  return landFilter === "any" ? {} : { land_filter: landFilter };
+}
+
+/**
  * Without a `range` the backend picks the window: the 30 days to the latest
- * alert date. `landFilter` restricts the rows to alerts on that land class
- * (the Intersects dropdown); the wire has no key for "any", so it is left out.
+ * alert date. `landFilter` restricts the rows to alerts on that land class.
  */
 export async function fetchAlertsList(
   aoi: AlertsAoi,
@@ -128,7 +135,7 @@ export async function fetchAlertsList(
         src_id: aoi.srcId,
         subtype: aoi.subtype,
         ...(range ? { start_date: range.start, end_date: range.end } : {}),
-        ...(landFilter === "any" ? {} : { land_filter: landFilter }),
+        ...landFilterBody(landFilter),
       }),
     });
     return toAlertsList(AlertsListResponseSchema.parse(data));

@@ -391,7 +391,6 @@ export default function DashboardAlertsList({
   onLandFilter,
   onCustomChange,
   onDownloadCsv,
-  locationsAvailable,
   isPreparingDownload,
   onDownloadLocations,
   onRetry,
@@ -418,12 +417,14 @@ export default function DashboardAlertsList({
   onCustomChange: (range: DateRange) => void;
   /** Saves the rows on show (period, confidence and land filter applied) as CSV. */
   onDownloadCsv: () => void;
-  /** Whether the area has alert locations to download (a GADM country, state or district). */
-  locationsAvailable: boolean;
   /** An alert locations file is being prepared: the Download button spins. */
   isPreparingDownload: boolean;
-  /** Prepares and saves the alert locations on show, in `format`. */
-  onDownloadLocations: (format: AlertLocationsFormat) => void;
+  /**
+   * Prepares and saves the alert locations on show, in `format`. Given only
+   * for an area with alert locations (a GADM country, state or district);
+   * without it the location items are disabled, with the reason.
+   */
+  onDownloadLocations?: (format: AlertLocationsFormat) => void;
   onRetry: () => void;
 }) {
   const ready = view.kind === "ready";
@@ -780,7 +781,7 @@ export default function DashboardAlertsList({
             disabled={rows.length === 0}
           >
             <Menu.ItemGroup>
-              {!locationsAvailable && (
+              {!onDownloadLocations && (
                 <Menu.ItemGroupLabel
                   maxW="220px"
                   fontWeight="normal"
@@ -797,8 +798,8 @@ export default function DashboardAlertsList({
                   // Unique in the menu: it selects by value, and the daily
                   // totals item is "csv".
                   value={`locations-${format}`}
-                  disabled={!locationsAvailable}
-                  onSelect={() => onDownloadLocations(format)}
+                  disabled={!onDownloadLocations}
+                  onSelect={() => onDownloadLocations?.(format)}
                 >
                   <MapPinIcon size={14} />
                   {label}

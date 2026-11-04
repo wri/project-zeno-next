@@ -2,12 +2,14 @@ import { z } from "zod";
 
 import { API_CONFIG } from "@/app/config/api";
 import type { DateRange } from "@/src/shared/lib/iso-date";
+import { wait } from "@/src/shared/lib/wait";
 import {
   TIERS,
   type AlertLocationsFormat,
   type AlertsConfidence,
   type AlertsLandFilter,
 } from "../lib/alertsWidgets";
+import { landFilterBody } from "./alerts";
 
 /**
  * The alert locations download (project-zeno-data-infra #323, PZB-1603): one
@@ -67,17 +69,10 @@ const ExportJobSchema = z.object({
   ]),
 });
 
-export class AlertLocationsError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "AlertLocationsError";
-  }
-}
-
 /**
  * Asks for the file, waits until it is written and returns its URL. Throws
- * `AlertLocationsError` when the job fails, a response is malformed or the
- * deadline passes, and the abort reason when `signal` aborts.
+ * when the job fails, a response is malformed or the deadline passes, and an
+ * `AbortError` when `signal` aborts.
  */
 export async function prepareAlertLocations(
   request: AlertLocationsRequest,
@@ -90,9 +85,9 @@ export async function prepareAlertLocations(
     signal,
   });
   if (!res.ok) {
-    throw new AlertLocationsError(`Export request failed: ${res.status}`);
+    throw new Error(`Export request failed: ${res.status}`);
   }
-  const { link } = parseOrThrow(ExportLinkSchema, await res.json()).data;
+  const { link } = ExportLinkSchema.parse(await res.json()).data;
 
   const deadline = Date.now() + EXPORT_DEADLINE_MS;
   let serverErrors = 0;
@@ -101,10 +96,10 @@ export async function prepareAlertLocations(
     const poll = await fetch(link, { signal });
     if (poll.status >= 500 && ++serverErrors < MAX_SERVER_ERRORS) continue;
     if (!poll.ok) {
-      throw new AlertLocationsError(`Export poll failed: ${poll.status}`);
+      throw new Error(`Export poll failed: ${poll.status}`);
     }
     serverErrors = 0;
-    const job = parseOrThrow(ExportJobSchema, await poll.json()).data;
+    const job = ExportJobSchema.parse(await poll.json()).data;
     if (job.status === "saved") {
       return {
         url: job.result.download_url,
@@ -113,10 +108,10 @@ export async function prepareAlertLocations(
       };
     }
     if (job.status === "failed") {
-      throw new AlertLocationsError(job.message ?? "Export failed");
+      throw new Error(job.message ?? "Export failed");
     }
   }
-  throw new AlertLocationsError("Export timed out");
+  throw new Error("Export timed out");
 }
 
 /** The request body: the view's filters in the analytics API's names. */
@@ -131,34 +126,7 @@ function exportBody(request: AlertLocationsRequest) {
     start_date: request.range.start,
     end_date: request.range.end,
     alert_confidence: TIERS[request.confidence].levels,
-    // The wire has no key for "any", so it is left out.
-    ...(request.landFilter === "any"
-      ? {}
-      : { land_filter: request.landFilter }),
+    ...landFilterBody(request.landFilter),
     format: request.format,
   };
-}
-
-function parseOrThrow<T>(schema: z.ZodType<T>, body: unknown): T {
-  const parsed = schema.safeParse(body);
-  if (!parsed.success) {
-    throw new AlertLocationsError(`Malformed export response: ${parsed.error}`);
-  }
-  return parsed.data;
-}
-
-/** Resolves after `ms`, or rejects with the abort reason when `signal` aborts. */
-function wait(ms: number, signal: AbortSignal): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (signal.aborted) return reject(signal.reason);
-    const timer = setTimeout(() => {
-      signal.removeEventListener("abort", onAbort);
-      resolve();
-    }, ms);
-    const onAbort = () => {
-      clearTimeout(timer);
-      reject(signal.reason);
-    };
-    signal.addEventListener("abort", onAbort, { once: true });
-  });
 }

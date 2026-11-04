@@ -2,6 +2,7 @@ import { format, parseISO } from "date-fns";
 
 import { rowsToCsv } from "@/src/shared/lib/csv";
 import { shiftIsoDate, type DateRange } from "@/src/shared/lib/iso-date";
+import { normalizeGadmId } from "../model/area-tree";
 import {
   mapWidgetLayer,
   str,
@@ -170,9 +171,8 @@ const ANALYTICS_GADM_SUBTYPES = new Set([
 ]);
 
 /**
- * The analytics API's id for a GADM area: `BRA.16.137_2` becomes
- * `BRA.16.137`, as the API's ids carry no version suffix. Undefined for any
- * other area.
+ * The analytics API's id for a GADM area, whose ids carry no version suffix.
+ * Undefined for any other area.
  */
 function analyticsGadmId(
   source: string,
@@ -181,7 +181,7 @@ function analyticsGadmId(
 ): string | undefined {
   if (source !== "gadm" || !ANALYTICS_GADM_SUBTYPES.has(subtype))
     return undefined;
-  return srcId.replace(/_\d+$/, "");
+  return normalizeGadmId(srcId);
 }
 
 /**

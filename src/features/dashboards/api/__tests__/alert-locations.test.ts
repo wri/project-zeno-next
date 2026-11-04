@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { ZodError } from "zod";
 
 import { API_CONFIG } from "@/app/config/api";
 import {
-  AlertLocationsError,
   prepareAlertLocations,
   type AlertLocationsRequest,
 } from "../alert-locations";
@@ -180,6 +180,20 @@ describe("prepareAlertLocations", () => {
     expect(file.url).toBe(FILE_URL);
   });
 
+  it("counts only server errors in a row", async () => {
+    fetchMock
+      .mockResolvedValueOnce(created())
+      .mockResolvedValueOnce(json(500, { detail: "Internal Server Error" }))
+      .mockResolvedValueOnce(json(500, { detail: "Internal Server Error" }))
+      .mockResolvedValueOnce(pending())
+      .mockResolvedValueOnce(json(500, { detail: "Internal Server Error" }))
+      .mockResolvedValueOnce(saved());
+    const file = await settle(
+      prepareAlertLocations(request, new AbortController().signal)
+    );
+    expect(file.url).toBe(FILE_URL);
+  });
+
   it("gives up after three server errors in a row", async () => {
     fetchMock
       .mockResolvedValueOnce(created())
@@ -202,15 +216,13 @@ describe("prepareAlertLocations", () => {
     [
       "a saved job has no file",
       [created(), json(200, { data: { status: "saved" } })],
-      "Malformed",
+      ZodError,
     ],
-  ])("throws when %s", async (_case, responses, message) => {
+  ])("throws when %s", async (_case, responses, expected) => {
     for (const response of responses) fetchMock.mockResolvedValueOnce(response);
-    const outcome = settle(
-      prepareAlertLocations(request, new AbortController().signal)
-    );
-    await expect(outcome).rejects.toBeInstanceOf(AlertLocationsError);
-    await expect(outcome).rejects.toThrow(message);
+    await expect(
+      settle(prepareAlertLocations(request, new AbortController().signal))
+    ).rejects.toThrow(expected);
   });
 
   it("stops waiting after five minutes", async () => {
@@ -232,8 +244,8 @@ describe("prepareAlertLocations", () => {
     );
     await vi.advanceTimersByTimeAsync(4000);
     const polls = fetchMock.mock.calls.length;
-    controller.abort(new Error("unmounted"));
-    expect(await outcome).toEqual(new Error("unmounted"));
+    controller.abort();
+    expect(await outcome).toMatchObject({ name: "AbortError" });
     await vi.advanceTimersByTimeAsync(10_000);
     expect(fetchMock).toHaveBeenCalledTimes(polls);
   });

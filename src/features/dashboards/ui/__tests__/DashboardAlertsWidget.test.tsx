@@ -64,10 +64,7 @@ import {
   ALERTS_WIDGET_CONFIG,
 } from "../../api/__tests__/fixtures";
 import type { DashboardWidget } from "../../api/schemas";
-import {
-  AlertLocationsError,
-  prepareAlertLocations,
-} from "../../api/alert-locations";
+import { prepareAlertLocations } from "../../api/alert-locations";
 import { toaster } from "@/app/components/ui/toaster";
 import { downloadCsv } from "@/src/shared/lib/csv";
 import DashboardAlertsWidget from "../DashboardAlertsWidget";
@@ -412,7 +409,9 @@ describe("DashboardAlertsWidget", () => {
             "The file holds the newest 1,000,000 alerts. The period has more.",
         })
       );
-      expect(screen.getByRole("button", { name: "Download" })).toBeTruthy();
+      expect(
+        await screen.findByRole("button", { name: "Download" })
+      ).toBeTruthy();
     } finally {
       click.mockRestore();
     }
@@ -420,9 +419,7 @@ describe("DashboardAlertsWidget", () => {
 
   it("says so when the alert locations can't be prepared", async () => {
     mockedFetch.mockResolvedValue(toAlertsList(ALERTS_LIST_WIRE));
-    mockedPrepare
-      .mockReset()
-      .mockRejectedValue(new AlertLocationsError("Export failed"));
+    mockedPrepare.mockReset().mockRejectedValue(new Error("Export failed"));
     mockedToast.mockReset();
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
     try {
@@ -435,15 +432,28 @@ describe("DashboardAlertsWidget", () => {
           expect.objectContaining({ type: "error", title: "Download failed" })
         )
       );
-      expect(screen.getByRole("button", { name: "Download" })).toBeTruthy();
+      expect(
+        await screen.findByRole("button", { name: "Download" })
+      ).toBeTruthy();
     } finally {
       error.mockRestore();
     }
   });
 
-  it("drops a download still in preparation when the card goes", async () => {
+  it("drops a download still in preparation when the card goes, with no toast", async () => {
     mockedFetch.mockResolvedValue(toAlertsList(ALERTS_LIST_WIRE));
-    mockedPrepare.mockReset().mockReturnValue(new Promise(() => {}));
+    // As the real export does: an abort rejects the preparation.
+    mockedPrepare
+      .mockReset()
+      .mockImplementation(
+        (_request, signal) =>
+          new Promise((_resolve, reject) =>
+            signal.addEventListener("abort", () =>
+              reject(new DOMException("Aborted", "AbortError"))
+            )
+          )
+      );
+    mockedToast.mockReset();
     const { unmount } = renderWidget();
     await screen.findByText(NEW_WEEK_FOOTER);
     await chooseFromDropdown("Download", "Alert locations (CSV)");
@@ -452,6 +462,8 @@ describe("DashboardAlertsWidget", () => {
     expect(signal.aborted).toBe(false);
     unmount();
     expect(signal.aborted).toBe(true);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(mockedToast).not.toHaveBeenCalled();
   });
 
   it("offers no alert locations for an area that is not a GADM country, state or district", async () => {

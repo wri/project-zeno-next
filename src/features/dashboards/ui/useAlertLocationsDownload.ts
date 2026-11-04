@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 
 import { toaster } from "@/app/components/ui/toaster";
+import { saveUrl } from "@/src/shared/lib/download";
 import {
   prepareAlertLocations,
   type AlertLocationsRequest,
@@ -15,66 +17,47 @@ const COUNT_FORMAT = new Intl.NumberFormat("en-US");
  *
  * The filters are the ones on show at the click. A later change to the view
  * does not change a file in preparation. A card that unmounts (the dashboard
- * closed) drops its download, so no file arrives out of context.
+ * closed) drops its download, so no file arrives out of context. The toasts
+ * live on the hook, not on `mutate`, so the abort's error still reaches the
+ * guard that silences it.
  */
 export function useAlertLocationsDownload(): {
   download: (request: AlertLocationsRequest) => void;
   isPreparing: boolean;
 } {
-  const [isPreparing, setPreparing] = useState(false);
   const inFlight = useRef<AbortController | null>(null);
   useEffect(() => () => inFlight.current?.abort(), []);
 
-  const download = (request: AlertLocationsRequest) => {
-    const controller = new AbortController();
-    inFlight.current = controller;
-    setPreparing(true);
-    prepareAlertLocations(request, controller.signal)
-      .then((file) => {
-        saveFromUrl(file.url);
-        if (file.truncated) {
-          toaster.create({
-            title: "Only the newest alerts",
-            description: `The file holds the newest ${COUNT_FORMAT.format(file.pointCount)} alerts. The period has more.`,
-            type: "info",
-            duration: 8000,
-          });
-        }
-      })
-      .catch((error: unknown) => {
-        if (controller.signal.aborted) return;
-        console.error("Alert locations download failed", error);
+  const { mutate, isPending } = useMutation({
+    mutationFn: (request: AlertLocationsRequest) => {
+      inFlight.current = new AbortController();
+      return prepareAlertLocations(request, inFlight.current.signal);
+    },
+    onSuccess: (file) => {
+      // The presigned URL's `Content-Disposition` names the file and makes it
+      // a download, so the page stays where it is.
+      saveUrl(file.url);
+      if (file.truncated) {
         toaster.create({
-          title: "Download failed",
-          description:
-            "The alert locations file couldn't be prepared. Please try again.",
-          type: "error",
-          duration: 5000,
+          title: "Only the newest alerts",
+          description: `The file holds the newest ${COUNT_FORMAT.format(file.pointCount)} alerts. The period has more.`,
+          type: "info",
+          duration: 8000,
         });
-      })
-      .finally(() => {
-        if (controller.signal.aborted) return;
-        inFlight.current = null;
-        setPreparing(false);
+      }
+    },
+    onError: (error) => {
+      if (inFlight.current?.signal.aborted) return;
+      console.error("Alert locations download failed", error);
+      toaster.create({
+        title: "Download failed",
+        description:
+          "The alert locations file couldn't be prepared. Please try again.",
+        type: "error",
+        duration: 5000,
       });
-  };
+    },
+  });
 
-  return { download, isPreparing };
-}
-
-/**
- * Saves the file at `url` through the browser. The presigned URL's
- * `Content-Disposition` makes it a download with the file's name, so the
- * page stays where it is.
- */
-function saveFromUrl(url: string): void {
-  const a = document.createElement("a");
-  a.href = url;
-  // In the document for the click, as some browsers ignore a detached anchor.
-  document.body.appendChild(a);
-  try {
-    a.click();
-  } finally {
-    a.remove();
-  }
+  return { download: mutate, isPreparing: isPending };
 }

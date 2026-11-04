@@ -243,10 +243,12 @@ function AlertsCard({
   // land filter.
   const locations = useAlertLocationsDownload();
   const { gadmId } = spec;
-  const saveLocations = (format: AlertLocationsFormat) => {
-    if (!range || !gadmId) return;
-    locations.download({ gadmId, range, confidence, landFilter, format });
-  };
+  const saveLocations = gadmId
+    ? (format: AlertLocationsFormat) => {
+        if (!range) return;
+        locations.download({ gadmId, range, confidence, landFilter, format });
+      }
+    : undefined;
 
   return (
     <DashboardWidgetCard
@@ -288,7 +290,6 @@ function AlertsCard({
             onLandFilter={setLandFilter}
             onCustomChange={changeCustom}
             onDownloadCsv={saveCsv}
-            locationsAvailable={!!gadmId}
             isPreparingDownload={locations.isPreparing}
             onDownloadLocations={saveLocations}
             onRetry={() => query.refetch()}

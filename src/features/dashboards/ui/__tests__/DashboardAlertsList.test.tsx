@@ -63,9 +63,8 @@ function propsFor(
     onLandFilter: vi.fn<ListProps["onLandFilter"]>(),
     onCustomChange: vi.fn<ListProps["onCustomChange"]>(),
     onDownloadCsv: vi.fn<ListProps["onDownloadCsv"]>(),
-    locationsAvailable: true,
     isPreparingDownload: false,
-    onDownloadLocations: vi.fn<ListProps["onDownloadLocations"]>(),
+    onDownloadLocations: vi.fn<NonNullable<ListProps["onDownloadLocations"]>>(),
     onRetry: vi.fn<ListProps["onRetry"]>(),
   };
 }
@@ -385,7 +384,7 @@ describe("DashboardAlertsList", () => {
   });
 
   it("says why an area without alert locations can't download them", async () => {
-    renderList({ locationsAvailable: false });
+    renderList({ onDownloadLocations: undefined });
     fireEvent.click(dropdown("Download"));
     const group = await screen.findByRole("group", {
       name: "Alert locations are available for countries, states and districts.",
