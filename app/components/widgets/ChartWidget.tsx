@@ -418,12 +418,6 @@ function formatShare(value: number, total: number): string | undefined {
 }
 
 /**
- * Donut centre total. Rendered as a <Pie> child so it sits in the chart's
- * SVG; reads the plot area from recharts context because the pie (default
- * cx/cy of 50%) is centred there. Recharts 3 doesn't hand <Label content>
- * renderers a viewBox, so a context-reading component is the reliable path.
- */
-/**
  * The label of the ReferenceDot on the tallest bar's top: its total, centred
  * on the bar but kept inside the plot, so a peak on the first or last day is
  * not clipped.
@@ -460,6 +454,12 @@ function StackPeakLabel({
   );
 }
 
+/**
+ * Donut centre total. Rendered as a <Pie> child so it sits in the chart's
+ * SVG; reads the plot area from recharts context because the pie (default
+ * cx/cy of 50%) is centred there. Recharts 3 doesn't hand <Label content>
+ * renderers a viewBox, so a context-reading component is the reliable path.
+ */
 function DonutCenterLabel({
   total,
   axisKey,
@@ -742,9 +742,10 @@ export default function ChartWidget({
   }
 
   // A daily stacked bar labels its tallest day with the day's total, so the
-  // period's worst day reads without a hover.
+  // period's worst day reads without a hover. Not on a pinned axis: it
+  // cannot stretch to make room, and the label would reach the legend.
   const peak =
-    type === "stacked-bar" && dailyAxis
+    type === "stacked-bar" && dailyAxis && !yDomain && !yTicks
       ? stackPeak(formattedData, xAxis, yKeys)
       : null;
 
@@ -1180,7 +1181,7 @@ export default function ChartWidget({
             }
           />
           {renderChartItems()}
-          {peak && !yDomain && !yTicks && (
+          {peak && (
             // Room above the tallest bar for its label: the axis stretches
             // to a point just above it and still rounds to recharts' ticks.
             <ReferenceDot
