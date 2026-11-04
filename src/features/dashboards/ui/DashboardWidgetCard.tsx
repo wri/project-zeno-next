@@ -44,7 +44,7 @@ export const WIDGET_TITLE_PROPS = {
 /**
  * One dashboard card — the Figma "Analysis" container: a light-blue shell
  * with a header row (drag handle · insight title · owner actions), a
- * "Show params" row, and the white chart card (`WidgetMessage`) — or the
+ * "What was analysed" row, and the white chart card (`WidgetMessage`) — or the
  * map body (`DashboardMapWidget`) for map widgets — inside. Every widget on
  * the page is one of these, so the blue shell is the only box a dashboard
  * widget ever draws.
@@ -93,7 +93,7 @@ export default function DashboardWidgetCard({
    */
   paramChips?: ParamChipData[];
   /**
-   * Rendered at the right of the params row, level with "Show params" (the
+   * Rendered at the right of the params row, level with "What was analysed" (the
    * alerts widget's latest alert date).
    */
   paramsAside?: React.ReactNode;
@@ -306,7 +306,7 @@ export default function DashboardWidgetCard({
         )}
       </Flex>
 
-      {/* Params row — "Show params" toggle over the analysis param chips */}
+      {/* Params row — the "What was analysed" toggle over the input chips */}
       {chips.length > 0 && (
         <Box px="8px" pb="8px">
           <Flex

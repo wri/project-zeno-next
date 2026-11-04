@@ -1,4 +1,5 @@
-import { Flex, Text } from "@chakra-ui/react";
+import { chakra, Flex, Text } from "@chakra-ui/react";
+import { CaretDownIcon } from "@phosphor-icons/react";
 import { ParamChip } from "@/app/components/ui/ParamChip";
 import { ParamChipData } from "./analysis-params-utils";
 
@@ -7,28 +8,42 @@ interface AnalysisParametersToggleProps {
   onToggle: () => void;
 }
 
-/** Toggle button rendered in the widget header row */
+/**
+ * Disclosure in the widget header row. One label in both states: the chevron
+ * and `aria-expanded` say whether the inputs are on show.
+ */
 export default function AnalysisParametersToggle({
   expanded,
   onToggle,
 }: AnalysisParametersToggleProps) {
   return (
-    <Text
-      as="button"
+    <chakra.button
+      type="button"
       onClick={onToggle}
+      aria-expanded={expanded}
+      display="inline-flex"
+      alignItems="center"
+      gap="2px"
+      bg="transparent"
       fontFamily="mono"
       fontSize="10px"
       fontWeight="400"
       lineHeight="16px"
       color="#4A64CB"
-      textDecoration="underline"
-      textDecorationStyle="solid"
       whiteSpace="nowrap"
       flexShrink={0}
       cursor="pointer"
     >
-      {expanded ? "Hide params" : "Show params"}
-    </Text>
+      <Text as="span" textDecoration="underline" textDecorationStyle="solid">
+        What was analysed
+      </Text>
+      <CaretDownIcon
+        size={10}
+        weight="bold"
+        aria-hidden
+        style={{ transform: expanded ? "rotate(180deg)" : undefined }}
+      />
+    </chakra.button>
   );
 }
 

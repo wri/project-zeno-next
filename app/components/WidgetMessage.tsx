@@ -623,7 +623,7 @@ export default function WidgetMessage({
                       {fullscreenChips.length > 0 && (
                         <Box>
                           <Heading size="xs" mb={2}>
-                            Analysis parameters
+                            What was analysed
                           </Heading>
                           <AnalysisParamsChips chips={fullscreenChips} />
                         </Box>
