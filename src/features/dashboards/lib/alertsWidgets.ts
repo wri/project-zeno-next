@@ -184,7 +184,7 @@ export function alertsWidgetSpec(
     const overlay = mapWidgetLayer({
       dataset: { ...dataset, context_layer: name },
     });
-    if (overlay?.contextTileUrl) overlays[name] = overlay;
+    if (overlay?.context) overlays[name] = overlay;
   }
 
   return {

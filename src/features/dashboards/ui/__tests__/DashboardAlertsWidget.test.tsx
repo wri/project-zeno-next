@@ -29,7 +29,7 @@ vi.mock("../DashboardMapWidget", () => ({
   }: {
     layer: {
       tileUrl: string;
-      contextLayerName?: string;
+      context?: { name: string };
       startDate?: string;
       endDate?: string;
     };
@@ -39,7 +39,7 @@ vi.mock("../DashboardMapWidget", () => ({
       data-start={layer.startDate ?? ""}
       data-end={layer.endDate ?? ""}
       data-tiles={layer.tileUrl}
-      data-context={layer.contextLayerName ?? ""}
+      data-context={layer.context?.name ?? ""}
     />
   ),
 }));

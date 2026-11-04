@@ -159,14 +159,14 @@ describe("land filters", () => {
         },
       })
     )!;
-    expect(withEntries.layer.contextTileUrl).toBeUndefined();
-    expect(withEntries.overlays.natural_lands?.contextLayerName).toBe(
+    expect(withEntries.layer.context).toBeUndefined();
+    expect(withEntries.overlays.natural_lands?.context?.name).toBe(
       "natural_lands"
     );
-    expect(withEntries.overlays.natural_forests?.contextLayerName).toBe(
+    expect(withEntries.overlays.natural_forests?.context?.name).toBe(
       "natural_forests"
     );
-    expect(withEntries.overlays.natural_lands?.contextTileUrl).toBeTruthy();
+    expect(withEntries.overlays.natural_lands?.context?.tileUrl).toBeTruthy();
     expect(alertsMapLayer(withEntries, "any")).toBe(withEntries.layer);
     expect(alertsMapLayer(withEntries, "natural_lands")).toBe(
       withEntries.overlays.natural_lands
