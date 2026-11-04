@@ -63,6 +63,9 @@ function propsFor(
     onLandFilter: vi.fn<ListProps["onLandFilter"]>(),
     onCustomChange: vi.fn<ListProps["onCustomChange"]>(),
     onDownloadCsv: vi.fn<ListProps["onDownloadCsv"]>(),
+    locationsAvailable: true,
+    isPreparingDownload: false,
+    onDownloadLocations: vi.fn<ListProps["onDownloadLocations"]>(),
     onRetry: vi.fn<ListProps["onRetry"]>(),
   };
 }
@@ -361,12 +364,45 @@ describe("DashboardAlertsList", () => {
 
   it("offers the rows on show as a CSV download, nothing when there are none", async () => {
     const props = renderList(propsFor("last-30-days"));
-    await chooseFromMenu(dropdown("Download"), "Data (CSV)");
+    await chooseFromMenu(dropdown("Download"), "Daily totals (CSV)");
     expect(props.onDownloadCsv).toHaveBeenCalledTimes(1);
+    expect(props.onDownloadLocations).not.toHaveBeenCalled();
 
     cleanup();
     renderList({ rows: [] });
     expect(dropdown("Download").hasAttribute("disabled")).toBe(true);
+  });
+
+  it.each([
+    ["Alert locations (CSV)", "csv"],
+    ["Alert locations (shapefile)", "shp"],
+  ] as const)("offers the alert locations as %s", async (item, format) => {
+    const props = renderList();
+    await chooseFromMenu(dropdown("Download"), item);
+    expect(props.onDownloadLocations).toHaveBeenCalledTimes(1);
+    expect(props.onDownloadLocations).toHaveBeenCalledWith(format);
+    expect(props.onDownloadCsv).not.toHaveBeenCalled();
+  });
+
+  it("says why an area without alert locations can't download them", async () => {
+    renderList({ locationsAvailable: false });
+    fireEvent.click(dropdown("Download"));
+    const group = await screen.findByRole("group", {
+      name: "Alert locations are available for countries, states and districts.",
+    });
+    for (const item of within(group).getAllByRole("menuitem")) {
+      expect(item.getAttribute("aria-disabled")).toBe("true");
+    }
+    expect(
+      screen
+        .getByRole("menuitem", { name: "Daily totals (CSV)" })
+        .getAttribute("aria-disabled")
+    ).not.toBe("true");
+  });
+
+  it("holds the Download button while a file is prepared", () => {
+    renderList({ isPreparingDownload: true });
+    expect(dropdown("Preparing…").hasAttribute("disabled")).toBe(true);
   });
 
   it("shows a failed fetch above the rows it still holds", () => {

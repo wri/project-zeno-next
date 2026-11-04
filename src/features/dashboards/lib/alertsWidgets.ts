@@ -43,6 +43,12 @@ export interface AlertsWidgetSpec {
    * built before the backend added them).
    */
   overlays: Partial<Record<AlertsLandFilter, MapWidgetLayer>>;
+  /**
+   * The area as the analytics API's GADM ids name it (`BRA.16.137`), for the
+   * alert locations download. Absent for any other area: the download serves
+   * GADM countries, states and districts only.
+   */
+  gadmId?: string;
 }
 
 /** One alert day, as the list pane renders it. */
@@ -85,17 +91,25 @@ export type AlertsChip = "new-week" | "last-30-days" | "custom";
 
 export type AlertsConfidence = "all" | "high" | "highest";
 
+/** The analytics API's confidence levels that the widget shows (never "low"). */
+type AlertLevel = "high" | "highest";
+
 /**
  * What each confidence choice shows: the row field it sums, the column it
- * heads, and its name in the toggle. "All" is the two tiers and their total.
+ * heads, its name in the toggle, and the analytics API's levels it selects.
+ * "All" is the two tiers and their total.
  */
 export const TIERS: Record<
   AlertsConfidence,
-  { field: "highHa" | "highestHa" | "totalHa"; name: string }
+  {
+    field: "highHa" | "highestHa" | "totalHa";
+    name: string;
+    levels: readonly AlertLevel[];
+  }
 > = {
-  all: { field: "totalHa", name: "All" },
-  high: { field: "highHa", name: "High" },
-  highest: { field: "highestHa", name: "Highest" },
+  all: { field: "totalHa", name: "All", levels: ["high", "highest"] },
+  high: { field: "highHa", name: "High", levels: ["high"] },
+  highest: { field: "highestHa", name: "Highest", levels: ["highest"] },
 };
 
 /** The two tiers "All" is made of. */
@@ -148,6 +162,28 @@ export function confidenceLabel(confidence: AlertsConfidence): string {
  */
 const SINCE_DAYS = 30;
 
+/** The GADM levels the analytics API takes: countries, states and districts. */
+const ANALYTICS_GADM_SUBTYPES = new Set([
+  "country",
+  "state-province",
+  "district-county",
+]);
+
+/**
+ * The analytics API's id for a GADM area: `BRA.16.137_2` becomes
+ * `BRA.16.137`, as the API's ids carry no version suffix. Undefined for any
+ * other area.
+ */
+function analyticsGadmId(
+  source: string,
+  srcId: string,
+  subtype: string
+): string | undefined {
+  if (source !== "gadm" || !ANALYTICS_GADM_SUBTYPES.has(subtype))
+    return undefined;
+  return srcId.replace(/_\d+$/, "");
+}
+
 /**
  * Parses an alerts widget's config into a renderable spec, or null when it
  * cannot be rendered (no `alerts.aoi` identity, or no alerts layer to put on
@@ -192,6 +228,7 @@ export function alertsWidgetSpec(
     aoi: { source, srcId, subtype, name },
     layer,
     overlays,
+    gadmId: analyticsGadmId(source, srcId, subtype),
   };
 }
 
@@ -412,6 +449,13 @@ export function alertsCsvFilename(areaName: string, range: DateRange): string {
     .replace(/^-|-$/g, "");
   return `integrated-alerts-${area || "area"}-${range.start}-${range.end}.csv`;
 }
+
+/** The alert locations files: the analytics API's format names and the menu's labels. */
+export const LOCATION_FORMATS = [
+  { format: "csv", label: "Alert locations (CSV)" },
+  { format: "shp", label: "Alert locations (shapefile)" },
+] as const;
+export type AlertLocationsFormat = (typeof LOCATION_FORMATS)[number]["format"];
 
 const HA_FORMAT = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 });
 

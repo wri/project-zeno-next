@@ -4,13 +4,14 @@ import {
   Button,
   Flex,
   Input,
+  Menu,
   Popover,
   Portal,
   Skeleton,
   Table,
   Text,
 } from "@chakra-ui/react";
-import { CaretDownIcon } from "@phosphor-icons/react";
+import { CaretDownIcon, MapPinIcon } from "@phosphor-icons/react";
 
 import InsightCaption from "@/app/components/InsightCaption";
 import DownloadMenu from "@/app/components/widgets/DownloadMenu";
@@ -25,12 +26,14 @@ import {
   formatRangeCaps,
   formatSinceDay,
   LAND_FILTERS,
+  LOCATION_FORMATS,
   rowArea,
   rowsSummary,
   rowTiers,
   sinceRange,
   TIERS,
   type AlertDay,
+  type AlertLocationsFormat,
   type AlertsChip,
   type AlertsConfidence,
   type AlertsHeadline,
@@ -360,11 +363,12 @@ const pagerArrowProps = {
  * columns): the curated caption, the headline figures, the period pills with
  * the Custom popover, the Confidence and Intersects dropdowns, an explainer,
  * then the table of alert days with its footer and the map pane beside it
- * (under it when the card is single or the grid narrow), and the download
- * action. Presentational: the rows arrive filtered to the period and
- * confidence, every choice goes back up through a callback, and nothing
- * here fetches. The container (`DashboardAlertsWidget`) owns the query and
- * the date-range state it shares with the map pane, and passes the pane in.
+ * (under it when the card is single or the grid narrow), and the Download
+ * menu (the daily totals, and the alert locations as CSV or shapefile).
+ * Presentational: the rows arrive filtered to the period and confidence,
+ * every choice goes back up through a callback, and nothing here fetches.
+ * The container (`DashboardAlertsWidget`) owns the query and the date-range
+ * state it shares with the map pane, and passes the pane in.
  *
  * The custom dates are the one input this pane judges itself: a bound
  * outside the 30 days the widget covers is ignored (a date input reports
@@ -387,6 +391,9 @@ export default function DashboardAlertsList({
   onLandFilter,
   onCustomChange,
   onDownloadCsv,
+  locationsAvailable,
+  isPreparingDownload,
+  onDownloadLocations,
   onRetry,
 }: {
   view: AlertsListView;
@@ -411,6 +418,12 @@ export default function DashboardAlertsList({
   onCustomChange: (range: DateRange) => void;
   /** Saves the rows on show (period, confidence and land filter applied) as CSV. */
   onDownloadCsv: () => void;
+  /** Whether the area has alert locations to download (a GADM country, state or district). */
+  locationsAvailable: boolean;
+  /** An alert locations file is being prepared: the Download button spins. */
+  isPreparingDownload: boolean;
+  /** Prepares and saves the alert locations on show, in `format`. */
+  onDownloadLocations: (format: AlertLocationsFormat) => void;
   onRetry: () => void;
 }) {
   const ready = view.kind === "ready";
@@ -755,12 +768,44 @@ export default function DashboardAlertsList({
         </Box>
       </Flex>
 
-      {/* Widget actions, as the chart card's row: the rows on show as CSV.
-          The design's "View data source" waits on a source link the
-          catalogue does not carry yet. */}
+      {/* Widget actions, as the chart card's row: the rows on show as CSV,
+          and the alerts behind them as points. The design's "View data
+          source" waits on a source link the catalogue does not carry yet. */}
       {ready && (
         <Flex gap="8px" align="center">
-          <DownloadMenu onCsv={onDownloadCsv} disabled={rows.length === 0} />
+          <DownloadMenu
+            onCsv={onDownloadCsv}
+            csvLabel="Daily totals (CSV)"
+            loading={isPreparingDownload}
+            disabled={rows.length === 0}
+          >
+            <Menu.ItemGroup>
+              {!locationsAvailable && (
+                <Menu.ItemGroupLabel
+                  maxW="220px"
+                  fontWeight="normal"
+                  color="neutral.500"
+                  whiteSpace="normal"
+                >
+                  Alert locations are available for countries, states and
+                  districts.
+                </Menu.ItemGroupLabel>
+              )}
+              {LOCATION_FORMATS.map(({ format, label }) => (
+                <Menu.Item
+                  key={format}
+                  // Unique in the menu: it selects by value, and the daily
+                  // totals item is "csv".
+                  value={`locations-${format}`}
+                  disabled={!locationsAvailable}
+                  onSelect={() => onDownloadLocations(format)}
+                >
+                  <MapPinIcon size={14} />
+                  {label}
+                </Menu.Item>
+              ))}
+            </Menu.ItemGroup>
+          </DownloadMenu>
         </Flex>
       )}
     </Flex>

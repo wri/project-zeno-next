@@ -2,6 +2,7 @@
 import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -19,6 +20,15 @@ vi.mock("../../api/alerts", async (importOriginal) => ({
 vi.mock("@/src/shared/lib/csv", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/src/shared/lib/csv")>()),
   downloadCsv: vi.fn(),
+}));
+
+vi.mock("../../api/alert-locations", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../api/alert-locations")>()),
+  prepareAlertLocations: vi.fn(),
+}));
+
+vi.mock("@/app/components/ui/toaster", () => ({
+  toaster: { create: vi.fn() },
 }));
 
 // The map pane's body is MapLibre's; a stub that exposes the layer it was
@@ -54,12 +64,19 @@ import {
   ALERTS_WIDGET_CONFIG,
 } from "../../api/__tests__/fixtures";
 import type { DashboardWidget } from "../../api/schemas";
+import {
+  AlertLocationsError,
+  prepareAlertLocations,
+} from "../../api/alert-locations";
+import { toaster } from "@/app/components/ui/toaster";
 import { downloadCsv } from "@/src/shared/lib/csv";
 import DashboardAlertsWidget from "../DashboardAlertsWidget";
 import { chooseFromMenu } from "./chakraMenu";
 
 const mockedFetch = vi.mocked(fetchAlertsList);
 const mockedDownload = vi.mocked(downloadCsv);
+const mockedPrepare = vi.mocked(prepareAlertLocations);
+const mockedToast = vi.mocked(toaster.create);
 
 const widget: DashboardWidget = {
   id: "w-alerts",
@@ -319,13 +336,15 @@ describe("DashboardAlertsWidget", () => {
   it("downloads the rows on show, with the period, tier and area in the file", async () => {
     mockedFetch.mockResolvedValue(toAlertsList(ALERTS_LIST_WIRE));
     mockedDownload.mockReset();
+    mockedPrepare.mockReset();
     renderWidget();
     await screen.findByText(NEW_WEEK_FOOTER);
 
     await chooseFromDropdown("Confidence: All", "Highest");
-    await chooseFromDropdown("Download", "Data (CSV)");
+    await chooseFromDropdown("Download", "Daily totals (CSV)");
 
     expect(mockedDownload).toHaveBeenCalledTimes(1);
+    expect(mockedPrepare).not.toHaveBeenCalled();
     const [csv, filename] = mockedDownload.mock.calls[0];
     expect(filename).toBe(
       "integrated-alerts-guarapuava-2026-10-10-2026-10-16.csv"
@@ -337,6 +356,128 @@ describe("DashboardAlertsWidget", () => {
       "2026-10-12,Highest,9.3,2.2,11.5,true",
       "2026-10-10,Highest,12.5,3,15.5,true",
     ]);
+  });
+
+  it("prepares the alert locations on show and saves the file, holding the button meanwhile", async () => {
+    mockedFetch.mockResolvedValue(toAlertsList(ALERTS_LIST_WIRE));
+    let finish: (
+      file: Awaited<ReturnType<typeof prepareAlertLocations>>
+    ) => void = () => {};
+    mockedPrepare.mockReset().mockReturnValue(
+      new Promise((resolve) => {
+        finish = resolve;
+      })
+    );
+    mockedToast.mockReset();
+    const clicked: string[] = [];
+    const click = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(function (this: HTMLAnchorElement) {
+        clicked.push(this.href);
+      });
+    try {
+      renderWidget();
+      await screen.findByText(NEW_WEEK_FOOTER);
+
+      await chooseFromDropdown("Confidence: All", "High");
+      await chooseFromDropdown("Download", "Alert locations (shapefile)");
+
+      // The area's analytics id and the view on show: the new week, High.
+      expect(mockedPrepare).toHaveBeenCalledTimes(1);
+      expect(mockedPrepare.mock.calls[0][0]).toEqual({
+        gadmId: "BRA.16.137",
+        range: { start: "2026-10-10", end: "2026-10-16" },
+        confidence: "high",
+        landFilter: "any",
+        format: "shp",
+      });
+      expect(
+        screen
+          .getByRole("button", { name: "Preparing…" })
+          .hasAttribute("disabled")
+      ).toBe(true);
+
+      await act(async () => {
+        finish({
+          url: "https://results.s3.amazonaws.com/x.zip?sig=1",
+          pointCount: 1_000_000,
+          truncated: true,
+        });
+      });
+      expect(clicked).toEqual(["https://results.s3.amazonaws.com/x.zip?sig=1"]);
+      expect(mockedToast).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "info",
+          description:
+            "The file holds the newest 1,000,000 alerts. The period has more.",
+        })
+      );
+      expect(screen.getByRole("button", { name: "Download" })).toBeTruthy();
+    } finally {
+      click.mockRestore();
+    }
+  });
+
+  it("says so when the alert locations can't be prepared", async () => {
+    mockedFetch.mockResolvedValue(toAlertsList(ALERTS_LIST_WIRE));
+    mockedPrepare
+      .mockReset()
+      .mockRejectedValue(new AlertLocationsError("Export failed"));
+    mockedToast.mockReset();
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      renderWidget();
+      await screen.findByText(NEW_WEEK_FOOTER);
+      await chooseFromDropdown("Download", "Alert locations (CSV)");
+
+      await waitFor(() =>
+        expect(mockedToast).toHaveBeenCalledWith(
+          expect.objectContaining({ type: "error", title: "Download failed" })
+        )
+      );
+      expect(screen.getByRole("button", { name: "Download" })).toBeTruthy();
+    } finally {
+      error.mockRestore();
+    }
+  });
+
+  it("drops a download still in preparation when the card goes", async () => {
+    mockedFetch.mockResolvedValue(toAlertsList(ALERTS_LIST_WIRE));
+    mockedPrepare.mockReset().mockReturnValue(new Promise(() => {}));
+    const { unmount } = renderWidget();
+    await screen.findByText(NEW_WEEK_FOOTER);
+    await chooseFromDropdown("Download", "Alert locations (CSV)");
+
+    const signal = mockedPrepare.mock.calls[0][1];
+    expect(signal.aborted).toBe(false);
+    unmount();
+    expect(signal.aborted).toBe(true);
+  });
+
+  it("offers no alert locations for an area that is not a GADM country, state or district", async () => {
+    mockedFetch.mockResolvedValue(toAlertsList(ALERTS_LIST_WIRE));
+    mockedPrepare.mockReset();
+    const kbaConfig = {
+      ...ALERTS_WIDGET_CONFIG,
+      alerts: {
+        aoi: {
+          source: "kba",
+          src_id: "12345",
+          subtype: "key-biodiversity-area",
+          name: "Serra do Mar",
+        },
+      },
+    };
+    renderWidget({ widget: { ...widget, config: kbaConfig } });
+    await screen.findByText(NEW_WEEK_FOOTER);
+
+    fireEvent.click(screen.getByRole("button", { name: "Download" }));
+    const item = await screen.findByRole("menuitem", {
+      name: "Alert locations (CSV)",
+    });
+    expect(item.getAttribute("aria-disabled")).toBe("true");
+    fireEvent.click(item);
+    expect(mockedPrepare).not.toHaveBeenCalled();
   });
 
   it("counts back from the window's end, with no latest alert line, when neither the dataset's nor the area's latest date is known", async () => {

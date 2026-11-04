@@ -102,6 +102,28 @@ describe("alertsWidgetSpec", () => {
     expect(spec?.title).toBe("Integrated alerts in Paraná");
   });
 
+  it.each([
+    ["gadm", "BRA", "country", "BRA"],
+    ["gadm", "BRA.16_1", "state-province", "BRA.16"],
+    ["gadm", "BRA.16.137_2", "district-county", "BRA.16.137"],
+    // Below a district the analytics API has no GADM areas.
+    ["gadm", "BRA.16.137.1_1", "municipality", undefined],
+    ["kba", "12345", "key-biodiversity-area", undefined],
+    ["wdpa", "555", "protected-area", undefined],
+    ["landmark", "88", "indigenous-and-community-land", undefined],
+    ["custom", "a1b2", "custom-area", undefined],
+  ])(
+    "gives a %s %s (%s) the analytics GADM id %s",
+    (source, srcId, subtype, gadmId) => {
+      const spec = alertsWidgetSpec(
+        config({
+          alerts: { aoi: { source, src_id: srcId, subtype, name: "Area" } },
+        })
+      );
+      expect(spec?.gadmId).toBe(gadmId);
+    }
+  );
+
   it("returns null when the area identity is incomplete", () => {
     for (const key of ["source", "src_id", "subtype"]) {
       const c = config();
