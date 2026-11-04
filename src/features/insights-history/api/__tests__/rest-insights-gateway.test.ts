@@ -205,4 +205,54 @@ describe("RestInsightsGateway.list", () => {
     expect(chart.seriesColor).toBeUndefined();
     expect(chart.divergentColors).toBeUndefined();
   });
+
+  it("parses analysis_inputs into the record's inputs", async () => {
+    const fetch = mockFetch([
+      {
+        ...rawInsight,
+        analysis_inputs: [
+          {
+            areas: [
+              { name: "Rondônia, Brazil", source: "gadm", src_id: "BRA.22" },
+            ],
+            dataset_id: 4,
+            dataset_name: "Tree cover loss",
+            start_date: "2001-01-01",
+            end_date: "2024-12-31",
+            canopy_cover: 30,
+            context_layer: null,
+          },
+        ],
+      },
+    ]);
+    const records = await new RestInsightsGateway(fetch).list();
+    expect(records[0].analysisInputs).toEqual({
+      recorded: true,
+      areas: [{ name: "Rondônia, Brazil", source: "gadm", srcId: "BRA.22" }],
+      datasets: [{ name: "Tree cover loss", id: 4 }],
+      canopyCover: [30],
+      years: [{ start: 2001, end: 2024 }],
+    });
+  });
+
+  it("reads absent analysis_inputs (an older backend) as not recorded", async () => {
+    const records = await new RestInsightsGateway(
+      mockFetch([rawInsight])
+    ).list();
+    expect(records[0].analysisInputs).toEqual({ recorded: false });
+  });
+
+  it("keeps a row whose analysis_inputs is malformed, as not recorded", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const fetch = mockFetch([
+      { ...rawInsight, analysis_inputs: [{ dataset_name: 4 }] },
+    ]);
+
+    const records = await new RestInsightsGateway(fetch).list();
+
+    expect(records).toHaveLength(1);
+    expect(records[0].analysisInputs).toEqual({ recorded: false });
+    expect(error).toHaveBeenCalledOnce();
+    error.mockRestore();
+  });
 });

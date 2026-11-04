@@ -380,4 +380,35 @@ describe("RestAnalysisGateway.fetchResult", () => {
 
     expect(result.charts[0].yAxis).toBe("");
   });
+
+  it("carries the stored insight's date and recorded inputs", async () => {
+    const fetch = mockFetch({
+      id: INSIGHT_ID,
+      created_at: "2026-10-13T09:30:00Z",
+      charts: [],
+      analysis_inputs: [
+        {
+          areas: [{ name: "Brazil", source: "gadm", src_id: "BRA" }],
+          dataset_id: 4,
+          dataset_name: "Tree cover loss",
+          start_date: "2020-01-01",
+          end_date: "2022-12-31",
+          canopy_cover: 30,
+          context_layer: null,
+        },
+      ],
+    });
+    const gateway = new RestAnalysisGateway(fetch);
+
+    const result = await gateway.fetchResult(RESOURCE_URL);
+
+    expect(result.createdAt).toBe("2026-10-13T09:30:00Z");
+    expect(result.analysisInputs).toEqual({
+      recorded: true,
+      areas: [{ name: "Brazil", source: "gadm", srcId: "BRA" }],
+      datasets: [{ name: "Tree cover loss", id: 4 }],
+      canopyCover: [30],
+      years: [{ start: 2020, end: 2022 }],
+    });
+  });
 });

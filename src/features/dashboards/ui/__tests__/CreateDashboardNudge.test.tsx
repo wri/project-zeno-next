@@ -90,7 +90,9 @@ describe("CreateDashboardNudge", () => {
     vi.mocked(createDashboard).mockResolvedValue(dashboard());
     vi.mocked(analysisService.run).mockResolvedValue({
       id: "insight-1",
+      createdAt: "",
       charts: [],
+      analysisInputs: { recorded: false },
     });
   });
 

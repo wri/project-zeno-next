@@ -35,6 +35,7 @@ function record(overrides: Partial<InsightRecord> = {}): InsightRecord {
     insightText: "Alerts spiked.",
     verification: "ai-generated",
     charts: [chart(), chart({ id: "c-2", position: 1, title: "By driver" })],
+    analysisInputs: { recorded: false },
     ...overrides,
   };
 }
@@ -83,6 +84,8 @@ describe("recordToGroup", () => {
 describe("analysisResultToGroup", () => {
   const result: AnalysisResult = {
     id: "ins-7",
+    createdAt: "",
+    analysisInputs: { recorded: false },
     charts: [
       chart({ id: "c-7a", title: "Annual tree cover loss" }),
       chart({ id: "c-7b", position: 1, title: "Annual GHG emissions" }),
@@ -123,7 +126,15 @@ describe("analysisResultToGroup", () => {
   });
 
   it("maps a completed job with no charts to an empty group", () => {
-    const group = analysisResultToGroup({ id: "ins-8", charts: [] }, ctx);
+    const group = analysisResultToGroup(
+      {
+        id: "ins-8",
+        createdAt: "",
+        charts: [],
+        analysisInputs: { recorded: false },
+      },
+      ctx
+    );
     expect(group.widgets).toEqual([]);
     expect(group.addableInsightId).toBe("ins-8");
   });

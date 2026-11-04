@@ -127,7 +127,12 @@ const chart: Chart = {
   data: [{ year: 2020, loss_ha: 5 }],
 };
 
-const RESULT: AnalysisResult = { id: "ins-1", charts: [chart] };
+const RESULT: AnalysisResult = {
+  id: "ins-1",
+  createdAt: "",
+  charts: [chart],
+  analysisInputs: { recorded: false },
+};
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -178,6 +183,8 @@ const setFlags = (...flags: string[]) =>
 /** An LGMS run: the four charts `charts/lgms.py` returns, in its order. */
 const LGMS_RESULT: AnalysisResult = {
   id: "ins-lgms",
+  createdAt: "",
+  analysisInputs: { recorded: false },
   charts: [
     {
       ...chart,
@@ -388,7 +395,12 @@ describe("CuratedInsightsList", () => {
 
   it("shows a completed job with no charts as no data and adds nothing", async () => {
     const service = fakeService(() =>
-      Promise.resolve({ id: "ins-empty", charts: [] })
+      Promise.resolve({
+        id: "ins-empty",
+        createdAt: "",
+        charts: [],
+        analysisInputs: { recorded: false },
+      })
     );
     renderList(service);
 
@@ -471,7 +483,12 @@ describe("CuratedInsightsList", () => {
 
   it("never opens the chart pager for a run with no charts", async () => {
     const service = fakeService(() =>
-      Promise.resolve({ id: "ins-empty", charts: [] })
+      Promise.resolve({
+        id: "ins-empty",
+        createdAt: "",
+        charts: [],
+        analysisInputs: { recorded: false },
+      })
     );
     renderList(service);
 

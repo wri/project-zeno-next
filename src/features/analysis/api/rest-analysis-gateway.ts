@@ -7,7 +7,12 @@ import type {
 } from "../model/analysis-gateway";
 import type { AnalysisSelection } from "../model/analysis-selection";
 import type { AnalysisResult } from "../model/analysis-result";
-import { chartId, type Chart } from "@/src/entities/insight";
+import {
+  chartId,
+  toAnalysisInputs,
+  type AnalysisInputsWire,
+  type Chart,
+} from "@/src/entities/insight";
 import type { DivergentColors } from "@/app/types/chartColors";
 import { AnalysisError } from "../model/analysis-error";
 
@@ -44,7 +49,10 @@ interface RawChart {
 
 interface RawInsightResponse {
   id: string;
+  created_at: string;
   charts: RawChart[];
+  /** Absent from a backend that predates it. */
+  analysis_inputs?: AnalysisInputsWire;
 }
 
 // ── Adapter ───────────────────────────────────────────────────────────────────
@@ -209,6 +217,8 @@ export class RestAnalysisGateway implements AnalysisGateway {
 
     return {
       id: body.id,
+      createdAt: body.created_at,
+      analysisInputs: toAnalysisInputs(body.analysis_inputs, body.id),
       charts: body.charts.map(
         (c, i): Chart => ({
           // Not `c.id`: the id generate_insights streams (see `chartId`).
