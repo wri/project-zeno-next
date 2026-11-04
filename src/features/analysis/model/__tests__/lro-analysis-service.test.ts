@@ -123,19 +123,6 @@ describe("LROAnalysisService", () => {
     expect(waitSpy).not.toHaveBeenCalled();
   });
 
-  it("enriches the result with provenance params from the selection", async () => {
-    const service = new LROAnalysisService(makeGateway(), new NoopClock());
-
-    const result = await service.run(SELECTION);
-
-    expect(result.params).toEqual({
-      source: "gadm",
-      srcId: "BRA",
-      subtype: "country",
-      name: "Brazil",
-    });
-  });
-
   it("throws when submit fails", async () => {
     const gateway = makeGateway({
       submit: vi.fn().mockRejectedValue(new Error("Network error")),

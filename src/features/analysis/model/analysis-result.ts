@@ -8,11 +8,4 @@ export interface AnalysisResult {
   charts: Chart[];
   /** What the backend recorded the insight was computed from. */
   analysisInputs: AnalysisInputs;
-  /** Area parameters used to run the analysis — threaded through for provenance. */
-  params?: {
-    source: string;
-    srcId?: string;
-    subtype?: string;
-    name: string;
-  };
 }

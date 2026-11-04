@@ -105,7 +105,6 @@ describe("analysisResultToGroup", () => {
       chart({ id: "c-7a", title: "Annual tree cover loss" }),
       chart({ id: "c-7b", position: 1, title: "Annual GHG emissions" }),
     ],
-    params: { source: "gadm", srcId: "BRA.14", name: "Pará" },
   };
   const ctx = { datasetName: "Tree cover loss", areaName: "Pará" };
 
