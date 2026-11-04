@@ -34,6 +34,7 @@ import {
 import { useDatasetsCatalog } from "@/app/hooks/useDatasetsCatalog";
 import {
   buildParams,
+  contextLegendFor,
   legendSymbology,
 } from "@/app/components/legend/legendModel";
 import { applyPaletteOverride } from "@/app/components/legend/applyPaletteOverride";
@@ -163,17 +164,11 @@ export function useLegendHook() {
       const contextLayerByParentId = new Map<string, LegendContextLayer>();
       for (const layer of managedLayers) {
         if (!layer.parentLayerId) continue;
-        const metadata = CONTEXT_LAYER_METADATA[layer.name];
-        const legend = metadata?.legend;
-        // Use the first item's colour as the swatch, falling back to the
-        // legend's top-level color field.
-        const color = legend?.items?.[0]?.color ?? legend?.color ?? "#888";
+        const legend = CONTEXT_LAYER_METADATA[layer.name]?.legend;
         contextLayerByParentId.set(layer.parentLayerId, {
           id: layer.id,
-          title: legend?.title ?? layer.name,
-          color,
+          ...contextLegendFor(layer.name),
           opacity: (layer.opacity ?? 1) * 100,
-          info: legend?.info,
           // The swatch beside the title already stands for a single-class
           // layer. Multi-class ones (IFL's reduction epochs) need the full
           // symbol list, or every class but the first goes unexplained.

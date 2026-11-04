@@ -1,11 +1,9 @@
 import {
   buildParams,
+  contextLegendFor,
   legendSymbology,
 } from "@/app/components/legend/legendModel";
-import {
-  CONTEXT_LAYER_METADATA,
-  DATASET_CARD_BY_ID,
-} from "@/app/constants/datasets";
+import { DATASET_CARD_BY_ID } from "@/app/constants/datasets";
 import { buildYearParam } from "@/app/utils/formatYearRange";
 import type { MapWidgetLayer } from "./mapWidgets";
 
@@ -35,7 +33,7 @@ export interface MapLegendScale {
 export interface MapLegendContext {
   title: string;
   color: string;
-  info: string | undefined;
+  info?: string;
 }
 
 /** A dashboard map's legend, settled once from the widget layer and its dataset card. */
@@ -71,12 +69,7 @@ export function mapLegendFor(layer: MapWidgetLayer): MapLegend | null {
 
   let context: MapLegendContext | null = null;
   if (layer.contextTileUrl && layer.contextLayerName) {
-    const ctxLegend = CONTEXT_LAYER_METADATA[layer.contextLayerName]?.legend;
-    context = {
-      title: ctxLegend?.title ?? layer.contextLayerName,
-      color: ctxLegend?.items?.[0]?.color ?? ctxLegend?.color ?? "#888",
-      info: ctxLegend?.info,
-    };
+    context = contextLegendFor(layer.contextLayerName);
   }
 
   return { title, info, note, symbology, params, context };

@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { legendSymbology } from "@/app/components/legend/legendModel";
-import type { DatasetLegendConfig } from "@/app/constants/datasets";
+import {
+  contextLegendFor,
+  legendSymbology,
+} from "@/app/components/legend/legendModel";
+import {
+  CONTEXT_LAYER_METADATA,
+  type DatasetLegendConfig,
+} from "@/app/constants/datasets";
 
 const legend = (
   overrides: Partial<DatasetLegendConfig>
@@ -46,6 +52,25 @@ describe("legendSymbology", () => {
       minLabel: "Low",
       maxLabel: "High",
       unit: "t/ha",
+    });
+  });
+});
+
+describe("contextLegendFor", () => {
+  it("takes the title, first item colour and info from the metadata", () => {
+    const legend = CONTEXT_LAYER_METADATA.primary_forest.legend;
+    expect(contextLegendFor("primary_forest")).toEqual({
+      title: "Primary Forests (2001)",
+      color: legend?.items?.[0]?.color,
+      info: legend?.info,
+    });
+  });
+
+  it("falls back to the name and a grey swatch for an unknown layer", () => {
+    expect(contextLegendFor("mystery")).toEqual({
+      title: "mystery",
+      color: "#888",
+      info: undefined,
     });
   });
 });

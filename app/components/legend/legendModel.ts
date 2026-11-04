@@ -44,6 +44,24 @@ export function legendSymbology(legend: DatasetLegendConfig): LegendSymbology {
   };
 }
 
+/**
+ * A context layer's legend entry: its title, a swatch colour (the first
+ * item's, else the legend's own) and its info text. Unknown names fall back
+ * to the name and a grey swatch.
+ */
+export function contextLegendFor(name: string): {
+  title: string;
+  color: string;
+  info?: string;
+} {
+  const legend = CONTEXT_LAYER_METADATA[name]?.legend;
+  return {
+    title: legend?.title ?? name,
+    color: legend?.items?.[0]?.color ?? legend?.color ?? "#888",
+    info: legend?.info,
+  };
+}
+
 // Maps internal parameter keys to the badge label shown in the legend.
 const PARAMETER_LABELS: Record<string, string> = {
   canopy_cover: "CANOPY",
