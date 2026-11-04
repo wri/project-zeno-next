@@ -1,3 +1,5 @@
+import { saveUrl } from "../download";
+
 /** One CSV cell, quoted only when it needs it (comma, quote, or newline). */
 function csvCell(value: unknown): string {
   const str = value === null || value === undefined ? "" : String(value);
@@ -23,15 +25,9 @@ export function rowsToCsv(
 export function downloadCsv(csv: string, filename: string): void {
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  // In the document for the click, as some browsers ignore a detached anchor.
-  document.body.appendChild(a);
   try {
-    a.click();
+    saveUrl(url, filename);
   } finally {
-    a.remove();
     URL.revokeObjectURL(url);
   }
 }
