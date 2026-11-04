@@ -3,13 +3,11 @@ import useInsightStore from "../insightStore";
 import type { ChartColorFields } from "@/app/types/chartColors";
 import { pickChartColors } from "@/app/utils/pickChartColors";
 import {
-  isCuratedInsight,
   codeActParts,
-} from "@/src/entities/insight/lib/is-curated-insight";
-import {
+  isCuratedInsight,
   soleDataset,
   toAnalysisInputs,
-} from "@/src/entities/insight/lib/analysis-inputs";
+} from "@/src/entities/insight";
 
 interface ChartData extends ChartColorFields {
   id: string;

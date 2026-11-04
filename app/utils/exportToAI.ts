@@ -1,6 +1,6 @@
 import { InsightWidget } from "@/app/types/chat";
 import { DATASET_BY_ID } from "@/app/constants/datasets";
-import { soleDataset } from "@/src/entities/insight/lib/analysis-inputs";
+import { soleDataset } from "@/src/entities/insight";
 
 export type AIProvider = "claude" | "chatgpt" | "gemini";
 

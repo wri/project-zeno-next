@@ -6,9 +6,6 @@
  */
 export type { Chart } from "./model/chart";
 export type {
-  AnalysedArea,
-  AnalysedDataset,
-  AnalysedYears,
   AnalysisInputs,
   AnalysisInputsWire,
   RecordedAnalysisInputs,

@@ -35,7 +35,7 @@ export function datasetChip(name: string): ParamChipData {
 }
 
 /** AREA chips shown before the rest fold into one "+N" chip. */
-export const AREA_CHIP_LIMIT = 3;
+const AREA_CHIP_LIMIT = 3;
 
 /**
  * The chips for an analysis's recorded inputs: one per distinct area,
