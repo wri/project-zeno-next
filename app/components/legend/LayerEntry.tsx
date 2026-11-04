@@ -14,7 +14,7 @@ import {
   CaretDownIcon,
   ArrowBendDownRightIcon,
 } from "@phosphor-icons/react";
-import { LayerInfoPopover } from "@/src/shared/ui/LayerInfoPopover";
+import { LayerInfoButton } from "@/src/shared/ui/LayerInfoButton";
 import { OpacityControl } from "./OpacityControl";
 import type {
   LegendLayer,
@@ -102,13 +102,7 @@ export function LayerEntry(
             },
           }}
         >
-          {info && (
-            <LayerInfoPopover info={info}>
-              <IconButton>
-                <InfoIcon />
-              </IconButton>
-            </LayerInfoPopover>
-          )}
+          {info && <LayerInfoButton info={info} label={`About ${title}`} />}
           {!hideOpacityControl && (
             <OpacityControl
               value={opacity}
@@ -209,11 +203,10 @@ function ContextLayerRow(props: {
           css={{ "& button": { h: 5, minW: 5 } }}
         >
           {contextLayer.info && (
-            <LayerInfoPopover info={contextLayer.info}>
-              <IconButton>
-                <InfoIcon />
-              </IconButton>
-            </LayerInfoPopover>
+            <LayerInfoButton
+              info={contextLayer.info}
+              label={`About ${contextLayer.title}`}
+            />
           )}
           <OpacityControl
             value={contextLayer.opacity}

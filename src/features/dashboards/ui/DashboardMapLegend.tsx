@@ -4,7 +4,6 @@ import {
   CaretDownIcon,
   CaretUpIcon,
   CircleHalfIcon,
-  InfoIcon,
 } from "@phosphor-icons/react";
 
 import { ColorBar } from "@/app/components/legend/ColorBar";
@@ -12,7 +11,7 @@ import { LegendDivergent } from "@/app/components/legend/LegendDivergent";
 import { LegendSequential } from "@/app/components/legend/LegendSequential";
 import { OpacityControl } from "@/app/components/legend/OpacityControl";
 import { makeColorRamp } from "@/app/components/legend/makeColorRamp";
-import { LayerInfoPopover } from "@/src/shared/ui/LayerInfoPopover";
+import { LayerInfoButton } from "@/src/shared/ui/LayerInfoButton";
 import {
   mapLegendFor,
   type MapLegend,
@@ -61,7 +60,11 @@ export default function DashboardMapLegend({
 
   const controls = print ? null : (
     <Flex flexShrink={0}>
-      <InfoButton title={title} info={info} />
+      <LayerInfoButton
+        info={info}
+        label={`About ${title}`}
+        {...ICON_BUTTON_PROPS}
+      />
       <OpacityButton
         label="Layer opacity"
         value={opacity.main}
@@ -82,7 +85,11 @@ export default function DashboardMapLegend({
     print || !context ? null : (
       <>
         {context.info && (
-          <InfoButton title={context.title} info={context.info} />
+          <LayerInfoButton
+            info={context.info}
+            label={`About ${context.title}`}
+            {...ICON_BUTTON_PROPS}
+          />
         )}
         <OpacityButton
           label={`${context.title} opacity`}
@@ -340,16 +347,6 @@ function Params({
     >
       {text}
     </Text>
-  );
-}
-
-function InfoButton({ title, info }: { title: string; info: string }) {
-  return (
-    <LayerInfoPopover info={info}>
-      <IconButton aria-label={`About ${title}`} {...ICON_BUTTON_PROPS}>
-        <InfoIcon />
-      </IconButton>
-    </LayerInfoPopover>
   );
 }
 

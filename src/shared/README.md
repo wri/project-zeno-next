@@ -35,9 +35,9 @@ FSD **shared** layer — reusable, business-agnostic building blocks usable by e
 - `ui/FluxTooltip.tsx` — the dark hover-tooltip panel (heading, swatched rows, bold net total) shared
   by the net-flux and flux-tree charts; each chart supplies a `lib/flux-tooltip` model. Import from
   `@/src/shared/ui/FluxTooltip`.
-- `ui/LayerInfoPopover.tsx` — the "Layer information" popover behind every map legend's info button
-  (explorer layers, context layers, imagery, dashboard maps); the button is the child. Import from
-  `@/src/shared/ui/LayerInfoPopover`.
+- `ui/LayerInfoButton.tsx` — every map legend's info button with the "Layer information" popover it
+  opens (explorer layers, context layers, imagery, dashboard maps); `label` names the button. Import
+  from `@/src/shared/ui/LayerInfoButton`.
 - `ui/Swatch.tsx` — the legend/tooltip colour swatch shared by the net-flux and flux-tree charts; renders
   SVG hatch-pattern fills too. Import from `@/src/shared/ui/Swatch`.
 - `ui/entity-card/` — `EntityCard`, the compact row behind every card in the app (chat, catalogue

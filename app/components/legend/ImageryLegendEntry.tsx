@@ -19,7 +19,7 @@ import {
   PolygonIcon,
   XIcon,
 } from "@phosphor-icons/react";
-import { LayerInfoPopover } from "@/src/shared/ui/LayerInfoPopover";
+import { LayerInfoButton } from "@/src/shared/ui/LayerInfoButton";
 import { OpacityControl } from "./OpacityControl";
 import { ImageryInfoDialog } from "./ImageryInfoDialog";
 import type {
@@ -151,13 +151,7 @@ export function ImageryLegendEntry(
               </IconButton>
             </ImageryInfoDialog>
           ) : (
-            info && (
-              <LayerInfoPopover info={info}>
-                <IconButton>
-                  <InfoIcon />
-                </IconButton>
-              </LayerInfoPopover>
-            )
+            info && <LayerInfoButton info={info} label={`About ${title}`} />
           )}
           <OpacityControl
             value={opacity}
