@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 
 import { toaster } from "@/app/components/ui/toaster";
 import { saveUrl } from "@/src/shared/lib/download";
@@ -34,11 +34,11 @@ interface Job {
 export function useAlertLocationsDownload(): (
   request: AlertLocationsRequest
 ) => void {
-  const inFlight = useRef(new Set<AbortController>());
-  useEffect(() => {
-    const jobs = inFlight.current;
-    return () => jobs.forEach((controller) => controller.abort());
-  }, []);
+  const [inFlight] = useState(() => new Set<AbortController>());
+  useEffect(
+    () => () => inFlight.forEach((controller) => controller.abort()),
+    [inFlight]
+  );
 
   const { mutate } = useMutation({
     mutationFn: ({ request, controller }: Job) =>
@@ -50,7 +50,6 @@ export function useAlertLocationsDownload(): (
       toaster.update(toastId, {
         type: "success",
         title: `Saved ${COUNT_FORMAT.format(file.pointCount)} alert locations`,
-        // The export keeps the newest alerts, up to its cap.
         description: file.truncated
           ? "The file holds the newest alerts. The period has more."
           : undefined,
@@ -74,13 +73,13 @@ export function useAlertLocationsDownload(): (
       });
     },
     onSettled: (_file, _error, { controller }) => {
-      inFlight.current.delete(controller);
+      inFlight.delete(controller);
     },
   });
 
   return (request) => {
     const controller = new AbortController();
-    inFlight.current.add(controller);
+    inFlight.add(controller);
     const toastId = toaster.create({
       type: "loading",
       title: "Preparing alert locations",

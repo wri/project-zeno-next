@@ -13,9 +13,7 @@ import {
 import { CaretDownIcon, MapPinIcon } from "@phosphor-icons/react";
 
 import InsightCaption from "@/app/components/InsightCaption";
-import DownloadMenu, {
-  DownloadMenuItem,
-} from "@/app/components/widgets/DownloadMenu";
+import DownloadMenu from "@/app/components/widgets/DownloadMenu";
 import type { DateRange } from "@/src/shared/lib/iso-date";
 import { InfoTooltip } from "@/src/shared/ui/InfoTooltip";
 import { Pill } from "@/src/shared/ui/Pill";
@@ -461,6 +459,7 @@ export default function DashboardAlertsList({
 
   const paged = paginate(rows, page, PAGE_SIZE);
   const summary = rowsSummary(rows, confidence);
+  const alertDays = `${summary.days} alert ${summary.days === 1 ? "day" : "days"}`;
   const land = LAND_FILTERS[landFilter];
 
   return (
@@ -698,7 +697,7 @@ export default function DashboardAlertsList({
                       paged.page * PAGE_SIZE,
                       summary.days
                     )} of ${summary.days} alert days`
-                  : `${summary.days} alert ${summary.days === 1 ? "day" : "days"}`}
+                  : alertDays}
                 {" · "}
                 {formatHa(summary.ha)} ha in this period
               </Text>
@@ -782,24 +781,18 @@ export default function DashboardAlertsList({
           <DownloadMenu
             onCsv={onDownloadCsv}
             csvLabel="Daily totals (CSV)"
-            csvDescription={`The ${summary.days} alert ${summary.days === 1 ? "day" : "days"} on show.`}
+            csvDescription={`The ${alertDays} on show.`}
             disabled={rows.length === 0}
-            onRequest={LOCATION_FORMAT_ORDER.map((format) => (
-              <DownloadMenuItem
-                key={format}
-                // The daily totals item is "csv".
-                value={`locations-${format}`}
-                icon={<MapPinIcon size={14} />}
-                label={LOCATION_FORMATS[format].label}
-                description={
-                  onDownloadLocations
-                    ? `${LOCATION_FORMATS[format].about} About ${estimateAlertPoints(summary.ha)} in this period.`
-                    : "Available for countries, states and districts only."
-                }
-                disabled={!onDownloadLocations}
-                onSelect={() => onDownloadLocations?.(format)}
-              />
-            ))}
+            requestItems={LOCATION_FORMAT_ORDER.map((format) => ({
+              value: `locations-${format}`,
+              icon: <MapPinIcon size={14} />,
+              label: LOCATION_FORMATS[format].label,
+              description: onDownloadLocations
+                ? `${LOCATION_FORMATS[format].about} About ${estimateAlertPoints(summary.ha)} in this period.`
+                : "Available for countries, states and districts only.",
+              disabled: !onDownloadLocations,
+              onSelect: () => onDownloadLocations?.(format),
+            }))}
           />
         </Flex>
       )}

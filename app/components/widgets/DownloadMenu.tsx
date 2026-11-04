@@ -13,9 +13,9 @@ import {
  * chart, its image. Shared by the chart card and the dashboard alerts list,
  * so every widget's download reads and behaves the same.
  *
- * A widget with files that the server prepares on request passes their
- * items as `onRequest`. The menu then lists them under "Prepared on
- * request", after the files it saves at once under "Instant" (design A1).
+ * A widget with files that the server prepares on request passes them as
+ * `requestItems`. The menu then lists them under "Prepared on request",
+ * after the files it saves at once under "Instant" (design A1).
  */
 export default function DownloadMenu({
   onCsv,
@@ -24,7 +24,7 @@ export default function DownloadMenu({
   onImage,
   loading,
   disabled,
-  onRequest,
+  requestItems,
 }: {
   onCsv: () => void;
   /** The CSV item's name, for a menu that offers more than one data file. */
@@ -35,8 +35,8 @@ export default function DownloadMenu({
   onImage?: () => void;
   loading?: boolean;
   disabled?: boolean;
-  /** `DownloadMenuItem`s for files the server prepares on request. */
-  onRequest?: React.ReactNode;
+  /** Files the server prepares on request. Their values must not be "csv" or "png". */
+  requestItems?: DownloadItem[];
 }) {
   const instant = (
     <>
@@ -78,7 +78,7 @@ export default function DownloadMenu({
       <Portal>
         <Menu.Positioner>
           <Menu.Content minW="180px" maxW="320px" zIndex={1400}>
-            {onRequest ? (
+            {requestItems ? (
               <>
                 <Menu.ItemGroup>
                   <GroupLabel>Instant</GroupLabel>
@@ -90,7 +90,9 @@ export default function DownloadMenu({
                     <ClockIcon size={12} />
                     Prepared on request
                   </GroupLabel>
-                  {onRequest}
+                  {requestItems.map((item) => (
+                    <DownloadMenuItem key={item.value} {...item} />
+                  ))}
                 </Menu.ItemGroup>
               </>
             ) : (
@@ -133,14 +135,7 @@ function GroupLabel({
  * holds or why it is not available. The name alone names the item; the line
  * describes it.
  */
-export function DownloadMenuItem({
-  value,
-  icon,
-  label,
-  description,
-  disabled,
-  onSelect,
-}: {
+interface DownloadItem {
   /** Unique in the menu: it selects by value. */
   value: string;
   icon: React.ReactNode;
@@ -148,7 +143,16 @@ export function DownloadMenuItem({
   description?: string;
   disabled?: boolean;
   onSelect: () => void;
-}) {
+}
+
+function DownloadMenuItem({
+  value,
+  icon,
+  label,
+  description,
+  disabled,
+  onSelect,
+}: DownloadItem) {
   const id = useId();
   return (
     <Menu.Item

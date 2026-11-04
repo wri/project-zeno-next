@@ -240,15 +240,14 @@ function AlertsCard({
   };
 
   // The alerts behind those rows, one per pixel: the same period, tier and
-  // land filter.
+  // land filter. The menu shows only once rows have a range.
   const downloadLocations = useAlertLocationsDownload();
   const { gadmId } = spec;
-  const saveLocations = gadmId
-    ? (format: AlertLocationsFormat) => {
-        if (!range) return;
-        downloadLocations({ gadmId, range, confidence, landFilter, format });
-      }
-    : undefined;
+  const saveLocations =
+    gadmId && range
+      ? (format: AlertLocationsFormat) =>
+          downloadLocations({ gadmId, range, confidence, landFilter, format })
+      : undefined;
 
   return (
     <DashboardWidgetCard

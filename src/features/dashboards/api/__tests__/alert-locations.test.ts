@@ -50,6 +50,7 @@ const saved = (truncated = false, pointCount = 48211) =>
     },
     status: "success",
   });
+const serverError = () => json(500, { detail: "Internal Server Error" });
 const failed = (message: string | null) =>
   json(200, {
     data: { status: "failed", result: null, metadata: {}, message },
@@ -81,6 +82,15 @@ async function settle<T>(promise: Promise<T>): Promise<T> {
   return result.value;
 }
 
+/** Runs a download of `request`, changed by `overrides`, to its end. */
+const run = (overrides: Partial<AlertLocationsRequest> = {}) =>
+  settle(
+    prepareAlertLocations(
+      { ...request, ...overrides },
+      new AbortController().signal
+    )
+  );
+
 const sentBody = () =>
   JSON.parse(String(fetchMock.mock.calls[0][1]?.body)) as Record<
     string,
@@ -94,9 +104,7 @@ describe("prepareAlertLocations", () => {
       .mockResolvedValueOnce(pending())
       .mockResolvedValueOnce(saved());
 
-    const file = await settle(
-      prepareAlertLocations(request, new AbortController().signal)
-    );
+    const file = await run();
 
     expect(file).toEqual({
       url: FILE_URL,
@@ -132,12 +140,7 @@ describe("prepareAlertLocations", () => {
     ["highest", ["highest"]],
   ] as const)("sends confidence %s as %j", async (confidence, levels) => {
     fetchMock.mockResolvedValueOnce(created()).mockResolvedValueOnce(saved());
-    await settle(
-      prepareAlertLocations(
-        { ...request, confidence },
-        new AbortController().signal
-      )
-    );
+    await run({ confidence });
     expect(sentBody().alert_confidence).toEqual(levels);
   });
 
@@ -145,12 +148,7 @@ describe("prepareAlertLocations", () => {
     "sends the %s land filter, and the shapefile format",
     async (landFilter) => {
       fetchMock.mockResolvedValueOnce(created()).mockResolvedValueOnce(saved());
-      await settle(
-        prepareAlertLocations(
-          { ...request, landFilter, format: "shp" },
-          new AbortController().signal
-        )
-      );
+      await run({ landFilter, format: "shp" });
       expect(sentBody()).toMatchObject({
         land_filter: landFilter,
         format: "shp",
@@ -162,45 +160,35 @@ describe("prepareAlertLocations", () => {
     fetchMock
       .mockResolvedValueOnce(created())
       .mockResolvedValueOnce(saved(true, 1_000_000));
-    const file = await settle(
-      prepareAlertLocations(request, new AbortController().signal)
-    );
+    const file = await run();
     expect(file).toMatchObject({ pointCount: 1_000_000, truncated: true });
   });
 
   it("rides out the server errors of a poll that beats the job's status", async () => {
     fetchMock
       .mockResolvedValueOnce(created())
-      .mockResolvedValueOnce(json(500, { detail: "Internal Server Error" }))
-      .mockResolvedValueOnce(json(500, { detail: "Internal Server Error" }))
+      .mockResolvedValueOnce(serverError())
+      .mockResolvedValueOnce(serverError())
       .mockResolvedValueOnce(saved());
-    const file = await settle(
-      prepareAlertLocations(request, new AbortController().signal)
-    );
+    const file = await run();
     expect(file.url).toBe(FILE_URL);
   });
 
   it("counts only server errors in a row", async () => {
     fetchMock
       .mockResolvedValueOnce(created())
-      .mockResolvedValueOnce(json(500, { detail: "Internal Server Error" }))
-      .mockResolvedValueOnce(json(500, { detail: "Internal Server Error" }))
+      .mockResolvedValueOnce(serverError())
+      .mockResolvedValueOnce(serverError())
       .mockResolvedValueOnce(pending())
-      .mockResolvedValueOnce(json(500, { detail: "Internal Server Error" }))
+      .mockResolvedValueOnce(serverError())
       .mockResolvedValueOnce(saved());
-    const file = await settle(
-      prepareAlertLocations(request, new AbortController().signal)
-    );
+    const file = await run();
     expect(file.url).toBe(FILE_URL);
   });
 
   it("gives up after three server errors in a row", async () => {
-    fetchMock
-      .mockResolvedValueOnce(created())
-      .mockResolvedValue(json(500, { detail: "Internal Server Error" }));
-    await expect(
-      settle(prepareAlertLocations(request, new AbortController().signal))
-    ).rejects.toThrow("Export poll failed: 500");
+    fetchMock.mockResolvedValueOnce(created()).mockResolvedValue(serverError());
+    await expect(run()).rejects.toThrow("Export poll failed: 500");
     expect(fetchMock).toHaveBeenCalledTimes(1 + 3);
   });
 
@@ -220,18 +208,14 @@ describe("prepareAlertLocations", () => {
     ],
   ])("throws when %s", async (_case, responses, expected) => {
     for (const response of responses) fetchMock.mockResolvedValueOnce(response);
-    await expect(
-      settle(prepareAlertLocations(request, new AbortController().signal))
-    ).rejects.toThrow(expected);
+    await expect(run()).rejects.toThrow(expected);
   });
 
   it("stops waiting after five minutes", async () => {
     fetchMock
       .mockResolvedValueOnce(created())
       .mockImplementation(async () => pending());
-    await expect(
-      settle(prepareAlertLocations(request, new AbortController().signal))
-    ).rejects.toThrow("Export timed out");
+    await expect(run()).rejects.toThrow("Export timed out");
   });
 
   it("stops polling when aborted", async () => {

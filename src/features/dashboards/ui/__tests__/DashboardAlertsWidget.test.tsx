@@ -64,7 +64,10 @@ import {
   ALERTS_WIDGET_CONFIG,
 } from "../../api/__tests__/fixtures";
 import type { DashboardWidget } from "../../api/schemas";
-import { prepareAlertLocations } from "../../api/alert-locations";
+import {
+  prepareAlertLocations,
+  type AlertLocationsFile,
+} from "../../api/alert-locations";
 import { toaster } from "@/app/components/ui/toaster";
 import { downloadCsv } from "@/src/shared/lib/csv";
 import DashboardAlertsWidget from "../DashboardAlertsWidget";
@@ -75,25 +78,16 @@ const mockedDownload = vi.mocked(downloadCsv);
 const mockedPrepare = vi.mocked(prepareAlertLocations);
 const mockedToaster = vi.mocked(toaster);
 
-/** Clears the toasts' calls; each new toast is "toast-1". */
-function resetToasts() {
-  mockedToaster.create.mockReset().mockReturnValue("toast-1");
-  mockedToaster.update.mockReset();
-  mockedToaster.dismiss.mockReset();
-}
-
 /** The abortable preparation the real export runs: an abort rejects it. */
 function abortablePrepare() {
-  mockedPrepare
-    .mockReset()
-    .mockImplementation(
-      (_request, signal) =>
-        new Promise((_resolve, reject) =>
-          signal.addEventListener("abort", () =>
-            reject(new DOMException("Aborted", "AbortError"))
-          )
+  mockedPrepare.mockImplementation(
+    (_request, signal) =>
+      new Promise((_resolve, reject) =>
+        signal.addEventListener("abort", () =>
+          reject(new DOMException("Aborted", "AbortError"))
         )
-    );
+      )
+  );
 }
 
 const widget: DashboardWidget = {
@@ -213,6 +207,11 @@ describe("DashboardAlertsWidget", () => {
   // teardown, and `mockReset()` returns the mock.
   beforeEach(() => {
     mockedFetch.mockReset();
+    mockedPrepare.mockReset();
+    // Each new toast is "toast-1".
+    mockedToaster.create.mockReset().mockReturnValue("toast-1");
+    mockedToaster.update.mockReset();
+    mockedToaster.dismiss.mockReset();
   });
 
   it("fetches the backend's window once and shows the new week in the headline and both panes", async () => {
@@ -354,7 +353,6 @@ describe("DashboardAlertsWidget", () => {
   it("downloads the rows on show, with the period, tier and area in the file", async () => {
     mockedFetch.mockResolvedValue(toAlertsList(ALERTS_LIST_WIRE));
     mockedDownload.mockReset();
-    mockedPrepare.mockReset();
     renderWidget();
     await screen.findByText(NEW_WEEK_FOOTER);
 
@@ -378,15 +376,8 @@ describe("DashboardAlertsWidget", () => {
 
   it("prepares the alert locations on show and saves the file, with a toast that follows it", async () => {
     mockedFetch.mockResolvedValue(toAlertsList(ALERTS_LIST_WIRE));
-    let finish: (
-      file: Awaited<ReturnType<typeof prepareAlertLocations>>
-    ) => void = () => {};
-    mockedPrepare.mockReset().mockReturnValue(
-      new Promise((resolve) => {
-        finish = resolve;
-      })
-    );
-    resetToasts();
+    const file = Promise.withResolvers<AlertLocationsFile>();
+    mockedPrepare.mockReturnValue(file.promise);
     const clicked: string[] = [];
     const click = vi
       .spyOn(HTMLAnchorElement.prototype, "click")
@@ -425,7 +416,7 @@ describe("DashboardAlertsWidget", () => {
       ).toBe(false);
 
       await act(async () => {
-        finish({
+        file.resolve({
           url: "https://results.s3.amazonaws.com/x.zip?sig=1",
           pointCount: 1_000_000,
           truncated: true,
@@ -448,8 +439,7 @@ describe("DashboardAlertsWidget", () => {
 
   it("turns the toast into a failure when the alert locations can't be prepared", async () => {
     mockedFetch.mockResolvedValue(toAlertsList(ALERTS_LIST_WIRE));
-    mockedPrepare.mockReset().mockRejectedValue(new Error("Export failed"));
-    resetToasts();
+    mockedPrepare.mockRejectedValue(new Error("Export failed"));
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
     try {
       renderWidget();
@@ -467,45 +457,34 @@ describe("DashboardAlertsWidget", () => {
     }
   });
 
-  it("drops a download when its toast's Cancel is pressed, and closes the toast", async () => {
-    mockedFetch.mockResolvedValue(toAlertsList(ALERTS_LIST_WIRE));
-    abortablePrepare();
-    resetToasts();
-    renderWidget();
-    await screen.findByText(NEW_WEEK_FOOTER);
-    await chooseFromDropdown("Download", "Alert locations (CSV)");
+  it.each<[string, (unmount: () => void) => void]>([
+    [
+      "its toast's Cancel is pressed",
+      () => act(() => mockedToaster.create.mock.calls[0][0].action?.onClick()),
+    ],
+    ["the card goes", (unmount) => unmount()],
+  ])(
+    "drops a download in preparation when %s, and closes its toast",
+    async (_case, drop) => {
+      mockedFetch.mockResolvedValue(toAlertsList(ALERTS_LIST_WIRE));
+      abortablePrepare();
+      const { unmount } = renderWidget();
+      await screen.findByText(NEW_WEEK_FOOTER);
+      await chooseFromDropdown("Download", "Alert locations (CSV)");
 
-    const signal = mockedPrepare.mock.calls[0][1];
-    const { action } = mockedToaster.create.mock.calls[0][0];
-    act(() => action?.onClick());
-    expect(signal.aborted).toBe(true);
-    await waitFor(() =>
-      expect(mockedToaster.dismiss).toHaveBeenCalledWith("toast-1")
-    );
-    expect(mockedToaster.update).not.toHaveBeenCalled();
-  });
-
-  it("drops a download still in preparation when the card goes, and closes its toast", async () => {
-    mockedFetch.mockResolvedValue(toAlertsList(ALERTS_LIST_WIRE));
-    abortablePrepare();
-    resetToasts();
-    const { unmount } = renderWidget();
-    await screen.findByText(NEW_WEEK_FOOTER);
-    await chooseFromDropdown("Download", "Alert locations (CSV)");
-
-    const signal = mockedPrepare.mock.calls[0][1];
-    expect(signal.aborted).toBe(false);
-    unmount();
-    expect(signal.aborted).toBe(true);
-    await waitFor(() =>
-      expect(mockedToaster.dismiss).toHaveBeenCalledWith("toast-1")
-    );
-    expect(mockedToaster.update).not.toHaveBeenCalled();
-  });
+      const signal = mockedPrepare.mock.calls[0][1];
+      expect(signal.aborted).toBe(false);
+      drop(unmount);
+      expect(signal.aborted).toBe(true);
+      await waitFor(() =>
+        expect(mockedToaster.dismiss).toHaveBeenCalledWith("toast-1")
+      );
+      expect(mockedToaster.update).not.toHaveBeenCalled();
+    }
+  );
 
   it("offers no alert locations for an area that is not a GADM country, state or district", async () => {
     mockedFetch.mockResolvedValue(toAlertsList(ALERTS_LIST_WIRE));
-    mockedPrepare.mockReset();
     const kbaConfig = {
       ...ALERTS_WIDGET_CONFIG,
       alerts: {
