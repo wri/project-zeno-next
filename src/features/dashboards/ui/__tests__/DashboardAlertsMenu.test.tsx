@@ -18,7 +18,7 @@ import { toaster } from "@/app/components/ui/toaster";
 import { apiFetch } from "@/app/lib/api-client";
 import DashboardHeader from "../DashboardHeader";
 import { dashboardKeys, useDashboard } from "../dashboardQueries";
-import type { Dashboard } from "../../api/schemas";
+import { ALERT_MODES, type Dashboard } from "../../api/schemas";
 
 // The backend's view of the dashboard: what a refetch after the PUT returns.
 let serverModes: string[] = [];
@@ -55,17 +55,9 @@ function Harness({ isOwner }: { isOwner: boolean }) {
   return data ? <DashboardHeader dashboard={data} isOwner={isOwner} /> : null;
 }
 
-type Alerts = NonNullable<Dashboard["alerts"]>;
-const OFF: Alerts = { inAppEnabled: false, emailEnabled: false };
-const IN_APP: Alerts = { inAppEnabled: true, emailEnabled: false };
-const BOTH: Alerts = { inAppEnabled: true, emailEnabled: true };
-
 function renderHeader(alerts: Dashboard["alerts"], { isOwner = true } = {}) {
   // The server starts where the cache does.
-  serverModes = [
-    ...(alerts?.inAppEnabled ? ["in-app"] : []),
-    ...(alerts?.emailEnabled ? ["email"] : []),
-  ];
+  serverModes = alerts ? ALERT_MODES[alerts] : [];
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
@@ -132,12 +124,12 @@ beforeEach(() => {
 describe("DashboardHeader alerts gate", () => {
   it("shows no alerts control outside the beta", () => {
     flagOn = false;
-    renderHeader(OFF);
+    renderHeader("off");
     expect(alertsButton()).toBeNull();
   });
 
   it("shows no alerts control to a non-owner", () => {
-    renderHeader(BOTH, { isOwner: false });
+    renderHeader("email", { isOwner: false });
     expect(alertsButton()).toBeNull();
   });
 
@@ -149,7 +141,7 @@ describe("DashboardHeader alerts gate", () => {
 
 describe("DashboardAlertsMenu", () => {
   it("starts with both off, names the area and shows the myGFW note", async () => {
-    renderHeader(OFF);
+    renderHeader("off");
     expect(alertsButton()?.textContent).toContain("Off");
 
     const { inApp, email } = await openPopover();
@@ -161,7 +153,7 @@ describe("DashboardAlertsMenu", () => {
   });
 
   it("turns in-app on by itself", async () => {
-    renderHeader(OFF);
+    renderHeader("off");
     const { inApp, email } = await openPopover();
 
     fireEvent.click(inApp);
@@ -175,7 +167,7 @@ describe("DashboardAlertsMenu", () => {
   });
 
   it("email on also turns in-app on, says so, and keeps it after the refetch", async () => {
-    renderHeader(OFF);
+    renderHeader("off");
     const { inApp, email } = await openPopover();
 
     fireEvent.click(email);
@@ -193,7 +185,7 @@ describe("DashboardAlertsMenu", () => {
   });
 
   it("doesn't say in-app was turned on when it already was", async () => {
-    renderHeader(IN_APP);
+    renderHeader("in-app");
     const { email } = await openPopover();
 
     fireEvent.click(email);
@@ -206,7 +198,7 @@ describe("DashboardAlertsMenu", () => {
   });
 
   it("email off leaves in-app on", async () => {
-    renderHeader(BOTH);
+    renderHeader("email");
     const { inApp, email } = await openPopover();
 
     fireEvent.click(email);
@@ -218,7 +210,7 @@ describe("DashboardAlertsMenu", () => {
   });
 
   it("in-app off also turns email off", async () => {
-    renderHeader(BOTH);
+    renderHeader("email");
     const { inApp, email } = await openPopover();
 
     fireEvent.click(inApp);
@@ -238,7 +230,7 @@ describe("DashboardAlertsMenu", () => {
           )
         : new Response(JSON.stringify(wire()), { status: 200 })
     );
-    renderHeader(OFF);
+    renderHeader("off");
     const { inApp, email } = await openPopover();
 
     fireEvent.click(email);
@@ -266,7 +258,7 @@ describe("DashboardAlertsMenu", () => {
         ? new Promise<Response>((resolve) => (finish = resolve))
         : Promise.resolve(new Response(JSON.stringify(wire()), { status: 200 }))
     );
-    renderHeader(OFF);
+    renderHeader("off");
     const { inApp, email } = await openPopover();
 
     fireEvent.click(email);

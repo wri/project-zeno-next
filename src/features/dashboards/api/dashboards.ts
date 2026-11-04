@@ -1,13 +1,14 @@
 import {
+  ALERT_MODES,
   AnalysisTemplateListSchema,
   DashboardAlertsSummaryResponseSchema,
   DashboardCreateRequestSchema,
   DashboardListResponseSchema,
   DashboardResponseSchema,
   SectionFromTemplateResponseSchema,
+  type AlertsLevel,
   type AnalysisTemplate,
   type Dashboard,
-  type DashboardAlertsSettings,
   type DashboardCreateRequest,
   type SectionFromTemplateResponse,
 } from "./schemas";
@@ -118,24 +119,22 @@ export async function renameDashboard(
   });
 }
 
-// The integrated-alerts modes on for one dashboard (owner only). The body is
-// the desired state, so leaving a mode out turns it off. The backend couples
-// them (email on turns in-app on, in-app off turns email off) and answers 409
-// when email is turned on for an ineligible dashboard. The response (the
-// updated dashboard) is ignored; callers invalidate and refetch, as with
-// rename, so the backend has the last word.
+// Sets one dashboard's integrated-alerts level (owner only). The body is the
+// desired state, so a level of "off" turns everything off. The backend
+// answers 409 when email is turned on for an ineligible dashboard. The
+// response (the updated dashboard) is ignored: the shared optimistic
+// mutation refetches on settle anyway.
 export async function setAlertModes(
   dashboardId: string,
-  { inAppEnabled, emailEnabled }: DashboardAlertsSettings
+  level: AlertsLevel
 ): Promise<void> {
-  const modes = [
-    ...(inAppEnabled ? ["in-app"] : []),
-    ...(emailEnabled ? ["email"] : []),
-  ];
   await readJson<unknown>(`/api/dashboards/${dashboardId}/subscriptions`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ datasets: ["integrated_alerts"], modes }),
+    body: JSON.stringify({
+      datasets: ["integrated_alerts"],
+      modes: ALERT_MODES[level],
+    }),
   });
 }
 
