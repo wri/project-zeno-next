@@ -1,4 +1,5 @@
 import { buildParams } from "@/app/components/legend/useLegendHook";
+import { legendSymbology } from "@/app/components/legend/legendModel";
 import {
   CONTEXT_LAYER_METADATA,
   DATASET_CARD_BY_ID,
@@ -54,24 +55,12 @@ export function mapLegendFor(layer: MapWidgetLayer): MapLegend | null {
   const card =
     layer.datasetId != null ? DATASET_CARD_BY_ID[layer.datasetId] : undefined;
   if (!card?.legend) return null;
-  const { title, info, note, type, items = [], color, unit } = card.legend;
-
+  const { title, info, note } = card.legend;
+  const s = legendSymbology(card.legend);
   const symbology: MapLegend["symbology"] =
-    type === "sequential" || type === "divergent"
-      ? {
-          kind: type,
-          colors: items.length > 0 ? items.map((i) => i.color) : [color],
-          minLabel: items[0]?.label ?? "",
-          maxLabel: items[items.length - 1]?.label ?? "",
-          unit: unit ?? "",
-        }
-      : {
-          kind: "classes",
-          classes:
-            items.length > 0
-              ? items.map((i) => ({ label: i.label ?? "", color: i.color }))
-              : [{ label: title, color }],
-        };
+    s.kind === "symbol" || s.kind === "categorical"
+      ? { kind: "classes", classes: s.classes }
+      : s;
 
   const params = buildParams(
     layer.parameters ?? {},

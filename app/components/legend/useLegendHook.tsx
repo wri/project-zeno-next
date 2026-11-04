@@ -34,6 +34,7 @@ import {
   IMAGERY_LEGEND_GROUP_ID,
 } from "@/app/utils/imagery";
 import { useDatasetsCatalog } from "@/app/hooks/useDatasetsCatalog";
+import { legendSymbology } from "@/app/components/legend/legendModel";
 import { applyPaletteOverride } from "@/app/components/legend/applyPaletteOverride";
 
 // Maps internal parameter keys to the badge label shown in the legend.
@@ -74,38 +75,36 @@ export function buildParams(
 }
 
 function renderLegendSymbology(legend: DatasetLegendConfig) {
-  const { type, items, color, unit } = legend;
+  const s = legendSymbology(legend);
 
-  return type === "categorical" && items ? (
-    <LegendCategorical
-      items={items.map((i) => ({ value: i.label ?? "", color: i.color }))}
-    />
-  ) : type === "sequential" ? (
-    <LegendSequential
-      unit={unit ?? undefined}
-      minLabel={items?.[0]?.label ?? ""}
-      maxLabel={items?.[items.length - 1]?.label ?? ""}
-      color={
-        items?.map((item) => item.color) ??
-        (Array.isArray(color) ? color : [color])
-      }
-    />
-  ) : type === "divergent" ? (
-    <LegendDivergent
-      unit={unit ?? ""}
-      minLabel={items?.[0]?.label ?? ""}
-      maxLabel={items?.[items.length - 1]?.label ?? ""}
-      color={
-        items?.map((item) => item.color) ??
-        (Array.isArray(color) ? color : [color])
-      }
-    />
-  ) : items ? (
-    <LegendSymbolList
-      unit={unit ?? ""}
-      items={items.map((i) => ({ label: i.label ?? "", color: i.color }))}
-    />
-  ) : null;
+  switch (s.kind) {
+    case "categorical":
+      return (
+        <LegendCategorical
+          items={s.classes.map((c) => ({ value: c.label, color: c.color }))}
+        />
+      );
+    case "symbol":
+      return <LegendSymbolList unit={s.unit} items={s.classes} />;
+    case "sequential":
+      return (
+        <LegendSequential
+          unit={s.unit}
+          minLabel={s.minLabel}
+          maxLabel={s.maxLabel}
+          color={s.colors}
+        />
+      );
+    case "divergent":
+      return (
+        <LegendDivergent
+          unit={s.unit}
+          minLabel={s.minLabel}
+          maxLabel={s.maxLabel}
+          color={s.colors}
+        />
+      );
+  }
 }
 
 /**
