@@ -19,7 +19,7 @@ import {
  * A plain `fetch`, as for `/latest`: the user's token is for the GNW backend
  * only, and this endpoint needs none.
  */
-const EXPORT_PATH = "/v0/land_change/integrated_alerts/points/download";
+const EXPORT_PATH = "/v0/land_change/integrated_alerts/points/exports";
 
 /** The wait before each poll. The link asks for 1 second (`Retry-After`). */
 const POLL_INTERVAL_MS = 2000;

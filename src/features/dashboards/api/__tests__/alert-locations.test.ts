@@ -7,10 +7,10 @@ import {
   type AlertLocationsRequest,
 } from "../alert-locations";
 
-const EXPORT_URL = `${API_CONFIG.ANALYTICS_API_HOST}/v0/land_change/integrated_alerts/points/download`;
+const EXPORT_URL = `${API_CONFIG.ANALYTICS_API_HOST}/v0/land_change/integrated_alerts/points/exports`;
 const LINK = `${EXPORT_URL}/5b1e0000-0000-5000-8000-000000000000`;
 const FILE_URL =
-  "https://results.s3.amazonaws.com/integrated_alerts_points_download/v20261101/x.csv?X-Amz-Signature=abc";
+  "https://results.s3.amazonaws.com/integrated_alerts_points_export/v20261101/x.csv?X-Amz-Signature=abc";
 
 const request: AlertLocationsRequest = {
   gadmId: "BRA.16.137",
