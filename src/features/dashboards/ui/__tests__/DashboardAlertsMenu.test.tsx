@@ -21,7 +21,7 @@ import { dashboardKeys, useDashboard } from "../dashboardQueries";
 import type { Dashboard } from "../../api/schemas";
 
 // The backend's view of the dashboard: what a refetch after the PUT returns.
-let serverModes: string[] = ["in-app"];
+let serverModes: string[] = [];
 const wire = () => ({
   id: "d1",
   user_id: "u1",
@@ -55,12 +55,17 @@ function Harness({ isOwner }: { isOwner: boolean }) {
   return data ? <DashboardHeader dashboard={data} isOwner={isOwner} /> : null;
 }
 
-const ELIGIBLE: Dashboard["alerts"] = {
-  inAppEnabled: true,
-  emailEnabled: false,
-};
+type Alerts = NonNullable<Dashboard["alerts"]>;
+const OFF: Alerts = { inAppEnabled: false, emailEnabled: false };
+const IN_APP: Alerts = { inAppEnabled: true, emailEnabled: false };
+const BOTH: Alerts = { inAppEnabled: true, emailEnabled: true };
 
 function renderHeader(alerts: Dashboard["alerts"], { isOwner = true } = {}) {
+  // The server starts where the cache does.
+  serverModes = [
+    ...(alerts?.inAppEnabled ? ["in-app"] : []),
+    ...(alerts?.emailEnabled ? ["email"] : []),
+  ];
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
@@ -78,14 +83,42 @@ const alertsButton = () => screen.queryByRole("button", { name: /alerts/i });
 
 const openPopover = async () => {
   fireEvent.click(alertsButton()!);
-  return (await screen.findByRole("checkbox", {
+  const email = (await screen.findByRole("checkbox", {
     name: "Email alerts",
   })) as HTMLInputElement;
+  const inApp = screen.getByRole("checkbox", {
+    name: "In Horizon alerts",
+  }) as HTMLInputElement;
+  return { inApp, email };
 };
+
+// The switch's rendered state. happy-dom leaves the hidden input's native
+// `checked` flipped by a click even after a rollback, so assert on this.
+const isOn = (input: HTMLInputElement) =>
+  input.closest("label")?.getAttribute("data-state") === "checked";
+
+const expectPut = (modes: string[]) =>
+  waitFor(() =>
+    expect(apiFetch).toHaveBeenCalledWith(
+      "/api/dashboards/d1/subscriptions",
+      expect.objectContaining({
+        method: "PUT",
+        body: JSON.stringify({ datasets: ["integrated_alerts"], modes }),
+      })
+    )
+  );
+
+// The refetch on settle reads the saved value back, as a reload would.
+const expectRefetch = () =>
+  waitFor(() =>
+    expect(apiFetch).toHaveBeenCalledWith("/api/dashboards/d1", {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    })
+  );
 
 beforeEach(() => {
   flagOn = true;
-  serverModes = ["in-app"];
   vi.mocked(toaster.create).mockClear();
   vi.mocked(apiFetch).mockReset();
   vi.mocked(apiFetch).mockImplementation(async (_path, init) => {
@@ -99,12 +132,12 @@ beforeEach(() => {
 describe("DashboardHeader alerts gate", () => {
   it("shows no alerts control outside the beta", () => {
     flagOn = false;
-    renderHeader(ELIGIBLE);
+    renderHeader(OFF);
     expect(alertsButton()).toBeNull();
   });
 
   it("shows no alerts control to a non-owner", () => {
-    renderHeader(ELIGIBLE, { isOwner: false });
+    renderHeader(BOTH, { isOwner: false });
     expect(alertsButton()).toBeNull();
   });
 
@@ -112,105 +145,136 @@ describe("DashboardHeader alerts gate", () => {
     renderHeader(undefined);
     expect(alertsButton()).toBeNull();
   });
-
-  it("shows the control with everything off, so alerts can be turned on", async () => {
-    renderHeader({ inAppEnabled: false, emailEnabled: false });
-    expect(alertsButton()?.textContent).toContain("Off");
-    expect((await openPopover()).checked).toBe(false);
-  });
 });
 
 describe("DashboardAlertsMenu", () => {
-  it("starts with email off, names the area and shows the myGFW note", async () => {
-    renderHeader(ELIGIBLE);
-    expect(alertsButton()?.textContent).toContain("In-app");
+  it("starts with both off, names the area and shows the myGFW note", async () => {
+    renderHeader(OFF);
+    expect(alertsButton()?.textContent).toContain("Off");
 
-    const email = await openPopover();
+    const { inApp, email } = await openPopover();
 
-    expect(email.checked).toBe(false);
+    expect(isOn(inApp)).toBe(false);
+    expect(isOn(email)).toBe(false);
     expect(screen.getByText("Alerts for Paraná, Brazil")).toBeTruthy();
     expect(screen.getByText(/You may get two emails/)).toBeTruthy();
   });
 
-  it("saves email on and keeps it after the refetch", async () => {
-    renderHeader(ELIGIBLE);
-    const email = await openPopover();
+  it("turns in-app on by itself", async () => {
+    renderHeader(OFF);
+    const { inApp, email } = await openPopover();
+
+    fireEvent.click(inApp);
+
+    await expectPut(["in-app"]);
+    await expectRefetch();
+    await waitFor(() =>
+      expect(alertsButton()?.textContent).toContain("In-app")
+    );
+    expect(isOn(email)).toBe(false);
+  });
+
+  it("email on also turns in-app on, says so, and keeps it after the refetch", async () => {
+    renderHeader(OFF);
+    const { inApp, email } = await openPopover();
 
     fireEvent.click(email);
 
-    await waitFor(() =>
-      expect(apiFetch).toHaveBeenCalledWith(
-        "/api/dashboards/d1/subscriptions",
-        expect.objectContaining({
-          method: "PUT",
-          body: JSON.stringify({
-            datasets: ["integrated_alerts"],
-            modes: ["in-app", "email"],
-          }),
-        })
-      )
-    );
-    // The refetch on settle reads the saved value back, as a reload would.
-    await waitFor(() =>
-      expect(apiFetch).toHaveBeenCalledWith("/api/dashboards/d1", {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      })
-    );
+    await expectPut(["in-app", "email"]);
+    await expectRefetch();
     await waitFor(() =>
       expect(alertsButton()?.textContent).toContain("In-app + email")
     );
-    expect(email.checked).toBe(true);
+    expect(isOn(inApp)).toBe(true);
+    expect(isOn(email)).toBe(true);
+    expect(
+      screen.getByText(/We also turned on alerts in Horizon/)
+    ).toBeTruthy();
   });
 
-  it("rolls the switch back and shows the backend's reason when saving fails", async () => {
+  it("doesn't say in-app was turned on when it already was", async () => {
+    renderHeader(IN_APP);
+    const { email } = await openPopover();
+
+    fireEvent.click(email);
+
+    await expectPut(["in-app", "email"]);
+    await waitFor(() => expect(isOn(email)).toBe(true));
+    expect(
+      screen.queryByText(/We also turned on alerts in Horizon/)
+    ).toBeNull();
+  });
+
+  it("email off leaves in-app on", async () => {
+    renderHeader(BOTH);
+    const { inApp, email } = await openPopover();
+
+    fireEvent.click(email);
+
+    await expectPut(["in-app"]);
+    await waitFor(() => expect(isOn(email)).toBe(false));
+    expect(isOn(inApp)).toBe(true);
+    expect(alertsButton()?.textContent).toContain("In-app");
+  });
+
+  it("in-app off also turns email off", async () => {
+    renderHeader(BOTH);
+    const { inApp, email } = await openPopover();
+
+    fireEvent.click(inApp);
+
+    await expectPut([]);
+    await waitFor(() => expect(isOn(inApp)).toBe(false));
+    expect(isOn(email)).toBe(false);
+    expect(alertsButton()?.textContent).toContain("Off");
+  });
+
+  it("rolls both switches back and shows the backend's reason when saving fails", async () => {
     vi.mocked(apiFetch).mockImplementation(async (_path, init) =>
       init?.method === "PUT"
         ? new Response(
             JSON.stringify({ detail: "Dashboard is not eligible" }),
-            {
-              status: 409,
-            }
+            { status: 409 }
           )
         : new Response(JSON.stringify(wire()), { status: 200 })
     );
-    renderHeader(ELIGIBLE);
-    const email = await openPopover();
+    renderHeader(OFF);
+    const { inApp, email } = await openPopover();
 
     fireEvent.click(email);
 
     await waitFor(() =>
       expect(toaster.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          title: "Couldn't update email alerts",
+          title: "Couldn't update alerts",
           description: "Dashboard is not eligible",
           type: "error",
         })
       )
     );
-    // The switch's rendered state. happy-dom leaves the hidden input's
-    // native `checked` flipped by the click, so it isn't asserted here.
-    await waitFor(() =>
-      expect(email.closest("label")?.getAttribute("data-state")).toBe(
-        "unchecked"
-      )
-    );
+    await waitFor(() => expect(isOn(email)).toBe(false));
+    expect(isOn(inApp)).toBe(false);
+    expect(
+      screen.queryByText(/We also turned on alerts in Horizon/)
+    ).toBeNull();
   });
 
-  it("disables the switch while the save is in flight", async () => {
+  it("disables both switches while a save is in flight", async () => {
     let finish: (res: Response) => void = () => {};
     vi.mocked(apiFetch).mockImplementation((_path, init) =>
       init?.method === "PUT"
         ? new Promise<Response>((resolve) => (finish = resolve))
         : Promise.resolve(new Response(JSON.stringify(wire()), { status: 200 }))
     );
-    renderHeader(ELIGIBLE);
-    const email = await openPopover();
+    renderHeader(OFF);
+    const { inApp, email } = await openPopover();
 
     fireEvent.click(email);
 
     await waitFor(() => expect(email.disabled).toBe(true));
+    expect(inApp.disabled).toBe(true);
     finish(new Response("{}", { status: 200 }));
     await waitFor(() => expect(email.disabled).toBe(false));
+    expect(inApp.disabled).toBe(false);
   });
 });
