@@ -171,9 +171,7 @@ function CollapsedLegend({
           +{hidden} more
         </Button>
       )}
-      {params && (
-        <Params text={params} display={{ base: "none", md: "block" }} />
-      )}
+      {params && <Params text={params} hideBelow="md" />}
       {controls}
     </Flex>
   );
@@ -333,17 +331,11 @@ function Within({ context }: { context: MapLegendContext }) {
   );
 }
 
-function Params({
-  text,
-  display,
-}: {
-  text: string;
-  display?: { base: string; md: string };
-}) {
+function Params({ text, hideBelow }: { text: string; hideBelow?: "md" }) {
   return (
     <Text
       flexShrink={0}
-      display={display}
+      hideBelow={hideBelow}
       fontFamily="mono"
       fontSize="10px"
       lineHeight="14px"
