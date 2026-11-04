@@ -54,8 +54,7 @@ export interface AnalysedYears {
 
 /**
  * What an analysis was computed from, settled once at the boundary by
- * `toAnalysisInputs`: each list holds distinct values in pull order, and no
- * canopy value comes from a pull whose context layer ignores canopy density.
+ * `toAnalysisInputs`: each list holds distinct values in pull order.
  */
 export type AnalysisInputs =
   | { recorded: false }

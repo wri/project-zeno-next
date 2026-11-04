@@ -1,4 +1,3 @@
-import { contextLayerIgnoresCanopy } from "@/app/utils/datasetLayerContext";
 import {
   AnalysisInputsWireSchema,
   type AnalysedArea,
@@ -59,10 +58,10 @@ export function toAnalysisInputs(
         ? { name: dataset_name, id: dataset_id }
         : { name: dataset_name }
   );
-  const canopyCover = pulls.flatMap(({ canopy_cover, context_layer }) =>
-    canopy_cover !== null && !contextLayerIgnoresCanopy(context_layer)
-      ? [canopy_cover]
-      : []
+  // The threshold the backend sent upstream, under any context layer
+  // (natural forest included); null where it sent none.
+  const canopyCover = pulls.flatMap(({ canopy_cover }) =>
+    canopy_cover !== null ? [canopy_cover] : []
   );
   const years = pulls.map(
     ({ start_date, end_date }): AnalysedYears => ({

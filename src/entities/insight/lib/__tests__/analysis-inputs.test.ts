@@ -62,21 +62,19 @@ describe("toAnalysisInputs", () => {
     });
   });
 
-  it("drops the canopy value of a pull whose context layer ignores it", () => {
-    const inputs = toAnalysisInputs(
-      [pull({ canopy_cover: 10, context_layer: "natural_forest" })],
-      "ins-1"
-    );
-    expect(inputs.recorded && inputs.canopyCover).toEqual([]);
-  });
-
-  it("keeps the canopy value under a context layer that applies it", () => {
-    const inputs = toAnalysisInputs(
-      [pull({ context_layer: "primary_forest" })],
-      "ins-1"
-    );
-    expect(inputs.recorded && inputs.canopyCover).toEqual([30]);
-  });
+  it.each([
+    ["natural_forest", 10],
+    ["primary_forest", 30],
+  ])(
+    "keeps the canopy value sent under the %s context layer",
+    (layer, value) => {
+      const inputs = toAnalysisInputs(
+        [pull({ canopy_cover: value, context_layer: layer })],
+        "ins-1"
+      );
+      expect(inputs.recorded && inputs.canopyCover).toEqual([value]);
+    }
+  );
 
   it("keeps one of each distinct value across pulls, in pull order", () => {
     const inputs = toAnalysisInputs(
