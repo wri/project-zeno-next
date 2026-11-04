@@ -127,6 +127,14 @@ describe("analysisResultToGroup", () => {
     }
   });
 
+  it("dates the group by the stored insight, for the detail's Run row", () => {
+    const group = analysisResultToGroup(
+      { ...result, createdAt: "2026-10-13T09:30:00Z" },
+      ctx
+    );
+    expect(group.createdAt).toBe("2026-10-13T09:30:00Z");
+  });
+
   it("shows the stored insight's recorded inputs, not the requested area", () => {
     const recorded = {
       recorded: true as const,

@@ -84,7 +84,7 @@ export function analysisResultToGroup(
       areaLabel: areaName,
     }),
     source: datasetName,
-    createdAt: "",
+    createdAt: result.createdAt,
     verification: "verified",
     addableInsightId: result.id,
     widgets,
