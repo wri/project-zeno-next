@@ -98,22 +98,15 @@ export const AnalysisTemplateSchema = z.object({
 export const AnalysisTemplateListSchema = z.array(AnalysisTemplateSchema);
 
 // A dashboard's alert settings (ADR 0012), sent only to its owner and to
-// superusers. The wire is keyed by dataset and contact type; it settles into
-// two booleans here so that shape never leaves api/. `in_app_enabled` is
-// derived by the backend: true exactly when the dashboard is eligible.
+// superusers. The wire lists the modes on per dataset (empty when nothing
+// is); it settles into two booleans here so that shape never leaves api/.
 const DashboardAlertsSettingsSchema = z
   .object({
-    in_app_enabled: z.boolean(),
-    // Absent or empty when email was never turned on.
-    integrated_alerts: z
-      .object({ contact_types: z.array(z.string()).default([]) })
-      .nullable()
-      .optional(),
+    integrated_alerts: z.object({ modes: z.array(z.string()).default([]) }),
   })
-  .transform((alerts) => ({
-    inAppEnabled: alerts.in_app_enabled,
-    emailEnabled:
-      alerts.integrated_alerts?.contact_types.includes("email") ?? false,
+  .transform(({ integrated_alerts: { modes } }) => ({
+    inAppEnabled: modes.includes("in-app"),
+    emailEnabled: modes.includes("email"),
   }));
 
 export const DashboardResponseSchema = z.object({
@@ -181,6 +174,7 @@ export const IntegratedAlertsLatestResponseSchema = z.object({
 
 export type DashboardAoi = z.infer<typeof DashboardAoiSchema>;
 export type Dashboard = z.infer<typeof DashboardResponseSchema>;
+export type DashboardAlertsSettings = NonNullable<Dashboard["alerts"]>;
 export type DashboardWidget = z.infer<typeof DashboardWidgetResponseSchema>;
 export type DashboardSection = z.infer<typeof DashboardSectionResponseSchema>;
 export type DashboardSectionTemplate = z.infer<

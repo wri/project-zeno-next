@@ -7,6 +7,7 @@ import {
   SectionFromTemplateResponseSchema,
   type AnalysisTemplate,
   type Dashboard,
+  type DashboardAlertsSettings,
   type DashboardCreateRequest,
   type SectionFromTemplateResponse,
 } from "./schemas";
@@ -117,21 +118,24 @@ export async function renameDashboard(
   });
 }
 
-// Integrated-alerts email on or off for one dashboard (owner only). The body
-// is the desired state: no contact types turns email off. The response (the
+// The integrated-alerts modes on for one dashboard (owner only). The body is
+// the desired state, so leaving a mode out turns it off. The backend couples
+// them (email on turns in-app on, in-app off turns email off) and answers 409
+// when email is turned on for an ineligible dashboard. The response (the
 // updated dashboard) is ignored; callers invalidate and refetch, as with
-// rename, so the backend's coupling rule has the last word.
-export async function setEmailAlerts(
+// rename, so the backend has the last word.
+export async function setAlertModes(
   dashboardId: string,
-  enabled: boolean
+  { inAppEnabled, emailEnabled }: DashboardAlertsSettings
 ): Promise<void> {
+  const modes = [
+    ...(inAppEnabled ? ["in-app"] : []),
+    ...(emailEnabled ? ["email"] : []),
+  ];
   await readJson<unknown>(`/api/dashboards/${dashboardId}/subscriptions`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      datasets: ["integrated_alerts"],
-      contact_types: enabled ? ["email"] : [],
-    }),
+    body: JSON.stringify({ datasets: ["integrated_alerts"], modes }),
   });
 }
 

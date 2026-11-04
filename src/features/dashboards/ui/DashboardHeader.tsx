@@ -65,17 +65,12 @@ export default function DashboardHeader({
   const [draft, setDraft] = useState<string | null>(null);
   const renameDashboard = useRenameDashboard(dashboard.id);
   const editing = draft !== null;
-  // Email is the owner's consent (ADR 0012), so superusers, who also receive
-  // `alerts`, don't get the switch. Eligibility comes from the backend's
-  // `inAppEnabled`; a dashboard that lost it keeps the control while email
-  // is on, so the owner can still turn it off.
+  // Alerts are the owner's consent (ADR 0012), so superusers, who also
+  // receive `alerts`, don't get the switches. Eligibility is the backend's:
+  // turning email on for an ineligible dashboard fails with 409.
   const emailBeta = useFeatureFlag("email-subscriptions");
   const alerts = dashboard.alerts;
-  const showAlerts =
-    emailBeta &&
-    isOwner &&
-    !!alerts &&
-    (alerts.inAppEnabled || alerts.emailEnabled);
+  const showAlerts = emailBeta && isOwner && !!alerts;
 
   const commit = () => {
     const name = draft?.trim();

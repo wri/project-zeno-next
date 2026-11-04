@@ -2,11 +2,9 @@ import { Box, Button, Flex, Popover, Switch, Text } from "@chakra-ui/react";
 import { BellIcon, CaretDownIcon, InfoIcon } from "@phosphor-icons/react";
 
 import { toaster } from "@/app/components/ui/toaster";
-import type { Dashboard } from "../api/schemas";
+import type { DashboardAlertsSettings } from "../api/schemas";
 import { httpDetail } from "../api/http";
-import { useSetEmailAlerts } from "./dashboardQueries";
-
-type AlertsSettings = NonNullable<Dashboard["alerts"]>;
+import { useSetAlertModes } from "./dashboardQueries";
 
 /**
  * The header's "Alerts" button and its settings popover, per the Figma
@@ -22,9 +20,9 @@ export default function DashboardAlertsMenu({
 }: {
   dashboardId: string;
   areaName: string;
-  alerts: AlertsSettings;
+  alerts: DashboardAlertsSettings;
 }) {
-  const setEmail = useSetEmailAlerts(dashboardId, {
+  const setEmail = useSetAlertModes(dashboardId, {
     onError: (error) =>
       toaster.create({
         title: "Couldn't update email alerts",
@@ -34,13 +32,12 @@ export default function DashboardAlertsMenu({
       }),
   });
 
-  // The header only mounts this when in-app or email is on. Email alone is a
-  // dashboard that stopped being eligible: it can still be turned off.
-  const status = !alerts.inAppEnabled
-    ? "Email"
-    : alerts.emailEnabled
-      ? "In-app + email"
-      : "In-app";
+  // Email is never on without in-app (the backend's coupling rule).
+  const status = alerts.emailEnabled
+    ? "In-app + email"
+    : alerts.inAppEnabled
+      ? "In-app"
+      : "Off";
 
   return (
     <Popover.Root positioning={{ placement: "bottom-end" }} lazyMount>
@@ -93,7 +90,13 @@ export default function DashboardAlertsMenu({
                 <Switch.Root
                   size="sm"
                   checked={alerts.emailEnabled}
-                  onCheckedChange={(e) => setEmail.mutate(e.checked)}
+                  // Email on turns in-app on; email off leaves it alone.
+                  onCheckedChange={(e) =>
+                    setEmail.mutate({
+                      inAppEnabled: alerts.inAppEnabled || e.checked,
+                      emailEnabled: e.checked,
+                    })
+                  }
                   disabled={setEmail.isPending}
                   colorPalette="primary"
                   aria-label="Email alerts"
