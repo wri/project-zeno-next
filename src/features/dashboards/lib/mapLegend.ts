@@ -1,5 +1,7 @@
-import { buildParams } from "@/app/components/legend/useLegendHook";
-import { legendSymbology } from "@/app/components/legend/legendModel";
+import {
+  buildParams,
+  legendSymbology,
+} from "@/app/components/legend/legendModel";
 import {
   CONTEXT_LAYER_METADATA,
   DATASET_CARD_BY_ID,
@@ -58,9 +60,7 @@ export function mapLegendFor(layer: MapWidgetLayer): MapLegend | null {
   const { title, info, note } = card.legend;
   const s = legendSymbology(card.legend);
   const symbology: MapLegend["symbology"] =
-    s.kind === "symbol" || s.kind === "categorical"
-      ? { kind: "classes", classes: s.classes }
-      : s;
+    "classes" in s ? { kind: "classes", classes: s.classes } : s;
 
   const params = buildParams(
     layer.parameters ?? {},

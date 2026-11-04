@@ -1,4 +1,7 @@
+import type { LegendParam } from "@/app/components/legend/types";
 import { CONTEXT_LAYER_METADATA } from "@/app/constants/datasets";
+import { formatCanopyThreshold } from "@/app/utils/formatCanopyThreshold";
+import type { YearParam } from "@/app/utils/formatYearRange";
 import type { DatasetLegendConfig } from "@/app/constants/datasets";
 
 export interface LegendClass {
@@ -39,4 +42,41 @@ export function legendSymbology(legend: DatasetLegendConfig): LegendSymbology {
     classes: items.map((i) => ({ label: i.label ?? "", color: i.color })),
     unit,
   };
+}
+
+// Maps internal parameter keys to the badge label shown in the legend.
+const PARAMETER_LABELS: Record<string, string> = {
+  canopy_cover: "CANOPY",
+};
+
+// Maps internal parameter keys to a formatting function that produces the value
+// string. Shares the canopy formatter with the insights CANOPY chip.
+const PARAMETER_FORMATTERS: Record<string, (v: unknown) => string> = {
+  canopy_cover: (v) => formatCanopyThreshold(v as number),
+};
+
+/**
+ * Converts a layer's raw parameters object into structured LegendParam chips.
+ * Each entry becomes a { label, value } pair rendered as a badge in the card.
+ * Shared by the explorer legend and `mapLegendFor`, the dashboard map legend,
+ * which reads widget layers instead of mapStore layers.
+ */
+export function buildParams(
+  params: Record<string, unknown>,
+  yearParam?: YearParam
+): LegendParam[] {
+  const result: LegendParam[] = [];
+
+  if (yearParam) {
+    result.push(yearParam);
+  }
+
+  for (const [k, v] of Object.entries(params)) {
+    if (v === null || v === undefined || v === "") continue;
+    const label = PARAMETER_LABELS[k] ?? k.toUpperCase();
+    const format = PARAMETER_FORMATTERS[k];
+    result.push({ label, value: format ? format(v) : String(v) });
+  }
+
+  return result;
 }
