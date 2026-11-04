@@ -187,19 +187,10 @@ describe("dashboard alerts settings", () => {
 
   const modes = (...on: string[]) => ({ integrated_alerts: { modes: on } });
 
-  it("reads each mode as on only when it is listed", () => {
-    expect(parse(modes()).alerts).toEqual({
-      inAppEnabled: false,
-      emailEnabled: false,
-    });
-    expect(parse(modes("in-app")).alerts).toEqual({
-      inAppEnabled: true,
-      emailEnabled: false,
-    });
-    expect(parse(modes("email", "in-app")).alerts).toEqual({
-      inAppEnabled: true,
-      emailEnabled: true,
-    });
+  it("reads the highest mode listed as the level", () => {
+    expect(parse(modes()).alerts).toBe("off");
+    expect(parse(modes("in-app")).alerts).toBe("in-app");
+    expect(parse(modes("email", "in-app")).alerts).toBe("email");
   });
 
   it("leaves alerts undefined when absent or malformed, and still parses the dashboard", () => {
@@ -216,10 +207,10 @@ describe("setAlertModes", () => {
   beforeEach(() => vi.mocked(apiFetch).mockReset());
 
   it.each([
-    [{ inAppEnabled: true, emailEnabled: true }, ["in-app", "email"]],
-    [{ inAppEnabled: true, emailEnabled: false }, ["in-app"]],
-    [{ inAppEnabled: false, emailEnabled: false }, []],
-  ])("PUTs the desired state %o", async (next, sent) => {
+    ["email", ["in-app", "email"]],
+    ["in-app", ["in-app"]],
+    ["off", []],
+  ] as const)("PUTs the modes for %s", async (next, sent) => {
     vi.mocked(apiFetch).mockResolvedValue(
       new Response(JSON.stringify({}), { status: 200 })
     );
@@ -240,9 +231,7 @@ describe("setAlertModes", () => {
       })
     );
 
-    await expect(
-      setAlertModes("d1", { inAppEnabled: true, emailEnabled: true })
-    ).rejects.toMatchObject({
+    await expect(setAlertModes("d1", "email")).rejects.toMatchObject({
       status: 409,
       detail: "Dashboard is not eligible",
     });

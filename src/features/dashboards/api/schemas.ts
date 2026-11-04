@@ -97,17 +97,33 @@ export const AnalysisTemplateSchema = z.object({
 
 export const AnalysisTemplateListSchema = z.array(AnalysisTemplateSchema);
 
-// A dashboard's alert settings (ADR 0012), sent only to its owner and to
-// superusers. The wire lists the modes on per dataset (empty when nothing
-// is); it settles into two booleans here so that shape never leaves api/.
-const DashboardAlertsSettingsSchema = z
+// A dashboard's integrated-alerts level (ADR 0012). Email never runs without
+// in-app (the backend's coupled_modes), so "email" means both are on and
+// email-without-in-app can't be written down.
+export type AlertsLevel = "off" | "in-app" | "email";
+
+/** The wire modes on at each level: the PUT body's `modes`. */
+export const ALERT_MODES: Record<AlertsLevel, string[]> = {
+  off: [],
+  "in-app": ["in-app"],
+  email: ["in-app", "email"],
+};
+
+// Sent only to the owner and to superusers. The wire lists the modes on per
+// dataset (empty when nothing is); it settles into a level here so that
+// shape never leaves api/.
+const DashboardAlertsLevelSchema = z
   .object({
     integrated_alerts: z.object({ modes: z.array(z.string()).default([]) }),
   })
-  .transform(({ integrated_alerts: { modes } }) => ({
-    inAppEnabled: modes.includes("in-app"),
-    emailEnabled: modes.includes("email"),
-  }));
+  .transform(
+    ({ integrated_alerts: { modes } }): AlertsLevel =>
+      modes.includes("email")
+        ? "email"
+        : modes.includes("in-app")
+          ? "in-app"
+          : "off"
+  );
 
 export const DashboardResponseSchema = z.object({
   id: z.string(),
@@ -125,7 +141,7 @@ export const DashboardResponseSchema = z.object({
   widgets: z.array(DashboardWidgetResponseSchema).default([]),
   // Absent for other viewers and from a pre-subscriptions backend. A
   // malformed value hides the email control rather than failing the page.
-  alerts: DashboardAlertsSettingsSchema.optional().catch(undefined),
+  alerts: DashboardAlertsLevelSchema.optional().catch(undefined),
 });
 
 export const DashboardListResponseSchema = z.array(DashboardResponseSchema);
@@ -174,7 +190,6 @@ export const IntegratedAlertsLatestResponseSchema = z.object({
 
 export type DashboardAoi = z.infer<typeof DashboardAoiSchema>;
 export type Dashboard = z.infer<typeof DashboardResponseSchema>;
-export type DashboardAlertsSettings = NonNullable<Dashboard["alerts"]>;
 export type DashboardWidget = z.infer<typeof DashboardWidgetResponseSchema>;
 export type DashboardSection = z.infer<typeof DashboardSectionResponseSchema>;
 export type DashboardSectionTemplate = z.infer<

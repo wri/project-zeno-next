@@ -3,17 +3,22 @@ import { BellIcon, CaretDownIcon, InfoIcon } from "@phosphor-icons/react";
 import { useState, type ReactNode } from "react";
 
 import { toaster } from "@/app/components/ui/toaster";
-import type { DashboardAlertsSettings } from "../api/schemas";
+import type { AlertsLevel } from "../api/schemas";
 import { httpDetail } from "../api/http";
 import { useSetAlertModes } from "./dashboardQueries";
+
+const STATUS: Record<AlertsLevel, string> = {
+  off: "Off",
+  "in-app": "In-app",
+  email: "In-app + email",
+};
 
 /**
  * The header's "Alerts" button and its settings popover, per the Figma
  * "Email toggle in dashboard header" frame: an in-app ("In Horizon") and an
- * email switch. Each switch sends the whole next state with the coupling
- * rule applied (email on turns in-app on, in-app off turns email off); the
- * backend applies the same rule. "Manage all subscriptions" stays hidden
- * until that page ships (Figma annotation).
+ * email switch over one level, so email on means in-app on, and in-app off
+ * means email off (the backend's coupling rule). "Manage all subscriptions"
+ * stays hidden until that page ships (Figma annotation).
  */
 export default function DashboardAlertsMenu({
   dashboardId,
@@ -22,7 +27,7 @@ export default function DashboardAlertsMenu({
 }: {
   dashboardId: string;
   areaName: string;
-  alerts: DashboardAlertsSettings;
+  alerts: AlertsLevel;
 }) {
   // Figma State 2: email just turned in-app on, so the email row says so.
   // Cleared by the next change and when the popover closes.
@@ -37,12 +42,13 @@ export default function DashboardAlertsMenu({
       }),
   });
 
-  // Email is never on without in-app (the backend's coupling rule).
-  const status = alerts.emailEnabled
-    ? "In-app + email"
-    : alerts.inAppEnabled
-      ? "In-app"
-      : "Off";
+  const change = (next: AlertsLevel) => {
+    const turnsInAppOn = next === "email" && alerts === "off";
+    setEmailTurnedOnInApp(false);
+    setModes.mutate(next, {
+      onSuccess: () => setEmailTurnedOnInApp(turnsInAppOn),
+    });
+  };
 
   return (
     <Popover.Root
@@ -76,7 +82,7 @@ export default function DashboardAlertsMenu({
               fontWeight="normal"
               color="neutral.600"
             >
-              {status}
+              {STATUS[alerts]}
             </Text>
           </Box>
           <CaretDownIcon size={12} />
@@ -97,36 +103,18 @@ export default function DashboardAlertsMenu({
               </Text>
               <AlertRow
                 label="In Horizon"
-                checked={alerts.inAppEnabled}
+                checked={alerts !== "off"}
                 disabled={setModes.isPending}
-                onChange={(on) => {
-                  setEmailTurnedOnInApp(false);
-                  setModes.mutate({
-                    inAppEnabled: on,
-                    emailEnabled: on && alerts.emailEnabled,
-                  });
-                }}
+                onChange={(on) => change(on ? "in-app" : "off")}
               >
                 Show a weekly count of new integrated alerts on this dashboard.
               </AlertRow>
               <AlertRow
                 label="Email"
                 beta
-                checked={alerts.emailEnabled}
+                checked={alerts === "email"}
                 disabled={setModes.isPending}
-                onChange={(on) => {
-                  const turnsInAppOn = on && !alerts.inAppEnabled;
-                  setEmailTurnedOnInApp(false);
-                  setModes.mutate(
-                    {
-                      inAppEnabled: alerts.inAppEnabled || on,
-                      emailEnabled: on,
-                    },
-                    {
-                      onSuccess: () => setEmailTurnedOnInApp(turnsInAppOn),
-                    }
-                  );
-                }}
+                onChange={(on) => change(on ? "email" : "in-app")}
               >
                 {emailTurnedOnInApp
                   ? "On. We also turned on alerts in Horizon, since email uses the same weekly count."
