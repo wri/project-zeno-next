@@ -1,5 +1,12 @@
 import { useState, type ReactNode } from "react";
-import { Box, Button, Flex, Grid, IconButton, Text } from "@chakra-ui/react";
+import {
+  Box,
+  Button,
+  Flex,
+  IconButton,
+  Text,
+  type BoxProps,
+} from "@chakra-ui/react";
 import {
   CaretDownIcon,
   CaretUpIcon,
@@ -143,6 +150,8 @@ function CollapsedLegend({
           <ClassList
             classes={symbology.classes.slice(0, COLLAPSED_CLASSES)}
             ring={context?.color}
+            display="flex"
+            gap="12px"
           />
         ) : (
           <InlineScale scale={symbology} />
@@ -191,19 +200,14 @@ function OpenLegend({
         {controls}
       </Flex>
       {symbology.kind === "classes" ? (
-        <Grid
-          as="ul"
-          listStyleType="none"
-          m={0}
-          p={0}
+        <ClassList
+          classes={symbology.classes}
+          ring={context?.color}
+          display="grid"
           gridTemplateColumns="repeat(auto-fill, minmax(150px, 1fr))"
           columnGap="12px"
           rowGap="4px"
-        >
-          {symbology.classes.map((c, i) => (
-            <ClassItem key={i} item={c} ring={context?.color} />
-          ))}
-        </Grid>
+        />
       ) : (
         <Box maxW="320px">
           <ScaleLegend scale={symbology} />
@@ -272,19 +276,21 @@ function ClassItem({ item, ring }: { item: MapLegendClass; ring?: string }) {
   );
 }
 
+/** The classes as a list; the caller sets the layout (a row, or a grid). */
 function ClassList({
   classes,
   ring,
+  ...layout
 }: {
   classes: MapLegendClass[];
   ring?: string;
-}) {
+} & BoxProps) {
   return (
-    <Flex as="ul" listStyleType="none" m={0} p={0} gap="12px" minW={0}>
+    <Box as="ul" listStyleType="none" m={0} p={0} minW={0} {...layout}>
       {classes.map((c, i) => (
         <ClassItem key={i} item={c} ring={ring} />
       ))}
-    </Flex>
+    </Box>
   );
 }
 
