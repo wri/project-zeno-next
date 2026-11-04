@@ -63,7 +63,6 @@ function propsFor(
     onLandFilter: vi.fn<ListProps["onLandFilter"]>(),
     onCustomChange: vi.fn<ListProps["onCustomChange"]>(),
     onDownloadCsv: vi.fn<ListProps["onDownloadCsv"]>(),
-    isPreparingDownload: false,
     onDownloadLocations: vi.fn<NonNullable<ListProps["onDownloadLocations"]>>(),
     onRetry: vi.fn<ListProps["onRetry"]>(),
   };
@@ -93,6 +92,11 @@ const UNAVAILABLE =
 const dropdown = (name: string) => screen.getByRole("button", { name });
 
 const kpi = (name: string) => screen.getByRole("group", { name }).textContent;
+
+/** The line a menu item points at with `aria-describedby`. */
+const descriptionOf = (item: HTMLElement) =>
+  document.getElementById(item.getAttribute("aria-describedby") ?? "")
+    ?.textContent;
 
 describe("DashboardAlertsList", () => {
   it("shows the headline figures, the new week's days with NEW badges, and totals in the footer", () => {
@@ -383,25 +387,46 @@ describe("DashboardAlertsList", () => {
     expect(props.onDownloadCsv).not.toHaveBeenCalled();
   });
 
+  it("heads the files by how they arrive and says what each holds, with the alert locations estimated", async () => {
+    renderList();
+    fireEvent.click(dropdown("Download"));
+
+    const instant = await screen.findByRole("group", { name: "Instant" });
+    const totals = within(instant).getByRole("menuitem", {
+      name: "Daily totals (CSV)",
+    });
+    expect(descriptionOf(totals)).toBe("The 5 alert days on show.");
+
+    // 35.7 ha on show, at about 81 alert pixels a hectare.
+    const onRequest = screen.getByRole("group", {
+      name: "Prepared on request",
+    });
+    const items = within(onRequest).getAllByRole("menuitem");
+    expect(items.map(descriptionOf)).toEqual([
+      "Lat, lon of each alert pixel. About 2,900 in this period.",
+      "A point for each alert pixel, zipped for GIS. About 2,900 in this period.",
+    ]);
+    // The menu stays free while a file is prepared: a toast follows it.
+    expect(dropdown("Download").hasAttribute("disabled")).toBe(false);
+  });
+
   it("says why an area without alert locations can't download them", async () => {
     renderList({ onDownloadLocations: undefined });
     fireEvent.click(dropdown("Download"));
     const group = await screen.findByRole("group", {
-      name: "Alert locations are available for countries, states and districts.",
+      name: "Prepared on request",
     });
     for (const item of within(group).getAllByRole("menuitem")) {
       expect(item.getAttribute("aria-disabled")).toBe("true");
+      expect(descriptionOf(item)).toBe(
+        "Available for countries, states and districts only."
+      );
     }
     expect(
       screen
         .getByRole("menuitem", { name: "Daily totals (CSV)" })
         .getAttribute("aria-disabled")
     ).not.toBe("true");
-  });
-
-  it("holds the Download button while a file is prepared", () => {
-    renderList({ isPreparingDownload: true });
-    expect(dropdown("Preparing…").hasAttribute("disabled")).toBe(true);
   });
 
   it("shows a failed fetch above the rows it still holds", () => {

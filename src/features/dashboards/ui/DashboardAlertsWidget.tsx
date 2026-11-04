@@ -241,12 +241,12 @@ function AlertsCard({
 
   // The alerts behind those rows, one per pixel: the same period, tier and
   // land filter.
-  const locations = useAlertLocationsDownload();
+  const downloadLocations = useAlertLocationsDownload();
   const { gadmId } = spec;
   const saveLocations = gadmId
     ? (format: AlertLocationsFormat) => {
         if (!range) return;
-        locations.download({ gadmId, range, confidence, landFilter, format });
+        downloadLocations({ gadmId, range, confidence, landFilter, format });
       }
     : undefined;
 
@@ -290,7 +290,6 @@ function AlertsCard({
             onLandFilter={setLandFilter}
             onCustomChange={changeCustom}
             onDownloadCsv={saveCsv}
-            isPreparingDownload={locations.isPreparing}
             onDownloadLocations={saveLocations}
             onRetry={() => query.refetch()}
           />

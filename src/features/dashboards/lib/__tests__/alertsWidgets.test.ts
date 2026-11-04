@@ -10,6 +10,7 @@ import {
   LAND_FILTERS,
   confidenceLabel,
   customRangeProblem,
+  estimateAlertPoints,
   formatAlertDate,
   formatHa,
   formatRangeCaps,
@@ -567,5 +568,12 @@ describe("formatting", () => {
     expect(formatHa(15.55)).toBe("15.6");
     expect(formatHa(1312)).toBe("1,312");
     expect(formatHa(1312.26)).toBe("1,312.3");
+  });
+
+  it("estimates the alert locations in the hectares on show, to two significant figures", () => {
+    // Pacajá, Pará: the export held 158,507.
+    expect(estimateAlertPoints(1947.2)).toBe("160,000");
+    expect(estimateAlertPoints(4.5)).toBe("370");
+    expect(estimateAlertPoints(0.05)).toBe("4");
   });
 });

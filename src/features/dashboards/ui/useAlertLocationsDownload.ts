@@ -7,57 +7,86 @@ import {
   prepareAlertLocations,
   type AlertLocationsRequest,
 } from "../api/alert-locations";
+import { LOCATION_FORMATS } from "../lib/alertsWidgets";
 
 const COUNT_FORMAT = new Intl.NumberFormat("en-US");
 
+/** One file in preparation: the view it follows, its abort and its toast. */
+interface Job {
+  request: AlertLocationsRequest;
+  controller: AbortController;
+  toastId: string;
+}
+
 /**
  * The alerts widget's alert locations download: asks for the file, waits
- * while it is written (`isPreparing`), then saves it. A failure and a file
- * cut at the export's cap each show a toast.
+ * while it is written, then saves it. A toast follows each file (design A1):
+ * "Preparing" with a Cancel, then "Saved" or "Download failed" in its place.
+ * The menu stays free, so a second file (the other format, another view)
+ * gets a toast of its own.
  *
  * The filters are the ones on show at the click. A later change to the view
  * does not change a file in preparation. A card that unmounts (the dashboard
- * closed) drops its download, so no file arrives out of context. The toasts
- * live on the hook, not on `mutate`, so the abort's error still reaches the
- * guard that silences it.
+ * closed) drops its downloads and their toasts, so no file arrives out of
+ * context. The toasts live on the hook, not on `mutate`, so an abort's error
+ * still reaches the guard that silences it.
  */
-export function useAlertLocationsDownload(): {
-  download: (request: AlertLocationsRequest) => void;
-  isPreparing: boolean;
-} {
-  const inFlight = useRef<AbortController | null>(null);
-  useEffect(() => () => inFlight.current?.abort(), []);
+export function useAlertLocationsDownload(): (
+  request: AlertLocationsRequest
+) => void {
+  const inFlight = useRef(new Set<AbortController>());
+  useEffect(() => {
+    const jobs = inFlight.current;
+    return () => jobs.forEach((controller) => controller.abort());
+  }, []);
 
-  const { mutate, isPending } = useMutation({
-    mutationFn: (request: AlertLocationsRequest) => {
-      inFlight.current = new AbortController();
-      return prepareAlertLocations(request, inFlight.current.signal);
-    },
-    onSuccess: (file) => {
+  const { mutate } = useMutation({
+    mutationFn: ({ request, controller }: Job) =>
+      prepareAlertLocations(request, controller.signal),
+    onSuccess: (file, { toastId }) => {
       // The presigned URL's `Content-Disposition` names the file and makes it
       // a download, so the page stays where it is.
       saveUrl(file.url);
-      if (file.truncated) {
-        toaster.create({
-          title: "Only the newest alerts",
-          description: `The file holds the newest ${COUNT_FORMAT.format(file.pointCount)} alerts. The period has more.`,
-          type: "info",
-          duration: 8000,
-        });
-      }
+      toaster.update(toastId, {
+        type: "success",
+        title: `Saved ${COUNT_FORMAT.format(file.pointCount)} alert locations`,
+        // The export keeps the newest alerts, up to its cap.
+        description: file.truncated
+          ? "The file holds the newest alerts. The period has more."
+          : undefined,
+        duration: file.truncated ? 8000 : 4000,
+        action: undefined,
+      });
     },
-    onError: (error) => {
-      if (inFlight.current?.signal.aborted) return;
+    onError: (error, { controller, toastId }) => {
+      if (controller.signal.aborted) {
+        toaster.dismiss(toastId);
+        return;
+      }
       console.error("Alert locations download failed", error);
-      toaster.create({
+      toaster.update(toastId, {
+        type: "error",
         title: "Download failed",
         description:
           "The alert locations file couldn't be prepared. Please try again.",
-        type: "error",
         duration: 5000,
+        action: undefined,
       });
+    },
+    onSettled: (_file, _error, { controller }) => {
+      inFlight.current.delete(controller);
     },
   });
 
-  return { download: mutate, isPreparing: isPending };
+  return (request) => {
+    const controller = new AbortController();
+    inFlight.current.add(controller);
+    const toastId = toaster.create({
+      type: "loading",
+      title: "Preparing alert locations",
+      description: `The ${LOCATION_FORMATS[request.format].file} saves when it is ready.`,
+      action: { label: "Cancel", onClick: () => controller.abort() },
+    });
+    mutate({ request, controller, toastId });
+  };
 }

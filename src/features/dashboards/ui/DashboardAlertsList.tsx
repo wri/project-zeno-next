@@ -4,7 +4,6 @@ import {
   Button,
   Flex,
   Input,
-  Menu,
   Popover,
   Portal,
   Skeleton,
@@ -14,13 +13,16 @@ import {
 import { CaretDownIcon, MapPinIcon } from "@phosphor-icons/react";
 
 import InsightCaption from "@/app/components/InsightCaption";
-import DownloadMenu from "@/app/components/widgets/DownloadMenu";
+import DownloadMenu, {
+  DownloadMenuItem,
+} from "@/app/components/widgets/DownloadMenu";
 import type { DateRange } from "@/src/shared/lib/iso-date";
 import { InfoTooltip } from "@/src/shared/ui/InfoTooltip";
 import { Pill } from "@/src/shared/ui/Pill";
 import { isRetryable, type AlertsListError } from "../api/alerts";
 import {
   customRangeProblem,
+  estimateAlertPoints,
   formatAlertDate,
   formatHa,
   formatRangeCaps,
@@ -58,6 +60,10 @@ const CONFIDENCES: AlertsConfidence[] = ["all", "high", "highest"];
 const LAND_FILTER_OPTIONS = (
   Object.keys(LAND_FILTERS) as AlertsLandFilter[]
 ).map((value) => ({ value, label: LAND_FILTERS[value].label }));
+
+const LOCATION_FORMAT_ORDER = Object.keys(
+  LOCATION_FORMATS
+) as AlertLocationsFormat[];
 
 /** The Custom popover's two inputs, each editing one end of the range. */
 const CUSTOM_BOUNDS: { bound: keyof DateRange; label: string }[] = [
@@ -391,7 +397,6 @@ export default function DashboardAlertsList({
   onLandFilter,
   onCustomChange,
   onDownloadCsv,
-  isPreparingDownload,
   onDownloadLocations,
   onRetry,
 }: {
@@ -417,12 +422,11 @@ export default function DashboardAlertsList({
   onCustomChange: (range: DateRange) => void;
   /** Saves the rows on show (period, confidence and land filter applied) as CSV. */
   onDownloadCsv: () => void;
-  /** An alert locations file is being prepared: the Download button spins. */
-  isPreparingDownload: boolean;
   /**
-   * Prepares and saves the alert locations on show, in `format`. Given only
-   * for an area with alert locations (a GADM country, state or district);
-   * without it the location items are disabled, with the reason.
+   * Prepares and saves the alert locations on show, in `format`; a toast
+   * follows the file, not the menu. Given only for an area with alert
+   * locations (a GADM country, state or district); without it the location
+   * items are disabled, with the reason.
    */
   onDownloadLocations?: (format: AlertLocationsFormat) => void;
   onRetry: () => void;
@@ -770,43 +774,33 @@ export default function DashboardAlertsList({
       </Flex>
 
       {/* Widget actions, as the chart card's row: the rows on show as CSV,
-          and the alerts behind them as points. The design's "View data
-          source" waits on a source link the catalogue does not carry yet. */}
+          and the alerts behind them as points, each with what it holds
+          (design A1). The design's "View data source" waits on a source
+          link the catalogue does not carry yet. */}
       {ready && (
         <Flex gap="8px" align="center">
           <DownloadMenu
             onCsv={onDownloadCsv}
             csvLabel="Daily totals (CSV)"
-            loading={isPreparingDownload}
+            csvDescription={`The ${summary.days} alert ${summary.days === 1 ? "day" : "days"} on show.`}
             disabled={rows.length === 0}
-          >
-            <Menu.ItemGroup>
-              {!onDownloadLocations && (
-                <Menu.ItemGroupLabel
-                  maxW="220px"
-                  fontWeight="normal"
-                  color="neutral.500"
-                  whiteSpace="normal"
-                >
-                  Alert locations are available for countries, states and
-                  districts.
-                </Menu.ItemGroupLabel>
-              )}
-              {LOCATION_FORMATS.map(({ format, label }) => (
-                <Menu.Item
-                  key={format}
-                  // Unique in the menu: it selects by value, and the daily
-                  // totals item is "csv".
-                  value={`locations-${format}`}
-                  disabled={!onDownloadLocations}
-                  onSelect={() => onDownloadLocations?.(format)}
-                >
-                  <MapPinIcon size={14} />
-                  {label}
-                </Menu.Item>
-              ))}
-            </Menu.ItemGroup>
-          </DownloadMenu>
+            onRequest={LOCATION_FORMAT_ORDER.map((format) => (
+              <DownloadMenuItem
+                key={format}
+                // The daily totals item is "csv".
+                value={`locations-${format}`}
+                icon={<MapPinIcon size={14} />}
+                label={LOCATION_FORMATS[format].label}
+                description={
+                  onDownloadLocations
+                    ? `${LOCATION_FORMATS[format].about} About ${estimateAlertPoints(summary.ha)} in this period.`
+                    : "Available for countries, states and districts only."
+                }
+                disabled={!onDownloadLocations}
+                onSelect={() => onDownloadLocations?.(format)}
+              />
+            ))}
+          />
         </Flex>
       )}
     </Flex>

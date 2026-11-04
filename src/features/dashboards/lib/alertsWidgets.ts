@@ -450,12 +450,46 @@ export function alertsCsvFilename(areaName: string, range: DateRange): string {
   return `integrated-alerts-${area || "area"}-${range.start}-${range.end}.csv`;
 }
 
-/** The alert locations files: the analytics API's format names and the menu's labels. */
-export const LOCATION_FORMATS = [
-  { format: "csv", label: "Alert locations (CSV)" },
-  { format: "shp", label: "Alert locations (shapefile)" },
-] as const;
-export type AlertLocationsFormat = (typeof LOCATION_FORMATS)[number]["format"];
+/**
+ * The alert locations files, by the analytics API's format name, in the
+ * menu's order: the menu's label and description, and the file's name in
+ * the preparing toast.
+ */
+export const LOCATION_FORMATS = {
+  csv: {
+    label: "Alert locations (CSV)",
+    about: "Lat, lon of each alert pixel.",
+    file: "CSV file",
+  },
+  shp: {
+    label: "Alert locations (shapefile)",
+    about: "A point for each alert pixel, zipped for GIS.",
+    file: "shapefile",
+  },
+} as const;
+export type AlertLocationsFormat = keyof typeof LOCATION_FORMATS;
+
+/**
+ * Alert pixels per hectare. A pixel is 0.0001° square, about 11.1 m by
+ * 11.1 m at the equator, so about 81 fit in a hectare. Away from the equator
+ * a pixel is narrower and the rate grows by 1 / cos(latitude), about 8% at
+ * the edge of the tropics. The widget has no latitude, so it uses the
+ * equator's rate.
+ */
+const POINTS_PER_HA = 81;
+
+const ESTIMATE_FORMAT = new Intl.NumberFormat("en-US", {
+  maximumSignificantDigits: 2,
+});
+
+/**
+ * About how many alert locations the hectares on show hold, to two
+ * significant figures. On Pacajá, Pará, 1,947.2 ha predicted 158,500 and the
+ * export held 158,507.
+ */
+export function estimateAlertPoints(ha: number): string {
+  return ESTIMATE_FORMAT.format(Math.round(ha * POINTS_PER_HA));
+}
 
 const HA_FORMAT = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 });
 
