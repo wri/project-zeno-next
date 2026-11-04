@@ -157,6 +157,22 @@ describe("parseStreamMessage — tool response_metadata write signals", () => {
     expect(msg?.insight_id).toBe("ins-1");
   });
 
+  it.each([
+    ["a list", [{ dataset_name: "Tree cover loss" }]],
+    ["null", null],
+  ])(
+    "passes analysis_inputs through unparsed when it is %s",
+    (_label, inputs) => {
+      // The generate_insights handler owns parsing it (toAnalysisInputs).
+      const update = toolUpdate("generate_insights");
+      (update as unknown as { analysis_inputs: unknown }).analysis_inputs =
+        inputs;
+
+      const msg = parseStreamMessage(update, "tools", TS);
+      expect(msg?.analysis_inputs).toEqual(inputs);
+    }
+  );
+
   it("carries insight_updated through on tool messages", () => {
     // update_insight_display (rename a chart, change its type) signals with
     // insight_updated — the dashboard page relies on it to refetch widgets

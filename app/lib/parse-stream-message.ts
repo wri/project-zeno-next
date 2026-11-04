@@ -112,6 +112,8 @@ export function parseStreamMessage(
       insights: langChainMessage.insights || [],
       charts_data: langChainMessage.charts_data || [],
       insight_id: langChainMessage.insight_id || undefined,
+      // Passed through as sent (null included): the tool handler parses it.
+      analysis_inputs: langChainMessage.analysis_inputs,
       codeact_parts: langChainMessage.codeact_parts || [],
       source_urls: langChainMessage.source_urls || [],
       cited_articles: langChainMessage.cited_articles || undefined,
