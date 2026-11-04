@@ -44,7 +44,7 @@ export interface MapLegend {
   symbology: MapLegendClasses | MapLegendScale;
   /** The layer's settings as one line, e.g. "YEARS 2001–25 · CANOPY 30%". Empty when none. */
   params: string;
-  context: MapLegendContext | null;
+  context?: MapLegendContext;
 }
 
 /**
@@ -67,7 +67,7 @@ export function mapLegendFor(layer: MapWidgetLayer): MapLegend | null {
     .map((p) => `${p.label} ${p.value}`)
     .join(" · ");
 
-  const context = layer.context ? contextLegendFor(layer.context.name) : null;
+  const context = layer.context && contextLegendFor(layer.context.name);
 
   return { title, info, note, symbology, params, context };
 }

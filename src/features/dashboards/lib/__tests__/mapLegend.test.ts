@@ -75,8 +75,10 @@ describe("mapLegendFor", () => {
     expect(legend?.params).toBe("YEARS 2001–25 · CANOPY > 30%");
   });
 
-  it("has an empty settings line when the layer has none", () => {
-    expect(mapLegendFor(layer({ datasetId: 1 }))?.params).toBe("");
+  it("has an empty settings line and no context when the layer has none", () => {
+    const legend = mapLegendFor(layer({ datasetId: 1 }));
+    expect(legend?.params).toBe("");
+    expect(legend?.context).toBeUndefined();
   });
 
   const pf = CONTEXT_LAYER_METADATA.primary_forest.legend;
