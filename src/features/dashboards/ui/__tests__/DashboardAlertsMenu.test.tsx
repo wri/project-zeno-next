@@ -21,8 +21,8 @@ import { dashboardKeys, useDashboard } from "../dashboardQueries";
 import type { Dashboard } from "../../api/schemas";
 
 // The backend's view of the dashboard: what a refetch after the PUT returns.
-let serverEmail = false;
-const wire = (inApp: boolean) => ({
+let serverModes: string[] = ["in-app"];
+const wire = () => ({
   id: "d1",
   user_id: "u1",
   name: "My dashboard",
@@ -39,14 +39,11 @@ const wire = (inApp: boolean) => ({
       position: 0,
     },
   ],
-  alerts: {
-    in_app_enabled: inApp,
-    integrated_alerts: { contact_types: serverEmail ? ["email"] : [] },
-  },
+  alerts: { integrated_alerts: { modes: serverModes } },
 });
 
 const dashboard = (alerts: Dashboard["alerts"]): Dashboard => ({
-  ...wire(true),
+  ...wire(),
   description: null,
   sections: [],
   widgets: [],
@@ -88,14 +85,14 @@ const openPopover = async () => {
 
 beforeEach(() => {
   flagOn = true;
-  serverEmail = false;
+  serverModes = ["in-app"];
   vi.mocked(toaster.create).mockClear();
   vi.mocked(apiFetch).mockReset();
   vi.mocked(apiFetch).mockImplementation(async (_path, init) => {
     if (init?.method === "PUT") {
-      serverEmail = JSON.parse(String(init.body)).contact_types.length > 0;
+      serverModes = JSON.parse(String(init.body)).modes;
     }
-    return new Response(JSON.stringify(wire(true)), { status: 200 });
+    return new Response(JSON.stringify(wire()), { status: 200 });
   });
 });
 
@@ -116,15 +113,10 @@ describe("DashboardHeader alerts gate", () => {
     expect(alertsButton()).toBeNull();
   });
 
-  it("shows no alerts control on an ineligible dashboard with email off", () => {
+  it("shows the control with everything off, so alerts can be turned on", async () => {
     renderHeader({ inAppEnabled: false, emailEnabled: false });
-    expect(alertsButton()).toBeNull();
-  });
-
-  it("keeps the control on an ineligible dashboard while email is on, so it can be turned off", async () => {
-    renderHeader({ inAppEnabled: false, emailEnabled: true });
-    expect(alertsButton()?.textContent).toContain("Email");
-    expect((await openPopover()).checked).toBe(true);
+    expect(alertsButton()?.textContent).toContain("Off");
+    expect((await openPopover()).checked).toBe(false);
   });
 });
 
@@ -153,7 +145,7 @@ describe("DashboardAlertsMenu", () => {
           method: "PUT",
           body: JSON.stringify({
             datasets: ["integrated_alerts"],
-            contact_types: ["email"],
+            modes: ["in-app", "email"],
           }),
         })
       )
@@ -180,7 +172,7 @@ describe("DashboardAlertsMenu", () => {
               status: 409,
             }
           )
-        : new Response(JSON.stringify(wire(true)), { status: 200 })
+        : new Response(JSON.stringify(wire()), { status: 200 })
     );
     renderHeader(ELIGIBLE);
     const email = await openPopover();
@@ -210,9 +202,7 @@ describe("DashboardAlertsMenu", () => {
     vi.mocked(apiFetch).mockImplementation((_path, init) =>
       init?.method === "PUT"
         ? new Promise<Response>((resolve) => (finish = resolve))
-        : Promise.resolve(
-            new Response(JSON.stringify(wire(true)), { status: 200 })
-          )
+        : Promise.resolve(new Response(JSON.stringify(wire()), { status: 200 }))
     );
     renderHeader(ELIGIBLE);
     const email = await openPopover();
