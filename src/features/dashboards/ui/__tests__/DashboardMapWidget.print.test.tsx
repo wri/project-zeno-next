@@ -187,8 +187,10 @@ describe("DashboardMapWidget legend", () => {
       layer: {
         ...layer,
         datasetId: TREE_COVER_LOSS_DATASET_ID,
-        contextTileUrl: "https://example.test/pf/{z}/{x}/{y}.png",
-        contextLayerName: "primary_forest",
+        context: {
+          tileUrl: "https://example.test/pf/{z}/{x}/{y}.png",
+          name: "primary_forest",
+        },
       },
     });
 

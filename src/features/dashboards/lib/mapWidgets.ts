@@ -19,10 +19,8 @@ export interface MapWidgetLayer {
   /** Card header: `config.title` override, else a kind-specific fallback. */
   title: string;
   tileUrl: string;
-  /** The active context sub-layer's tiles, rendered beneath the main layer. */
-  contextTileUrl?: string;
-  /** The active context sub-layer's name — set only with `contextTileUrl`. */
-  contextLayerName?: string;
+  /** The active context sub-layer: its tiles render beneath the main layer. */
+  context?: { tileUrl: string; name: string };
   // Dataset-kind fields that drive the widget's legend (DashboardMapLegend).
   datasetId?: number;
   /** The legend's parameter chips, settled by `legendParameters`. */
@@ -65,8 +63,7 @@ export function mapWidgetLayer(
 
     // Resolve the active context layer by name. Raster-only: vector (MVT)
     // context layers need a source_layer the persisted config doesn't carry.
-    let contextTileUrl: string | undefined;
-    let contextLayerName: string | undefined;
+    let context: MapWidgetLayer["context"];
     const activeName = str(d.context_layer);
     if (activeName && Array.isArray(d.context_layers)) {
       const entry = d.context_layers.find(
@@ -77,8 +74,10 @@ export function mapWidgetLayer(
       );
       const entryUrl = str(entry?.tile_url);
       if (entryUrl) {
-        contextTileUrl = patchPrimaryForestTileUrl(entryUrl);
-        contextLayerName = activeName;
+        context = {
+          tileUrl: patchPrimaryForestTileUrl(entryUrl),
+          name: activeName,
+        };
       }
     }
 
@@ -97,7 +96,7 @@ export function mapWidgetLayer(
       kind: "dataset",
       title: titleOverride ?? str(d.dataset_name) ?? "Map layer",
       tileUrl: patchPrimaryForestTileUrl(tileUrl),
-      ...(contextTileUrl ? { contextTileUrl, contextLayerName } : {}),
+      ...(context ? { context } : {}),
       ...(typeof d.dataset_id === "number" ? { datasetId: d.dataset_id } : {}),
       ...(parameters ? { parameters } : {}),
       ...(startDate ? { startDate } : {}),

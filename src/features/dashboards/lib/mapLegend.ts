@@ -67,10 +67,7 @@ export function mapLegendFor(layer: MapWidgetLayer): MapLegend | null {
     .map((p) => `${p.label} ${p.value}`)
     .join(" · ");
 
-  let context: MapLegendContext | null = null;
-  if (layer.contextTileUrl && layer.contextLayerName) {
-    context = contextLegendFor(layer.contextLayerName);
-  }
+  const context = layer.context ? contextLegendFor(layer.context.name) : null;
 
   return { title, info, note, symbology, params, context };
 }

@@ -236,11 +236,11 @@ export default function DashboardMapWidget({
           <Layer id="widget-basemap" type="raster" />
         </Source>
         {/* Declaration order is stacking order: context under main, outline on top. */}
-        {layer.contextTileUrl && (
+        {layer.context && (
           <Source
             id="widget-context"
             type="raster"
-            tiles={[layer.contextTileUrl]}
+            tiles={[layer.context.tileUrl]}
             tileSize={256}
           >
             <Layer

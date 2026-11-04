@@ -49,8 +49,10 @@ describe("mapWidgetLayer — dataset configs", () => {
         ],
       })
     );
-    expect(layer?.contextTileUrl).toBe("https://tiles.example.org/driver");
-    expect(layer?.contextLayerName).toBe("driver");
+    expect(layer?.context).toEqual({
+      tileUrl: "https://tiles.example.org/driver",
+      name: "driver",
+    });
   });
 
   it.each(["natural_lands", "natural_forest"])(
@@ -63,8 +65,10 @@ describe("mapWidgetLayer — dataset configs", () => {
           context_layers: [{ name, tile_url: "/raster/natural-lands.png" }],
         })
       );
-      expect(layer?.contextTileUrl).toBe("/raster/natural-lands.png");
-      expect(layer?.contextLayerName).toBe(name);
+      expect(layer?.context).toEqual({
+        tileUrl: "/raster/natural-lands.png",
+        name,
+      });
     }
   );
 
@@ -72,8 +76,7 @@ describe("mapWidgetLayer — dataset configs", () => {
     const layer = mapWidgetLayer(
       datasetConfig({ context_layer: "driver", context_layers: [] })
     );
-    expect(layer?.contextTileUrl).toBeUndefined();
-    expect(layer?.contextLayerName).toBeUndefined();
+    expect(layer?.context).toBeUndefined();
   });
 
   it("reduces config parameters to a first-value record for the legend", () => {
@@ -253,13 +256,14 @@ describe("withTileDates", () => {
     const withContext = {
       ...layer,
       tileUrl: `pf://${ALERTS_TILE_URL}`,
-      contextTileUrl: "https://tiles.example.org/natural-lands/{z}/{x}/{y}.png",
-      contextLayerName: "natural_lands",
+      context: {
+        tileUrl: "https://tiles.example.org/natural-lands/{z}/{x}/{y}.png",
+        name: "natural_lands",
+      },
     };
     const dated = withTileDates(withContext, range);
     expect(dated.tileUrl.startsWith("pf://https://")).toBe(true);
     expect(dated.tileUrl).toContain("start_date=2026-10-04");
-    expect(dated.contextTileUrl).toBe(withContext.contextTileUrl);
-    expect(dated.contextLayerName).toBe("natural_lands");
+    expect(dated.context).toEqual(withContext.context);
   });
 });

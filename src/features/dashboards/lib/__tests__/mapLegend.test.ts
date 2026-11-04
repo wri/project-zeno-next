@@ -80,25 +80,20 @@ describe("mapLegendFor", () => {
   });
 
   const pf = CONTEXT_LAYER_METADATA.primary_forest.legend;
-  it.each([
-    [
-      "names the context layer the data sits within",
-      "https://tiles.example.org/pf/{z}/{x}/{y}.png",
-      {
-        title: "Primary Forests (2001)",
-        color: pf?.items?.[0]?.color,
-        info: pf?.info,
-      },
-    ],
-    ["has no context without the context layer's tiles", undefined, null],
-  ])("%s", (_, contextTileUrl, expected) => {
+  it("names the context layer the data sits within", () => {
     const legend = mapLegendFor(
       layer({
         datasetId: TREE_COVER_LOSS_DATASET_ID,
-        contextTileUrl,
-        contextLayerName: "primary_forest",
+        context: {
+          tileUrl: "https://tiles.example.org/pf/{z}/{x}/{y}.png",
+          name: "primary_forest",
+        },
       })
     );
-    expect(legend?.context).toEqual(expected);
+    expect(legend?.context).toEqual({
+      title: "Primary Forests (2001)",
+      color: pf?.items?.[0]?.color,
+      info: pf?.info,
+    });
   });
 });
