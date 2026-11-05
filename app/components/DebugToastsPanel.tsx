@@ -271,14 +271,30 @@ function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
             ))}
             <Button
               size="2xs"
-              onClick={() =>
-                toaster.create({
+              onClick={() => {
+                // As a download does: the same toast turns into "Saved" in
+                // place, unless Cancel closes it first.
+                const id = toaster.create({
                   title: "Preparing a file",
                   description: "The file saves when it is ready.",
                   type: "loading",
-                  action: { label: "Cancel", onClick: () => {} },
-                })
-              }
+                  action: {
+                    label: "Cancel",
+                    onClick: () => clearTimeout(saved),
+                  },
+                });
+                const saved = setTimeout(
+                  () =>
+                    toaster.update(id, {
+                      type: "success",
+                      title: "Saved the file",
+                      description: undefined,
+                      action: undefined,
+                      duration: 3000,
+                    }),
+                  2000
+                );
+              }}
             >
               Loading
             </Button>

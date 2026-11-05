@@ -1,6 +1,8 @@
+import type { ReactNode } from "react";
 import {
   Box,
   Toaster as ChakraToaster,
+  Circle,
   Portal,
   Spinner,
   Toast,
@@ -12,23 +14,35 @@ import {
   WarningIcon,
   WarningCircleIcon,
   CheckCircleIcon,
-  Icon,
+  type Icon,
 } from "@phosphor-icons/react";
 
-const typeColorMap = {
-  info: "secondary",
-  error: "red",
-  warning: "orange",
-  success: "green",
-};
+/** A filled icon on its palette's tint. */
+const fillIcon = (Glyph: Icon, palette: string) => ({
+  bg: `${palette}.subtle`,
+  icon: (
+    <Glyph
+      weight="fill"
+      width="16px"
+      fill={`var(--chakra-colors-${palette}-600)`}
+    />
+  ),
+});
 
-type ToastType = keyof typeof typeColorMap;
-
-const TypeIcon: Record<ToastType, Icon> = {
-  info: InfoIcon,
-  error: WarningIcon,
-  warning: WarningCircleIcon,
-  success: CheckCircleIcon,
+/**
+ * Each type's icon and the tint of its circle. The spinner sits in the same
+ * circle as the icon that replaces it, so an updated toast does not move.
+ * A type with no entry shows no icon.
+ */
+const TYPE_ICONS: Partial<Record<string, { bg: string; icon: ReactNode }>> = {
+  loading: {
+    bg: "primary.subtle",
+    icon: <Spinner size="sm" color="primary.solid" />,
+  },
+  info: fillIcon(InfoIcon, "secondary"),
+  error: fillIcon(WarningIcon, "red"),
+  warning: fillIcon(WarningCircleIcon, "orange"),
+  success: fillIcon(CheckCircleIcon, "green"),
 };
 
 export const toaster = createToaster({
@@ -41,73 +55,34 @@ export const Toaster = () => {
     <Portal>
       <ChakraToaster toaster={toaster} insetInline={{ mdDown: "4" }}>
         {(toast) => {
-          let color: string;
-          let IconComponent: Icon;
-
-          const isValidType = toast.type && toast.type in typeColorMap;
-
-          if (isValidType) {
-            color = typeColorMap[toast.type as keyof typeof typeColorMap];
-            IconComponent = TypeIcon[toast.type as keyof typeof TypeIcon];
-          } else {
-            color = "secondary";
-            IconComponent = InfoIcon;
-          }
+          const typeIcon = toast.type ? TYPE_ICONS[toast.type] : undefined;
           return (
-            // One row: icon, text, then the action or the close button. The
-            // spinner sits in the same circle as the icon that replaces it,
-            // so an updated toast does not move.
+            // One row: icon, text, then the action or the close button.
+            // Chakra's recipe paints error, success and warning toasts solid,
+            // with white text and triggers; every toast here is a white card,
+            // so the root resets those colours once for all its parts.
             <Toast.Root
               width={{ md: "sm" }}
-              ps="3"
-              pe="3"
-              py="3"
-              gap="3"
+              p="3"
               borderRadius="lg"
               border="1px solid"
               borderColor="border"
               bg="bg"
+              color="fg"
+              css={{
+                "--toast-border-color": "colors.border.emphasized",
+                "--toast-trigger-bg": "colors.bg.muted",
+              }}
             >
-              {toast.type === "loading" ? (
-                <Box
-                  bg="primary.subtle"
-                  rounded="full"
-                  width="32px"
-                  height="32px"
-                  flexShrink={0}
-                  display="flex"
-                  placeContent="center"
-                  alignItems="center"
-                >
-                  <Spinner size="sm" color="primary.solid" />
-                </Box>
-              ) : toast.type === "error" ||
-                toast.type === "info" ||
-                toast.type === "warning" ||
-                toast.type === "success" ? (
-                <Box
-                  bg={`${color}.subtle`}
-                  rounded="full"
-                  width="32px"
-                  height="32px"
-                  flexShrink={0}
-                  display="flex"
-                  placeContent="center"
-                  alignItems="center"
-                >
-                  <IconComponent
-                    weight="fill"
-                    width="16px"
-                    fill={`var(--chakra-colors-${color}-600)`}
-                  />
-                </Box>
-              ) : (
-                <Toast.Indicator />
+              {typeIcon && (
+                <Circle size="8" bg={typeIcon.bg}>
+                  {typeIcon.icon}
+                </Circle>
               )}
               {/* The top padding centres the title's line on the icon. */}
               <Box flex="1" minWidth="0" pt="1.5">
                 {toast.title && (
-                  <Toast.Title color="fg" fontSize="sm" fontWeight="500">
+                  <Toast.Title fontSize="sm" fontWeight="500">
                     {toast.title}
                   </Toast.Title>
                 )}
@@ -125,10 +100,7 @@ export const Toaster = () => {
               </Box>
               {/* Level with the bottom of the text: it acts on the job. */}
               {toast.action && (
-                <Toast.ActionTrigger
-                  alignSelf="flex-end"
-                  borderColor="border.emphasized"
-                >
+                <Toast.ActionTrigger alignSelf="flex-end">
                   {toast.action.label}
                 </Toast.ActionTrigger>
               )}
