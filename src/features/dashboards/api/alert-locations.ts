@@ -87,13 +87,15 @@ export async function prepareAlertLocations(
   if (!res.ok) {
     throw new Error(`Export request failed: ${res.status}`);
   }
-  const { link } = ExportLinkSchema.parse(await res.json()).data;
+  const jobUrl = exportJobUrl(
+    ExportLinkSchema.parse(await res.json()).data.link
+  );
 
   const deadline = Date.now() + EXPORT_DEADLINE_MS;
   let serverErrors = 0;
   while (Date.now() < deadline) {
     await wait(POLL_INTERVAL_MS, signal);
-    const poll = await fetch(link, { signal });
+    const poll = await fetch(jobUrl, { signal });
     if (poll.status >= 500 && ++serverErrors < MAX_SERVER_ERRORS) continue;
     if (!poll.ok) {
       throw new Error(`Export poll failed: ${poll.status}`);
@@ -112,6 +114,22 @@ export async function prepareAlertLocations(
     }
   }
   throw new Error("Export timed out");
+}
+
+/**
+ * The link's job on our own analytics host. The API builds its links behind
+ * its load balancer, so they come as `http://`, and an https page may not
+ * fetch them (mixed content).
+ */
+function exportJobUrl(link: string): string {
+  const path = new URL(link).pathname;
+  const jobId = path.startsWith(`${EXPORT_PATH}/`)
+    ? path.slice(EXPORT_PATH.length + 1)
+    : "";
+  if (!jobId || jobId.includes("/")) {
+    throw new Error(`Unexpected export link: ${link}`);
+  }
+  return `${API_CONFIG.ANALYTICS_API_HOST}${EXPORT_PATH}/${jobId}`;
 }
 
 /** The request body: the view's filters in the analytics API's names. */

@@ -7,8 +7,12 @@ import {
   type AlertLocationsRequest,
 } from "../alert-locations";
 
-const EXPORT_URL = `${API_CONFIG.ANALYTICS_API_HOST}/v0/land_change/integrated_alerts/points/exports`;
-const LINK = `${EXPORT_URL}/5b1e0000-0000-5000-8000-000000000000`;
+const EXPORT_PATH = "/v0/land_change/integrated_alerts/points/exports";
+const EXPORT_URL = `${API_CONFIG.ANALYTICS_API_HOST}${EXPORT_PATH}`;
+const JOB_ID = "5b1e0000-0000-5000-8000-000000000000";
+/** As production sends it: built behind the load balancer, so `http://`. */
+const LINK = `http://analytics.globalnaturewatch.org${EXPORT_PATH}/${JOB_ID}`;
+const JOB_URL = `${EXPORT_URL}/${JOB_ID}`;
 const FILE_URL =
   "https://results.s3.amazonaws.com/integrated_alerts_points_export/v20261101/x.csv?X-Amz-Signature=abc";
 
@@ -128,9 +132,10 @@ describe("prepareAlertLocations", () => {
       alert_confidence: ["high", "highest"],
       format: "csv",
     });
+    // The link's job on our own host: an https page may not fetch `http://`.
     expect(fetchMock.mock.calls.slice(1).map(([url]) => url)).toEqual([
-      LINK,
-      LINK,
+      JOB_URL,
+      JOB_URL,
     ]);
   });
 
@@ -194,6 +199,17 @@ describe("prepareAlertLocations", () => {
 
   it.each([
     ["the request is refused", [json(422, { detail: [] })], "failed: 422"],
+    [
+      "the link names no export job",
+      [
+        json(202, {
+          data: {
+            link: `http://analytics.globalnaturewatch.org${EXPORT_PATH}`,
+          },
+        }),
+      ],
+      "Unexpected export link",
+    ],
     ["the link is not found", [created(), json(404, {})], "failed: 404"],
     ["the job fails", [created(), failed("Boom")], "Boom"],
     [
