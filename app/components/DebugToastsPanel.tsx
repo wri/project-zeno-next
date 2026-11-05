@@ -94,6 +94,28 @@ const TOAST_TRIGGERS = [
   { label: "Info", type: "info" },
 ] as const;
 
+/** As a download does: the same toast turns into "Saved" in place. */
+function showLoadingToast() {
+  const id = toaster.create({
+    title: "Preparing a file",
+    description: "The file saves when it is ready.",
+    type: "loading",
+    // The action trigger closes the toast after its onClick.
+    action: { label: "Cancel", onClick: () => {} },
+  });
+  setTimeout(() => {
+    // update() creates the toast again if Cancel or Escape closed it.
+    if (!toaster.isVisible(id)) return;
+    toaster.update(id, {
+      type: "success",
+      title: "Saved the file",
+      description: undefined,
+      action: undefined,
+      duration: 3000,
+    });
+  }, 2000);
+}
+
 function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
   const params = useSearchParams();
   const active =
@@ -269,33 +291,7 @@ function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
                 {label}
               </Button>
             ))}
-            <Button
-              size="2xs"
-              onClick={() => {
-                // As a download does: the same toast turns into "Saved" in
-                // place, unless Cancel closes it first.
-                const id = toaster.create({
-                  title: "Preparing a file",
-                  description: "The file saves when it is ready.",
-                  type: "loading",
-                  action: {
-                    label: "Cancel",
-                    onClick: () => clearTimeout(saved),
-                  },
-                });
-                const saved = setTimeout(
-                  () =>
-                    toaster.update(id, {
-                      type: "success",
-                      title: "Saved the file",
-                      description: undefined,
-                      action: undefined,
-                      duration: 3000,
-                    }),
-                  2000
-                );
-              }}
-            >
+            <Button size="2xs" onClick={showLoadingToast}>
               Loading
             </Button>
           </Stack>
