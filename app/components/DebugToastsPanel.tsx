@@ -269,6 +269,19 @@ function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
                 {label}
               </Button>
             ))}
+            <Button
+              size="2xs"
+              onClick={() =>
+                toaster.create({
+                  title: "Preparing a file",
+                  description: "The file saves when it is ready.",
+                  type: "loading",
+                  action: { label: "Cancel", onClick: () => {} },
+                })
+              }
+            >
+              Loading
+            </Button>
           </Stack>
         </Box>
 
