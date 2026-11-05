@@ -11,7 +11,8 @@ const EXPORT_PATH = "/v0/land_change/integrated_alerts/points/exports";
 const EXPORT_URL = `${API_CONFIG.ANALYTICS_API_HOST}${EXPORT_PATH}`;
 const JOB_ID = "5b1e0000-0000-5000-8000-000000000000";
 /** As production sends it: built behind the load balancer, so `http://`. */
-const LINK = `http://analytics.globalnaturewatch.org${EXPORT_PATH}/${JOB_ID}`;
+const LINK_BASE = `http://analytics.globalnaturewatch.org${EXPORT_PATH}`;
+const LINK = `${LINK_BASE}/${JOB_ID}`;
 const JOB_URL = `${EXPORT_URL}/${JOB_ID}`;
 const FILE_URL =
   "https://results.s3.amazonaws.com/integrated_alerts_points_export/v20261101/x.csv?X-Amz-Signature=abc";
@@ -30,7 +31,8 @@ const json = (status: number, body: unknown) =>
     headers: { "Content-Type": "application/json" },
   });
 
-const created = () => json(202, { data: { link: LINK }, status: "pending" });
+const created = (link = LINK) =>
+  json(202, { data: { link }, status: "pending" });
 const pending = () =>
   json(200, {
     data: { status: "pending", result: null, metadata: {}, message: "x" },
@@ -201,13 +203,7 @@ describe("prepareAlertLocations", () => {
     ["the request is refused", [json(422, { detail: [] })], "failed: 422"],
     [
       "the link names no export job",
-      [
-        json(202, {
-          data: {
-            link: `http://analytics.globalnaturewatch.org${EXPORT_PATH}`,
-          },
-        }),
-      ],
+      [created(LINK_BASE)],
       "Unexpected export link",
     ],
     ["the link is not found", [created(), json(404, {})], "failed: 404"],

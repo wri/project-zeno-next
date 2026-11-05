@@ -22,6 +22,10 @@ import { landFilterBody } from "./alerts";
  * only, and this endpoint needs none.
  */
 const EXPORT_PATH = "/v0/land_change/integrated_alerts/points/exports";
+const EXPORT_URL = `${API_CONFIG.ANALYTICS_API_HOST}${EXPORT_PATH}`;
+
+/** A job link's path. Its one segment after the export path is the job id. */
+const JOB_PATH = new RegExp(`^${EXPORT_PATH}/([^/]+)$`);
 
 /** The wait before each poll. The link asks for 1 second (`Retry-After`). */
 const POLL_INTERVAL_MS = 2000;
@@ -54,7 +58,10 @@ export interface AlertLocationsFile {
   truncated: boolean;
 }
 
-const ExportLinkSchema = z.object({ data: z.object({ link: z.string() }) });
+/** The created job, as the URL to poll it at. */
+const ExportLinkSchema = z.object({
+  data: z.object({ link: z.string().transform(exportJobUrl) }),
+});
 
 const ExportJobSchema = z.object({
   data: z.discriminatedUnion("status", [
@@ -78,7 +85,7 @@ export async function prepareAlertLocations(
   request: AlertLocationsRequest,
   signal: AbortSignal
 ): Promise<AlertLocationsFile> {
-  const res = await fetch(`${API_CONFIG.ANALYTICS_API_HOST}${EXPORT_PATH}`, {
+  const res = await fetch(EXPORT_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(exportBody(request)),
@@ -87,9 +94,7 @@ export async function prepareAlertLocations(
   if (!res.ok) {
     throw new Error(`Export request failed: ${res.status}`);
   }
-  const jobUrl = exportJobUrl(
-    ExportLinkSchema.parse(await res.json()).data.link
-  );
+  const { link: jobUrl } = ExportLinkSchema.parse(await res.json()).data;
 
   const deadline = Date.now() + EXPORT_DEADLINE_MS;
   let serverErrors = 0;
@@ -122,14 +127,9 @@ export async function prepareAlertLocations(
  * fetch them (mixed content).
  */
 function exportJobUrl(link: string): string {
-  const path = new URL(link).pathname;
-  const jobId = path.startsWith(`${EXPORT_PATH}/`)
-    ? path.slice(EXPORT_PATH.length + 1)
-    : "";
-  if (!jobId || jobId.includes("/")) {
-    throw new Error(`Unexpected export link: ${link}`);
-  }
-  return `${API_CONFIG.ANALYTICS_API_HOST}${EXPORT_PATH}/${jobId}`;
+  const jobId = JOB_PATH.exec(new URL(link).pathname)?.[1];
+  if (!jobId) throw new Error(`Unexpected export link: ${link}`);
+  return `${EXPORT_URL}/${jobId}`;
 }
 
 /** The request body: the view's filters in the analytics API's names. */
