@@ -3,7 +3,6 @@ import {
   Toaster as ChakraToaster,
   Portal,
   Spinner,
-  Stack,
   Toast,
   createToaster,
 } from "@chakra-ui/react";
@@ -55,66 +54,93 @@ export const Toaster = () => {
             IconComponent = InfoIcon;
           }
           return (
+            // One row: icon, text, then the action or the close button. The
+            // spinner sits in the same circle as the icon that replaces it,
+            // so an updated toast does not move.
             <Toast.Root
               width={{ md: "sm" }}
-              minHeight="133px"
+              ps="3"
+              pe="3"
+              py="3"
+              gap="3"
               borderRadius="lg"
               border="1px solid"
               borderColor="border"
               bg="bg"
             >
-              <Stack gap={3} maxWidth="100%">
-                {toast.type === "loading" ? (
+              {toast.type === "loading" ? (
+                <Box
+                  bg="primary.subtle"
+                  rounded="full"
+                  width="32px"
+                  height="32px"
+                  flexShrink={0}
+                  display="flex"
+                  placeContent="center"
+                  alignItems="center"
+                >
                   <Spinner size="sm" color="primary.solid" />
-                ) : toast.type === "error" ||
-                  toast.type === "info" ||
-                  toast.type === "warning" ||
-                  toast.type === "success" ? (
-                  <Box
-                    bg={`${color}.subtle`}
-                    rounded="full"
-                    width="32px"
-                    height="32px"
-                    display="flex"
-                    placeContent="center"
-                    alignItems="center"
-                  >
-                    <IconComponent
-                      weight="fill"
-                      width="16px"
-                      fill={`var(--chakra-colors-${color}-600)`}
-                    />
-                  </Box>
-                ) : (
-                  <Toast.Indicator />
-                )}
-                <Box gap="4px">
-                  {toast.title && (
-                    <Toast.Title
-                      color="fg"
-                      fontSize="sm"
-                      fontWeight="500"
-                      pb="1"
-                    >
-                      {toast.title}
-                    </Toast.Title>
-                  )}
-                  {toast.description && (
-                    <Toast.Description
-                      color="fg.muted"
-                      fontSize="xs"
-                      display="inline-block"
-                      lineHeight="1rem"
-                    >
-                      {toast.description}
-                    </Toast.Description>
-                  )}
                 </Box>
-              </Stack>
-              {toast.action && (
-                <Toast.ActionTrigger>{toast.action.label}</Toast.ActionTrigger>
+              ) : toast.type === "error" ||
+                toast.type === "info" ||
+                toast.type === "warning" ||
+                toast.type === "success" ? (
+                <Box
+                  bg={`${color}.subtle`}
+                  rounded="full"
+                  width="32px"
+                  height="32px"
+                  flexShrink={0}
+                  display="flex"
+                  placeContent="center"
+                  alignItems="center"
+                >
+                  <IconComponent
+                    weight="fill"
+                    width="16px"
+                    fill={`var(--chakra-colors-${color}-600)`}
+                  />
+                </Box>
+              ) : (
+                <Toast.Indicator />
               )}
-              {toast.closable && <Toast.CloseTrigger color="fg.subtle" />}
+              {/* The top padding centres the title's line on the icon. */}
+              <Box flex="1" minWidth="0" pt="1.5">
+                {toast.title && (
+                  <Toast.Title color="fg" fontSize="sm" fontWeight="500">
+                    {toast.title}
+                  </Toast.Title>
+                )}
+                {toast.description && (
+                  <Toast.Description
+                    color="fg.muted"
+                    fontSize="xs"
+                    display="block"
+                    lineHeight="1rem"
+                    mt="0.5"
+                  >
+                    {toast.description}
+                  </Toast.Description>
+                )}
+              </Box>
+              {/* Level with the bottom of the text: it acts on the job. */}
+              {toast.action && (
+                <Toast.ActionTrigger
+                  alignSelf="flex-end"
+                  borderColor="border.emphasized"
+                >
+                  {toast.action.label}
+                </Toast.ActionTrigger>
+              )}
+              {/* In the row, top right, rather than over the text. */}
+              {toast.closable && (
+                <Toast.CloseTrigger
+                  position="static"
+                  boxSize="8"
+                  flexShrink={0}
+                  color="fg.muted"
+                />
+              )}
             </Toast.Root>
           );
         }}
