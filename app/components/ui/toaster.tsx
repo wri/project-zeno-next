@@ -17,9 +17,12 @@ import {
   type Icon,
 } from "@phosphor-icons/react";
 
-/** A filled icon on its palette's tint. */
-const fillIcon = (Glyph: Icon, palette: string) => ({
-  bg: `${palette}.subtle`,
+type ToastType = "loading" | "info" | "error" | "warning" | "success";
+type TypeIcon = { palette: string; icon: ReactNode };
+
+/** A filled icon in its palette's colour. */
+const fillIcon = (Glyph: Icon, palette: string): TypeIcon => ({
+  palette,
   icon: (
     <Glyph
       weight="fill"
@@ -30,20 +33,21 @@ const fillIcon = (Glyph: Icon, palette: string) => ({
 });
 
 /**
- * Each type's icon and the tint of its circle. The spinner sits in the same
- * circle as the icon that replaces it, so an updated toast does not move.
- * A type with no entry shows no icon.
+ * Each type's icon and palette; the circle behind the icon takes the
+ * palette's tint. The spinner sits in the same circle as the icon that
+ * replaces it, so an updated toast does not move. A type with no entry
+ * shows no icon.
  */
-const TYPE_ICONS: Partial<Record<string, { bg: string; icon: ReactNode }>> = {
+const TYPE_ICONS: Partial<Record<string, TypeIcon>> = {
   loading: {
-    bg: "primary.subtle",
+    palette: "primary",
     icon: <Spinner size="sm" color="primary.solid" />,
   },
   info: fillIcon(InfoIcon, "secondary"),
   error: fillIcon(WarningIcon, "red"),
   warning: fillIcon(WarningCircleIcon, "orange"),
   success: fillIcon(CheckCircleIcon, "green"),
-};
+} satisfies Record<ToastType, TypeIcon>;
 
 export const toaster = createToaster({
   placement: "bottom-end",
@@ -75,7 +79,7 @@ export const Toaster = () => {
               }}
             >
               {typeIcon && (
-                <Circle size="8" bg={typeIcon.bg}>
+                <Circle size="8" bg={`${typeIcon.palette}.subtle`}>
                   {typeIcon.icon}
                 </Circle>
               )}
