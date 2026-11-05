@@ -23,6 +23,7 @@ import {
   sinceRange,
   visibleRows,
   widenedWindow,
+  type AlertLocationsFormat,
   type AlertsChip,
   type AlertsConfidence,
   type AlertsLandFilter,
@@ -36,6 +37,7 @@ import DashboardAlertsList, {
 import DashboardAlertsMapPane from "./DashboardAlertsMapPane";
 import DashboardWidgetCard from "./DashboardWidgetCard";
 import DashboardWidgetDocument from "./DashboardWidgetDocument";
+import { useAlertLocationsDownload } from "./useAlertLocationsDownload";
 
 /** A list stays fresh for a few hours: the data moves once a day. */
 const ALERTS_STALE_MS = 3 * 60 * 60 * 1000;
@@ -73,6 +75,10 @@ interface CardProps {
  * Intersects land filter asks again too, and then the rows on show stay
  * while the new list loads. Chips, confidence, land filter and the params
  * toggle are view state, never persisted.
+ *
+ * The Download menu saves the daily totals on show, or asks the analytics
+ * API for the alert locations behind them (`useAlertLocationsDownload`),
+ * for a GADM area only.
  *
  * The config is parsed once (`alertsWidgetSpec`); a config that cannot be
  * rendered shows the shell with a placeholder, like a broken map widget.
@@ -233,6 +239,16 @@ function AlertsCard({
     );
   };
 
+  // The alerts behind those rows, one per pixel: the same period, tier and
+  // land filter. The menu shows only once rows have a range.
+  const downloadLocations = useAlertLocationsDownload();
+  const { gadmId } = spec;
+  const saveLocations =
+    gadmId && range
+      ? (format: AlertLocationsFormat) =>
+          downloadLocations({ gadmId, range, confidence, landFilter, format })
+      : undefined;
+
   return (
     <DashboardWidgetCard
       title={spec.title}
@@ -273,6 +289,7 @@ function AlertsCard({
             onLandFilter={setLandFilter}
             onCustomChange={changeCustom}
             onDownloadCsv={saveCsv}
+            onDownloadLocations={saveLocations}
             onRetry={() => query.refetch()}
           />
         </Box>

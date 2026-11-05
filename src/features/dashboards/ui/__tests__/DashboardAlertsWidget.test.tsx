@@ -2,6 +2,7 @@
 import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -19,6 +20,15 @@ vi.mock("../../api/alerts", async (importOriginal) => ({
 vi.mock("@/src/shared/lib/csv", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/src/shared/lib/csv")>()),
   downloadCsv: vi.fn(),
+}));
+
+vi.mock("../../api/alert-locations", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../api/alert-locations")>()),
+  prepareAlertLocations: vi.fn(),
+}));
+
+vi.mock("@/app/components/ui/toaster", () => ({
+  toaster: { create: vi.fn(), update: vi.fn(), dismiss: vi.fn() },
 }));
 
 // The map pane's body is MapLibre's; a stub that exposes the layer it was
@@ -54,12 +64,31 @@ import {
   ALERTS_WIDGET_CONFIG,
 } from "../../api/__tests__/fixtures";
 import type { DashboardWidget } from "../../api/schemas";
+import {
+  prepareAlertLocations,
+  type AlertLocationsFile,
+} from "../../api/alert-locations";
+import { toaster } from "@/app/components/ui/toaster";
 import { downloadCsv } from "@/src/shared/lib/csv";
 import DashboardAlertsWidget from "../DashboardAlertsWidget";
 import { chooseFromMenu } from "./chakraMenu";
 
 const mockedFetch = vi.mocked(fetchAlertsList);
 const mockedDownload = vi.mocked(downloadCsv);
+const mockedPrepare = vi.mocked(prepareAlertLocations);
+const mockedToaster = vi.mocked(toaster);
+
+/** The abortable preparation the real export runs: an abort rejects it. */
+function abortablePrepare() {
+  mockedPrepare.mockImplementation(
+    (_request, signal) =>
+      new Promise((_resolve, reject) =>
+        signal.addEventListener("abort", () =>
+          reject(new DOMException("Aborted", "AbortError"))
+        )
+      )
+  );
+}
 
 const widget: DashboardWidget = {
   id: "w-alerts",
@@ -178,6 +207,11 @@ describe("DashboardAlertsWidget", () => {
   // teardown, and `mockReset()` returns the mock.
   beforeEach(() => {
     mockedFetch.mockReset();
+    mockedPrepare.mockReset();
+    // Each new toast is "toast-1".
+    mockedToaster.create.mockReset().mockReturnValue("toast-1");
+    mockedToaster.update.mockReset();
+    mockedToaster.dismiss.mockReset();
   });
 
   it("fetches the backend's window once and shows the new week in the headline and both panes", async () => {
@@ -323,9 +357,10 @@ describe("DashboardAlertsWidget", () => {
     await screen.findByText(NEW_WEEK_FOOTER);
 
     await chooseFromDropdown("Confidence: All", "Highest");
-    await chooseFromDropdown("Download", "Data (CSV)");
+    await chooseFromDropdown("Download", "Daily totals (CSV)");
 
     expect(mockedDownload).toHaveBeenCalledTimes(1);
+    expect(mockedPrepare).not.toHaveBeenCalled();
     const [csv, filename] = mockedDownload.mock.calls[0];
     expect(filename).toBe(
       "integrated-alerts-guarapuava-2026-10-10-2026-10-16.csv"
@@ -337,6 +372,140 @@ describe("DashboardAlertsWidget", () => {
       "2026-10-12,Highest,9.3,2.2,11.5,true",
       "2026-10-10,Highest,12.5,3,15.5,true",
     ]);
+  });
+
+  it("prepares the alert locations on show and saves the file, with a toast that follows it", async () => {
+    mockedFetch.mockResolvedValue(toAlertsList(ALERTS_LIST_WIRE));
+    const file = Promise.withResolvers<AlertLocationsFile>();
+    mockedPrepare.mockReturnValue(file.promise);
+    const clicked: string[] = [];
+    const click = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(function (this: HTMLAnchorElement) {
+        clicked.push(this.href);
+      });
+    try {
+      renderWidget();
+      await screen.findByText(NEW_WEEK_FOOTER);
+
+      await chooseFromDropdown("Confidence: All", "High");
+      await chooseFromDropdown("Download", "Alert locations (shapefile)");
+
+      // The area's analytics id and the view on show: the new week, High.
+      expect(mockedPrepare).toHaveBeenCalledTimes(1);
+      expect(mockedPrepare.mock.calls[0][0]).toEqual({
+        gadmId: "BRA.16.137",
+        range: { start: "2026-10-10", end: "2026-10-16" },
+        confidence: "high",
+        landFilter: "any",
+        format: "shp",
+      });
+      // A toast follows the file; the Download button stays as it was.
+      expect(mockedToaster.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "loading",
+          title: "Preparing alert locations",
+          description: "The shapefile saves when it is ready.",
+          action: expect.objectContaining({ label: "Cancel" }),
+        })
+      );
+      expect(
+        screen
+          .getByRole("button", { name: "Download" })
+          .hasAttribute("disabled")
+      ).toBe(false);
+
+      await act(async () => {
+        file.resolve({
+          url: "https://results.s3.amazonaws.com/x.zip?sig=1",
+          pointCount: 1_000_000,
+          truncated: true,
+        });
+      });
+      expect(clicked).toEqual(["https://results.s3.amazonaws.com/x.zip?sig=1"]);
+      expect(mockedToaster.update).toHaveBeenCalledWith(
+        "toast-1",
+        expect.objectContaining({
+          type: "success",
+          title: "Saved 1,000,000 alert locations",
+          description: "The file holds the newest alerts. The period has more.",
+          action: undefined,
+        })
+      );
+    } finally {
+      click.mockRestore();
+    }
+  });
+
+  it("turns the toast into a failure when the alert locations can't be prepared", async () => {
+    mockedFetch.mockResolvedValue(toAlertsList(ALERTS_LIST_WIRE));
+    mockedPrepare.mockRejectedValue(new Error("Export failed"));
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      renderWidget();
+      await screen.findByText(NEW_WEEK_FOOTER);
+      await chooseFromDropdown("Download", "Alert locations (CSV)");
+
+      await waitFor(() =>
+        expect(mockedToaster.update).toHaveBeenCalledWith(
+          "toast-1",
+          expect.objectContaining({ type: "error", title: "Download failed" })
+        )
+      );
+    } finally {
+      error.mockRestore();
+    }
+  });
+
+  it.each<[string, (unmount: () => void) => void]>([
+    [
+      "its toast's Cancel is pressed",
+      () => act(() => mockedToaster.create.mock.calls[0][0].action?.onClick()),
+    ],
+    ["the card goes", (unmount) => unmount()],
+  ])(
+    "drops a download in preparation when %s, and closes its toast",
+    async (_case, drop) => {
+      mockedFetch.mockResolvedValue(toAlertsList(ALERTS_LIST_WIRE));
+      abortablePrepare();
+      const { unmount } = renderWidget();
+      await screen.findByText(NEW_WEEK_FOOTER);
+      await chooseFromDropdown("Download", "Alert locations (CSV)");
+
+      const signal = mockedPrepare.mock.calls[0][1];
+      expect(signal.aborted).toBe(false);
+      drop(unmount);
+      expect(signal.aborted).toBe(true);
+      await waitFor(() =>
+        expect(mockedToaster.dismiss).toHaveBeenCalledWith("toast-1")
+      );
+      expect(mockedToaster.update).not.toHaveBeenCalled();
+    }
+  );
+
+  it("offers no alert locations for an area that is not a GADM country, state or district", async () => {
+    mockedFetch.mockResolvedValue(toAlertsList(ALERTS_LIST_WIRE));
+    const kbaConfig = {
+      ...ALERTS_WIDGET_CONFIG,
+      alerts: {
+        aoi: {
+          source: "kba",
+          src_id: "12345",
+          subtype: "key-biodiversity-area",
+          name: "Serra do Mar",
+        },
+      },
+    };
+    renderWidget({ widget: { ...widget, config: kbaConfig } });
+    await screen.findByText(NEW_WEEK_FOOTER);
+
+    fireEvent.click(screen.getByRole("button", { name: "Download" }));
+    const item = await screen.findByRole("menuitem", {
+      name: "Alert locations (CSV)",
+    });
+    expect(item.getAttribute("aria-disabled")).toBe("true");
+    fireEvent.click(item);
+    expect(mockedPrepare).not.toHaveBeenCalled();
   });
 
   it("counts back from the window's end, with no latest alert line, when neither the dataset's nor the area's latest date is known", async () => {

@@ -2,6 +2,7 @@ import { format, parseISO } from "date-fns";
 
 import { rowsToCsv } from "@/src/shared/lib/csv";
 import { shiftIsoDate, type DateRange } from "@/src/shared/lib/iso-date";
+import { normalizeGadmId } from "../model/area-tree";
 import {
   mapWidgetLayer,
   str,
@@ -43,6 +44,12 @@ export interface AlertsWidgetSpec {
    * built before the backend added them).
    */
   overlays: Partial<Record<AlertsLandFilter, MapWidgetLayer>>;
+  /**
+   * The area as the analytics API's GADM ids name it (`BRA.16.137`), for the
+   * alert locations download. Absent for any other area: the download serves
+   * GADM countries, states and districts only.
+   */
+  gadmId?: string;
 }
 
 /** One alert day, as the list pane renders it. */
@@ -85,17 +92,25 @@ export type AlertsChip = "new-week" | "last-30-days" | "custom";
 
 export type AlertsConfidence = "all" | "high" | "highest";
 
+/** The analytics API's confidence levels that the widget shows (never "low"). */
+type AlertLevel = "high" | "highest";
+
 /**
  * What each confidence choice shows: the row field it sums, the column it
- * heads, and its name in the toggle. "All" is the two tiers and their total.
+ * heads, its name in the toggle, and the analytics API's levels it selects.
+ * "All" is the two tiers and their total.
  */
 export const TIERS: Record<
   AlertsConfidence,
-  { field: "highHa" | "highestHa" | "totalHa"; name: string }
+  {
+    field: "highHa" | "highestHa" | "totalHa";
+    name: string;
+    levels: readonly AlertLevel[];
+  }
 > = {
-  all: { field: "totalHa", name: "All" },
-  high: { field: "highHa", name: "High" },
-  highest: { field: "highestHa", name: "Highest" },
+  all: { field: "totalHa", name: "All", levels: ["high", "highest"] },
+  high: { field: "highHa", name: "High", levels: ["high"] },
+  highest: { field: "highestHa", name: "Highest", levels: ["highest"] },
 };
 
 /** The two tiers "All" is made of. */
@@ -148,6 +163,27 @@ export function confidenceLabel(confidence: AlertsConfidence): string {
  */
 const SINCE_DAYS = 30;
 
+/** The GADM levels the analytics API takes: countries, states and districts. */
+const ANALYTICS_GADM_SUBTYPES = new Set([
+  "country",
+  "state-province",
+  "district-county",
+]);
+
+/**
+ * The analytics API's id for a GADM area, whose ids carry no version suffix.
+ * Undefined for any other area.
+ */
+function analyticsGadmId(
+  source: string,
+  srcId: string,
+  subtype: string
+): string | undefined {
+  if (source !== "gadm" || !ANALYTICS_GADM_SUBTYPES.has(subtype))
+    return undefined;
+  return normalizeGadmId(srcId);
+}
+
 /**
  * Parses an alerts widget's config into a renderable spec, or null when it
  * cannot be rendered (no `alerts.aoi` identity, or no alerts layer to put on
@@ -192,6 +228,7 @@ export function alertsWidgetSpec(
     aoi: { source, srcId, subtype, name },
     layer,
     overlays,
+    gadmId: analyticsGadmId(source, srcId, subtype),
   };
 }
 
@@ -411,6 +448,47 @@ export function alertsCsvFilename(areaName: string, range: DateRange): string {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
   return `integrated-alerts-${area || "area"}-${range.start}-${range.end}.csv`;
+}
+
+/**
+ * The alert locations files, by the analytics API's format name, in the
+ * menu's order: the menu's label and description, and the file's name in
+ * the preparing toast.
+ */
+export const LOCATION_FORMATS = {
+  csv: {
+    label: "Alert locations (CSV)",
+    about: "Lat, lon of each alert pixel.",
+    file: "CSV file",
+  },
+  shp: {
+    label: "Alert locations (shapefile)",
+    about: "A point for each alert pixel, zipped for GIS.",
+    file: "shapefile",
+  },
+} as const;
+export type AlertLocationsFormat = keyof typeof LOCATION_FORMATS;
+
+/**
+ * Alert pixels per hectare. A pixel is 0.0001° square, about 11.1 m by
+ * 11.1 m at the equator, so about 81 fit in a hectare. Away from the equator
+ * a pixel is narrower and the rate grows by 1 / cos(latitude), about 8% at
+ * the edge of the tropics. The widget has no latitude, so it uses the
+ * equator's rate.
+ */
+const POINTS_PER_HA = 81;
+
+const ESTIMATE_FORMAT = new Intl.NumberFormat("en-US", {
+  maximumSignificantDigits: 2,
+});
+
+/**
+ * About how many alert locations the hectares on show hold, to two
+ * significant figures. On Pacajá, Pará, 1,947.2 ha predicted 158,500 and the
+ * export held 158,507.
+ */
+export function estimateAlertPoints(ha: number): string {
+  return ESTIMATE_FORMAT.format(Math.round(ha * POINTS_PER_HA));
 }
 
 const HA_FORMAT = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 });

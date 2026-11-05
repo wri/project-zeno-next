@@ -20,6 +20,10 @@ FSD **shared** layer — reusable, business-agnostic building blocks usable by e
   `@/src/shared/lib/iso-date`.
 - `lib/csv/` — `rowsToCsv` (rows to a CSV string) and `downloadCsv` (save it through the browser), shared
   by the chart card's and the alerts widget's downloads. Import from `@/src/shared/lib/csv`.
+- `lib/download/` — `saveUrl`, saving the file at a URL through the browser (an anchor click), used by
+  `downloadCsv` and the alerts widget's alert locations download. Import from `@/src/shared/lib/download`.
+- `lib/wait/` — `wait(ms, signal?)`, an abortable timer that rejects with an `AbortError`, used by the
+  analysis `SystemClock` and the alert locations export's polling. Import from `@/src/shared/lib/wait`.
 - `lib/router/` — the only routing API (`Link`, `useRouter`, `useSearchParams`, `usePathname`, `useParams`),
   a Next-style facade over react-router. Import from `@/src/shared/lib/router`; direct `react-router`
   imports are lint errors outside it and `src/app/main.tsx`.

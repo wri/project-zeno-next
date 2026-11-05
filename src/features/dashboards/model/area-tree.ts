@@ -25,7 +25,7 @@ export function areaRowKey(
  * share ("NAM"); strip it before comparing ancestry. */
 const GADM_VERSION_SUFFIX = /_\d+$/;
 
-function normalizeGadmId(srcId: string): string {
+export function normalizeGadmId(srcId: string): string {
   return srcId.replace(GADM_VERSION_SUFFIX, "");
 }
 

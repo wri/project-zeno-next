@@ -10,6 +10,7 @@ import {
   LAND_FILTERS,
   confidenceLabel,
   customRangeProblem,
+  estimateAlertPoints,
   formatAlertDate,
   formatHa,
   formatRangeCaps,
@@ -101,6 +102,28 @@ describe("alertsWidgetSpec", () => {
     expect(spec?.aoi.name).toBe("Paraná");
     expect(spec?.title).toBe("Integrated alerts in Paraná");
   });
+
+  it.each([
+    ["gadm", "BRA", "country", "BRA"],
+    ["gadm", "BRA.16_1", "state-province", "BRA.16"],
+    ["gadm", "BRA.16.137_2", "district-county", "BRA.16.137"],
+    // Below a district the analytics API has no GADM areas.
+    ["gadm", "BRA.16.137.1_1", "municipality", undefined],
+    ["kba", "12345", "key-biodiversity-area", undefined],
+    ["wdpa", "555", "protected-area", undefined],
+    ["landmark", "88", "indigenous-and-community-land", undefined],
+    ["custom", "a1b2", "custom-area", undefined],
+  ])(
+    "gives a %s %s (%s) the analytics GADM id %s",
+    (source, srcId, subtype, gadmId) => {
+      const spec = alertsWidgetSpec(
+        config({
+          alerts: { aoi: { source, src_id: srcId, subtype, name: "Area" } },
+        })
+      );
+      expect(spec?.gadmId).toBe(gadmId);
+    }
+  );
 
   it("returns null when the area identity is incomplete", () => {
     for (const key of ["source", "src_id", "subtype"]) {
@@ -545,5 +568,12 @@ describe("formatting", () => {
     expect(formatHa(15.55)).toBe("15.6");
     expect(formatHa(1312)).toBe("1,312");
     expect(formatHa(1312.26)).toBe("1,312.3");
+  });
+
+  it("estimates the alert locations in the hectares on show, to two significant figures", () => {
+    // Pacajá, Pará: the export held 158,507.
+    expect(estimateAlertPoints(1947.2)).toBe("160,000");
+    expect(estimateAlertPoints(4.5)).toBe("370");
+    expect(estimateAlertPoints(0.05)).toBe("4");
   });
 });
