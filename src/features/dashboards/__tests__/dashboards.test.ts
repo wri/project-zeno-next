@@ -172,7 +172,7 @@ describe("dashboard date helpers", () => {
 });
 
 describe("addTextWidget", () => {
-  it("sends config.text as a string, per the backend's validate_text_config", async () => {
+  it("sends config.text as a string and the owner as its source", async () => {
     vi.mocked(apiFetch).mockResolvedValue(
       new Response(JSON.stringify({}), { status: 200 })
     );
@@ -182,7 +182,10 @@ describe("addTextWidget", () => {
     expect(apiFetch).toHaveBeenCalledWith("/api/dashboards/d1/widgets", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ widget_type: "text", config: { text: "" } }),
+      body: JSON.stringify({
+        widget_type: "text",
+        config: { text: "", source: "user" },
+      }),
     });
   });
 });
