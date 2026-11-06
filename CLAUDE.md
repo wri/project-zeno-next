@@ -161,6 +161,15 @@ The client aborts the fetch after 310 seconds (5 min 10 sec) — slightly longer
 - Zustand stores are module-level singletons. When testing stores, call their reset/clear action in `beforeEach` to prevent state bleeding between tests.
 - The `@/` path alias is configured in `vitest.config.ts` to match `tsconfig.json`.
 
+### PR Titles
+
+A PR title links the work to Jira; it is not a commit message. Start it with the ticket key:
+`PZB-1234: <summary>`. For several tickets use `PZB-1234, PZB-1240: <summary>`;
+for work with no ticket use `NO-TICKET: <summary>`. A CI check fails the PR otherwise.
+The Commit Convention below applies to commits only. When squash-merging a PR with several
+commits, replace the pre-filled commit message in the squash-merge dialog (not the PR title)
+with a Conventional Commits message.
+
 ### Commit Convention
 
 Conventional commits: `feat(scope):`, `fix(scope):`, `chore(scope):`, etc. Scope is the affected module or feature area (e.g. `feat(map):`, `fix(chart-widget):`).
