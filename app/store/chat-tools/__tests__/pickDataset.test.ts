@@ -7,27 +7,7 @@ vi.mock("@/app/store/mapStore", () => ({
 }));
 
 vi.mock("@/app/utils/datasetLayerContext", () => ({
-  getDatasetLayerContextProps: () => ({
-    contextLayer: undefined,
-    parameters: undefined,
-    startDate: undefined,
-    endDate: undefined,
-  }),
-  buildDatasetLayers: () => [],
-  toLayerEntries: (
-    layers?: {
-      name: string;
-      tile_url: string;
-      start_date?: string;
-      end_date?: string;
-    }[]
-  ) =>
-    layers?.map((l) => ({
-      name: l.name,
-      tileUrl: l.tile_url,
-      startDate: l.start_date,
-      endDate: l.end_date,
-    })),
+  datasetMapLayers: () => [],
 }));
 
 import { pickDatasetTool } from "../pickDataset";

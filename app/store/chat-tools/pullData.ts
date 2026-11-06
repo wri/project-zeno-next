@@ -1,11 +1,23 @@
-import { ChatMessage, StreamMessage } from "@/app/types/chat";
+import { DatasetInfo, StreamMessage } from "@/app/types/chat";
+import useMapStore from "../mapStore";
+import { datasetMapLayers } from "@/app/utils/datasetLayerContext";
 
-export function pullDataTool(
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  streamMessage: StreamMessage,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  addMessage: (message: Omit<ChatMessage, "id">) => void
-) {
-  // Tool execution is now handled by the reasoning component
-  // No message needed here
+/**
+ * pull_data returns the dataset only when it analysed another date range
+ * than the dataset's layer shows (a follow-up turn asks for new dates without
+ * a new pick_dataset). Move the dataset's layers on the map to that range in
+ * place, so the tiles and the legend dates match the chart. A layer the user
+ * removed stays removed, and visibility, opacity and order are kept.
+ */
+export function pullDataTool(streamMessage: StreamMessage) {
+  const dataset = streamMessage.dataset as DatasetInfo | undefined;
+  if (!dataset) return;
+
+  const { layers, updateLayer } = useMapStore.getState();
+  const onMap = new Set(layers.map((l) => l.id));
+  datasetMapLayers(dataset)
+    .filter((layer) => onMap.has(layer.id))
+    .forEach(({ id, tileUrl, startDate, endDate }) =>
+      updateLayer(id, { tileUrl, startDate, endDate })
+    );
 }

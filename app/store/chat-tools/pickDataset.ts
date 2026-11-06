@@ -5,11 +5,7 @@ import {
   InsightWidget,
 } from "@/app/types/chat";
 import useMapStore from "../mapStore";
-import {
-  getDatasetLayerContextProps,
-  buildDatasetLayers,
-  toLayerEntries,
-} from "@/app/utils/datasetLayerContext";
+import { datasetMapLayers } from "@/app/utils/datasetLayerContext";
 
 export function pickDatasetTool(
   streamMessage: StreamMessage,
@@ -32,22 +28,13 @@ export function pickDatasetTool(
         yAxis: "",
       };
 
-      const layerContextProps = getDatasetLayerContextProps(dataset);
-
       // The visible layer IS the scope. Replace any existing dataset layers
       // and add this dataset's main + context sub-layers.
       const { addLayer, removeLayer, layers } = useMapStore.getState();
       layers
         .filter((l) => typeof l.datasetId === "number")
         .forEach((l) => removeLayer(l.id));
-      buildDatasetLayers({
-        datasetId: dataset.dataset_id,
-        layerName: dataset.dataset_name,
-        tileUrl: dataset.tile_url,
-        layers: toLayerEntries(dataset.layers, dataset.dataset_id),
-        selectedLayerName: dataset.selected_layer,
-        ...layerContextProps, // contextLayer / parameters / start+end dates
-      }).forEach(addLayer);
+      datasetMapLayers(dataset).forEach(addLayer);
 
       addMessage({
         type: "widget",

@@ -115,6 +115,8 @@ export interface LayerManagerSlice {
   removeDatasetLayers: (datasetId?: number) => void;
   setLayerVisibility: (id: string, visible: boolean) => void;
   setLayerOpacity: (id: string, opacity: number) => void;
+  /** Patch a layer in place, keeping its position, visibility and opacity. */
+  updateLayer: (id: string, patch: Partial<Omit<Layer, "id">>) => void;
   reorderLayers: (ids: string[]) => void;
   addToRegistry: (entry: GeoJsonEntry) => void;
   removeFromRegistry: (ref: FeatureRef) => void;
@@ -174,6 +176,11 @@ export const createLayerManagerSlice: StateCreator<
   setLayerOpacity: (id, opacity) => {
     set((state) => ({
       layers: state.layers.map((l) => (l.id === id ? { ...l, opacity } : l)),
+    }));
+  },
+  updateLayer: (id, patch) => {
+    set((state) => ({
+      layers: state.layers.map((l) => (l.id === id ? { ...l, ...patch } : l)),
     }));
   },
   reorderLayers: (ids) => {
