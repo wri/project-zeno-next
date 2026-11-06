@@ -11,9 +11,11 @@ import {
   addTextWidget,
   applyAnalysisTemplate,
   fetchDashboardAlertsSummary,
+  setAlertModes,
 } from "../api/dashboards";
 import {
   DashboardListResponseSchema,
+  DashboardResponseSchema,
   DashboardSectionResponseSchema,
 } from "../api/schemas";
 import {
@@ -168,6 +170,71 @@ describe("dashboard date helpers", () => {
     const now = new Date("2026-08-13T12:00:00Z").getTime();
     expect(wasJustCreated("not-a-date", now)).toBe(false);
     expect(wasJustCreated("2026-08-13T12:01:00Z", now)).toBe(false);
+  });
+});
+
+describe("dashboard alerts settings", () => {
+  const body = {
+    id: "d1",
+    user_id: "u1",
+    name: "Paraná",
+    is_public: false,
+    created_at: "2026-09-01T00:00:00Z",
+    updated_at: "2026-09-01T00:00:00Z",
+  };
+  const parse = (alerts: unknown) =>
+    DashboardResponseSchema.parse({ ...body, alerts });
+
+  const modes = (...on: string[]) => ({ integrated_alerts: { modes: on } });
+
+  it("reads the highest mode listed as the level", () => {
+    expect(parse(modes()).alerts).toBe("off");
+    expect(parse(modes("in-app")).alerts).toBe("in-app");
+    expect(parse(modes("email", "in-app")).alerts).toBe("email");
+  });
+
+  it("leaves alerts undefined when absent or malformed, and still parses the dashboard", () => {
+    expect(DashboardResponseSchema.parse(body).alerts).toBeUndefined();
+    for (const bad of [{}, { integrated_alerts: { modes: "email" } }]) {
+      const malformed = parse(bad);
+      expect(malformed.alerts).toBeUndefined();
+      expect(malformed.name).toBe("Paraná");
+    }
+  });
+});
+
+describe("setAlertModes", () => {
+  beforeEach(() => vi.mocked(apiFetch).mockReset());
+
+  it.each([
+    ["email", ["in-app", "email"]],
+    ["in-app", ["in-app"]],
+    ["off", []],
+  ] as const)("PUTs the modes for %s", async (next, sent) => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      new Response(JSON.stringify({}), { status: 200 })
+    );
+
+    await setAlertModes("d1", next);
+
+    expect(apiFetch).toHaveBeenCalledWith("/api/dashboards/d1/subscriptions", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ datasets: ["integrated_alerts"], modes: sent }),
+    });
+  });
+
+  it("rejects with the status and detail of a 409", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      new Response(JSON.stringify({ detail: "Dashboard is not eligible" }), {
+        status: 409,
+      })
+    );
+
+    await expect(setAlertModes("d1", "email")).rejects.toMatchObject({
+      status: 409,
+      detail: "Dashboard is not eligible",
+    });
   });
 });
 

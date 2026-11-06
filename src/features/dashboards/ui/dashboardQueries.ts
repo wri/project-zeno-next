@@ -10,13 +10,14 @@ import {
   getDashboard,
   listAnalysisTemplates,
   renameDashboard,
+  setAlertModes,
   updateWidget,
   updateSection,
   type WidgetUpdate,
 } from "../api/dashboards";
 import type { AoiSearchResult } from "@/src/entities/aoi";
 
-import type { Dashboard } from "../api/schemas";
+import type { AlertsLevel, Dashboard } from "../api/schemas";
 import type { SectionMovePatch } from "../model/dashboard-sections";
 import type { WidgetMovePatch } from "../model/widget-move";
 import { dashboardKeys } from "../hooks/dashboardKeys";
@@ -319,5 +320,19 @@ export function useMoveSections(dashboardId: string) {
         ),
       };
     }
+  );
+}
+
+// The alerts switches. Optimistic, so the switches move at once; the refetch
+// on settle shows whatever the backend saved.
+export function useSetAlertModes(
+  dashboardId: string,
+  callbacks?: OptimisticMutationCallbacks<AlertsLevel>
+) {
+  return useOptimisticDashboardMutation(
+    dashboardId,
+    (next: AlertsLevel) => setAlertModes(dashboardId, next),
+    (dashboard, next) => ({ ...dashboard, alerts: next }),
+    callbacks
   );
 }

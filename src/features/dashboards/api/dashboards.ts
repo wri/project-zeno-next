@@ -1,10 +1,12 @@
 import {
+  ALERT_MODES,
   AnalysisTemplateListSchema,
   DashboardAlertsSummaryResponseSchema,
   DashboardCreateRequestSchema,
   DashboardListResponseSchema,
   DashboardResponseSchema,
   SectionFromTemplateResponseSchema,
+  type AlertsLevel,
   type AnalysisTemplate,
   type Dashboard,
   type DashboardCreateRequest,
@@ -114,6 +116,25 @@ export async function renameDashboard(
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name }),
+  });
+}
+
+// Sets one dashboard's integrated-alerts level (owner only). The body is the
+// desired state, so a level of "off" turns everything off. The backend
+// answers 409 when email is turned on for an ineligible dashboard. The
+// response (the updated dashboard) is ignored: the shared optimistic
+// mutation refetches on settle anyway.
+export async function setAlertModes(
+  dashboardId: string,
+  level: AlertsLevel
+): Promise<void> {
+  await readJson<unknown>(`/api/dashboards/${dashboardId}/subscriptions`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      datasets: ["integrated_alerts"],
+      modes: ALERT_MODES[level],
+    }),
   });
 }
 

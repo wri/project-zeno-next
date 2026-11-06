@@ -15,8 +15,10 @@ import {
 } from "@phosphor-icons/react";
 
 import { toaster } from "@/app/components/ui/toaster";
+import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
 import type { Dashboard } from "../api/schemas";
 import { wasJustCreated } from "../lib/dates";
+import DashboardAlertsMenu from "./DashboardAlertsMenu";
 import { useRenameDashboard } from "./dashboardQueries";
 
 /** The 30px dashboard title, shared with the report page's document header. */
@@ -63,6 +65,12 @@ export default function DashboardHeader({
   const [draft, setDraft] = useState<string | null>(null);
   const renameDashboard = useRenameDashboard(dashboard.id);
   const editing = draft !== null;
+  // Alerts are the owner's consent (ADR 0012), so superusers, who also
+  // receive `alerts`, don't get the switches. Eligibility is the backend's:
+  // turning email on for an ineligible dashboard fails with 409.
+  const emailBeta = useFeatureFlag("email-subscriptions");
+  const alerts = dashboard.alerts;
+  const showAlerts = emailBeta && isOwner && !!alerts;
 
   const commit = () => {
     const name = draft?.trim();
@@ -174,6 +182,13 @@ export default function DashboardHeader({
       </Box>
 
       <Flex gap="12px" align="center" flexShrink={0}>
+        {showAlerts && (
+          <DashboardAlertsMenu
+            dashboardId={dashboard.id}
+            areaName={dashboard.aois[0]?.name ?? dashboard.name}
+            alerts={alerts}
+          />
+        )}
         <Button {...DASHBOARD_ACTION_PROPS} onClick={openReport}>
           <FilePdfIcon size={16} />
           Export
