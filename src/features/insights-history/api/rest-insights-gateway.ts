@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { apiFetch } from "@/app/lib/api-client";
+import { pickChartColors } from "@/app/utils/pickChartColors";
 import {
   chartId,
   isCuratedInsight,
@@ -23,6 +24,12 @@ const RawChartSchema = z.object({
   series_fields: z.array(z.string()).default([]),
   chart_data: z.array(z.record(z.string(), z.unknown())).default([]),
   dataset_id: z.number().nullable().optional(),
+  color_map: z.record(z.string(), z.string()).nullable().optional(),
+  series_color: z.string().nullable().optional(),
+  divergent_colors: z
+    .object({ positive: z.string(), negative: z.string() })
+    .nullable()
+    .optional(),
 });
 
 // Mirrors the backend `InsightResponse`. Only `id` is required; the rest default
@@ -57,6 +64,13 @@ function toInsightRecord(raw: RawInsight): InsightRecord {
     seriesFields: c.series_fields,
     data: c.chart_data,
     ...(typeof c.dataset_id === "number" ? { datasetId: c.dataset_id } : {}),
+    // The backend's colours, as the live analysis carries them, so a stored
+    // chart reopened from the pane keeps them (the alerts tiers' pinks).
+    ...pickChartColors({
+      colorMap: c.color_map,
+      seriesColor: c.series_color,
+      divergentColors: c.divergent_colors,
+    }),
   }));
 
   return {

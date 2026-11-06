@@ -12,7 +12,15 @@ import {
   useNetFluxDetail,
 } from "@/src/features/net-flux";
 import type { InsightWidget } from "@/app/types/chat";
+import type { DateRange } from "@/src/shared/lib/iso-date";
 import type { Dashboard, DashboardWidget } from "../api/schemas";
+import {
+  alertsChartPeriod,
+  alertsChartRange,
+  hasAlertsChartPills,
+  rowsInPeriod,
+  type AlertsChartPill,
+} from "../lib/alertsChart";
 import {
   hasWidgetCustomization,
   insightModule,
@@ -21,6 +29,7 @@ import {
   withChartTitle,
   withSummaryShown,
 } from "../lib/widgets";
+import AlertsChartPills from "./AlertsChartPills";
 import DashboardModuleCustomizeMenu from "./DashboardModuleCustomizeMenu";
 import DashboardWidgetCard from "./DashboardWidgetCard";
 import DashboardWidgetDocument from "./DashboardWidgetDocument";
@@ -45,6 +54,11 @@ import RemoveAnalysisDialog from "./RemoveAnalysisDialog";
  * single piece (one chart, no summary, like a template's alerts chart) has
  * nothing to customize, so it has no menu.
  *
+ * The alerts chart of a Near real-time monitoring section carries period
+ * pills (PZB-1566): the card shows the stored rows of the pill's range, so
+ * a pill never fetches. The pill is view state, never persisted, and the
+ * export prints the whole period.
+ *
  * In the export (`print`) there is no pager to page, so every shown chart
  * prints, one after another, with the narrative above the first.
  *
@@ -56,6 +70,7 @@ import RemoveAnalysisDialog from "./RemoveAnalysisDialog";
 export default function DashboardInsightModule({
   widget,
   areaAoi,
+  sectionTemplate,
   isOwner,
   isDouble,
   print = false,
@@ -67,6 +82,8 @@ export default function DashboardInsightModule({
   widget: DashboardWidget;
   /** The dashboard's area — feeds the card's AREA param chip. */
   areaAoi?: Dashboard["aois"][number];
+  /** The template that built the widget's section, if one did. */
+  sectionTemplate?: string;
   isOwner: boolean;
   /** The card's persisted column span. */
   isDouble: boolean;
@@ -102,6 +119,53 @@ export default function DashboardInsightModule({
   const card = cards[index];
   const chartId = card?.id;
 
+  // The alerts chart's period pill, and the custom range once picked.
+  const [pill, setPill] = useState<AlertsChartPill>("last-30-days");
+  const [custom, setCustom] = useState<DateRange>();
+  const alertsPeriod =
+    !print && card && hasAlertsChartPills(card, sectionTemplate)
+      ? alertsChartPeriod(card)
+      : null;
+  const alertsRange = alertsPeriod
+    ? alertsChartRange(pill, alertsPeriod, custom)
+    : undefined;
+  const rangeStart = alertsRange?.start;
+  const rangeEnd = alertsRange?.end;
+  // The card on show, trimmed to the pill's range. Kept by identity across
+  // renders, so the chart reformats its rows only when the range changes.
+  const shownCard = useMemo(
+    () =>
+      card && rangeStart && rangeEnd
+        ? {
+            ...card,
+            data: rowsInPeriod(card.data, card.xAxis, {
+              start: rangeStart,
+              end: rangeEnd,
+            }),
+          }
+        : card,
+    [card, rangeStart, rangeEnd]
+  );
+  const periodPills =
+    alertsPeriod && alertsRange ? (
+      <AlertsChartPills
+        pill={pill}
+        period={alertsPeriod}
+        custom={custom}
+        onPill={setPill}
+        // The custom dates open on the range on show, so there is something
+        // to adjust from.
+        onCustomOpen={() => {
+          if (!custom) setCustom(alertsRange);
+          setPill("custom");
+        }}
+        onCustomChange={(range) => {
+          setCustom(range);
+          setPill("custom");
+        }}
+      />
+    ) : null;
+
   const placeholder =
     vm.allCharts.length === 0
       ? "This analysis is not available."
@@ -111,9 +175,13 @@ export default function DashboardInsightModule({
 
   // The narrative and the chart's pills ride above the chart body. On paper
   // the narrative leads the first chart only.
-  const introFor = (chart: InsightWidget | undefined, withSummary: boolean) => {
+  const introFor = (
+    chart: InsightWidget | undefined,
+    withSummary: boolean,
+    pills: React.ReactNode = null
+  ) => {
     const summary = withSummary && showSummary;
-    return summary || (chart && hasChartPills(chart)) ? (
+    return summary || pills || (chart && hasChartPills(chart)) ? (
       <Flex direction="column" gap="8px" px={print ? 0 : "12px"} pb="12px">
         {summary && (
           <>
@@ -136,6 +204,7 @@ export default function DashboardInsightModule({
             print={print}
           />
         )}
+        {pills}
       </Flex>
     ) : null;
   };
@@ -170,7 +239,7 @@ export default function DashboardInsightModule({
         // The card is the analysis: its title is the chart on show, so paging
         // renames the header the way the workspace does.
         title={card?.title ?? vm.title}
-        card={card}
+        card={shownCard}
         placeholder={placeholder}
         removeMode="widget"
         isOwner={isOwner}
@@ -206,7 +275,7 @@ export default function DashboardInsightModule({
             />
           )
         }
-        intro={introFor(card, true)}
+        intro={introFor(card, true, periodPills)}
         footer={
           total > 1 ? (
             <Flex
