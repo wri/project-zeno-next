@@ -13,11 +13,10 @@ export function pullDataTool(streamMessage: StreamMessage) {
   const dataset = streamMessage.dataset as DatasetInfo | undefined;
   if (!dataset) return;
 
-  const { layers, updateLayer } = useMapStore.getState();
-  const onMap = new Set(layers.map((l) => l.id));
-  datasetMapLayers(dataset)
-    .filter((layer) => onMap.has(layer.id))
-    .forEach(({ id, tileUrl, startDate, endDate }) =>
-      updateLayer(id, { tileUrl, startDate, endDate })
-    );
+  const { updateLayer } = useMapStore.getState();
+  // updateLayer only patches layers already on the map, so a layer the user
+  // removed is not added back.
+  datasetMapLayers(dataset).forEach(({ id, tileUrl, startDate, endDate }) =>
+    updateLayer(id, { tileUrl, startDate, endDate })
+  );
 }

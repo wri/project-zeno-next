@@ -168,16 +168,8 @@ export const createLayerManagerSlice: StateCreator<
       });
     }
   },
-  setLayerVisibility: (id, visible) => {
-    set((state) => ({
-      layers: state.layers.map((l) => (l.id === id ? { ...l, visible } : l)),
-    }));
-  },
-  setLayerOpacity: (id, opacity) => {
-    set((state) => ({
-      layers: state.layers.map((l) => (l.id === id ? { ...l, opacity } : l)),
-    }));
-  },
+  setLayerVisibility: (id, visible) => get().updateLayer(id, { visible }),
+  setLayerOpacity: (id, opacity) => get().updateLayer(id, { opacity }),
   updateLayer: (id, patch) => {
     set((state) => ({
       layers: state.layers.map((l) => (l.id === id ? { ...l, ...patch } : l)),
