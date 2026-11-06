@@ -1,8 +1,11 @@
 import type { LegendParam } from "@/app/components/legend/types";
 import { CONTEXT_LAYER_METADATA } from "@/app/constants/datasets";
 import { formatCanopyThreshold } from "@/app/utils/formatCanopyThreshold";
-import type { YearParam } from "@/app/utils/formatYearRange";
-import type { DatasetLegendConfig } from "@/app/constants/datasets";
+import { buildYearParam, formatDateRange } from "@/app/utils/formatYearRange";
+import type {
+  DatasetCardConfig,
+  DatasetLegendConfig,
+} from "@/app/constants/datasets";
 
 export interface LegendClass {
   label: string;
@@ -74,6 +77,23 @@ const PARAMETER_FORMATTERS: Record<string, (v: unknown) => string> = {
 };
 
 /**
+ * The date chip for a dataset layer: YEAR(S) by default, or DATES with full
+ * dates for a card whose `legendPeriod` is "days". Undefined when the layer
+ * has no complete date range.
+ */
+export function buildPeriodParam(
+  card: Pick<DatasetCardConfig, "legendPeriod">,
+  startDate: string | undefined,
+  endDate: string | undefined
+): LegendParam | undefined {
+  if (card.legendPeriod !== "days") return buildYearParam(startDate, endDate);
+  const value = startDate && endDate && formatDateRange(startDate, endDate);
+  // Wide enough for a cross-year range ("Dec 1, 2023 – Nov 6, 2026"); the
+  // default 15ch would hide the end date behind an ellipsis.
+  return value ? { label: "DATES", value, maxValueWidth: "26ch" } : undefined;
+}
+
+/**
  * Converts a layer's raw parameters object into structured LegendParam chips.
  * Each entry becomes a { label, value } pair rendered as a badge in the card.
  * Shared by the explorer legend and `mapLegendFor`, the dashboard map legend,
@@ -81,12 +101,12 @@ const PARAMETER_FORMATTERS: Record<string, (v: unknown) => string> = {
  */
 export function buildParams(
   params: Record<string, unknown>,
-  yearParam?: YearParam
+  periodParam?: LegendParam
 ): LegendParam[] {
   const result: LegendParam[] = [];
 
-  if (yearParam) {
-    result.push(yearParam);
+  if (periodParam) {
+    result.push(periodParam);
   }
 
   for (const [k, v] of Object.entries(params)) {

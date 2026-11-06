@@ -141,6 +141,7 @@ export function LayerEntry(
                     label={p.label}
                     value={p.value}
                     colorScheme="purple"
+                    maxValueWidth={p.maxValueWidth}
                   />
                 ))}
               </Flex>

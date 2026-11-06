@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildPeriodParam,
   contextLegendFor,
   legendSymbology,
 } from "@/app/components/legend/legendModel";
@@ -72,5 +73,30 @@ describe("contextLegendFor", () => {
       color: "#888",
       info: undefined,
     });
+  });
+});
+
+describe("buildPeriodParam", () => {
+  it("gives a YEAR(S) chip by default", () => {
+    expect(buildPeriodParam({}, "2001-01-01", "2025-12-31")).toEqual({
+      label: "YEARS",
+      value: "2001–25",
+    });
+  });
+
+  it("gives a wide DATES chip for a daily dataset", () => {
+    expect(
+      buildPeriodParam({ legendPeriod: "days" }, "2025-03-01", "2025-03-31")
+    ).toEqual({
+      label: "DATES",
+      value: "Mar 1 – Mar 31, 2025",
+      maxValueWidth: "26ch",
+    });
+  });
+
+  it("gives no chip when a bound is missing", () => {
+    expect(
+      buildPeriodParam({ legendPeriod: "days" }, undefined, "2025-03-31")
+    ).toBeUndefined();
   });
 });

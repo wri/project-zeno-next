@@ -1,10 +1,10 @@
 import {
   buildParams,
+  buildPeriodParam,
   contextLegendFor,
   legendSymbology,
 } from "@/app/components/legend/legendModel";
 import { DATASET_CARD_BY_ID } from "@/app/constants/datasets";
-import { buildYearParam } from "@/app/utils/formatYearRange";
 import type { MapWidgetLayer } from "./mapWidgets";
 
 /** One colour class in a dashboard map's legend. */
@@ -62,7 +62,7 @@ export function mapLegendFor(layer: MapWidgetLayer): MapLegend | null {
 
   const params = buildParams(
     layer.parameters ?? {},
-    buildYearParam(layer.startDate, layer.endDate)
+    buildPeriodParam(card, layer.startDate, layer.endDate)
   )
     .map((p) => `${p.label} ${p.value}`)
     .join(" · ");
