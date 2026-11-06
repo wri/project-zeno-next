@@ -33,7 +33,6 @@ import {
 import { useDatasetsCatalog } from "@/app/hooks/useDatasetsCatalog";
 import {
   buildParams,
-  buildPeriodParam,
   contextLegendFor,
   legendSymbology,
 } from "@/app/components/legend/legendModel";
@@ -224,12 +223,7 @@ export function useLegendHook() {
         );
         const { title, info, note } = legend;
 
-        const periodParam = buildPeriodParam(
-          relatedDataset,
-          layer.startDate,
-          layer.endDate
-        );
-        const params = buildParams(layer.parameters ?? {}, periodParam);
+        const params = buildParams(relatedDataset, layer);
 
         entries.push({
           id: layer.id,

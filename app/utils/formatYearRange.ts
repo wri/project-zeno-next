@@ -1,7 +1,8 @@
 /**
- * Shared year-range formatting for analysis-parameter chips. Both the insight
- * workspace (AnalysisParamsChips) and the map legend (LayerEntry) surface the
- * same "YEAR(S)" chip; this keeps their parsing and labelling identical.
+ * Shared date-range formatting for parameter chips. Both the insight workspace
+ * (AnalysisParamsChips) and the map legend (LayerEntry) surface the same
+ * "YEAR(S)" chip, and the legend and imagery legend share the "DATES" chip;
+ * this keeps their parsing, labelling and chip shape identical.
  */
 import { format, isValid, parseISO } from "date-fns";
 
@@ -42,6 +43,23 @@ export function buildYearParam(
   // Compact end year to its last two digits: 2020–2023 → "2020–23".
   const endShort = String(endYear).slice(-2);
   return { label: "YEARS", value: `${startYear}${EN_DASH}${endShort}` };
+}
+
+export interface DatesParam {
+  label: "DATES";
+  value: string;
+  maxValueWidth: string;
+}
+
+/** The DATES chip around an already-formatted date range. */
+export function buildDatesParam(value: string): DatesParam {
+  return {
+    label: "DATES",
+    value,
+    // Wide enough for a cross-year range ("Dec 28, 2025 – Jan 4, 2026"); the
+    // default 15ch would hide the end date behind an ellipsis.
+    maxValueWidth: "26ch",
+  };
 }
 
 /**

@@ -125,11 +125,11 @@ export type DatasetCardConfig = {
   defaultStartYear?: number;
   defaultEndYear?: number;
   /**
-   * How legends show the layer's date range: a YEAR(S) chip by default, or a
-   * DATES chip with full dates for daily data, where two ranges in one year
-   * would otherwise look the same.
+   * Set to "days" for daily data: legends then show a DATES chip with full
+   * dates, as two ranges in one year would look the same in the default
+   * YEAR(S) chip.
    */
-  legendPeriod?: "years" | "days";
+  legendPeriod?: "days";
   /**
    * Thematic categories used by the Data Catalog panel filter chips.
    * A dataset may belong to multiple categories (e.g. fire-driven loss is

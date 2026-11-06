@@ -1,5 +1,5 @@
 import { format, parseISO } from "date-fns";
-import { formatDateRange } from "@/app/utils/formatYearRange";
+import { buildDatesParam, formatDateRange } from "@/app/utils/formatYearRange";
 
 import type { ImageryInfo, ImageryProvider } from "@/app/types/chat";
 import type {
@@ -192,13 +192,9 @@ export function imageryLayerTitle(targetDate?: string): string {
 export function imageryLegendParams(meta: ImageryMeta): LegendParam[] {
   const params: LegendParam[] = [];
   if (meta.startDate && meta.endDate) {
-    params.push({
-      label: "DATES",
-      value: formatImageryDateRange(meta.startDate, meta.endDate),
-      // Wide enough for a cross-year range ("Dec 28, 2025 – Jan 4, 2026");
-      // the default 15ch would hide the end date behind an ellipsis.
-      maxValueWidth: "26ch",
-    });
+    params.push(
+      buildDatesParam(formatImageryDateRange(meta.startDate, meta.endDate))
+    );
   }
   if (meta.windowDays !== undefined) {
     params.push({ label: "WINDOW", value: `±${meta.windowDays} days` });

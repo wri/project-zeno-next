@@ -1,6 +1,5 @@
 import {
   buildParams,
-  buildPeriodParam,
   contextLegendFor,
   legendSymbology,
 } from "@/app/components/legend/legendModel";
@@ -60,10 +59,7 @@ export function mapLegendFor(layer: MapWidgetLayer): MapLegend | null {
   const symbology: MapLegend["symbology"] =
     "classes" in s ? { kind: "classes", classes: s.classes } : s;
 
-  const params = buildParams(
-    layer.parameters ?? {},
-    buildPeriodParam(card, layer.startDate, layer.endDate)
-  )
+  const params = buildParams(card, layer)
     .map((p) => `${p.label} ${p.value}`)
     .join(" · ");
 
