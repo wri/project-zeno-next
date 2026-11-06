@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Box, Button, Flex, Skeleton, Table, Text } from "@chakra-ui/react";
+import { MapPinIcon } from "@phosphor-icons/react";
 
 import InsightCaption from "@/app/components/InsightCaption";
 import DownloadMenu from "@/app/components/widgets/DownloadMenu";
@@ -8,17 +9,20 @@ import { InfoTooltip } from "@/src/shared/ui/InfoTooltip";
 import { Pill } from "@/src/shared/ui/Pill";
 import { isRetryable, type AlertsListError } from "../api/alerts";
 import {
+  estimateAlertPoints,
   formatAlertDate,
   formatHa,
   formatRangeCaps,
   formatSinceDay,
   LAND_FILTERS,
+  LOCATION_FORMATS,
   rowArea,
   rowsSummary,
   rowTiers,
   sinceRange,
   TIERS,
   type AlertDay,
+  type AlertLocationsFormat,
   type AlertsChip,
   type AlertsConfidence,
   type AlertsHeadline,
@@ -44,6 +48,10 @@ const CONFIDENCES: AlertsConfidence[] = ["all", "high", "highest"];
 const LAND_FILTER_OPTIONS = (
   Object.keys(LAND_FILTERS) as AlertsLandFilter[]
 ).map((value) => ({ value, label: LAND_FILTERS[value].label }));
+
+const LOCATION_FORMAT_ORDER = Object.keys(
+  LOCATION_FORMATS
+) as AlertLocationsFormat[];
 
 /** A failed fetch, as the pane words it. */
 export type AlertsFailure = Pick<AlertsListError, "kind" | "detail">;
@@ -323,11 +331,12 @@ const pagerArrowProps = {
  * columns): the curated caption, the headline figures, the period pills with
  * the Custom popover, the Confidence and Intersects dropdowns, an explainer,
  * then the table of alert days with its footer and the map pane beside it
- * (under it when the card is single or the grid narrow), and the download
- * action. Presentational: the rows arrive filtered to the period and
- * confidence, every choice goes back up through a callback, and nothing
- * here fetches. The container (`DashboardAlertsWidget`) owns the query and
- * the date-range state it shares with the map pane, and passes the pane in.
+ * (under it when the card is single or the grid narrow), and the Download
+ * menu (the daily totals, and the alert locations as CSV or shapefile).
+ * Presentational: the rows arrive filtered to the period and confidence,
+ * every choice goes back up through a callback, and nothing here fetches.
+ * The container (`DashboardAlertsWidget`) owns the query and the date-range
+ * state it shares with the map pane, and passes the pane in.
  *
  * The custom dates are the one input this pane judges itself: a bound
  * outside the 30 days the widget covers is ignored (a date input reports
@@ -350,6 +359,7 @@ export default function DashboardAlertsList({
   onLandFilter,
   onCustomChange,
   onDownloadCsv,
+  onDownloadLocations,
   onRetry,
 }: {
   view: AlertsListView;
@@ -374,6 +384,13 @@ export default function DashboardAlertsList({
   onCustomChange: (range: DateRange) => void;
   /** Saves the rows on show (period, confidence and land filter applied) as CSV. */
   onDownloadCsv: () => void;
+  /**
+   * Prepares and saves the alert locations on show, in `format`; a toast
+   * follows the file, not the menu. Given only for an area with alert
+   * locations (a GADM country, state or district); without it the location
+   * items are disabled, with the reason.
+   */
+  onDownloadLocations?: (format: AlertLocationsFormat) => void;
   onRetry: () => void;
 }) {
   const ready = view.kind === "ready";
@@ -389,6 +406,7 @@ export default function DashboardAlertsList({
 
   const paged = paginate(rows, page, PAGE_SIZE);
   const summary = rowsSummary(rows, confidence);
+  const alertDays = `${summary.days} alert ${summary.days === 1 ? "day" : "days"}`;
   const land = LAND_FILTERS[landFilter];
 
   return (
@@ -551,7 +569,7 @@ export default function DashboardAlertsList({
                       paged.page * PAGE_SIZE,
                       summary.days
                     )} of ${summary.days} alert days`
-                  : `${summary.days} alert ${summary.days === 1 ? "day" : "days"}`}
+                  : alertDays}
                 {" · "}
                 {formatHa(summary.ha)} ha in this period
               </Text>
@@ -626,12 +644,28 @@ export default function DashboardAlertsList({
         </Box>
       </Flex>
 
-      {/* Widget actions, as the chart card's row: the rows on show as CSV.
-          The design's "View data source" waits on a source link the
-          catalogue does not carry yet. */}
+      {/* Widget actions, as the chart card's row: the rows on show as CSV,
+          and the alerts behind them as points, each with what it holds
+          (design A1). The design's "View data source" waits on a source
+          link the catalogue does not carry yet. */}
       {ready && (
         <Flex gap="8px" align="center">
-          <DownloadMenu onCsv={onDownloadCsv} disabled={rows.length === 0} />
+          <DownloadMenu
+            onCsv={onDownloadCsv}
+            csvLabel="Daily totals (CSV)"
+            csvDescription={`The ${alertDays} on show.`}
+            disabled={rows.length === 0}
+            requestItems={LOCATION_FORMAT_ORDER.map((format) => ({
+              value: `locations-${format}`,
+              icon: <MapPinIcon size={14} />,
+              label: LOCATION_FORMATS[format].label,
+              description: onDownloadLocations
+                ? `${LOCATION_FORMATS[format].about} About ${estimateAlertPoints(summary.ha)} in this period.`
+                : "Available for countries, states and districts only.",
+              disabled: !onDownloadLocations,
+              onSelect: () => onDownloadLocations?.(format),
+            }))}
+          />
         </Flex>
       )}
     </Flex>

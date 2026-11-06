@@ -61,8 +61,10 @@ const layer: MapWidgetLayer = {
   title: "Integrated alerts",
   tileUrl:
     "https://tiles.example.org/alerts/{z}/{x}/{y}.png?render_type=true_color&start_date=2026-09-17&end_date=2026-10-16",
-  contextTileUrl: "https://tiles.example.org/natural-lands/{z}/{x}/{y}.png",
-  contextLayerName: "natural_lands",
+  context: {
+    tileUrl: "https://tiles.example.org/natural-lands/{z}/{x}/{y}.png",
+    name: "natural_lands",
+  },
   startDate: "2026-09-17",
   endDate: "2026-10-16",
 };
@@ -89,7 +91,7 @@ describe("DashboardMapWidget re-dated layers", () => {
       "https://tiles.example.org/alerts/{z}/{x}/{y}.png?render_type=true_color&start_date=2026-10-04&end_date=2026-10-10"
     );
     expect(screen.getByTestId("source-widget-context").dataset.tiles).toBe(
-      layer.contextTileUrl
+      layer.context?.tileUrl
     );
 
     rerender(

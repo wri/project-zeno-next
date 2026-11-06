@@ -7,7 +7,6 @@ import {
   LegendContextLayer,
   LegendEntry,
   LegendLayer,
-  LegendParam,
 } from "@/app/components/legend/types";
 import { LegendSequential } from "@/app/components/legend/LegendSequential";
 import { LegendSymbolList } from "@/app/components/legend/LegendSymbolList";
@@ -19,8 +18,7 @@ import {
   CONTEXT_LAYER_METADATA,
   DATASET_CARDS,
 } from "@/app/constants/datasets";
-import { buildYearParam, YearParam } from "@/app/utils/formatYearRange";
-import { formatCanopyThreshold } from "@/app/utils/formatCanopyThreshold";
+import { buildYearParam } from "@/app/utils/formatYearRange";
 import type { DatasetLegendConfig } from "@/app/constants/datasets";
 import {
   CONCESSION_STYLES,
@@ -34,78 +32,44 @@ import {
   IMAGERY_LEGEND_GROUP_ID,
 } from "@/app/utils/imagery";
 import { useDatasetsCatalog } from "@/app/hooks/useDatasetsCatalog";
+import {
+  buildParams,
+  contextLegendFor,
+  legendSymbology,
+} from "@/app/components/legend/legendModel";
 import { applyPaletteOverride } from "@/app/components/legend/applyPaletteOverride";
 
-// Maps internal parameter keys to the badge label shown in the legend.
-const PARAMETER_LABELS: Record<string, string> = {
-  canopy_cover: "CANOPY",
-};
+function renderLegendSymbology(legend: DatasetLegendConfig) {
+  const s = legendSymbology(legend);
 
-// Maps internal parameter keys to a formatting function that produces the value
-// string. Shares the canopy formatter with the insights CANOPY chip.
-const PARAMETER_FORMATTERS: Record<string, (v: unknown) => string> = {
-  canopy_cover: (v) => formatCanopyThreshold(v as number),
-};
-
-/**
- * Converts a layer's raw parameters object into structured LegendParam chips.
- * Each entry becomes a { label, value } pair rendered as a badge in the card.
- * Exported for the dashboard map-widget legend, which builds its entries from
- * widget configs instead of mapStore layers.
- */
-export function buildParams(
-  params: Record<string, unknown>,
-  yearParam?: YearParam
-): LegendParam[] {
-  const result: LegendParam[] = [];
-
-  if (yearParam) {
-    result.push(yearParam);
+  switch (s.kind) {
+    case "categorical":
+      return (
+        <LegendCategorical
+          items={s.classes.map((c) => ({ value: c.label, color: c.color }))}
+        />
+      );
+    case "symbol":
+      return <LegendSymbolList unit={s.unit} items={s.classes} />;
+    case "sequential":
+      return (
+        <LegendSequential
+          unit={s.unit}
+          minLabel={s.minLabel}
+          maxLabel={s.maxLabel}
+          color={s.colors}
+        />
+      );
+    case "divergent":
+      return (
+        <LegendDivergent
+          unit={s.unit}
+          minLabel={s.minLabel}
+          maxLabel={s.maxLabel}
+          color={s.colors}
+        />
+      );
   }
-
-  for (const [k, v] of Object.entries(params)) {
-    if (v === null || v === undefined || v === "") continue;
-    const label = PARAMETER_LABELS[k] ?? k.toUpperCase();
-    const format = PARAMETER_FORMATTERS[k];
-    result.push({ label, value: format ? format(v) : String(v) });
-  }
-
-  return result;
-}
-
-export function renderLegendSymbology(legend: DatasetLegendConfig) {
-  const { type, items, color, unit } = legend;
-
-  return type === "categorical" && items ? (
-    <LegendCategorical
-      items={items.map((i) => ({ value: i.label ?? "", color: i.color }))}
-    />
-  ) : type === "sequential" ? (
-    <LegendSequential
-      unit={unit ?? undefined}
-      minLabel={items?.[0]?.label ?? ""}
-      maxLabel={items?.[items.length - 1]?.label ?? ""}
-      color={
-        items?.map((item) => item.color) ??
-        (Array.isArray(color) ? color : [color])
-      }
-    />
-  ) : type === "divergent" ? (
-    <LegendDivergent
-      unit={unit ?? ""}
-      minLabel={items?.[0]?.label ?? ""}
-      maxLabel={items?.[items.length - 1]?.label ?? ""}
-      color={
-        items?.map((item) => item.color) ??
-        (Array.isArray(color) ? color : [color])
-      }
-    />
-  ) : items ? (
-    <LegendSymbolList
-      unit={unit ?? ""}
-      items={items.map((i) => ({ label: i.label ?? "", color: i.color }))}
-    />
-  ) : null;
 }
 
 /**
@@ -200,17 +164,11 @@ export function useLegendHook() {
       const contextLayerByParentId = new Map<string, LegendContextLayer>();
       for (const layer of managedLayers) {
         if (!layer.parentLayerId) continue;
-        const metadata = CONTEXT_LAYER_METADATA[layer.name];
-        const legend = metadata?.legend;
-        // Use the first item's colour as the swatch, falling back to the
-        // legend's top-level color field.
-        const color = legend?.items?.[0]?.color ?? legend?.color ?? "#888";
+        const legend = CONTEXT_LAYER_METADATA[layer.name]?.legend;
         contextLayerByParentId.set(layer.parentLayerId, {
           id: layer.id,
-          title: legend?.title ?? layer.name,
-          color,
+          ...contextLegendFor(layer.name),
           opacity: (layer.opacity ?? 1) * 100,
-          info: legend?.info,
           // The swatch beside the title already stands for a single-class
           // layer. Multi-class ones (IFL's reduction epochs) need the full
           // symbol list, or every class but the first goes unexplained.
