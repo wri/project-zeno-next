@@ -7,7 +7,6 @@ import useMapStore from "@/app/store/mapStore";
 import type { Layer } from "@/app/store/layerManagerSlice";
 import { pickDatasetTool } from "@/app/store/chat-tools/pickDataset";
 import type { DatasetInfo } from "@/app/types/chat";
-import { CONTEXT_LAYER_METADATA } from "@/app/constants/datasets";
 
 // The catalog hook fetches the backend palette registry; the legend falls back
 // to the static config when it is absent, which is what these cases exercise.
@@ -151,13 +150,13 @@ describe("useLegendHook canopy chip from a pick_dataset turn", () => {
     ).toBe("SBTN Natural forest (2020)");
   });
 
-  it("draws the natural forest sub-layer from the frontend's tiles", () => {
+  it("draws the natural forest sub-layer from the backend's tiles", () => {
     legendEntryAfterPick(naturalForestPick);
 
     const ctx = useMapStore
       .getState()
       .layers.find((l) => l.name === "natural_forest");
-    expect(ctx?.tileUrl).toBe(CONTEXT_LAYER_METADATA.natural_forest.tile_url);
+    expect(ctx?.tileUrl).toBe(naturalForestPick.context_layers![0].tile_url);
   });
 
   it("keeps the CANOPY chip without a context layer", () => {

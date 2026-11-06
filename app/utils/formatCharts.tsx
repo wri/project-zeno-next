@@ -530,6 +530,25 @@ export default function formatChartData(
   return { data: [], series: [] };
 }
 
+// Common unit suffixes of a field name and the unit they read as.
+// Ordered most-specific first: "_tco2e_per_tonne" must win over "_tonnes",
+// and the CO₂e family over the bare "_t" / "_mt" patterns.
+const UNIT_PATTERNS: [RegExp, string][] = [
+  [/(_tco2e_per_tonne)$/i, "tCO₂e/t"],
+  [/(_mgco2e)$/i, "MgCO₂e"],
+  [/(_tco2e)$/i, "tCO₂e"],
+  [/(_co2e)$/i, "CO₂e"],
+  [/(_km2|_km²)$/i, "km²"],
+  [/(_ha)$/i, "ha"],
+  [/(_mt)$/i, "Mt"],
+  [/(_tonnes|_t)$/i, "t"],
+  [/(_pct|_percent|_%|_percentage)$/i, "%"],
+];
+
+/** The unit a field name ends in: "area_ha" → "ha"; "" when it has none. */
+export const axisUnit = (key: string): string =>
+  UNIT_PATTERNS.find(([pattern]) => pattern.test(key))?.[1] ?? "";
+
 /**
  * Convert a snake_case or camelCase field name into a readable axis label.
  * e.g. "area_km2" → "Area (km²)", "tree_cover_loss_ha" → "Tree cover loss (ha)"
@@ -538,24 +557,10 @@ export const toAxisLabel = (key: string): string => {
   if (!key) return "";
 
   // Extract common unit suffixes and format them as parenthetical.
-  // Ordered most-specific first: "_tco2e_per_tonne" must win over "_tonnes",
-  // and the CO₂e family over the bare "_t" / "_mt" patterns.
-  const unitPatterns: [RegExp, string][] = [
-    [/(_tco2e_per_tonne)$/i, "tCO₂e/t"],
-    [/(_mgco2e)$/i, "MgCO₂e"],
-    [/(_tco2e)$/i, "tCO₂e"],
-    [/(_co2e)$/i, "CO₂e"],
-    [/(_km2|_km²)$/i, "km²"],
-    [/(_ha)$/i, "ha"],
-    [/(_mt)$/i, "Mt"],
-    [/(_tonnes|_t)$/i, "t"],
-    [/(_pct|_percent|_%|_percentage)$/i, "%"],
-  ];
-
   let label = key;
   let unit = "";
 
-  for (const [pattern, unitStr] of unitPatterns) {
+  for (const [pattern, unitStr] of UNIT_PATTERNS) {
     if (pattern.test(label)) {
       label = label.replace(pattern, "");
       unit = unitStr;

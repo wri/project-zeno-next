@@ -664,6 +664,54 @@ function dailyAlertsWidget(
   };
 }
 
+/** The legend tiers from the bottom of a day's bar up, in the map's colours. */
+const ALERT_TIERS = [
+  ["Highest confidence", "#C92A6D", 400],
+  ["High confidence", "#DC6699", 20_000],
+  ["Low confidence", "#EDA4C2", 2_000],
+] as const;
+
+/**
+ * The curated alerts chart as the backend stores it since PZB-1566: daily
+ * stacked bars, a row for every day of the period, a day with no alerts
+ * holding only its date (a gap, not a zero).
+ */
+function dailyAlertsBarsWidget(
+  title: string,
+  end: string,
+  days: number,
+  quietShare = 0.4
+): InsightWidget {
+  const last = new Date(`${end}T00:00:00Z`);
+  const data = Array.from({ length: days }, (_, k) => {
+    const i = days - 1 - k;
+    const alert_date = new Date(last.getTime() - i * 86_400_000)
+      .toISOString()
+      .slice(0, 10);
+    if (pseudoRandom(i, days) < quietShare) return { alert_date };
+    return Object.fromEntries([
+      ["alert_date", alert_date],
+      ...ALERT_TIERS.map(([name, , scale], c) => [
+        name,
+        Math.round(pseudoRandom(i, days + 10 + c) ** 3 * scale),
+      ]),
+    ]);
+  });
+  return {
+    type: "stacked-bar",
+    title,
+    description: "Daily integrated disturbance alerts by confidence.",
+    xAxis: "alert_date",
+    yAxis: "area_ha",
+    datasetName: "Integrated alerts",
+    seriesFields: ALERT_TIERS.map(([name]) => name),
+    colorMap: Object.fromEntries(
+      ALERT_TIERS.map(([name, color]) => [name, color])
+    ),
+    data,
+  };
+}
+
 const MULTI_LINE_DATA = [
   { year: 2015, Brazil: 4200, Indonesia: 2400, "DR Congo": 800, Bolivia: 420 },
   { year: 2016, Brazil: 4500, Indonesia: 2300, "DR Congo": 850, Bolivia: 450 },
@@ -833,6 +881,36 @@ const RAW_FIXTURES: { label: string; notes: string; widget: InsightWidget }[] =
         xAxis: "year",
         yAxis: "carbon_emissions_mt",
       },
+    },
+    {
+      label: "Daily alert bars — 30 days (nrt-monitoring)",
+      notes:
+        "The Near real-time monitoring chart since PZB-1566: one bar per alert day, highest/high/low from the bottom up in the map legend's pinks, the tallest day's total above its bar. Quiet days keep their slot with no bar; calendar ticks, never angled.",
+      widget: dailyAlertsBarsWidget(
+        "Integrated alerts, last 30 days",
+        "2026-10-16",
+        30
+      ),
+    },
+    {
+      label: "Daily alert bars — 30 days, mostly quiet",
+      notes:
+        "80% of days with no alerts: the axis still spans the 30 days, and the first and last days hold their slots even when empty.",
+      widget: dailyAlertsBarsWidget(
+        "Integrated alerts, quiet month",
+        "2026-10-16",
+        30,
+        0.8
+      ),
+    },
+    {
+      label: "Daily alert bars — last week",
+      notes: "The Last week pill's 7 days: every day labelled.",
+      widget: dailyAlertsBarsWidget(
+        "Integrated alerts, last week",
+        "2026-10-16",
+        7
+      ),
     },
     {
       label: "Daily alerts — 7 days",

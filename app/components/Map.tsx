@@ -1,4 +1,5 @@
 import "maplibre-gl/dist/maplibre-gl.css";
+import "@/app/utils/maplibreWorker";
 import MapGl, {
   AttributionControl,
   Layer,

@@ -121,6 +121,13 @@ describe("AreaActionBar", () => {
     expect(useMapStore.getState().layers.map((l) => l.name)).toEqual([
       "Nakuru County, Kenya",
     ]);
+    // Selected for analysis, so the chat nudges as for a boundary click.
+    expect(useMapStore.getState().analysisSelection).toEqual({
+      name: "Nakuru County, Kenya",
+      source: "custom",
+      srcId: "a1",
+      subtype: "custom-area",
+    });
   });
 
   it("explains a rejected shape in the strip and offers to try again", () => {
@@ -140,10 +147,10 @@ describe("AreaActionBar", () => {
 
   it("dismisses a rejected shape back to Draw and Upload", () => {
     useMapStore.setState({
-      validationError: { code: "too-small", area: 0.04 },
+      validationError: { code: "too-large", area: 4_322_548 },
     });
     renderBar();
-    expect(screen.getByRole("alert").textContent).toContain("Minimum is");
+    expect(screen.getByRole("alert").textContent).toContain("Maximum is");
 
     fireEvent.click(button("Dismiss"));
     expect(actions.clearValidationError).toHaveBeenCalledOnce();

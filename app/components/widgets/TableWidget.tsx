@@ -80,6 +80,11 @@ interface TableWidgetProps {
   boldColumns?: string[];
   /** Rows per page (default 10). `Infinity` renders every row, no paging. */
   pageSize?: number;
+  /**
+   * Lets the column headers wrap, so the table fits its column instead of
+   * relying on a horizontal scroll (paper has none).
+   */
+  wrap?: boolean;
 }
 
 type SortDir = "asc" | "desc" | null;
@@ -92,6 +97,7 @@ export default function TableWidget({
   boldRowWhen,
   boldColumns,
   pageSize = DEFAULT_PAGE_SIZE,
+  wrap = false,
 }: TableWidgetProps) {
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>(null);
@@ -189,7 +195,7 @@ export default function TableWidget({
                 key={key}
                 color="neutral.500"
                 fontWeight="normal"
-                whiteSpace="pre"
+                whiteSpace={wrap ? "normal" : "pre"}
                 scope="col"
                 textAlign={numericColumns.has(key) ? "end" : undefined}
                 aria-sort={

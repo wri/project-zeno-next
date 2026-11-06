@@ -16,9 +16,6 @@ import {
   ArrowsOutIcon,
   ArrowSquareOutIcon,
   SparkleIcon,
-  DownloadSimpleIcon,
-  FileCsvIcon,
-  ImageIcon,
   TableIcon,
   ChartBarIcon,
   CaretDownIcon,
@@ -50,9 +47,11 @@ import VisualizationDisclaimer from "./VisualizationDisclaimer";
 import WidgetErrorBoundary from "./widgets/WidgetErrorBoundary";
 import ScrollableTableWrapper from "./widgets/ScrollableTableWrapper";
 import { AnalysisParamsChips } from "./widgets/AnalysisParameters";
+import DownloadMenu from "./widgets/DownloadMenu";
 import { buildChips } from "./widgets/analysis-params-utils";
 import { exportChartImage } from "@/app/utils/exportChartImage";
-import { rowsToCsv, csvFilename } from "@/app/utils/csvExport";
+import { csvFilename } from "@/app/utils/csvExport";
+import { downloadCsv, rowsToCsv } from "@/src/shared/lib/csv";
 import { FLUX_UNIT_COLUMN_SUFFIX } from "@/src/shared/lib/units";
 import {
   NetFluxChartBody,
@@ -72,6 +71,12 @@ interface WidgetMessageProps {
   inWorkspace?: boolean;
   /** The host dashboard card spans both columns — chart content adapts. */
   fullWidth?: boolean;
+  /**
+   * The dashboard export, a read-only document: no card edge, every table
+   * row, and none of the card's controls (Chart/Table, Fit y-axis,
+   * Full-screen, Show working, Download, Continue in).
+   */
+  print?: boolean;
 }
 
 /** Y-axis with the classic break squiggle — icon for the fit-axis toggle. */
@@ -140,6 +145,7 @@ export default function WidgetMessage({
   widget,
   inWorkspace,
   fullWidth,
+  print = false,
 }: WidgetMessageProps) {
   const [showAsTable, setShowAsTable] = useState(false);
   const [fitYAxis, setFitYAxis] = useState(false);
@@ -212,14 +218,7 @@ export default function WidgetMessage({
             FLUX_TREE_VALUE_COLS.has(k) ? `${k}_${FLUX_UNIT_COLUMN_SUFFIX}` : k
           )
         : rowKeys;
-    const csv = rowsToCsv(rows, headers, rowKeys);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = csvFilename(widget.title);
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadCsv(rowsToCsv(rows, headers, rowKeys), csvFilename(widget.title));
   };
 
   const handleExportToAI = (provider: AIProvider) => {
@@ -267,7 +266,7 @@ export default function WidgetMessage({
   return (
     <Box
       rounded="md"
-      border="1px solid"
+      border={print ? "none" : "1px solid"}
       // Workspace/dashboard cards sit inside the light-blue Analysis shell,
       // whose design pairs the white card with the blue-10 border (#DDE2F5).
       borderColor={inWorkspace ? "#DDE2F5" : "blue.fg"}
@@ -298,7 +297,7 @@ export default function WidgetMessage({
           {isFluxTree && <GhgFluxTreeChartInfo />}
         </Flex>
       )}
-      <Flex gap={3} px={4} py={2} flexDir="column">
+      <Flex gap={3} px={print ? 0 : 4} py={2} flexDir="column">
         {/* AI-assisted caption — sits above the chart toolbar in the workspace */}
         {inWorkspace && <InsightCaption curated={isCurated} />}
         {/* Every surface with a shell of its own puts these pills above the
@@ -306,79 +305,81 @@ export default function WidgetMessage({
             that has none, today only /chart-debug. */}
         {!inWorkspace && <InsightChartPills widget={widget} />}
         {/* Toolbar row — segmented toggle + full-screen */}
-        <Flex justify="flex-start" gap={2} flexWrap="wrap" align="center">
-          {/* Segmented Chart / Table toggle */}
-          {isChartType && hasData && (
-            <Flex
-              gap={0}
-              border="1px solid"
-              borderColor="border.emphasized"
-              rounded="md"
-              overflow="hidden"
-              role="group"
-              aria-label="Visualization format"
-            >
-              <Button
-                size="xs"
-                variant={!showAsTable ? "solid" : "ghost"}
-                colorPalette={!showAsTable ? "primary" : undefined}
-                onClick={() => setShowAsTable(false)}
-                h={6}
-                rounded="none"
-                fontWeight="medium"
-                aria-pressed={!showAsTable}
+        {!print && (
+          <Flex justify="flex-start" gap={2} flexWrap="wrap" align="center">
+            {/* Segmented Chart / Table toggle */}
+            {isChartType && hasData && (
+              <Flex
+                gap={0}
+                border="1px solid"
+                borderColor="border.emphasized"
+                rounded="md"
+                overflow="hidden"
+                role="group"
+                aria-label="Visualization format"
               >
-                <ChartBarIcon size={14} />
-                Chart
-              </Button>
-              <Button
-                size="xs"
-                variant={showAsTable ? "solid" : "ghost"}
-                colorPalette={showAsTable ? "primary" : undefined}
-                onClick={() => setShowAsTable(true)}
-                h={6}
-                rounded="none"
-                fontWeight="medium"
-                aria-pressed={showAsTable}
-              >
-                <TableIcon size={14} />
-                Table
-              </Button>
-            </Flex>
-          )}
-          {/* Fit y-axis to data — only for types where a non-zero baseline
+                <Button
+                  size="xs"
+                  variant={!showAsTable ? "solid" : "ghost"}
+                  colorPalette={!showAsTable ? "primary" : undefined}
+                  onClick={() => setShowAsTable(false)}
+                  h={6}
+                  rounded="none"
+                  fontWeight="medium"
+                  aria-pressed={!showAsTable}
+                >
+                  <ChartBarIcon size={14} />
+                  Chart
+                </Button>
+                <Button
+                  size="xs"
+                  variant={showAsTable ? "solid" : "ghost"}
+                  colorPalette={showAsTable ? "primary" : undefined}
+                  onClick={() => setShowAsTable(true)}
+                  h={6}
+                  rounded="none"
+                  fontWeight="medium"
+                  aria-pressed={showAsTable}
+                >
+                  <TableIcon size={14} />
+                  Table
+                </Button>
+              </Flex>
+            )}
+            {/* Fit y-axis to data — only for types where a non-zero baseline
               is honest (line/area/scatter; bar lengths encode magnitude) */}
-          {isChartType && hasData && supportsAxisFit && !showAsTable && (
-            <Button
-              size="xs"
-              variant={fitYAxis ? "solid" : "outline"}
-              colorPalette={fitYAxis ? "primary" : undefined}
-              onClick={() => setFitYAxis((v) => !v)}
-              h={6}
-              rounded="sm"
-              color={fitYAxis ? undefined : "neutral.500"}
-              aria-pressed={fitYAxis}
-              title="Rescale the y-axis to the data range instead of starting at zero"
-            >
-              <AxisBreakIcon />
-              Fit y-axis
-            </Button>
-          )}
-          {/* Show full-screen */}
-          {isChartType && hasData && (
-            <Button
-              size="xs"
-              variant="outline"
-              onClick={onExpand}
-              h={6}
-              rounded="sm"
-              color="neutral.500"
-            >
-              <ArrowsOutIcon size={14} />
-              Full-screen
-            </Button>
-          )}
-        </Flex>
+            {isChartType && hasData && supportsAxisFit && !showAsTable && (
+              <Button
+                size="xs"
+                variant={fitYAxis ? "solid" : "outline"}
+                colorPalette={fitYAxis ? "primary" : undefined}
+                onClick={() => setFitYAxis((v) => !v)}
+                h={6}
+                rounded="sm"
+                color={fitYAxis ? undefined : "neutral.500"}
+                aria-pressed={fitYAxis}
+                title="Rescale the y-axis to the data range instead of starting at zero"
+              >
+                <AxisBreakIcon />
+                Fit y-axis
+              </Button>
+            )}
+            {/* Show full-screen */}
+            {isChartType && hasData && (
+              <Button
+                size="xs"
+                variant="outline"
+                onClick={onExpand}
+                h={6}
+                rounded="sm"
+                color="neutral.500"
+              >
+                <ArrowsOutIcon size={14} />
+                Full-screen
+              </Button>
+            )}
+          </Flex>
+        )}
         {isChartType && !showAsTable && (
           <WidgetErrorBoundary fallbackTitle="Unable to render chart">
             <Box ref={chartRef}>
@@ -411,18 +412,30 @@ export default function WidgetMessage({
 
         {widget.type === "table" && (
           <WidgetErrorBoundary fallbackTitle="Unable to render table">
-            <ScrollableTableWrapper>
+            {print ? (
+              // Paper cannot scroll: every row, headers wrapping to fit.
               <TableWidget
                 data={
                   widget.data as Record<string, string | number | boolean>[]
                 }
                 caption={widget.title}
+                pageSize={Infinity}
+                wrap
               />
-            </ScrollableTableWrapper>
+            ) : (
+              <ScrollableTableWrapper>
+                <TableWidget
+                  data={
+                    widget.data as Record<string, string | number | boolean>[]
+                  }
+                  caption={widget.title}
+                />
+              </ScrollableTableWrapper>
+            )}
           </WidgetErrorBoundary>
         )}
         {/* Bottom action row — provenance + download + continue in AI */}
-        {(isChartType || widget.type === "table") && hasData && (
+        {(isChartType || widget.type === "table") && hasData && !print && (
           <Flex
             justify="flex-start"
             gap={1}
@@ -454,38 +467,13 @@ export default function WidgetMessage({
                 </Button>
               </Tooltip>
             )}
-            <Menu.Root positioning={{ placement: "bottom-start" }}>
-              <Menu.Trigger asChild>
-                <Button
-                  size="xs"
-                  variant="outline"
-                  h={6}
-                  rounded="sm"
-                  color="neutral.500"
-                  loading={exportingImage}
-                >
-                  <DownloadSimpleIcon size={14} />
-                  Download
-                  <CaretDownIcon size={12} />
-                </Button>
-              </Menu.Trigger>
-              <Portal>
-                <Menu.Positioner>
-                  <Menu.Content minW="180px" zIndex={1400}>
-                    <Menu.Item value="csv" onClick={handleDownloadCsv}>
-                      <FileCsvIcon size={14} />
-                      Data (CSV)
-                    </Menu.Item>
-                    {isChartType && !showAsTable && (
-                      <Menu.Item value="png" onClick={handleDownloadImage}>
-                        <ImageIcon size={14} />
-                        Chart image (PNG)
-                      </Menu.Item>
-                    )}
-                  </Menu.Content>
-                </Menu.Positioner>
-              </Portal>
-            </Menu.Root>
+            <DownloadMenu
+              onCsv={handleDownloadCsv}
+              onImage={
+                isChartType && !showAsTable ? handleDownloadImage : undefined
+              }
+              loading={exportingImage}
+            />
             <Menu.Root positioning={{ strategy: "fixed" }}>
               <Menu.Trigger asChild>
                 <Button

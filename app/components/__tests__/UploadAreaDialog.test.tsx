@@ -85,5 +85,7 @@ describe("UploadAreaDialog (map)", () => {
       { type: "Polygon", coordinates: ring(31) },
     ]);
     expect(useMapStore.getState().dialogVisible).toBe(false);
+    // Selected for analysis, so the chat nudges as for a boundary click.
+    expect(useMapStore.getState().analysisSelection?.srcId).toBe("a1");
   });
 });

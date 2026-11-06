@@ -1,6 +1,7 @@
 /** Period-over-period comparison helpers for KPI deltas. */
 
-import { inclusiveDays, shiftIsoDate } from "../format";
+import { shiftIsoDate } from "@/src/shared/lib/iso-date";
+import { inclusiveDays } from "../format";
 
 export interface DateRange {
   readonly startDate: string;

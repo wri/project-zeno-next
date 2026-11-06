@@ -22,6 +22,8 @@ export default function CookieBanner() {
       bottom={4}
       right={4}
       zIndex={1200}
+      // A fixed notice repeats on every printed page (the dashboard report).
+      _print={{ display: "none" }}
       bg="white"
       border="1px solid"
       borderColor="neutral.300"

@@ -15,11 +15,22 @@ FSD **shared** layer — reusable, business-agnostic building blocks usable by e
   `@/src/shared/lib/flux-tooltip`.
 - `lib/paint/` — `isPaintReference`, true for an SVG `url(#…)` paint reference as opposed to a CSS colour.
   Import from `@/src/shared/lib/paint`.
+- `lib/iso-date/` — `shiftIsoDate`, `todayIso`: timezone-free day arithmetic on ISO `YYYY-MM-DD` strings,
+  shared by the dashboards alerts widget and the trace-analytics date presets. Import from
+  `@/src/shared/lib/iso-date`.
+- `lib/csv/` — `rowsToCsv` (rows to a CSV string) and `downloadCsv` (save it through the browser), shared
+  by the chart card's and the alerts widget's downloads. Import from `@/src/shared/lib/csv`.
+- `lib/download/` — `saveUrl`, saving the file at a URL through the browser (an anchor click), used by
+  `downloadCsv` and the alerts widget's alert locations download. Import from `@/src/shared/lib/download`.
+- `lib/wait/` — `wait(ms, signal?)`, an abortable timer that rejects with an `AbortError`, used by the
+  analysis `SystemClock` and the alert locations export's polling. Import from `@/src/shared/lib/wait`.
 - `lib/router/` — the only routing API (`Link`, `useRouter`, `useSearchParams`, `usePathname`, `useParams`),
   a Next-style facade over react-router. Import from `@/src/shared/lib/router`; direct `react-router`
   imports are lint errors outside it and `src/app/main.tsx`.
-- `ui/Pill.tsx` — the DETAIL/MEASURE dropdown pill shared by the net-flux and flux-tree curated
-  charts. Import from `@/src/shared/ui/Pill`.
+- `ui/Pill.tsx` — the "Label: value ▾" dropdown pill: the mono-labelled DETAIL/MEASURE pills of the
+  net-flux and flux-tree curated charts (`variant="mono"`, the default) and the text-labelled
+  Confidence/Intersects filters of the alerts widget (`variant="text"`). Typed on the option value.
+  Import from `@/src/shared/ui/Pill`.
 - `ui/InfoTooltip.tsx` — the info icon + dark tooltip used by the curated chart titles and the
   pills, with `InfoTitle` / `InfoDefinition` for laying out its body. Import from
   `@/src/shared/ui/InfoTooltip`.
@@ -28,6 +39,9 @@ FSD **shared** layer — reusable, business-agnostic building blocks usable by e
 - `ui/FluxTooltip.tsx` — the dark hover-tooltip panel (heading, swatched rows, bold net total) shared
   by the net-flux and flux-tree charts; each chart supplies a `lib/flux-tooltip` model. Import from
   `@/src/shared/ui/FluxTooltip`.
+- `ui/LayerInfoButton.tsx` — every map legend's info button with the "Layer information" popover it
+  opens (explorer layers, context layers, imagery, dashboard maps); `label` names the button. Import
+  from `@/src/shared/ui/LayerInfoButton`.
 - `ui/Swatch.tsx` — the legend/tooltip colour swatch shared by the net-flux and flux-tree charts; renders
   SVG hatch-pattern fills too. Import from `@/src/shared/ui/Swatch`.
 - `ui/entity-card/` — `EntityCard`, the compact row behind every card in the app (chat, catalogue

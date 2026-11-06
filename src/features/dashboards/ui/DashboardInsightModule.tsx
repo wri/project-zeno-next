@@ -11,7 +11,16 @@ import {
   netFluxRollups,
   useNetFluxDetail,
 } from "@/src/features/net-flux";
+import type { InsightWidget } from "@/app/types/chat";
+import type { DateRange } from "@/src/shared/lib/iso-date";
 import type { Dashboard, DashboardWidget } from "../api/schemas";
+import {
+  alertsChartPeriod,
+  alertsChartRange,
+  hasAlertsChartPills,
+  rowsInPeriod,
+  type AlertsChartPill,
+} from "../lib/alertsChart";
 import {
   hasWidgetCustomization,
   insightModule,
@@ -20,8 +29,10 @@ import {
   withChartTitle,
   withSummaryShown,
 } from "../lib/widgets";
+import AlertsChartPills from "./AlertsChartPills";
 import DashboardModuleCustomizeMenu from "./DashboardModuleCustomizeMenu";
 import DashboardWidgetCard from "./DashboardWidgetCard";
+import DashboardWidgetDocument from "./DashboardWidgetDocument";
 import RemoveAnalysisDialog from "./RemoveAnalysisDialog";
 
 /**
@@ -43,6 +54,14 @@ import RemoveAnalysisDialog from "./RemoveAnalysisDialog";
  * single piece (one chart, no summary, like a template's alerts chart) has
  * nothing to customize, so it has no menu.
  *
+ * The alerts chart of a Near real-time monitoring section carries period
+ * pills (PZB-1566): the card shows the stored rows of the pill's range, so
+ * a pill never fetches. The pill is view state, never persisted, and the
+ * export prints the whole period.
+ *
+ * In the export (`print`) there is no pager to page, so every shown chart
+ * prints, one after another, with the narrative above the first.
+ *
  * Mutation-agnostic on purpose: every config edit flows through
  * `onUpdateConfig` with a full config built by the `with*` helpers (the
  * backend replaces config whole), and `onRemove` deletes the widget. The
@@ -51,8 +70,10 @@ import RemoveAnalysisDialog from "./RemoveAnalysisDialog";
 export default function DashboardInsightModule({
   widget,
   areaAoi,
+  sectionTemplate,
   isOwner,
   isDouble,
+  print = false,
   onArmDrag,
   onToggleSize,
   onUpdateConfig,
@@ -61,9 +82,13 @@ export default function DashboardInsightModule({
   widget: DashboardWidget;
   /** The dashboard's area — feeds the card's AREA param chip. */
   areaAoi?: Dashboard["aois"][number];
+  /** The template that built the widget's section, if one did. */
+  sectionTemplate?: string;
   isOwner: boolean;
   /** The card's persisted column span. */
   isDouble: boolean;
+  /** The export rendering (see `DashboardWidgetsGrid`). */
+  print?: boolean;
   /** Pointer down on the header drag handle — starts the grid's drag gesture. */
   onArmDrag: (event: React.PointerEvent) => void;
   onToggleSize: () => void;
@@ -91,15 +116,117 @@ export default function DashboardInsightModule({
   // Hiding a chart can strand the pager past the end — clamp on the way out
   // rather than in an effect, so the card never paints an empty frame first.
   const index = Math.min(page, Math.max(total - 1, 0));
-  const card = cards[index] ?? null;
+  const card = cards[index];
   const chartId = card?.id;
+
+  // The alerts chart's period pill, and the custom range once picked.
+  const [pill, setPill] = useState<AlertsChartPill>("last-30-days");
+  const [custom, setCustom] = useState<DateRange>();
+  const alertsPeriod =
+    !print && card && hasAlertsChartPills(card, sectionTemplate)
+      ? alertsChartPeriod(card)
+      : null;
+  const alertsRange = alertsPeriod
+    ? alertsChartRange(pill, alertsPeriod, custom)
+    : undefined;
+  const rangeStart = alertsRange?.start;
+  const rangeEnd = alertsRange?.end;
+  // The card on show, trimmed to the pill's range. Kept by identity across
+  // renders, so the chart reformats its rows only when the range changes.
+  const shownCard = useMemo(
+    () =>
+      card && rangeStart && rangeEnd
+        ? {
+            ...card,
+            data: rowsInPeriod(card.data, card.xAxis, {
+              start: rangeStart,
+              end: rangeEnd,
+            }),
+          }
+        : card,
+    [card, rangeStart, rangeEnd]
+  );
+  const periodPills =
+    alertsPeriod && alertsRange ? (
+      <AlertsChartPills
+        pill={pill}
+        period={alertsPeriod}
+        custom={custom}
+        onPill={setPill}
+        // The custom dates open on the range on show, so there is something
+        // to adjust from.
+        onCustomOpen={() => {
+          if (!custom) setCustom(alertsRange);
+          setPill("custom");
+        }}
+        onCustomChange={(range) => {
+          setCustom(range);
+          setPill("custom");
+        }}
+      />
+    ) : null;
 
   const placeholder =
     vm.allCharts.length === 0
       ? "This analysis is not available."
       : total === 0 && !showSummary && isOwner
         ? "All content in this analysis is hidden — use Customize to show it."
-        : null;
+        : undefined;
+
+  // The narrative and the chart's pills ride above the chart body. On paper
+  // the narrative leads the first chart only.
+  const introFor = (
+    chart: InsightWidget | undefined,
+    withSummary: boolean,
+    pills: React.ReactNode = null
+  ) => {
+    const summary = withSummary && showSummary;
+    return summary || pills || (chart && hasChartPills(chart)) ? (
+      <Flex direction="column" gap="8px" px={print ? 0 : "12px"} pb="12px">
+        {summary && (
+          <>
+            {/* Same provenance rule as the chart card below, so the
+                narrative never contradicts it. */}
+            <InsightCaption curated={vm.curated} />
+            <Text fontSize="14px" lineHeight="20px" color="fg">
+              {vm.summaryText}
+            </Text>
+          </>
+        )}
+        {/* The design puts these above the card, and the shell that
+            hosts it is this module (DashboardWidgetCard mounts
+            WidgetMessage `inWorkspace`, which suppresses them inline). */}
+        {chart && (
+          <InsightChartPills
+            widget={chart}
+            siblings={rollups}
+            groupKey={widget.id}
+            print={print}
+          />
+        )}
+        {pills}
+      </Flex>
+    ) : null;
+  };
+
+  if (print) {
+    return (
+      <Flex direction="column" gap="24px">
+        {/* Every shown chart, the net-flux roll-ups unfolded: paper has no
+            DETAIL menu to reach the others. */}
+        {(vm.cards.length > 0 ? vm.cards : [undefined]).map((chart, i) => (
+          <DashboardWidgetDocument
+            key={chart?.id ?? "no-chart"}
+            title={chart?.title ?? vm.title}
+            card={chart}
+            placeholder={placeholder}
+            isDouble={isDouble}
+            intro={introFor(chart, i === 0)}
+          />
+        ))}
+      </Flex>
+    );
+  }
 
   return (
     <>
@@ -112,7 +239,7 @@ export default function DashboardInsightModule({
         // The card is the analysis: its title is the chart on show, so paging
         // renames the header the way the workspace does.
         title={card?.title ?? vm.title}
-        card={card}
+        card={shownCard}
         placeholder={placeholder}
         removeMode="widget"
         isOwner={isOwner}
@@ -148,32 +275,7 @@ export default function DashboardInsightModule({
             />
           )
         }
-        intro={
-          showSummary || (card && hasChartPills(card)) ? (
-            <Flex direction="column" gap="8px" px="12px" pb="12px">
-              {showSummary && (
-                <>
-                  {/* Same provenance rule as the chart card below, so the
-                      narrative never contradicts it. */}
-                  <InsightCaption curated={vm.curated} />
-                  <Text fontSize="14px" lineHeight="20px" color="fg">
-                    {vm.summaryText}
-                  </Text>
-                </>
-              )}
-              {/* The design puts these above the card, and the shell that
-                  hosts it is this module (DashboardWidgetCard mounts
-                  WidgetMessage `inWorkspace`, which suppresses them inline). */}
-              {card && (
-                <InsightChartPills
-                  widget={card}
-                  siblings={rollups}
-                  groupKey={widget.id}
-                />
-              )}
-            </Flex>
-          ) : null
-        }
+        intro={introFor(card, true, periodPills)}
         footer={
           total > 1 ? (
             <Flex

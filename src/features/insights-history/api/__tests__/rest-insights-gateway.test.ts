@@ -160,4 +160,49 @@ describe("RestInsightsGateway.list", () => {
     expect(records[0].charts[0].datasetId).toBeUndefined();
     expect(records[0].charts[1].datasetId).toBeUndefined();
   });
+
+  it("carries the backend's chart colours through", async () => {
+    const colorMap = { "Low confidence": "#EDA4C2" };
+    const divergentColors = { positive: "#00A651", negative: "#B91C1C" };
+    const fetch = mockFetch([
+      {
+        ...rawInsight,
+        charts: [
+          {
+            ...rawInsight.charts[0],
+            color_map: colorMap,
+            series_color: "#C92A6D",
+            divergent_colors: divergentColors,
+          },
+        ],
+      },
+    ]);
+    const records = await new RestInsightsGateway(fetch).list();
+    expect(records[0].charts[0]).toMatchObject({
+      colorMap,
+      seriesColor: "#C92A6D",
+      divergentColors,
+    });
+  });
+
+  it("leaves the colours out when the backend sends none", async () => {
+    const fetch = mockFetch([
+      {
+        ...rawInsight,
+        charts: [
+          {
+            ...rawInsight.charts[0],
+            color_map: {},
+            series_color: null,
+            divergent_colors: null,
+          },
+        ],
+      },
+    ]);
+    const records = await new RestInsightsGateway(fetch).list();
+    const chart = records[0].charts[0];
+    expect(chart.colorMap).toBeUndefined();
+    expect(chart.seriesColor).toBeUndefined();
+    expect(chart.divergentColors).toBeUndefined();
+  });
 });

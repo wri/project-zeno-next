@@ -23,13 +23,16 @@ import {
   CartesianGrid,
   Label,
   Legend,
+  ReferenceDot,
   ReferenceLine,
   Tooltip,
   XAxis,
   YAxis,
   usePlotArea,
+  type LegendPayload,
 } from "recharts";
 import formatChartData, {
+  axisUnit,
   formatYAxisLabel,
   formatXAxisLabel,
   formatTooltipValue,
@@ -68,6 +71,13 @@ const DEFAULT_CHART_WIDTH_PX = 560;
 // Room kept right of the plot for the last tick's overhang (the axis pads by
 // half the widest label) so the fit test does not overcount.
 const DAILY_AXIS_RIGHT_RESERVE_PX = 30;
+// The total above a daily stacked bar's tallest day ("89 ha"): bold, a step
+// up from the ticks, the y-axis stretched by PEAK_HEADROOM so it fits below
+// the legend.
+const PEAK_FONT_PX = 12;
+const PEAK_CHAR_PX = 7.5; // bold glyph width at 12px
+const PEAK_GAP_PX = 6; // between the bar's top and the label's baseline
+const PEAK_HEADROOM = 1.1;
 
 /**
  * The element's content width, tracked across resizes. Null until measured,
@@ -202,6 +212,78 @@ export function computeYAxisWidth(
   );
 }
 
+/**
+ * Chart types that read as a timeline when their x-axis is day by day:
+ * integrated alerts as a line (older insights) or as daily stacked bars.
+ */
+const DAILY_AXIS_TYPES: ReadonlySet<string> = new Set([
+  "line",
+  "area",
+  "stacked-bar",
+]);
+
+/**
+ * The rows of a day-by-day chart with a slot for every day between the
+ * first and the last, the days the data omits as empty rows (a gap, not a
+ * zero), or null when the chart has no daily axis.
+ */
+export function dailyAxisRows<T extends Record<string, unknown>>(
+  type: string,
+  rows: T[],
+  xAxis: string
+): T[] | null {
+  if (!DAILY_AXIS_TYPES.has(type) || !isDailyAxis(rows, xAxis)) return null;
+  return fillMissingDays(rows, xAxis);
+}
+
+/**
+ * The legend's order: a stacked bar's series bottom up, as they stack (the
+ * first series is the bottom of the stack), so the first swatch is the
+ * segment on the axis; recharts' alphabetical order otherwise.
+ */
+export function legendItemSorter(
+  type: string,
+  seriesOrder: string[]
+): "value" | ((item: Pick<LegendPayload, "dataKey">) => number) {
+  if (type !== "stacked-bar") return "value";
+  return (item) => seriesOrder.indexOf(String(item.dataKey));
+}
+
+/**
+ * The x of the tallest stacked bar and its total, for the label above it;
+ * null when no bar has any. The first of equal bars wins.
+ */
+export function stackPeak(
+  rows: Record<string, unknown>[],
+  xAxis: string,
+  seriesKeys: string[]
+): { x: string | number; total: number } | null {
+  let peak: { x: string | number; total: number } | null = null;
+  for (const row of rows) {
+    let total = 0;
+    for (const key of seriesKeys) {
+      const value = Number(row[key]);
+      if (Number.isFinite(value)) total += value;
+    }
+    if (total > 0 && (!peak || total > peak.total)) {
+      peak = { x: row[xAxis] as string | number, total };
+    }
+  }
+  return peak;
+}
+
+/**
+ * A bar's total as its label reads: "89 ha". Whole units, but one decimal
+ * under 10, so a quiet week's 0.4 ha does not read as 0.
+ */
+export function formatStackTotal(total: number, yAxis: string): string {
+  const value = total.toLocaleString("en-US", {
+    maximumFractionDigits: total < 10 ? 1 : 0,
+  });
+  const unit = axisUnit(yAxis);
+  return unit ? `${value} ${unit}` : value;
+}
+
 /** Chart types where a fit-to-data y-axis is honest and useful. */
 export const AXIS_FIT_TYPES: ReadonlySet<string> = new Set([
   "line",
@@ -333,6 +415,43 @@ function formatShare(value: number, total: number): string | undefined {
   const pct = (value / total) * 100;
   if (pct > 0 && pct < 1) return "<1%";
   return `${Math.round(pct)}%`;
+}
+
+/**
+ * The label of the ReferenceDot on the tallest bar's top: its total, centred
+ * on the bar but kept inside the plot, so a peak on the first or last day is
+ * not clipped.
+ */
+function StackPeakLabel({
+  viewBox,
+  text,
+}: {
+  viewBox?: { x?: number; y?: number };
+  text: string;
+}) {
+  const plotArea = usePlotArea();
+  if (!plotArea || viewBox?.x == null || viewBox?.y == null) return null;
+  const half = (text.length * PEAK_CHAR_PX) / 2;
+  const x = Math.min(
+    Math.max(viewBox.x, plotArea.x + half),
+    plotArea.x + plotArea.width - half
+  );
+  return (
+    <text
+      x={x}
+      y={viewBox.y - PEAK_GAP_PX}
+      textAnchor="middle"
+      // Inline, not presentation attributes: those lose to Chakra's reset
+      // (see the tick font-size note below).
+      style={{
+        fontSize: `${PEAK_FONT_PX}px`,
+        fontWeight: 600,
+        fill: "var(--chakra-colors-fg)",
+      }}
+    >
+      {text}
+    </text>
+  );
 }
 
 /**
@@ -479,17 +598,11 @@ export default function ChartWidget({
       { colorMap, seriesColor, divergentColors },
       lineField
     );
-    // A day-by-day line or area reads as a timeline only if every day holds
-    // a slot, so the days the data omits are filled with empty rows.
-    const daily =
-      (type === "line" || type === "area") &&
-      isDailyAxis(formatted.data, xAxis);
+    // A day-by-day chart reads as a timeline only if every day holds a
+    // slot, so the days the data omits are filled with empty rows.
+    const daily = dailyAxisRows(type, formatted.data, xAxis);
     return daily
-      ? {
-          ...formatted,
-          data: fillMissingDays(formatted.data, xAxis),
-          dailyAxis: true,
-        }
+      ? { ...formatted, data: daily, dailyAxis: true }
       : { ...formatted, dailyAxis: false };
   }, [
     data,
@@ -627,6 +740,14 @@ export default function ChartWidget({
       }
     }
   }
+
+  // A daily stacked bar labels its tallest day with the day's total, so the
+  // period's worst day reads without a hover. Not on a pinned axis: it
+  // cannot stretch to make room, and the label would reach the legend.
+  const peak =
+    type === "stacked-bar" && dailyAxis && !yDomain && !yTicks
+      ? stackPeak(formattedData, xAxis, yKeys)
+      : null;
 
   // Pinned ticks can sit outside the data range (the domain is padded out to
   // the next round number), so they get measured too.
@@ -918,6 +1039,7 @@ export default function ChartWidget({
                   <Chart.Legend />
                 )
               }
+              itemSorter={legendItemSorter(type, yKeys)}
               align={type === "pie" ? "right" : "left"}
               layout={type === "pie" ? "vertical" : "horizontal"}
               verticalAlign={type === "pie" ? "middle" : "top"}
@@ -1059,6 +1181,26 @@ export default function ChartWidget({
             }
           />
           {renderChartItems()}
+          {peak && (
+            // Room above the tallest bar for its label: the axis stretches
+            // to a point just above it and still rounds to recharts' ticks.
+            <ReferenceDot
+              x={peak.x}
+              y={peak.total * PEAK_HEADROOM}
+              r={0}
+              ifOverflow="extendDomain"
+            />
+          )}
+          {peak && (
+            <ReferenceDot
+              x={peak.x}
+              y={peak.total}
+              r={0}
+              label={
+                <StackPeakLabel text={formatStackTotal(peak.total, yAxis)} />
+              }
+            />
+          )}
         </ChartTypeWrapper>
       </Chart.Root>
     </Box>

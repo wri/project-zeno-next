@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { EARLIEST_DATA_DATE, type EnvironmentOption } from "./config";
-import { shiftIsoDate, todayIso } from "./dates";
+import { shiftIsoDate, todayIso } from "@/src/shared/lib/iso-date";
 
 export const DATE_PRESETS = [
   "Custom",

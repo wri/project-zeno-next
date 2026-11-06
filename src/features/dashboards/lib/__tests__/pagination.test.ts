@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { byRecentlyUpdated, paginate } from "../pagination";
+import { byRecentlyUpdated, pageNumbers, paginate } from "../pagination";
 
 const items = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"];
 
@@ -90,5 +90,19 @@ describe("byRecentlyUpdated", () => {
     expect(
       byRecentlyUpdated({ updated_at: "nope" }, { updated_at: "also nope" })
     ).toBe(0);
+  });
+});
+
+describe("pageNumbers", () => {
+  it("lists every page when there are few", () => {
+    expect(pageNumbers(1, 1)).toEqual([1]);
+    expect(pageNumbers(2, 6)).toEqual([1, 2, 3, 4, 5, 6]);
+  });
+
+  it("keeps the first three, the current page's neighbours and the last", () => {
+    expect(pageNumbers(1, 22)).toEqual([1, 2, 3, "…", 22]);
+    expect(pageNumbers(10, 22)).toEqual([1, 2, 3, "…", 9, 10, 11, "…", 22]);
+    expect(pageNumbers(22, 22)).toEqual([1, 2, 3, "…", 21, 22]);
+    expect(pageNumbers(4, 7)).toEqual([1, 2, 3, 4, 5, "…", 7]);
   });
 });

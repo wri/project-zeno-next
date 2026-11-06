@@ -41,6 +41,25 @@ export function paginate<T>(
 }
 
 /**
+ * The page numbers a pager shows for `total` pages: all of them when few,
+ * else the first three, the neighbourhood of the current page and the last,
+ * with `"…"` where pages are skipped.
+ */
+export function pageNumbers(current: number, total: number): (number | "…")[] {
+  if (total <= 6) return Array.from({ length: total }, (_, i) => i + 1);
+  const shown = new Set([1, 2, 3, current - 1, current, current + 1, total]);
+  const pages = [...shown]
+    .filter((page) => page >= 1 && page <= total)
+    .sort((a, b) => a - b);
+  const out: (number | "…")[] = [];
+  pages.forEach((page, index) => {
+    if (index > 0 && page - pages[index - 1] > 1) out.push("…");
+    out.push(page);
+  });
+  return out;
+}
+
+/**
  * Most recently updated first.
  *
  * Order only became load-bearing once the grid started paging: without it the
