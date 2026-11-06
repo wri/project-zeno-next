@@ -1,5 +1,13 @@
-import { useMemo, useState } from "react";
-import { Box, Button, Flex, Heading, Table, Text } from "@chakra-ui/react";
+import { useMemo } from "react";
+import {
+  Box,
+  Button,
+  Flex,
+  Heading,
+  Table,
+  Text,
+  useClipboard,
+} from "@chakra-ui/react";
 import {
   ClipboardTextIcon,
   CopyIcon,
@@ -30,19 +38,12 @@ export function SummarySection({
   baseThreadUrl,
   heading,
 }: SummarySectionProps) {
-  const [copied, setCopied] = useState(false);
   const slackSummary = useMemo(() => buildSlackSummary(context), [context]);
+  const { copy: copySummary, copied } = useClipboard({
+    value: slackSummary,
+    timeout: 2000,
+  });
   const tableRows = useMemo(() => buildSummaryTable(context), [context]);
-
-  async function copySummary() {
-    try {
-      await navigator.clipboard.writeText(slackSummary);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Clipboard unavailable (e.g. insecure context) — user can select text.
-    }
-  }
 
   function downloadReportCsv() {
     const csvRows = rows.map((row) => ({
