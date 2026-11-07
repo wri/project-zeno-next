@@ -71,7 +71,7 @@ describe("pullDataTool", () => {
     expect(area).toBe(areaLayer);
   });
 
-  it("moves a context sub-layer's primary layer only, keeping the sub-layer as it was", () => {
+  it("moves only the primary layer and keeps the context sub-layer as it was", () => {
     const TCL_TILES =
       "https://tiles.example.test/tcl/{z}/{x}/{y}.png?render_type=true_color";
     const PF_TILES =
