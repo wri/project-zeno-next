@@ -1,8 +1,12 @@
 /**
- * Shared year-range formatting for analysis-parameter chips. Both the insight
- * workspace (AnalysisParamsChips) and the map legend (LayerEntry) surface the
- * same "YEAR(S)" chip; this keeps their parsing and labelling identical.
+ * Shared date-range formatting for parameter chips. Both the insight workspace
+ * (AnalysisParamsChips) and the map legend (LayerEntry) surface the same
+ * "YEAR(S)" chip, and the legend and imagery legend share the "DATES" chip;
+ * this keeps their parsing, labelling and chip shape identical.
  */
+import { format, isValid, parseISO } from "date-fns";
+
+import type { LegendParam } from "@/app/components/legend/types";
 
 const EN_DASH = "–";
 
@@ -41,4 +45,34 @@ export function buildYearParam(
   // Compact end year to its last two digits: 2020–2023 → "2020–23".
   const endShort = String(endYear).slice(-2);
   return { label: "YEARS", value: `${startYear}${EN_DASH}${endShort}` };
+}
+
+/** The DATES chip around an already-formatted date range. */
+export function buildDatesParam(value: string): LegendParam {
+  return {
+    label: "DATES",
+    value,
+    // Wide enough for a cross-year range ("Dec 28, 2025 – Jan 4, 2026"); the
+    // default 15ch would hide the end date behind an ellipsis.
+    maxValueWidth: "26ch",
+  };
+}
+
+/**
+ * Compact date range for a DATES chip, e.g. "May 28 – Jun 3, 2026". The start
+ * year is left out within one year, so the chip fits the dashboard legend's
+ * 300px width. Undefined when a bound is not an ISO date.
+ */
+export function formatDateRange(
+  startIso: string,
+  endIso: string
+): string | undefined {
+  const start = parseISO(startIso);
+  const end = parseISO(endIso);
+  if (!isValid(start) || !isValid(end)) return undefined;
+  const startLabel =
+    start.getFullYear() === end.getFullYear()
+      ? format(start, "MMM d")
+      : format(start, "MMM d, yyyy");
+  return `${startLabel} ${EN_DASH} ${format(end, "MMM d, yyyy")}`;
 }

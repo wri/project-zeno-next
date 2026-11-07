@@ -549,9 +549,7 @@ async function processStreamMessage(
     }
     // Handling for pull_data tool
     else if (streamMessage.name === "pull_data") {
-      void Promise.resolve().then(() =>
-        pullDataTool(streamMessage, addMessage)
-      );
+      void Promise.resolve().then(() => pullDataTool(streamMessage));
       return;
     }
     // Handling for imagery tools: render the imagery mosaic on the map.
