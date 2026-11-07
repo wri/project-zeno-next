@@ -6,6 +6,8 @@
  */
 import { format, isValid, parseISO } from "date-fns";
 
+import type { LegendParam } from "@/app/components/legend/types";
+
 const EN_DASH = "–";
 
 export interface YearParam {
@@ -45,14 +47,8 @@ export function buildYearParam(
   return { label: "YEARS", value: `${startYear}${EN_DASH}${endShort}` };
 }
 
-interface DatesParam {
-  label: "DATES";
-  value: string;
-  maxValueWidth: string;
-}
-
 /** The DATES chip around an already-formatted date range. */
-export function buildDatesParam(value: string): DatesParam {
+export function buildDatesParam(value: string): LegendParam {
   return {
     label: "DATES",
     value,
