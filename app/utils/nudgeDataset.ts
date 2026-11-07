@@ -70,9 +70,7 @@ export function addSuggestedDatasetToMap(selected: SuggestedDataset): void {
 
   // The visible layer IS the scope. Replace any existing dataset layers
   // (single-dataset selection) and add this dataset's layers to the map.
-  const { addLayer, removeLayer, layers } = useMapStore.getState();
-  layers
-    .filter((l) => typeof l.datasetId === "number")
-    .forEach((l) => removeLayer(l.id));
+  const { addLayer, removeDatasetLayers } = useMapStore.getState();
+  removeDatasetLayers();
   datasetMapLayers(merged).forEach(addLayer);
 }

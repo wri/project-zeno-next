@@ -30,10 +30,8 @@ export function pickDatasetTool(
 
       // The visible layer IS the scope. Replace any existing dataset layers
       // and add this dataset's main + context sub-layers.
-      const { addLayer, removeLayer, layers } = useMapStore.getState();
-      layers
-        .filter((l) => typeof l.datasetId === "number")
-        .forEach((l) => removeLayer(l.id));
+      const { addLayer, removeDatasetLayers } = useMapStore.getState();
+      removeDatasetLayers();
       datasetMapLayers(dataset).forEach(addLayer);
 
       addMessage({

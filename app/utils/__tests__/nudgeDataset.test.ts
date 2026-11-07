@@ -1,12 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
 const addLayer = vi.fn();
-const removeLayer = vi.fn();
-let layers: Array<{ id: string; datasetId?: number }> = [];
+const removeDatasetLayers = vi.fn();
 
 vi.mock("@/app/store/mapStore", () => ({
   default: {
-    getState: () => ({ addLayer, removeLayer, layers }),
+    getState: () => ({ addLayer, removeDatasetLayers }),
   },
 }));
 
@@ -142,21 +141,18 @@ describe("recommendedOptionIndex", () => {
 describe("addSuggestedDatasetToMap", () => {
   beforeEach(() => {
     addLayer.mockClear();
-    removeLayer.mockClear();
+    removeDatasetLayers.mockClear();
     vi.mocked(datasetMapLayers).mockClear();
-    layers = [];
   });
 
   it("replaces existing dataset layers and adds the picked dataset's layers", () => {
-    layers = [
-      { id: "dataset-11", datasetId: 11 },
-      { id: "area-1" }, // non-dataset layer must be kept
-    ];
-
     addSuggestedDatasetToMap(validEntry);
 
-    expect(removeLayer).toHaveBeenCalledTimes(1);
-    expect(removeLayer).toHaveBeenCalledWith("dataset-11");
+    expect(removeDatasetLayers).toHaveBeenCalledTimes(1);
+    expect(removeDatasetLayers).toHaveBeenCalledWith();
+    expect(removeDatasetLayers.mock.invocationCallOrder[0]).toBeLessThan(
+      addLayer.mock.invocationCallOrder[0]
+    );
     expect(addLayer).toHaveBeenCalledTimes(1);
     expect(addLayer.mock.calls[0][0]).toMatchObject({ id: "dataset-4" });
     expect(datasetMapLayers).toHaveBeenCalledTimes(1);
@@ -210,7 +206,7 @@ describe("addSuggestedDatasetToMap", () => {
   it("no-ops for a dataset id with no local metadata", () => {
     addSuggestedDatasetToMap({ dataset_id: 999, dataset_name: "Unknown" });
 
-    expect(removeLayer).not.toHaveBeenCalled();
+    expect(removeDatasetLayers).not.toHaveBeenCalled();
     expect(addLayer).not.toHaveBeenCalled();
   });
 });

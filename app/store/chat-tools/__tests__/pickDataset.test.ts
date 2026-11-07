@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 
 vi.mock("@/app/store/mapStore", () => ({
   default: {
-    getState: () => ({ addLayer: vi.fn(), removeLayer: vi.fn(), layers: [] }),
+    getState: () => ({ addLayer: vi.fn(), removeDatasetLayers: vi.fn() }),
   },
 }));
 
