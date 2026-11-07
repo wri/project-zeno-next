@@ -45,7 +45,7 @@ export function buildYearParam(
   return { label: "YEARS", value: `${startYear}${EN_DASH}${endShort}` };
 }
 
-export interface DatesParam {
+interface DatesParam {
   label: "DATES";
   value: string;
   maxValueWidth: string;

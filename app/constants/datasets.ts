@@ -127,7 +127,7 @@ export type DatasetCardConfig = {
   /**
    * Set to "days" for daily data: legends then show a DATES chip with full
    * dates, as two ranges in one year would look the same in the default
-   * YEAR(S) chip.
+   * YEAR(S) chip. A flag, not `cadence`, because `cadence` is display text.
    */
   legendPeriod?: "days";
   /**

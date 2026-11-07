@@ -14,8 +14,6 @@ export function pullDataTool(streamMessage: StreamMessage) {
   if (!dataset) return;
 
   const { updateLayer } = useMapStore.getState();
-  // updateLayer only patches layers already on the map, so a layer the user
-  // removed is not added back.
   datasetMapLayers(dataset).forEach(({ id, tileUrl, startDate, endDate }) =>
     updateLayer(id, { tileUrl, startDate, endDate })
   );

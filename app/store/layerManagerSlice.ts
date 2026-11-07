@@ -115,7 +115,7 @@ export interface LayerManagerSlice {
   removeDatasetLayers: (datasetId?: number) => void;
   setLayerVisibility: (id: string, visible: boolean) => void;
   setLayerOpacity: (id: string, opacity: number) => void;
-  /** Patch a layer in place, keeping its position, visibility and opacity. */
+  /** Patch fields of a layer in place, keeping its position. No-op for an unknown id. */
   updateLayer: (id: string, patch: Partial<Omit<Layer, "id">>) => void;
   reorderLayers: (ids: string[]) => void;
   addToRegistry: (entry: GeoJsonEntry) => void;
