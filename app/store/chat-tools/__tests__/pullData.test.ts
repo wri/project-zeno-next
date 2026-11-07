@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import useMapStore from "@/app/store/mapStore";
 import type { Layer } from "@/app/store/layerManagerSlice";
 import type { DatasetInfo, StreamMessage } from "@/app/types/chat";
+import { datasetMapLayers } from "@/app/utils/datasetLayerContext";
 import { pullDataTool } from "../pullData";
 
 const ALERTS_TILES =
@@ -68,6 +69,49 @@ describe("pullDataTool", () => {
       endDate: "2025-03-31",
     });
     expect(area).toBe(areaLayer);
+  });
+
+  it("moves a context sub-layer's primary layer only, keeping the sub-layer as it was", () => {
+    const TCL_TILES =
+      "https://tiles.example.test/tcl/{z}/{x}/{y}.png?render_type=true_color";
+    const PF_TILES =
+      "https://tiles.example.test/umd_regional_primary_forest_2001/{z}/{x}/{y}.png";
+    const tcl = (start: string, end: string): DatasetInfo => ({
+      dataset_id: 4,
+      dataset_name: "Tree cover loss",
+      tile_url: `${TCL_TILES}&start_date=${start}&end_date=${end}`,
+      layers: [
+        {
+          name: "Tree cover loss",
+          tile_url: `${TCL_TILES}&start_date=${start}&end_date=${end}`,
+        },
+      ],
+      context_layer: "primary_forest",
+      context_layers: [{ name: "primary_forest", tile_url: PF_TILES }],
+      start_date: start,
+      end_date: end,
+    });
+    // The two layers pick_dataset added: the user then dimmed the sub-layer.
+    const [primary, context] = datasetMapLayers(
+      tcl("2001-01-01", "2024-12-31")
+    );
+    const dimmedContext = { ...context, visible: false, opacity: 0.4 };
+    useMapStore.setState({ layers: [primary, dimmedContext, areaLayer] });
+
+    const analysed = tcl("2020-01-01", "2022-12-31");
+    pullDataTool(pullData(analysed));
+
+    const [movedPrimary, movedContext] = useMapStore.getState().layers;
+    expect(movedPrimary).toEqual({
+      ...primary,
+      tileUrl: analysed.tile_url,
+      startDate: "2020-01-01",
+      endDate: "2022-12-31",
+    });
+    expect(movedContext).toEqual(dimmedContext);
+    expect(movedContext.tileUrl).toBe(`pf://${PF_TILES}`);
+    expect(movedContext.startDate).toBeUndefined();
+    expect(movedContext.endDate).toBeUndefined();
   });
 
   it("does not add the layer back when the user removed it", () => {
