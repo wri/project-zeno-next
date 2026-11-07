@@ -23,29 +23,9 @@ vi.mock("@/app/constants/datasets", () => ({
 }));
 
 vi.mock("@/app/utils/datasetLayerContext", () => ({
-  getDatasetLayerContextProps: vi.fn(() => ({
-    contextLayer: undefined,
-    parameters: { canopy_cover: 30 },
-    startDate: "2001-01-01",
-    endDate: "2025-12-31",
-  })),
-  buildDatasetLayers: vi.fn(() => [
+  datasetMapLayers: vi.fn(() => [
     { id: "dataset-4", datasetId: 4, name: "Tree cover loss" },
   ]),
-  toLayerEntries: (
-    layers?: {
-      name: string;
-      tile_url: string;
-      start_date?: string;
-      end_date?: string;
-    }[]
-  ) =>
-    layers?.map((l) => ({
-      name: l.name,
-      tileUrl: l.tile_url,
-      startDate: l.start_date,
-      endDate: l.end_date,
-    })),
 }));
 
 import {
@@ -54,10 +34,7 @@ import {
   isSuggestedDataset,
   recommendedOptionIndex,
 } from "../nudgeDataset";
-import {
-  getDatasetLayerContextProps,
-  buildDatasetLayers,
-} from "@/app/utils/datasetLayerContext";
+import { datasetMapLayers } from "@/app/utils/datasetLayerContext";
 import type { Nudge } from "@/app/types/chat";
 
 const validEntry = {
@@ -166,8 +143,7 @@ describe("addSuggestedDatasetToMap", () => {
   beforeEach(() => {
     addLayer.mockClear();
     removeLayer.mockClear();
-    vi.mocked(getDatasetLayerContextProps).mockClear();
-    vi.mocked(buildDatasetLayers).mockClear();
+    vi.mocked(datasetMapLayers).mockClear();
     layers = [];
   });
 
@@ -183,6 +159,21 @@ describe("addSuggestedDatasetToMap", () => {
     expect(removeLayer).toHaveBeenCalledWith("dataset-11");
     expect(addLayer).toHaveBeenCalledTimes(1);
     expect(addLayer.mock.calls[0][0]).toMatchObject({ id: "dataset-4" });
+    expect(datasetMapLayers).toHaveBeenCalledTimes(1);
+  });
+
+  it("adds every layer the builder returns", () => {
+    vi.mocked(datasetMapLayers).mockReturnValueOnce([
+      { id: "dataset-4", datasetId: 4 },
+      { id: "dataset-4-extra", datasetId: 4 },
+    ] as never);
+
+    addSuggestedDatasetToMap(validEntry);
+
+    expect(addLayer.mock.calls.map((c) => c[0].id)).toEqual([
+      "dataset-4",
+      "dataset-4-extra",
+    ]);
   });
 
   it("merges the nudge entry's overrides onto the local dataset metadata", () => {
@@ -194,9 +185,11 @@ describe("addSuggestedDatasetToMap", () => {
       parameters: [{ name: "canopy_cover", values: [75] }],
     });
 
-    expect(getDatasetLayerContextProps).toHaveBeenCalledWith(
+    expect(datasetMapLayers).toHaveBeenCalledTimes(1);
+    expect(datasetMapLayers).toHaveBeenCalledWith(
       expect.objectContaining({
         dataset_id: 4,
+        dataset_name: "Tree cover loss",
         tile_url: "https://example.com/tcl/{z}/{x}/{y}.png",
         context_layer: "primary_forest",
         start_date: "2010-01-01",
@@ -204,20 +197,12 @@ describe("addSuggestedDatasetToMap", () => {
         parameters: [{ name: "canopy_cover", values: [75] }],
       })
     );
-    expect(buildDatasetLayers).toHaveBeenCalledWith(
-      expect.objectContaining({
-        datasetId: 4,
-        layerName: "Tree cover loss",
-        startDate: "2001-01-01",
-        parameters: { canopy_cover: 30 },
-      })
-    );
   });
 
   it("keeps the local metadata when the entry has no overrides", () => {
     addSuggestedDatasetToMap(validEntry);
 
-    expect(getDatasetLayerContextProps).toHaveBeenCalledWith(
+    expect(datasetMapLayers).toHaveBeenCalledWith(
       expect.objectContaining({ context_layer: null, threshold: 30 })
     );
   });

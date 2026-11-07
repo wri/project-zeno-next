@@ -184,9 +184,9 @@ export function buildDatasetLayers(spec: DatasetLayerSpec): Layer[] {
 }
 
 /**
- * The map layers for a dataset the agent resolved. pick_dataset adds them;
- * pull_data rebuilds them when it analysed another date range, and patches
- * the ones already on the map.
+ * The map layers for a dataset. pick_dataset and the dataset-choice nudge
+ * add them; pull_data rebuilds them when it analysed another date range, and
+ * patches the ones already on the map.
  */
 export function datasetMapLayers(dataset: DatasetInfo): Layer[] {
   return buildDatasetLayers({
