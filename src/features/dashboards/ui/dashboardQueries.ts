@@ -10,14 +10,14 @@ import {
   getDashboard,
   listAnalysisTemplates,
   renameDashboard,
-  setAlertModes,
+  setEmailAlerts,
   updateWidget,
   updateSection,
   type WidgetUpdate,
 } from "../api/dashboards";
 import type { AoiSearchResult } from "@/src/entities/aoi";
 
-import type { AlertsLevel, Dashboard } from "../api/schemas";
+import type { Dashboard } from "../api/schemas";
 import type { SectionMovePatch } from "../model/dashboard-sections";
 import type { WidgetMovePatch } from "../model/widget-move";
 import { dashboardKeys } from "../hooks/dashboardKeys";
@@ -323,16 +323,19 @@ export function useMoveSections(dashboardId: string) {
   );
 }
 
-// The alerts switches. Optimistic, so the switches move at once; the refetch
-// on settle shows whatever the backend saved.
-export function useSetAlertModes(
+// The email switch. Optimistic, so the switch moves at once; the refetch on
+// settle shows whatever the backend saved.
+export function useSetEmailAlerts(
   dashboardId: string,
-  callbacks?: OptimisticMutationCallbacks<AlertsLevel>
+  callbacks?: OptimisticMutationCallbacks<boolean>
 ) {
   return useOptimisticDashboardMutation(
     dashboardId,
-    (next: AlertsLevel) => setAlertModes(dashboardId, next),
-    (dashboard, next) => ({ ...dashboard, alerts: next }),
+    (enabled: boolean) => setEmailAlerts(dashboardId, enabled),
+    (dashboard, enabled) => ({
+      ...dashboard,
+      alerts: dashboard.alerts && { emailEnabled: enabled },
+    }),
     callbacks
   );
 }

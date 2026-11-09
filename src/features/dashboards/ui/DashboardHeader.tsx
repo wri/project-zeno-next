@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Box,
   Button,
@@ -65,12 +65,15 @@ export default function DashboardHeader({
   const [draft, setDraft] = useState<string | null>(null);
   const renameDashboard = useRenameDashboard(dashboard.id);
   const editing = draft !== null;
-  // Alerts are the owner's consent (ADR 0012), so superusers, who also
-  // receive `alerts`, don't get the switches. Eligibility is the backend's:
-  // turning email on for an ineligible dashboard fails with 409.
+  // Email alerts are the owner's own consent, so superusers, who also
+  // receive `alerts`, don't get the switch. The switch shows only while the
+  // dashboard can have email alerts.
   const emailBeta = useFeatureFlag("email-subscriptions");
   const alerts = dashboard.alerts;
-  const showAlerts = emailBeta && isOwner && !!alerts;
+  const showAlerts =
+    emailBeta && isOwner && dashboard.eligible_for_subscription && !!alerts;
+  // The pinned copy of the header is mounted too; only this one tells.
+  useEmailTurnedOffNotice(dashboard, emailBeta && isOwner && !condensed);
 
   const commit = () => {
     const name = draft?.trim();
@@ -186,7 +189,7 @@ export default function DashboardHeader({
           <DashboardAlertsMenu
             dashboardId={dashboard.id}
             areaName={dashboard.aois[0]?.name ?? dashboard.name}
-            alerts={alerts}
+            emailEnabled={alerts.emailEnabled}
           />
         )}
         <Button {...DASHBOARD_ACTION_PROPS} onClick={openReport}>
@@ -203,4 +206,36 @@ export default function DashboardHeader({
       </Flex>
     </Flex>
   );
+}
+
+/**
+ * Tells the owner when email alerts went off because the dashboard lost its
+ * last integrated alerts widget: the backend turns email off then, and the
+ * switch disappears with it.
+ */
+function useEmailTurnedOffNotice(dashboard: Dashboard, enabled: boolean) {
+  const emailOn =
+    dashboard.eligible_for_subscription && !!dashboard.alerts?.emailEnabled;
+  const previous = useRef<{ id: string; emailOn: boolean } | null>(null);
+
+  useEffect(() => {
+    const before = previous.current;
+    previous.current = { id: dashboard.id, emailOn };
+    if (
+      enabled &&
+      before?.id === dashboard.id &&
+      before.emailOn &&
+      !dashboard.eligible_for_subscription
+    ) {
+      // Placeholder copy until product and design settle the wording and
+      // whether to warn before the removal instead.
+      toaster.create({
+        title: "Email alerts turned off",
+        description:
+          "This dashboard no longer has an integrated alerts chart or map, so its email alerts are off. Add one back to turn them on again.",
+        type: "info",
+        duration: 6000,
+      });
+    }
+  }, [dashboard.id, dashboard.eligible_for_subscription, emailOn, enabled]);
 }

@@ -1,38 +1,26 @@
 import { Box, Button, Flex, Popover, Switch, Text } from "@chakra-ui/react";
 import { BellIcon, CaretDownIcon, InfoIcon } from "@phosphor-icons/react";
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import { toaster } from "@/app/components/ui/toaster";
-import type { AlertsLevel } from "../api/schemas";
 import { httpDetail } from "../api/http";
-import { useSetAlertModes } from "./dashboardQueries";
-
-const STATUS: Record<AlertsLevel, string> = {
-  off: "Off",
-  "in-app": "In-app",
-  email: "In-app + email",
-};
+import { useSetEmailAlerts } from "./dashboardQueries";
 
 /**
- * The header's "Alerts" button and its settings popover, per the Figma
- * "Email toggle in dashboard header" frame: an in-app ("In Horizon") and an
- * email switch over one level, so email on means in-app on, and in-app off
- * means email off (the backend's coupling rule). "Manage all subscriptions"
- * stays hidden until that page ships (Figma annotation).
+ * The header's "Alerts" button and its popover with the email switch for
+ * the dashboard's integrated alerts. "Manage all subscriptions" stays hidden
+ * until that page exists.
  */
 export default function DashboardAlertsMenu({
   dashboardId,
   areaName,
-  alerts,
+  emailEnabled,
 }: {
   dashboardId: string;
   areaName: string;
-  alerts: AlertsLevel;
+  emailEnabled: boolean;
 }) {
-  // Figma State 2: email just turned in-app on, so the email row says so.
-  // Cleared by the next change and when the popover closes.
-  const [emailTurnedOnInApp, setEmailTurnedOnInApp] = useState(false);
-  const setModes = useSetAlertModes(dashboardId, {
+  const setEmail = useSetEmailAlerts(dashboardId, {
     onError: (error) =>
       toaster.create({
         title: "Couldn't update alerts",
@@ -42,20 +30,8 @@ export default function DashboardAlertsMenu({
       }),
   });
 
-  const change = (next: AlertsLevel) => {
-    const turnsInAppOn = next === "email" && alerts === "off";
-    setEmailTurnedOnInApp(false);
-    setModes.mutate(next, {
-      onSuccess: () => setEmailTurnedOnInApp(turnsInAppOn),
-    });
-  };
-
   return (
-    <Popover.Root
-      positioning={{ placement: "bottom-end" }}
-      lazyMount
-      onOpenChange={(e) => !e.open && setEmailTurnedOnInApp(false)}
-    >
+    <Popover.Root positioning={{ placement: "bottom-end" }} lazyMount>
       <Popover.Trigger asChild>
         <Button
           variant="outline"
@@ -82,7 +58,7 @@ export default function DashboardAlertsMenu({
               fontWeight="normal"
               color="neutral.600"
             >
-              {STATUS[alerts]}
+              {emailEnabled ? "Email" : "Off"}
             </Text>
           </Box>
           <CaretDownIcon size={12} />
@@ -102,23 +78,14 @@ export default function DashboardAlertsMenu({
                 Alerts for {areaName}
               </Text>
               <AlertRow
-                label="In Horizon"
-                checked={alerts !== "off"}
-                disabled={setModes.isPending}
-                onChange={(on) => change(on ? "in-app" : "off")}
-              >
-                Show a weekly count of new integrated alerts on this dashboard.
-              </AlertRow>
-              <AlertRow
                 label="Email"
                 beta
-                checked={alerts === "email"}
-                disabled={setModes.isPending}
-                onChange={(on) => change(on ? "email" : "in-app")}
+                checked={emailEnabled}
+                disabled={setEmail.isPending}
+                onChange={(on) => setEmail.mutate(on)}
               >
-                {emailTurnedOnInApp
-                  ? "On. We also turned on alerts in Horizon, since email uses the same weekly count."
-                  : "One weekly email after each data update, only when there are new alerts. Turning this on also turns on alerts in Horizon."}
+                One weekly email after each data update, only when there are new
+                alerts.
               </AlertRow>
               <Box h="1px" bg="neutral.300" />
               <Flex gap="8px" align="flex-start" color="neutral.500">
