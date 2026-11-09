@@ -97,33 +97,16 @@ export const AnalysisTemplateSchema = z.object({
 
 export const AnalysisTemplateListSchema = z.array(AnalysisTemplateSchema);
 
-// A dashboard's integrated-alerts level (ADR 0012). Email never runs without
-// in-app (the backend's coupled_modes), so "email" means both are on and
-// email-without-in-app can't be written down.
-export type AlertsLevel = "off" | "in-app" | "email";
-
-/** The wire modes on at each level: the PUT body's `modes`. */
-export const ALERT_MODES: Record<AlertsLevel, string[]> = {
-  off: [],
-  "in-app": ["in-app"],
-  email: ["in-app", "email"],
-};
-
-// Sent only to the owner and to superusers. The wire lists the modes on per
-// dataset (empty when nothing is); it settles into a level here so that
+// Sent only to the owner and to superusers. The wire lists the channels on
+// per dataset (empty when none is); it settles into a flag here so that
 // shape never leaves api/.
-const DashboardAlertsLevelSchema = z
+const DashboardAlertsSchema = z
   .object({
     integrated_alerts: z.object({ modes: z.array(z.string()).default([]) }),
   })
-  .transform(
-    ({ integrated_alerts: { modes } }): AlertsLevel =>
-      modes.includes("email")
-        ? "email"
-        : modes.includes("in-app")
-          ? "in-app"
-          : "off"
-  );
+  .transform(({ integrated_alerts: { modes } }) => ({
+    emailEnabled: modes.includes("email"),
+  }));
 
 export const DashboardResponseSchema = z.object({
   id: z.string(),
@@ -141,7 +124,10 @@ export const DashboardResponseSchema = z.object({
   widgets: z.array(DashboardWidgetResponseSchema).default([]),
   // Absent for other viewers and from a pre-subscriptions backend. A
   // malformed value hides the email control rather than failing the page.
-  alerts: DashboardAlertsLevelSchema.optional().catch(undefined),
+  alerts: DashboardAlertsSchema.optional().catch(undefined),
+  // Whether the dashboard can have email alerts: it has an integrated alerts
+  // widget. The backend keeps it current as widgets change.
+  eligible_for_subscription: z.boolean().catch(false),
 });
 
 export const DashboardListResponseSchema = z.array(DashboardResponseSchema);
