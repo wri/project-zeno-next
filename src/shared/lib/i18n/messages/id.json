@@ -1,0 +1,19 @@
+{
+  "chat.header.title": "Asisten AI",
+  "chat.header.newConversation": "Percakapan baru",
+  "chat.header.history": "Riwayat percakapan",
+  "chat.header.compactView": "Beralih ke tampilan ringkas",
+  "chat.header.fullSizeView": "Beralih ke tampilan penuh",
+  "chat.header.expand": "Perluas panel",
+  "chat.header.collapse": "Ciutkan panel",
+  "chat.header.language": "Bahasa antarmuka",
+  "chat.input.label": "Ajukan pertanyaan",
+  "chat.input.sending": "Mengirim…",
+  "chat.input.placeholder.start": "Atau jelaskan apa yang ingin Anda jelajahi…",
+  "chat.input.placeholder.followUp": "Ajukan pertanyaan lanjutan…",
+  "chat.input.placeholder.nudge": "Atau ajukan pertanyaan lain…",
+  "chat.input.analyses": "Analisis",
+  "chat.input.startVoice": "Mulai input suara",
+  "chat.input.cancel": "Batalkan permintaan",
+  "chat.input.send": "Kirim pertanyaan"
+}

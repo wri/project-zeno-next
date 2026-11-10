@@ -13,6 +13,7 @@ import system from "@/app/theme";
 import useChatStore from "@/app/store/chatStore";
 import useMapStore from "@/app/store/mapStore";
 import useSidebarStore from "@/app/store/sidebarStore";
+import { i18n } from "@/src/shared/lib/i18n";
 
 vi.mock("@/app/components/ui/toaster", () => ({
   toaster: { create: vi.fn() },
@@ -74,6 +75,34 @@ describe("ChatPanelHeader", () => {
       "Switch to full-size view",
       "Collapse panel",
     ]);
+  });
+
+  it("shows no language switcher without the i18n flag", () => {
+    renderHeader();
+    expect(screen.queryByRole("combobox")).toBeNull();
+  });
+
+  it("shows the language switcher with ?ff=i18n", () => {
+    window.history.replaceState(null, "", "/app?ff=i18n");
+    try {
+      renderHeader();
+      expect(
+        screen.getByRole("combobox", { name: "Interface language" })
+      ).toBeTruthy();
+    } finally {
+      window.history.replaceState(null, "", "/app");
+    }
+  });
+
+  it("renders its labels in the active locale", async () => {
+    await act(() => i18n.changeLanguage("es"));
+    try {
+      renderHeader();
+      expect(screen.getByText("Asistente de IA")).toBeTruthy();
+      expect(button("Nueva conversación")).toBeTruthy();
+    } finally {
+      await act(() => i18n.changeLanguage("en"));
+    }
   });
 
   it.each([

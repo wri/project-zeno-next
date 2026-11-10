@@ -8,6 +8,7 @@
  * exports only what the app and the preview use.
  */
 export { WelcomePage } from "./ui/WelcomePage";
+export { patchProfile } from "./api/profile";
 export { ProfileAskTrigger } from "./ui/ProfileAskTrigger";
 export { ProfileIncompleteDot } from "./ui/ProfileIncompleteDot";
 export {

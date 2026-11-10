@@ -1,16 +1,16 @@
-// Bare ISO-639-1 codes (as stored in the user's onboarding profile) mapped to
-// region-qualified BCP-47 tags. Region qualification meaningfully improves
-// speech-recognition accuracy; pt-BR in particular fits GNW's Amazonia focus.
-// All values are locales Chrome's SpeechRecognition accepts.
-const REGION_QUALIFIED: Record<string, string> = {
+import { matchLocale, type Locale } from "@/src/shared/lib/i18n";
+
+// The default speech-recognition tag per UI locale. Region qualification
+// meaningfully improves recognition accuracy; pt-BR in particular fits GNW's
+// Amazonia focus. All values are locales Chrome's SpeechRecognition accepts.
+const REGION_QUALIFIED: Record<Locale, string> = {
   en: "en-US",
   fr: "fr-FR",
   es: "es-ES",
   pt: "pt-BR",
   id: "id-ID",
+  zh: "zh-CN",
 };
-
-const DEFAULT_LANG = "en-US";
 
 export interface VoiceLanguageVariant {
   /** BCP-47 tag passed to SpeechRecognition. */
@@ -135,22 +135,18 @@ export function labelForLang(code: string): string {
 }
 
 /**
- * Resolve a BCP-47 language tag for the Web Speech API. The Web Speech API
- * cannot detect the spoken language itself, so we default from what the app
- * already knows, in priority order:
- *   1. the user's onboarding language preference (`preferredLanguageCode`)
- *   2. the browser's preferred language (`navigator.language`)
- *   3. `en-US`
- *
- * A bare ISO code (e.g. "pt") is region-qualified for better accent handling;
- * an already-qualified tag (e.g. "en-GB") is trusted as-is.
+ * The default dictation language: the UI locale (from the shared resolver),
+ * region-qualified. The Web Speech API cannot detect the spoken language, so
+ * it follows the UI. When the browser lists a regional tag of the same
+ * language (e.g. "pt-PT" for a "pt" UI) that region is kept for its accent.
  */
-export function resolveSpeechLang(
-  preferredCode?: string | null,
-  browserLang?: string | null
+export function speechLangForLocale(
+  locale: Locale,
+  browserLanguages: readonly string[]
 ): string {
-  const raw = preferredCode?.trim() || browserLang?.trim() || DEFAULT_LANG;
-  // Already region-qualified — trust it rather than overriding the region.
-  if (raw.includes("-")) return raw;
-  return REGION_QUALIFIED[raw.toLowerCase()] ?? raw;
+  if (locale === "zh") return REGION_QUALIFIED.zh;
+  const regional = browserLanguages.find(
+    (tag) => tag.includes("-") && matchLocale(tag) === locale
+  );
+  return regional ?? REGION_QUALIFIED[locale];
 }

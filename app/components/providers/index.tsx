@@ -9,6 +9,14 @@ import useAuthStore from "@/app/store/authStore";
 import { getToken, clearToken, apiFetch } from "@/app/lib/api-client";
 import { parseAuthMe } from "@/app/lib/auth-me";
 import { queryClient } from "@/app/lib/query-client";
+import { uiLocale } from "@/app/utils/uiLocale";
+import {
+  applyLocale,
+  browserLocaleInput,
+  i18n,
+  I18nextProvider,
+} from "@/src/shared/lib/i18n";
+import { usePathname } from "@/src/shared/lib/router";
 
 function AuthBootstrapper() {
   const { setAuthStatus, setAuthLoaded, clearAuth, setPromptUsage } =
@@ -82,14 +90,33 @@ function AuthBootstrapper() {
   return null;
 }
 
+/**
+ * Keeps the UI locale resolved: signed-in profile, then the `gnw_locale`
+ * cookie, then the browser, then English (English always on the landing
+ * pages). Re-resolves when the profile language loads or changes.
+ */
+function LocaleSync() {
+  const profile = useAuthStore((s) => s.preferredLanguageCode);
+  const pathname = usePathname();
+
+  useEffect(() => {
+    applyLocale(uiLocale(pathname, { profile, ...browserLocaleInput() }));
+  }, [pathname, profile]);
+
+  return null;
+}
+
 function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
-      <ChakraProvider value={theme}>
-        {children}
-        <Toaster />
-        <AuthBootstrapper />
-      </ChakraProvider>
+      <I18nextProvider i18n={i18n}>
+        <ChakraProvider value={theme}>
+          {children}
+          <Toaster />
+          <AuthBootstrapper />
+          <LocaleSync />
+        </ChakraProvider>
+      </I18nextProvider>
     </QueryClientProvider>
   );
 }

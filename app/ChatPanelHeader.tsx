@@ -7,6 +7,8 @@ import {
   SidebarSimpleIcon,
   SparkleIcon,
 } from "@phosphor-icons/react";
+import { LocaleSwitcher } from "@/src/features/locale-switcher";
+import { useTranslation } from "@/src/shared/lib/i18n";
 import { Tooltip } from "./components/ui/tooltip";
 import { useStartNewConversation } from "./hooks/useStartNewConversation";
 import useSidebarStore from "./store/sidebarStore";
@@ -52,8 +54,8 @@ function PanelIconButton({
 }
 
 /**
- * The chat panel's own header: "AI ASSISTANT" and, in order, New
- * conversation, Conversation history, the size toggle and Collapse. Collapse
+ * The chat panel's own header: "AI ASSISTANT", the translation-review
+ * language switcher (only with `?ff=i18n`) and, in order, New conversation, Conversation history, the size toggle and Collapse. Collapse
  * from full-size lands on the collapsed compact panel; while collapsed, a
  * click anywhere on the bar opens the panel again.
  */
@@ -61,6 +63,7 @@ function ChatPanelHeader({
   isFullSize = false,
   onToggleSize,
 }: ChatPanelHeaderProps) {
+  const { t } = useTranslation();
   const startNewConversation = useStartNewConversation();
   const isChatCollapsed = useSidebarStore((s) => s.isChatCollapsed);
   const setChatCollapsed = useSidebarStore((s) => s.setChatCollapsed);
@@ -92,11 +95,12 @@ function ChatPanelHeader({
         textTransform="uppercase"
         color="neutral.500"
       >
-        AI Assistant
+        {t("chat.header.title")}
       </Text>
-      <Flex ml="auto" gap={1}>
+      <Flex ml="auto" gap={1} alignItems="center">
+        <LocaleSwitcher />
         <PanelIconButton
-          label="New conversation"
+          label={t("chat.header.newConversation")}
           onClick={() => {
             startNewConversation();
             setChatHistoryOpen(false);
@@ -105,22 +109,22 @@ function ChatPanelHeader({
           <NotePencilIcon size={16} />
         </PanelIconButton>
         <PanelIconButton
-          label="Conversation history"
+          label={t("chat.header.history")}
           active={chatHistoryOpen}
           onClick={() => setChatHistoryOpen(!chatHistoryOpen)}
         >
           <ClockCounterClockwiseIcon size={16} />
         </PanelIconButton>
         <PanelIconButton
-          label={
-            isFullSize ? "Switch to compact view" : "Switch to full-size view"
-          }
+          label={t(
+            isFullSize ? "chat.header.compactView" : "chat.header.fullSizeView"
+          )}
           onClick={onToggleSize}
         >
           <SidebarSimpleIcon size={16} />
         </PanelIconButton>
         <PanelIconButton
-          label={isCollapsed ? "Expand panel" : "Collapse panel"}
+          label={t(isCollapsed ? "chat.header.expand" : "chat.header.collapse")}
           onClick={() => setChatCollapsed(!isCollapsed)}
         >
           {isCollapsed ? (
