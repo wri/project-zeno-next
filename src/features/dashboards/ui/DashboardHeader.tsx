@@ -65,13 +65,16 @@ export default function DashboardHeader({
   const [draft, setDraft] = useState<string | null>(null);
   const renameDashboard = useRenameDashboard(dashboard.id);
   const editing = draft !== null;
-  // Email alerts are the owner's own consent, so superusers, who also
-  // receive `alerts`, don't get the switch. The switch shows only while the
-  // dashboard can have email alerts.
+  // A subscription is the owner's own consent, so superusers, who also
+  // receive `subscriptions`, don't get the switch. The switch shows only
+  // while the dashboard is eligible for subscription.
   const emailBeta = useFeatureFlag("email-subscriptions");
-  const alerts = dashboard.alerts;
+  const subscriptions = dashboard.subscriptions;
   const showAlerts =
-    emailBeta && isOwner && dashboard.eligible_for_subscription && !!alerts;
+    emailBeta &&
+    isOwner &&
+    dashboard.eligible_for_subscription &&
+    !!subscriptions;
   // The pinned copy of the header is mounted too; only this one tells.
   useEmailTurnedOffNotice(dashboard, emailBeta && isOwner && !condensed);
 
@@ -189,7 +192,7 @@ export default function DashboardHeader({
           <DashboardAlertsMenu
             dashboardId={dashboard.id}
             areaName={dashboard.aois[0]?.name ?? dashboard.name}
-            emailEnabled={alerts.emailEnabled}
+            emailEnabled={subscriptions.emailEnabled}
           />
         )}
         <Button {...DASHBOARD_ACTION_PROPS} onClick={openReport}>
@@ -209,13 +212,14 @@ export default function DashboardHeader({
 }
 
 /**
- * Tells the owner when email alerts went off because the dashboard lost its
- * last integrated alerts widget: the backend turns email off then, and the
- * switch disappears with it.
+ * Tells the owner when the email subscription was deleted because the
+ * dashboard lost its last integrated alerts widget: the backend deletes it
+ * then, and the switch disappears with it.
  */
 function useEmailTurnedOffNotice(dashboard: Dashboard, enabled: boolean) {
   const emailOn =
-    dashboard.eligible_for_subscription && !!dashboard.alerts?.emailEnabled;
+    dashboard.eligible_for_subscription &&
+    !!dashboard.subscriptions?.emailEnabled;
   const previous = useRef<{ id: string; emailOn: boolean } | null>(null);
 
   useEffect(() => {

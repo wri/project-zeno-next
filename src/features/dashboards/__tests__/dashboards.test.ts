@@ -11,7 +11,7 @@ import {
   addTextWidget,
   applyAnalysisTemplate,
   fetchDashboardAlertsSummary,
-  setEmailAlerts,
+  setEmailSubscription,
 } from "../api/dashboards";
 import {
   DashboardListResponseSchema,
@@ -173,7 +173,7 @@ describe("dashboard date helpers", () => {
   });
 });
 
-describe("dashboard alerts settings", () => {
+describe("dashboard subscriptions", () => {
   const body = {
     id: "d1",
     user_id: "u1",
@@ -185,20 +185,22 @@ describe("dashboard alerts settings", () => {
   const parse = (extra: object) =>
     DashboardResponseSchema.parse({ ...body, ...extra });
 
-  const modes = (...on: string[]) => ({
-    alerts: { integrated_alerts: { modes: on } },
+  const channels = (...on: string[]) => ({
+    subscriptions: { integrated_alerts: { channels: on } },
   });
 
   it("reads whether email is on", () => {
-    expect(parse(modes()).alerts).toEqual({ emailEnabled: false });
-    expect(parse(modes("email")).alerts).toEqual({ emailEnabled: true });
+    expect(parse(channels()).subscriptions).toEqual({ emailEnabled: false });
+    expect(parse(channels("email")).subscriptions).toEqual({
+      emailEnabled: true,
+    });
   });
 
-  it("leaves alerts undefined when absent or malformed, and still parses the dashboard", () => {
-    expect(parse({}).alerts).toBeUndefined();
-    for (const bad of [{}, { integrated_alerts: { modes: "email" } }]) {
-      const malformed = parse({ alerts: bad });
-      expect(malformed.alerts).toBeUndefined();
+  it("leaves subscriptions undefined when absent or malformed, and still parses the dashboard", () => {
+    expect(parse({}).subscriptions).toBeUndefined();
+    for (const bad of [{}, { integrated_alerts: { channels: "email" } }]) {
+      const malformed = parse({ subscriptions: bad });
+      expect(malformed.subscriptions).toBeUndefined();
       expect(malformed.name).toBe("Paraná");
     }
   });
@@ -214,23 +216,23 @@ describe("dashboard alerts settings", () => {
   });
 });
 
-describe("setEmailAlerts", () => {
+describe("setEmailSubscription", () => {
   beforeEach(() => vi.mocked(apiFetch).mockReset());
 
   it.each([
     [true, ["email"]],
     [false, []],
-  ] as const)("PUTs the modes for email %s", async (enabled, sent) => {
+  ] as const)("PUTs the channels for email %s", async (enabled, sent) => {
     vi.mocked(apiFetch).mockResolvedValue(
       new Response(JSON.stringify({}), { status: 200 })
     );
 
-    await setEmailAlerts("d1", enabled);
+    await setEmailSubscription("d1", enabled);
 
     expect(apiFetch).toHaveBeenCalledWith("/api/dashboards/d1/subscriptions", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ datasets: ["integrated_alerts"], modes: sent }),
+      body: JSON.stringify({ datasets: ["integrated_alerts"], channels: sent }),
     });
   });
 
@@ -241,7 +243,7 @@ describe("setEmailAlerts", () => {
       })
     );
 
-    await expect(setEmailAlerts("d1", true)).rejects.toMatchObject({
+    await expect(setEmailSubscription("d1", true)).rejects.toMatchObject({
       status: 409,
       detail: "Dashboard is not eligible",
     });

@@ -40,15 +40,20 @@ const wire = (id: string) => ({
       position: 0,
     },
   ],
-  alerts: { integrated_alerts: { modes: server[id].email ? ["email"] : [] } },
+  subscriptions: {
+    integrated_alerts: { channels: server[id].email ? ["email"] : [] },
+  },
 });
 
-const cached = (id: string, alerts: Dashboard["alerts"]): Dashboard => ({
+const cached = (
+  id: string,
+  subscriptions: Dashboard["subscriptions"]
+): Dashboard => ({
   ...wire(id),
   description: null,
   sections: [],
   widgets: [],
-  alerts,
+  subscriptions,
 });
 
 function Harness({ id, isOwner }: { id: string; isOwner: boolean }) {
@@ -61,7 +66,7 @@ let queryClient: QueryClient;
 function renderHeader({
   email = false,
   eligible = true,
-  withAlerts = true,
+  withSubscriptions = true,
   isOwner = true,
 } = {}) {
   // The server starts where the cache does.
@@ -71,7 +76,7 @@ function renderHeader({
   });
   queryClient.setQueryData(
     dashboardKeys.detail("d1"),
-    cached("d1", withAlerts ? { emailEnabled: email } : undefined)
+    cached("d1", withSubscriptions ? { emailEnabled: email } : undefined)
   );
   const view = (id: string) => (
     <QueryClientProvider client={queryClient}>
@@ -107,13 +112,13 @@ const openPopover = async () => {
 const isOn = (input: HTMLInputElement) =>
   input.closest("label")?.getAttribute("data-state") === "checked";
 
-const expectPut = (modes: string[]) =>
+const expectPut = (channels: string[]) =>
   waitFor(() =>
     expect(apiFetch).toHaveBeenCalledWith(
       "/api/dashboards/d1/subscriptions",
       expect.objectContaining({
         method: "PUT",
-        body: JSON.stringify({ datasets: ["integrated_alerts"], modes }),
+        body: JSON.stringify({ datasets: ["integrated_alerts"], channels }),
       })
     )
   );
@@ -130,7 +135,9 @@ beforeEach(() => {
   vi.mocked(apiFetch).mockImplementation(async (path, init) => {
     const id = String(path).split("/")[3];
     if (init?.method === "PUT") {
-      server[id].email = JSON.parse(String(init.body)).modes.includes("email");
+      server[id].email = JSON.parse(String(init.body)).channels.includes(
+        "email"
+      );
     }
     return new Response(JSON.stringify(wire(id)), { status: 200 });
   });
@@ -154,7 +161,7 @@ describe("DashboardHeader alerts gate", () => {
   });
 
   it("shows no alerts control when the backend sent no settings", () => {
-    renderHeader({ withAlerts: false });
+    renderHeader({ withSubscriptions: false });
     expect(alertsButton()).toBeNull();
   });
 });

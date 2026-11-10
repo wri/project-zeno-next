@@ -10,7 +10,7 @@ import {
   getDashboard,
   listAnalysisTemplates,
   renameDashboard,
-  setEmailAlerts,
+  setEmailSubscription,
   updateWidget,
   updateSection,
   type WidgetUpdate,
@@ -325,16 +325,16 @@ export function useMoveSections(dashboardId: string) {
 
 // The email switch. Optimistic, so the switch moves at once; the refetch on
 // settle shows whatever the backend saved.
-export function useSetEmailAlerts(
+export function useSetEmailSubscription(
   dashboardId: string,
   callbacks?: OptimisticMutationCallbacks<boolean>
 ) {
   return useOptimisticDashboardMutation(
     dashboardId,
-    (enabled: boolean) => setEmailAlerts(dashboardId, enabled),
+    (enabled: boolean) => setEmailSubscription(dashboardId, enabled),
     (dashboard, enabled) => ({
       ...dashboard,
-      alerts: dashboard.alerts && { emailEnabled: enabled },
+      subscriptions: dashboard.subscriptions && { emailEnabled: enabled },
     }),
     callbacks
   );

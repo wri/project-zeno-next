@@ -97,15 +97,17 @@ export const AnalysisTemplateSchema = z.object({
 
 export const AnalysisTemplateListSchema = z.array(AnalysisTemplateSchema);
 
-// Sent only to the owner and to superusers. The wire lists the channels on
-// per dataset (empty when none is); it settles into a flag here so that
-// shape never leaves api/.
-const DashboardAlertsSchema = z
+// Sent only to the owner and to superusers. The wire lists the subscribed
+// channels per dataset (empty when none is); it settles into a flag here so
+// that shape never leaves api/.
+const DashboardSubscriptionsSchema = z
   .object({
-    integrated_alerts: z.object({ modes: z.array(z.string()).default([]) }),
+    integrated_alerts: z.object({
+      channels: z.array(z.string()).default([]),
+    }),
   })
-  .transform(({ integrated_alerts: { modes } }) => ({
-    emailEnabled: modes.includes("email"),
+  .transform(({ integrated_alerts: { channels } }) => ({
+    emailEnabled: channels.includes("email"),
   }));
 
 export const DashboardResponseSchema = z.object({
@@ -124,9 +126,10 @@ export const DashboardResponseSchema = z.object({
   widgets: z.array(DashboardWidgetResponseSchema).default([]),
   // Absent for other viewers and from a pre-subscriptions backend. A
   // malformed value hides the email control rather than failing the page.
-  alerts: DashboardAlertsSchema.optional().catch(undefined),
-  // Whether the dashboard can have email alerts: it has an integrated alerts
-  // widget. The backend keeps it current as widgets change.
+  subscriptions: DashboardSubscriptionsSchema.optional().catch(undefined),
+  // Whether the owner can subscribe to notification emails: the dashboard
+  // has an integrated alerts widget. The backend keeps it current as
+  // widgets change.
   eligible_for_subscription: z.boolean().catch(false),
 });
 

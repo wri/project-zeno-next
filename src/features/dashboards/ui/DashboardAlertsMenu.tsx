@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 
 import { toaster } from "@/app/components/ui/toaster";
 import { httpDetail } from "../api/http";
-import { useSetEmailAlerts } from "./dashboardQueries";
+import { useSetEmailSubscription } from "./dashboardQueries";
 
 /**
  * The header's "Alerts" button and its popover with the email switch for
@@ -20,7 +20,7 @@ export default function DashboardAlertsMenu({
   areaName: string;
   emailEnabled: boolean;
 }) {
-  const setEmail = useSetEmailAlerts(dashboardId, {
+  const setEmail = useSetEmailSubscription(dashboardId, {
     onError: (error) =>
       toaster.create({
         title: "Couldn't update alerts",

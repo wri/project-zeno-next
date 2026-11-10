@@ -117,12 +117,12 @@ export async function renameDashboard(
   });
 }
 
-// Turns one dashboard's integrated-alerts email on or off (owner only). The
-// body is the desired state, so no modes turns email off. The backend
-// answers 409 when email is turned on for an ineligible dashboard. The
-// response (the updated dashboard) is ignored: the shared optimistic
-// mutation refetches on settle anyway.
-export async function setEmailAlerts(
+// Subscribes one dashboard to integrated alerts notification emails, or
+// unsubscribes it (owner only). The body is the desired state, so no
+// channels unsubscribes. The backend answers 409 when email is asked for on
+// an ineligible dashboard. The response (the updated dashboard) is ignored:
+// the shared optimistic mutation refetches on settle anyway.
+export async function setEmailSubscription(
   dashboardId: string,
   enabled: boolean
 ): Promise<void> {
@@ -131,7 +131,7 @@ export async function setEmailAlerts(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       datasets: ["integrated_alerts"],
-      modes: enabled ? ["email"] : [],
+      channels: enabled ? ["email"] : [],
     }),
   });
 }
