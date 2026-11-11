@@ -77,6 +77,10 @@ export const WIDGET_CONTROL_LABELS = {
   showWorking: "Show working",
 } as const;
 
+/** Whether the card offers Show working: only a chart made with AI-written code has it. */
+export const showsWorking = (widget: Pick<InsightWidget, "generation">) =>
+  !!widget.generation;
+
 interface WidgetMessageProps {
   widget: InsightWidget;
   inWorkspace?: boolean;
@@ -453,7 +457,7 @@ export default function WidgetMessage({
             flexWrap={inWorkspace ? "nowrap" : "wrap"}
             align="center"
           >
-            {widget.generation && (
+            {showsWorking(widget) && (
               <Tooltip
                 content="View how this was generated"
                 variant="dark"

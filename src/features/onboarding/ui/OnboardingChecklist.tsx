@@ -7,7 +7,9 @@ import { getMapControlsLeftPx } from "@/app/explorationLayout";
 import useSidebarStore from "@/app/store/sidebarStore";
 import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
 
-import useOnboardingStore from "../model/onboarding-store";
+import useOnboardingStore, {
+  selectTourActive,
+} from "../model/onboarding-store";
 import { ONBOARDING_FEATURE_FLAG } from "./tour-entry";
 import { CHECKLIST_ITEMS, createChecklistTour } from "./tours/checklist-tours";
 
@@ -64,7 +66,7 @@ function Checklist() {
   const hydrated = useOnboardingStore((s) => s.hydrated);
   const progress = useOnboardingStore((s) => s.progress);
   const expanded = useOnboardingStore((s) => s.checklistExpanded);
-  const tourRunning = useOnboardingStore((s) => s.tour !== null);
+  const tourRunning = useOnboardingStore(selectTourActive);
   const setExpanded = useOnboardingStore((s) => s.setChecklistExpanded);
   const dismiss = useOnboardingStore((s) => s.dismissChecklist);
   const startTour = useOnboardingStore((s) => s.startTour);

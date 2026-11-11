@@ -7,7 +7,7 @@ import useMapStore from "@/app/store/mapStore";
 import { getLayerContextFromDatasetCard } from "./datasetCardLayerContext";
 import { buildDatasetLayers } from "./datasetLayerContext";
 
-const LGMS_NET_FLUX_DATASET_ID = 12;
+export const LGMS_NET_FLUX_DATASET_ID = 12;
 
 /**
  * The dataset a fresh map opens with (LGMS net flux under `ff=net-flux`).

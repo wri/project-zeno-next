@@ -9,9 +9,7 @@ import {
 } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
 
-import { UNLIMITED_PROMPTS_THRESHOLD } from "@/app/hooks/usePromptQuota";
-
-import { useDailyPrompts } from "./app-actions";
+import { hasLimitedQuota, usePromptQuota } from "@/app/hooks/usePromptQuota";
 
 /** Small bordered chip that shows a UI icon inline in running text. */
 export function InlineIcon({ icon: IconComponent }: { icon: Icon }) {
@@ -150,19 +148,18 @@ export function SummaryPair({
  * `whenNoneLeft` is the copy for a user with none left today.
  */
 export function dailyPromptsNote(
-  used: number,
   total: number,
+  exhausted: boolean,
   whenNoneLeft: string
 ): string | null {
-  if (total <= 0 || total > UNLIMITED_PROMPTS_THRESHOLD) return null;
-  if (used >= total) return whenNoneLeft;
+  if (!hasLimitedQuota(total)) return null;
+  if (exhausted) return whenNoneLeft;
   return `Sending this question uses 1 of your ${total} daily prompts.`;
 }
 
 /** `dailyPromptsNote` as a tip, live from the server's last count. */
 export function DailyPromptsNote({ whenNoneLeft }: { whenNoneLeft: string }) {
-  const note = useDailyPrompts((used, total) =>
-    dailyPromptsNote(used, total, whenNoneLeft)
-  );
+  const { totalPrompts, promptsExhausted } = usePromptQuota();
+  const note = dailyPromptsNote(totalPrompts, promptsExhausted, whenNoneLeft);
   return note ? <Tip>{note}</Tip> : null;
 }

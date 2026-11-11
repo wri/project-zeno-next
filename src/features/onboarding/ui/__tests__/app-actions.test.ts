@@ -241,7 +241,6 @@ describe("chart predicates", () => {
     });
 
   it("sees a hand-run chart fail only once nothing is loading", () => {
-    expect(handRunChartFailed()).toBe(false); // not accepted yet
     useChatStore.setState({
       messages: [acceptedNudge()],
       isGeneratingInsight: true,

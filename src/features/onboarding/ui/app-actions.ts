@@ -1,9 +1,10 @@
 /**
  * The tour's hands on the app: side effects that set the stage for a step,
  * predicates that tell an action step the user has done the thing, and the
- * evidence that ticks checklist tasks. This is the only onboarding file that
- * touches app stores, so the coupling is easy to find when those stores
- * change.
+ * evidence that ticks checklist tasks. It holds nearly all of the tour's
+ * coupling to app stores, so that is easy to find when those stores change.
+ * Two components also read a store directly: `OnboardingTour` (chat and map
+ * stores) and `OnboardingChecklist` (sidebar store, for where to sit).
  */
 import { useCallback, useSyncExternalStore } from "react";
 
@@ -12,12 +13,12 @@ import {
   INTEGRATED_ALERTS_DATASET_ID,
   NET_FLUX_FEATURE_FLAG,
 } from "@/app/constants/datasets";
-import useAuthStore from "@/app/store/authStore";
 import useChatStore from "@/app/store/chatStore";
 import useInsightStore from "@/app/store/insightStore";
 import { isAreaLayer, type Layer } from "@/app/store/layerManagerSlice";
 import useMapStore from "@/app/store/mapStore";
 import useSidebarStore from "@/app/store/sidebarStore";
+import { showsWorking } from "@/app/components/WidgetMessage";
 import type { InsightWidget } from "@/app/types/chat";
 import { CONCESSION_STYLES, type LayerId } from "@/app/types/map";
 import {
@@ -32,9 +33,6 @@ import { isFeatureEnabled } from "@/src/shared/lib/feature-flags";
 
 import type { ChecklistItemId } from "../model/onboarding-progress";
 
-// Typed so the build fails if the boundary layer the tour restores is removed.
-export const GADM_BOUNDARY_LAYER: LayerId = "GADM";
-
 /* ------------------------------------------------------------------ */
 /* Side effects                                                        */
 /* ------------------------------------------------------------------ */
@@ -44,6 +42,16 @@ export function closeExplorationPanels(): void {
   sidebar.setDataCatalogOpen(false);
   sidebar.setAreasPanelOpen(false);
   sidebar.setInsightsPanelOpen(false);
+}
+
+function clearSelectionAndCharts(): void {
+  // The analysis feature keeps its own copy of the selection; clear it too or
+  // the "View analysis" nudge re-offers the old area.
+  useSelectionStore.getState().clear();
+  // A chart still loading (e.g. the hand-run analysis, left before it
+  // finished) would otherwise land on the cleared map, in the next question.
+  cancelRunningAnalyses();
+  useInsightStore.getState().clearInsights();
 }
 
 /**
@@ -63,13 +71,7 @@ export function clearMap(): void {
   // reset() clears layers, area geometry and the map's analysis selection.
   map.reset();
   map.setSelectAreaLayer(null);
-  // The analysis feature keeps its own copy of the selection; clear it too or
-  // the "View analysis" nudge re-offers the old area.
-  useSelectionStore.getState().clear();
-  // A chart still loading (e.g. the hand-run analysis, left before it
-  // finished) would otherwise land on the cleared map, in the next question.
-  cancelRunningAnalyses();
-  useInsightStore.getState().clearInsights();
+  clearSelectionAndCharts();
 }
 
 /**
@@ -86,11 +88,7 @@ export function clearAreasAndCharts(): void {
     map.removeLayer(layer.id);
   }
   map.clearAnalysis();
-  // As in clearMap: the analysis feature's own copy of the selection, and a
-  // chart still loading, would otherwise come back after the clear.
-  useSelectionStore.getState().clear();
-  cancelRunningAnalyses();
-  useInsightStore.getState().clearInsights();
+  clearSelectionAndCharts();
 }
 
 /** Takes every dataset layer off the map (and so its chip off the chat box). */
@@ -104,7 +102,8 @@ export function clearDatasetLayers(): void {
  */
 export function restoreMapDefaults(): void {
   const map = useMapStore.getState();
-  if (map.selectAreaLayer === null) map.setSelectAreaLayer(GADM_BOUNDARY_LAYER);
+  if (map.selectAreaLayer === null)
+    map.setSelectAreaLayer(useMapStore.getInitialState().selectAreaLayer);
   const params = new URLSearchParams(window.location.search);
   seedDefaultDatasetLayer(
     getDefaultDatasetId(isFeatureEnabled(params, NET_FLUX_FEATURE_FLAG))
@@ -173,11 +172,9 @@ export const isGeneratingInsight = () =>
 /** Answers finished in this conversation: the baseline for `answerFailedSince`. */
 export const answeredCount = () => useChatStore.getState().completedAnswers;
 
-const messagesSince = (baseline: number) => trackedMessages().slice(baseline);
-
 /** A user message was sent since `baseline` (from `chatMessageCount`). */
 export const sentMessageSince = (baseline: number) =>
-  messagesSince(baseline).some((m) => m.type === "user");
+  chatMessageCount() > baseline;
 
 /** The request started after `baseline` has finished streaming. */
 export const chatSettledSince = (baseline: number) =>
@@ -193,20 +190,23 @@ export const answerFailedSince = (baseline: number, answerBaseline: number) =>
   chatSettledSince(baseline) && answeredCount() === answerBaseline;
 
 /**
- * The hand-run chart failed: the user accepted View analysis, nothing is
- * loading any more and no chart arrived. Accepting the nudge starts the load
- * in the same click, so this can't hold in between.
+ * The hand-run chart failed: nothing is loading any more and no chart
+ * arrived. Meaningful once the user has accepted View analysis (check
+ * `hasAcceptedViewAnalysis` first); accepting starts the load in the same
+ * click, so this can't hold in between.
  */
 export const handRunChartFailed = () =>
-  hasAcceptedViewAnalysis() && !isGeneratingInsight() && insightCount() === 0;
+  !isGeneratingInsight() && insightCount() === 0;
 
 /**
  * The chart that leads the map's card (the newest analysis; its charts share
  * one origin) offers Show working: it was made with code the AI wrote. A
  * curated chart has none. Same rule as `WidgetMessage`.
  */
-export const leadChartShowsWorking = () =>
-  !!useInsightStore.getState().insights.at(-1)?.generation;
+export const leadChartShowsWorking = () => {
+  const lead = useInsightStore.getState().insights.at(-1);
+  return !!lead && showsWorking(lead);
+};
 
 /**
  * Reads app state in a step body and re-renders it when the chat or the
@@ -223,20 +223,6 @@ export function useAppValue<T extends boolean | number | string>(
     return () => stops.forEach((stop) => stop());
   }, []);
   return useSyncExternalStore(subscribe, read, read);
-}
-
-/**
- * Reads the user's daily prompt allowance, as the server last reported it,
- * through `read` (which must return a primitive), and re-renders on change.
- */
-export function useDailyPrompts<T extends string | number | boolean | null>(
-  read: (used: number, total: number) => T
-): T {
-  const snapshot = () => {
-    const { usedPrompts, totalPrompts } = useAuthStore.getState();
-    return read(usedPrompts, totalPrompts);
-  };
-  return useSyncExternalStore(useAuthStore.subscribe, snapshot, snapshot);
 }
 
 /* ------------------------------------------------------------------ */

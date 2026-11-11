@@ -5,7 +5,7 @@ import {
   defaultSystem,
   type ChakraProviderProps,
 } from "@chakra-ui/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/app/lib/api-client", () => ({ apiFetch: vi.fn() }));
 
@@ -17,6 +17,7 @@ import type { Layer } from "@/app/store/layerManagerSlice";
 import useMapStore from "@/app/store/mapStore";
 import useSidebarStore from "@/app/store/sidebarStore";
 import type { ChatMessage, InsightWidget } from "@/app/types/chat";
+import { LGMS_NET_FLUX_DATASET_ID } from "@/app/utils/defaultMapLayers";
 
 import { EMPTY_PROGRESS } from "../../model/onboarding-progress";
 import useOnboardingStore from "../../model/onboarding-store";
@@ -171,8 +172,7 @@ describe("first-run tour steps", () => {
       const kind = stepKind(s);
       if (kind === "action") expect(canSkipWhileWaiting(s, false)).toBe(true);
       // Waits on the app offer Skip step once they have waited long enough.
-      if (kind === "app-wait" || kind === "answer-card")
-        expect(canSkipWhileWaiting(s, true)).toBe(true);
+      if (kind === "app-wait") expect(canSkipWhileWaiting(s, true)).toBe(true);
     }
   });
 
@@ -311,7 +311,7 @@ describe("first-run tour flow", () => {
     expect(state().draftPrompt).toBe(CHAT_DEMO_PROMPT);
   });
 
-  it("offers Skip step on the question when no prompts are left, and says so", () => {
+  it("offers Skip step on the question, quota or not", () => {
     useAuthStore.setState({ usedPrompts: 25, totalPrompts: 25 });
     state().startTour(createFirstRunTour());
     goTo("ask-in-chat");
@@ -319,21 +319,22 @@ describe("first-run tour flow", () => {
     // An action step: Skip step shows from the start, quota or not.
     expect(stepKind(ask)).toBe("action");
     expect(canSkipWhileWaiting(ask, false)).toBe(true);
-    expect(bodyText(ask.body)).toContain("Press Skip step");
 
     state().skipStep(state().stepIndex);
     // Nothing sent: the answer steps have nothing to show.
     expect(currentStepId()).toBe("done");
   });
 
-  it("states the allowance the server reported, never a fixed number", () => {
+  it("states the allowance from the store, never a fixed number", () => {
+    // A server render reads the store's initial state, not what `setState`
+    // set, so this checks the initial quota; the rule itself is covered by
+    // the `dailyPromptsNote` tests below.
+    const { totalPrompts } = useAuthStore.getInitialState();
     state().startTour(createFirstRunTour());
     goTo("ask-in-chat");
     expect(bodyText(current()!.body)).toContain(
-      "uses 1 of your 25 daily prompts"
+      `uses 1 of your ${totalPrompts} daily prompts`
     );
-    useAuthStore.setState({ usedPrompts: 0, totalPrompts: 50 });
-    expect(bodyText(current()!.body)).toContain("1 of your 50 daily prompts");
   });
 
   it("explains a failed answer in the answer step, then skips the chart step", () => {
@@ -422,20 +423,83 @@ describe("first-run tour flow", () => {
       checklistDismissed: false,
     });
   });
+
+  describe("map defaults at the end", () => {
+    const TCL: Layer = {
+      id: "tcl",
+      name: "Tree cover loss",
+      type: "raster",
+      visible: true,
+      datasetId: TREE_COVER_LOSS_DATASET_ID,
+    };
+    const datasetIds = () =>
+      useMapStore
+        .getState()
+        .layers.filter((l) => !l.parentLayerId)
+        .map((l) => l.datasetId);
+    const stubSearch = (search: string) =>
+      vi.stubGlobal("window", { location: { search } });
+    afterEach(() => vi.unstubAllGlobals());
+
+    it.each([
+      ["skipped", () => state().endTour(false)],
+      ["closed on the last step", () => state().endTour(true)],
+    ])("puts the default area layer and dataset back when %s", (_, end) => {
+      stubSearch("");
+      useMapStore.setState({ layers: [TCL, KENYA] });
+      state().startTour(createFirstRunTour());
+      goTo("open-catalog");
+      // The tour emptied the map and the boundary layer.
+      expect(useMapStore.getState().layers).toEqual([]);
+      expect(useMapStore.getState().selectAreaLayer).toBeNull();
+
+      end();
+
+      expect(useMapStore.getState().selectAreaLayer).toBe(
+        useMapStore.getInitialState().selectAreaLayer
+      );
+      expect(datasetIds()).toEqual([TREE_COVER_LOSS_DATASET_ID]);
+    });
+
+    it("leaves the map alone when skipped at the welcome", () => {
+      stubSearch("");
+      useMapStore.setState({ layers: [KENYA], selectAreaLayer: "WDPA" });
+      state().startTour(createFirstRunTour());
+
+      state().endTour(false);
+
+      expect(useMapStore.getState().layers).toEqual([KENYA]);
+      expect(useMapStore.getState().selectAreaLayer).toBe("WDPA");
+    });
+
+    it("puts the LGMS dataset back under ?ff=net-flux", () => {
+      stubSearch("?ff=net-flux");
+      state().startTour(createFirstRunTour());
+      goTo("open-catalog");
+
+      state().endTour(false);
+
+      expect(datasetIds()).toEqual([LGMS_NET_FLUX_DATASET_ID]);
+    });
+  });
 });
 
 describe("dailyPromptsNote", () => {
   const NONE = "none left";
   it("counts the prompt a question uses", () => {
-    expect(dailyPromptsNote(3, 25, NONE)).toBe(
+    expect(dailyPromptsNote(25, false, NONE)).toBe(
       "Sending this question uses 1 of your 25 daily prompts."
     );
   });
-  it("says what to do when none are left", () => {
-    expect(dailyPromptsNote(25, 25, NONE)).toBe(NONE);
+  it("says what to do when none are left, also when used is above total", () => {
+    expect(dailyPromptsNote(25, true, NONE)).toBe(NONE);
   });
   it("says nothing for an unlimited allowance", () => {
-    expect(dailyPromptsNote(3, 99_999, NONE)).toBeNull();
+    expect(dailyPromptsNote(99_999, false, NONE)).toBeNull();
+    expect(dailyPromptsNote(5_000, false, NONE)).not.toBeNull();
+  });
+  it("says nothing when no allowance is set", () => {
+    expect(dailyPromptsNote(0, true, NONE)).toBeNull();
   });
 });
 

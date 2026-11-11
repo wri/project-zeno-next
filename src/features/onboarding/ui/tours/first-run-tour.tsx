@@ -195,7 +195,6 @@ function AiChartStepBody() {
  */
 export function createFirstRunTour(): UiTour {
   let chatBaseline = 0;
-  let insightBaseline = 0;
   let answerBaseline = 0;
   let collapseChecklistOnFinish = false;
   let mapCleared = false;
@@ -416,7 +415,6 @@ export function createFirstRunTour(): UiTour {
           clearAreasAndCharts();
           mapCleared = true;
           chatBaseline = chatMessageCount();
-          insightBaseline = insightCount();
           answerBaseline = answeredCount();
           useOnboardingStore.getState().setDraftPrompt(CHAT_DEMO_PROMPT);
         },
@@ -466,7 +464,7 @@ export function createFirstRunTour(): UiTour {
         // than describing a card the user can't see.
         optional: true,
         // No answer, or an answer without a chart: nothing to check here.
-        skipIf: () => noAnswer() || insightCount() <= insightBaseline,
+        skipIf: () => noAnswer() || insightCount() === 0,
         body: <AiChartStepBody />,
       },
       {
