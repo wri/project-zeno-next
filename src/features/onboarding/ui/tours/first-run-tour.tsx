@@ -3,11 +3,14 @@
 import {
   BirdIcon,
   ChartBarIcon,
+  ChartLineIcon,
+  CrosshairIcon,
   DotsThreeVerticalIcon,
   DownloadSimpleIcon,
   InfoIcon,
   ListIcon,
   MapTrifoldIcon,
+  MicroscopeIcon,
   PolygonIcon,
   ShieldCheckIcon,
   SparkleIcon,
@@ -66,7 +69,7 @@ const CHAT_DEMO_PROMPT =
 const BOUNDARY_TYPES = (
   <ul>
     <li>
-      <InlineIcon icon={MapTrifoldIcon} /> <b>Administrative areas</b>:
+      <InlineIcon icon={MapTrifoldIcon} /> <b>Administrative Areas</b>:
       countries, states, districts
     </li>
     <li>
@@ -158,13 +161,14 @@ export function createFirstRunTour(): UiTour {
         title: "Turn on Tree cover loss",
         body: (
           <p>
-            Turn on <b>Show on map</b>. Pink pixels show where trees were lost
-            each year since 2001. The <InlineIcon icon={InfoIcon} /> button
-            explains each dataset&apos;s coverage and caveats.
+            Flip the switch on the <b>Tree cover loss</b> row. Pink pixels show
+            where trees were lost each year since 2001. The{" "}
+            <InlineIcon icon={InfoIcon} /> button on a row explains that
+            dataset&apos;s coverage and caveats.
           </p>
         ),
         waitFor: isDatasetOnMap(TREE_COVER_LOSS_DATASET_ID),
-        hint: "Toggle Show on map",
+        hint: "Turn on Tree cover loss",
       },
       {
         id: "open-areas",
@@ -192,12 +196,12 @@ export function createFirstRunTour(): UiTour {
             <p>Each boundary layer outlines a different kind of area:</p>
             {BOUNDARY_TYPES}
             <p>
-              Turn on <b>Show on map</b> for <b>Administrative areas</b>.
+              Flip the switch on the <b>Administrative Areas</b> row.
             </p>
           </>
         ),
         waitFor: isBoundaryLayerShown(GADM_BOUNDARY_LAYER),
-        hint: "Toggle Administrative areas",
+        hint: "Turn on Administrative Areas",
       },
       {
         id: "pick-kenya",
@@ -233,18 +237,23 @@ export function createFirstRunTour(): UiTour {
         body: (
           <>
             <p>
-              You have a dataset and an area selected, so Horizon offers to
-              analyse them. Click <b>View analysis</b>.
+              Horizon now offers to analyse your dataset and area. In the chat,
+              click <InlineIcon icon={ChartLineIcon} />{" "}
+              <b>View Tree cover loss Analysis for Kenya</b>.
             </p>
             <Tip>
-              You can also run it from the{" "}
+              Ignore the other offers for now. <b>Generate … Insight</b> asks
+              the agent for a written insight instead.
+            </Tip>
+            <Tip>
+              You can also choose <b>View Analysis</b> from the{" "}
               <InlineIcon icon={DotsThreeVerticalIcon} /> menu on the
               area&apos;s label on the map.
             </Tip>
           </>
         ),
         waitFor: hasAcceptedViewAnalysis,
-        hint: "Click View analysis",
+        hint: "Click View Tree cover loss Analysis",
         skippable: true,
       },
       {
@@ -267,12 +276,15 @@ export function createFirstRunTour(): UiTour {
                 open it <b>Full-screen</b>
               </li>
               <li>
+                <InlineIcon icon={MicroscopeIcon} /> <b>Show working</b> shows
+                how the chart was made
+              </li>
+              <li>
                 <InlineIcon icon={DownloadSimpleIcon} /> <b>Download</b> the
                 data or the chart
               </li>
               <li>
-                <b>Show params</b> lists the settings it used; <b>Learn more</b>{" "}
-                explains how this kind of analysis is made
+                <b>Show params</b> lists the settings it used
               </li>
             </ul>
             <Tip>
@@ -355,7 +367,8 @@ export function createFirstRunTour(): UiTour {
         body: (
           <p>
             The area Horizon chose, also outlined on the map. Check it&apos;s
-            the place you meant. Its menu lets you save or remove it.
+            the place you meant. <InlineIcon icon={CrosshairIcon} /> centres the
+            map on it.
           </p>
         ),
       },
@@ -404,9 +417,10 @@ export function createFirstRunTour(): UiTour {
         optional: true,
         body: (
           <p>
-            Same controls as the analysis you ran by hand. Horizon is still
-            writing up the answer, which will appear in the chat with a card for
-            this chart.
+            It has the same controls as the analysis you ran by hand, such as{" "}
+            <b>Show working</b> and <b>Download</b>. Horizon is still writing up
+            the answer, which will appear in the chat with a card for this
+            chart.
           </p>
         ),
       },
@@ -469,24 +483,24 @@ export function createFirstRunTour(): UiTour {
         body: (
           <>
             <p>
-              Open <InlineIcon icon={ListIcon} /> the menu for <b>Help</b>,
-              which opens the Horizon Help Center. Look there for:
+              Open <InlineIcon icon={ListIcon} /> the menu, then choose{" "}
+              <b>Help</b> to open the Horizon Help Center. Look there for:
             </p>
             <ul>
               <li>
-                <b>Capabilities</b>: what Horizon can and can&apos;t answer,
-                with example questions
+                <b>Capabilities</b>: what Horizon can answer, and the datasets
+                it uses
               </li>
               <li>
-                <b>Datasets</b>: sources, coverage, resolution and caveats
+                <b>FAQs</b> and <b>Accuracy</b>: how to read the results
               </li>
               <li>
-                <b>Known issues</b>: current limitations and workarounds
+                <b>Known Issues</b>: current limitations
               </li>
             </ul>
             <Tip>
-              The menu also has <b>My areas</b>, <b>What&apos;s new</b> and your
-              daily prompt allowance.
+              The menu also has <b>Dashboards</b>, <b>My areas</b>,{" "}
+              <b>What&apos;s new</b> and your daily prompt allowance.
             </Tip>
           </>
         ),

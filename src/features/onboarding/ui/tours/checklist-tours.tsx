@@ -1,11 +1,9 @@
 "use client";
 
 import {
-  DownloadSimpleIcon,
-  InfoIcon,
-  PencilSimpleIcon,
+  MapTrifoldIcon,
   PolygonIcon,
-  StackIcon,
+  SelectionPlusIcon,
   StackSimpleIcon,
   UploadSimpleIcon,
 } from "@phosphor-icons/react";
@@ -95,12 +93,12 @@ const ITEMS: Record<ChecklistItemId, Omit<ChecklistItem, "id">> = {
         target: anchorTarget(TOUR_ANCHORS.catalogPanel),
         placement: "right",
         onEnter: openDataCatalog,
-        title: "Turn on Show on map",
+        title: "Switch a dataset on",
         body: (
           <p>
-            Each card shows what the dataset covers and how far back it goes.{" "}
-            <b>Show on map</b> adds it as a layer, and layers you turn on are
-            included with your next question.
+            Search or pick a category, then use the switch on a row to add the
+            dataset as a layer. Active layers are pinned under <b>On map</b>,
+            and they are included with your next question.
           </p>
         ),
       },
@@ -114,7 +112,9 @@ const ITEMS: Record<ChecklistItemId, Omit<ChecklistItem, "id">> = {
         body: (
           <p>
             Change a layer&apos;s opacity or read about it here. To remove it,
-            switch it off in the catalog.
+            switch it off in the catalogue.{" "}
+            <InlineIcon icon={StackSimpleIcon} /> <b>Datasets</b> in this header
+            opens the catalogue again.
           </p>
         ),
       },
@@ -143,12 +143,14 @@ const ITEMS: Record<ChecklistItemId, Omit<ChecklistItem, "id">> = {
         target: anchorTarget(TOUR_ANCHORS.areasPanel),
         placement: "right",
         onEnter: openAreasPanel,
-        title: "Show a boundary, then click the map",
+        title: "Search, or show a boundary",
         body: (
           <p>
-            Turn on one boundary layer (administrative areas, Key Biodiversity
-            Areas, protected areas or Indigenous lands), then click an area on
-            the map to select it. Only one boundary layer shows at a time.
+            Search for a place, or turn on a boundary layer under{" "}
+            <b>Boundaries</b> (administrative areas, Key Biodiversity Areas,
+            protected areas, Indigenous lands or commodities) and click an area
+            on the map. Only one boundary layer shows at a time. Areas from your
+            chat are under <b>In this conversation</b>.
           </p>
         ),
       },
@@ -161,9 +163,10 @@ const ITEMS: Record<ChecklistItemId, Omit<ChecklistItem, "id">> = {
         title: "Or draw or upload your own",
         body: (
           <p>
-            <InlineIcon icon={PencilSimpleIcon} /> Draw a shape on the map, or{" "}
-            <InlineIcon icon={UploadSimpleIcon} /> upload a boundary file. Saved
-            shapes appear under <b>My areas</b>, also in the menu.
+            <InlineIcon icon={SelectionPlusIcon} /> <b>Draw on map</b> makes a
+            shape, or <InlineIcon icon={UploadSimpleIcon} /> <b>Upload file</b>{" "}
+            adds a boundary file. Saved shapes appear under <b>My areas</b>,
+            also in the menu.
           </p>
         ),
       },
@@ -181,11 +184,14 @@ const ITEMS: Record<ChecklistItemId, Omit<ChecklistItem, "id">> = {
         body: (
           <>
             <p>
-              Switch between chart and table,{" "}
-              <InlineIcon icon={DownloadSimpleIcon} /> download CSV or PNG, and{" "}
-              <InlineIcon icon={InfoIcon} /> check sources, method and caveats.
+              Switch between <b>Chart</b> and <b>Table</b>, use{" "}
+              <b>Show working</b> to see how it was made, and <b>Show params</b>{" "}
+              to check the inputs. <b>Download</b> saves the data.
             </p>
-            <Tip>Run an analysis first if nothing is highlighted.</Tip>
+            <Tip>
+              Nothing highlighted? No analysis is open yet. Ask a question
+              first, then come back.
+            </Tip>
           </>
         ),
       },
@@ -207,13 +213,13 @@ const ITEMS: Record<ChecklistItemId, Omit<ChecklistItem, "id">> = {
         body: (
           <>
             <p>
-              Ask for Sentinel-2 imagery of any place and date and it&apos;s
-              loaded onto the map. We&apos;ve put an example in the chat box for
-              you to send when you&apos;re ready.
+              Ask for imagery of a place and date and it&apos;s loaded onto the
+              map. We&apos;ve put an example in the chat box for you to send
+              when you&apos;re ready.
             </p>
             <Tip>
-              Imagery works for areas up to about 50,000 km², so pick a park or
-              district rather than a whole country.
+              Sentinel-2 covers most places. In the Amazon, Planet monthly
+              mosaics (from September 2020) show under disturbance alerts.
             </Tip>
           </>
         ),
@@ -228,7 +234,7 @@ const ITEMS: Record<ChecklistItemId, Omit<ChecklistItem, "id">> = {
         body: (
           <p>
             For a general satellite backdrop, change the basemap with{" "}
-            <InlineIcon icon={StackIcon} />.
+            <InlineIcon icon={MapTrifoldIcon} />.
           </p>
         ),
       },
@@ -247,10 +253,10 @@ const ITEMS: Record<ChecklistItemId, Omit<ChecklistItem, "id">> = {
         title: "Keep the analyses you like",
         body: (
           <p>
-            <b>Analyses</b> lists every analysis from your conversations.{" "}
-            <b>Add to dashboard</b> saves one to a dashboard for its area, where
-            you can add notes and build a report. Open your dashboards from the{" "}
-            <b>Dashboards</b> tab.
+            <b>Analyses</b> has tabs for <b>Curated</b>, <b>AI generated</b> and{" "}
+            <b>In this conversation</b>. <b>Add to dashboard</b> saves one to a
+            dashboard for its area, where you can add notes and build a report.
+            Open your dashboards from <b>Dashboards</b> in the menu.
           </p>
         ),
       },
