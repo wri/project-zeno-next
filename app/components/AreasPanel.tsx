@@ -13,6 +13,7 @@ import useMapStore from "@/app/store/mapStore";
 import useSidebarStore, {
   type AreasPanelFilter,
 } from "@/app/store/sidebarStore";
+import { TOUR_ANCHORS, tourAnchor } from "@/src/shared/lib/tour-anchors";
 import { ENTITY_KINDS } from "@/src/shared/ui/entity-card";
 
 import { AreaActionBar } from "./AreaActionBar";
@@ -91,7 +92,10 @@ export default function AreasPanel() {
           transition={areasPanelSlideTransition}
           style={getCatalogColumnMotionStyle(leftPx)}
         >
-          <Flex {...getCatalogColumnPanelFlexProps(isChatFullSize)}>
+          <Flex
+            {...getCatalogColumnPanelFlexProps(isChatFullSize)}
+            {...tourAnchor(TOUR_ANCHORS.areasPanel)}
+          >
             <AreasPanelHeader onClose={() => setAreasPanelOpen(false)} />
             <AreasPanelBody
               filter={filter}

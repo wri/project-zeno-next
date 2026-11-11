@@ -21,6 +21,8 @@ import ContextButton, {
   ChatContextType,
   PanelToggleButton,
 } from "./ContextButton";
+import { TOUR_ANCHORS, tourAnchor } from "@/src/shared/lib/tour-anchors";
+import { useOnboardingDraft } from "@/src/features/onboarding";
 import ContextTag from "./ContextTag";
 import ContextMenu from "./ContextMenu";
 import VoiceListeningPanel from "./voice/VoiceListeningPanel";
@@ -52,6 +54,8 @@ export default function ChatInput({
   onAfterSend?: () => void;
 }) {
   const [inputValue, setInputValue] = useState("");
+  // The onboarding tour can hand us a ready-made question to send.
+  useOnboardingDraft(setInputValue);
   const [contextModalOpen, setContextModalOpen] = useState(false);
   const [selectedContextType, setSelectedContextType] =
     useState<ChatContextType | null>(null);
@@ -230,6 +234,7 @@ export default function ChatInput({
       borderColor={bordered ? "#E0E2E5" : undefined}
       borderRadius={bordered ? "sm" : undefined}
       className="group"
+      {...tourAnchor(TOUR_ANCHORS.chatInput)}
       transition="all 0.32s ease-in-out"
       _focusWithin={
         bordered
@@ -319,12 +324,14 @@ export default function ChatInput({
                 <>
                   <ContextButton
                     contextType="layer"
+                    {...tourAnchor(TOUR_ANCHORS.datasetsButton)}
                     onClick={openLayerPicker}
                     disabled={disabled}
                     active={dataCatalogOpen}
                   />
                   <ContextButton
                     contextType="area"
+                    {...tourAnchor(TOUR_ANCHORS.areasButton)}
                     onClick={openAreaPicker}
                     disabled={disabled}
                     active={areasPanelOpen}
@@ -339,6 +346,7 @@ export default function ChatInput({
                   <PanelToggleButton
                     icon={<ChartLineIcon />}
                     label={t("chat.input.analyses")}
+                    {...tourAnchor(TOUR_ANCHORS.analysesButton)}
                     onClick={openInsightsPanel}
                     disabled={disabled}
                     active={insightsPanelOpen}

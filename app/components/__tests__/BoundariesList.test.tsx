@@ -11,6 +11,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import useMapStore from "@/app/store/mapStore";
+import { boundaryCardAnchor } from "@/src/shared/lib/tour-anchors";
 
 import { BoundariesList } from "../BoundariesList";
 
@@ -26,8 +27,10 @@ vi.mock("@/src/shared/ui/entity-card", async (importOriginal) => ({
       checked: boolean;
       onChange: (checked: boolean) => void;
     };
+    tourAnchorId?: string;
   }) => (
     <button
+      data-tour={props.tourAnchorId}
       aria-pressed={props.interaction.checked}
       onClick={() => props.interaction.onChange(!props.interaction.checked)}
     >
@@ -128,6 +131,16 @@ describe("BoundariesList", () => {
 
     expect(useMapStore.getState().selectAreaLayer).toBeNull();
     expect(NAMES.some(isOn)).toBe(false);
+  });
+
+  it("marks each card as a tour target by its boundary layer id", () => {
+    renderList();
+
+    expect(card("Administrative Areas").getAttribute("data-tour")).toBe(
+      boundaryCardAnchor("GADM")
+    );
+    const anchors = NAMES.map((name) => card(name).getAttribute("data-tour"));
+    expect(new Set(anchors).size).toBe(NAMES.length);
   });
 
   it("does not add an area layer (so no ui_context) when showing a boundary layer", () => {

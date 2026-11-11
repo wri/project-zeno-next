@@ -23,9 +23,13 @@ vi.mock("@/app/store/chatStore", () => ({
 afterEach(() => vi.dynamicImportSettled());
 
 import DataCatalogPanel from "../CatalogPanel";
-import { DATASET_CARDS } from "@/app/constants/datasets";
+import {
+  DATASET_CARDS,
+  TREE_COVER_LOSS_DATASET_ID,
+} from "@/app/constants/datasets";
 import useMapStore from "@/app/store/mapStore";
 import useSidebarStore from "@/app/store/sidebarStore";
+import { catalogCardAnchor } from "@/src/shared/lib/tour-anchors";
 
 /** Point `useEnabledFlags` (which reads the URL) at a set of flags. */
 const setFlags = (...flags: string[]) =>
@@ -175,6 +179,23 @@ describe("Data Catalog panel — compact rows", () => {
     });
 
     expect(screen.queryByLabelText(/opacity/i)).toBeNull();
+  });
+
+  it("marks each dataset's own row as its tour target, not its supporting layers", () => {
+    setFlags("net-flux");
+    renderPanel();
+
+    const datasetAnchor = (title: string) =>
+      screen.getByText(title).closest('[data-tour^="catalog-card-"]');
+    expect(datasetAnchor("Tree cover loss")?.getAttribute("data-tour")).toBe(
+      catalogCardAnchor(TREE_COVER_LOSS_DATASET_ID)
+    );
+    expect(
+      datasetAnchor("Land GHG Monitoring System (LGMS)")?.getAttribute(
+        "data-tour"
+      )
+    ).toBe(catalogCardAnchor(12));
+    expect(datasetAnchor("LGMS LULUCF net GHG flux")).toBeNull();
   });
 });
 

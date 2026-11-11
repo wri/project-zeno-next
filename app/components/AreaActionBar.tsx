@@ -7,6 +7,7 @@ import useMapStore from "@/app/store/mapStore";
 import { addCustomAreaToMap } from "@/app/utils/addCustomAreaToMap";
 import { formatAreaWithUnits } from "@/app/utils/formatArea";
 import { MAX_AREA_KM2 } from "@/src/entities/custom-area";
+import { TOUR_ANCHORS, tourAnchor } from "@/src/shared/lib/tour-anchors";
 
 /**
  * Draw and Upload for the `AreasPanel`, above the filter chips. While drawing,
@@ -56,7 +57,7 @@ export function AreaActionBar({
   if (hideIdle) return null;
 
   return (
-    <Flex gap="6px" flexShrink={0}>
+    <Flex gap="6px" flexShrink={0} {...tourAnchor(TOUR_ANCHORS.areaTools)}>
       <Button {...actionButtonProps} onClick={handleDraw}>
         <SelectionPlusIcon size={16} />
         Draw on map

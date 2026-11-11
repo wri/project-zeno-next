@@ -29,6 +29,11 @@ import { filterDatasetsByCategory } from "@/app/utils/filterDatasetsByCategory";
 import { filterDatasetsByFeatureFlag } from "@/app/utils/filterDatasetsByFeatureFlag";
 import { searchDatasets } from "@/app/utils/searchDatasets";
 import { useEnabledFlags } from "@/src/shared/lib/feature-flags";
+import {
+  TOUR_ANCHORS,
+  catalogCardAnchor,
+  tourAnchor,
+} from "@/src/shared/lib/tour-anchors";
 
 import { DatasetRow } from "./DatasetRow";
 import { PanelEmpty, PanelList, PanelPills, PanelSection } from "./PanelList";
@@ -82,7 +87,10 @@ export default function DataCatalogPanel() {
           transition={catalogPanelSlideTransition}
           style={getCatalogColumnMotionStyle(leftPx)}
         >
-          <Flex {...getCatalogColumnPanelFlexProps(isChatFullSize)}>
+          <Flex
+            {...getCatalogColumnPanelFlexProps(isChatFullSize)}
+            {...tourAnchor(TOUR_ANCHORS.catalogPanel)}
+          >
             <Flex
               flexShrink={0}
               h="40px"
@@ -422,6 +430,7 @@ function CatalogDatasetRow({
           onChange: handleToggle,
           dataPanel: "datasets",
         }}
+        tourAnchorId={catalogCardAnchor(card.dataset_id)}
       />
       {supportingLayers.length > 0 && (
         <Stack gap="6px" pl="16px">

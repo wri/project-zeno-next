@@ -18,6 +18,7 @@ import {
   type LayerId,
   selectLayerOptions,
 } from "@/app/types/map";
+import { boundaryCardAnchor } from "@/src/shared/lib/tour-anchors";
 import { ENTITY_KINDS, EntityCard } from "@/src/shared/ui/entity-card";
 
 import { PanelList } from "./PanelList";
@@ -111,6 +112,7 @@ function BoundaryCard({
         onChange: (checked) => setSelectAreaLayer(checked ? id : null),
         dataPanel: "areas-boundaries",
       }}
+      tourAnchorId={boundaryCardAnchor(id)}
     />
   );
 }
