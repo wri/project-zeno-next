@@ -37,8 +37,11 @@ const areasListScrollStyle = {
   "&::-webkit-scrollbar": { display: "none" },
 } as const;
 
+/** The boundary layers' tab. The onboarding tour's copy names it. */
+export const BOUNDARIES_TAB_LABEL = "Boundaries";
+
 const AREA_FILTERS: { id: AreasPanelFilter; label: string }[] = [
-  { id: "boundaries", label: "Boundaries" },
+  { id: "boundaries", label: BOUNDARIES_TAB_LABEL },
   { id: "conversation", label: "In this conversation" },
   { id: "mine", label: "My areas" },
 ];

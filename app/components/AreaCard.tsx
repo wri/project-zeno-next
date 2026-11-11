@@ -10,6 +10,7 @@ import {
 } from "@/app/store/layerManagerSlice";
 import { unionAoiBboxes } from "@/app/utils/bboxUtils";
 import { buildStaticMapUrl } from "@/app/utils/areaStaticMapUrl";
+import { ENTITY_KINDS } from "@/src/shared/ui/entity-card";
 import { useState } from "react";
 
 function getAreaTypeLabel(aoiSelection: AOISelection): string {
@@ -121,7 +122,7 @@ export function AreaCard({ aoiSelection }: AreaCardProps) {
     <InfoCard
       thumbnail={thumbnail}
       thumbnailBg="gray.100"
-      typeLabel="AREA"
+      typeLabel={ENTITY_KINDS.area.label}
       typeLabelColor="#2D6BE4"
       title={aoiSelection.name}
       description={areaTypeLabel || undefined}

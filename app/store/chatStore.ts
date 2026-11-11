@@ -275,15 +275,24 @@ function withProfileAsk(
   ];
 }
 
-// Whether the messages a turn added amount to an answer. A turn that ends by
-// asking the user to choose (a nudge) is a clarification and doesn't count.
-// Error messages aren't judged here: tool handlers add client-side ones (a
-// geometry fetch that failed, say) to turns whose answer still arrived. Only
-// a stream-level failure stops a turn counting; sendMessage tracks that.
+/**
+ * Whether the messages a turn added end by asking the user to choose (a
+ * nudge): a clarifying question, not an answer. Exported for the onboarding
+ * tour, which tells the user the assistant has a question for them.
+ */
+export function isClarifyingTurn(turnMessages: ChatMessage[]): boolean {
+  return turnMessages.some((m) => m.type === "nudge");
+}
+
+// Whether the messages a turn added amount to an answer. A clarification
+// doesn't count. Error messages aren't judged here: tool handlers add
+// client-side ones (a geometry fetch that failed, say) to turns whose answer
+// still arrived. Only a stream-level failure stops a turn counting;
+// sendMessage tracks that.
 function isAnsweredTurn(turnMessages: ChatMessage[]): boolean {
   return (
     turnMessages.some((m) => m.type === "assistant") &&
-    !turnMessages.some((m) => m.type === "nudge")
+    !isClarifyingTurn(turnMessages)
   );
 }
 

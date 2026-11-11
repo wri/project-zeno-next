@@ -44,6 +44,9 @@ import {
 import InsightChartPills, { hasChartPills } from "./InsightChartPills";
 import { TOUR_ANCHORS, tourAnchor } from "@/src/shared/lib/tour-anchors";
 
+/** The card's header label. The onboarding tour's copy names it. */
+export const ANALYSIS_CARD_LABEL = "ANALYSIS";
+
 /**
  * Placeholder shown while the very first analysis is generating (no chart in
  * the store yet). Mirrors the real card's layout — indeterminate top bar,
@@ -252,7 +255,7 @@ export default function InsightWorkspace() {
             color="fg.muted"
             whiteSpace="nowrap"
           >
-            ANALYSIS
+            {ANALYSIS_CARD_LABEL}
           </Text>
         </Flex>
         <Flex align="center" gap="8px" flexShrink={0}>
