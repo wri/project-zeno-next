@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { EMPTY_PROGRESS } from "../onboarding-progress";
-import useOnboardingStore from "../onboarding-store";
+import useOnboardingStore, { selectTourActive } from "../onboarding-store";
 import type { Tour } from "../tour";
 
 const step = (id: string) => ({ id, title: id, body: null });
@@ -116,5 +116,18 @@ describe("onboarding store", () => {
   it("dismisses the checklist", () => {
     state().dismissChecklist();
     expect(state().progress.checklistDismissed).toBe(true);
+  });
+
+  it("is active from a tour's start until it ends, finished or not", () => {
+    expect(selectTourActive(state())).toBe(false);
+    state().startTour(tour());
+    expect(selectTourActive(state())).toBe(true);
+    state().endTour(false);
+    expect(selectTourActive(state())).toBe(false);
+    state().startTour(tour());
+    state().advance();
+    state().advance();
+    state().advance();
+    expect(selectTourActive(state())).toBe(false);
   });
 });

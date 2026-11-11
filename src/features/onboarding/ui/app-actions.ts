@@ -121,16 +121,25 @@ export const hasAcceptedViewAnalysis = () =>
         m.type === "view-analysis-nudge" && m.viewAnalysisSuggestion?.accepted
     );
 
-export const chatMessageCount = () => useChatStore.getState().messages.length;
+// Only the kinds the predicates below look for, which a conversation never
+// removes. The whole list would make a shifting baseline: sending drops a
+// transient profile ask and a pending nudge can be withdrawn, either of which
+// moves the next message below a baseline counted while it was there.
+const trackedMessages = () =>
+  useChatStore
+    .getState()
+    .messages.filter((m) => m.type === "user" || m.type === "area-card");
+
+/** The baseline for the `...Since` predicates. */
+export const chatMessageCount = () => trackedMessages().length;
 
 export const insightCount = () => useInsightStore.getState().insights.length;
 
 export const isChatLoading = () => useChatStore.getState().isLoading;
 
-const messagesSince = (baseline: number) =>
-  useChatStore.getState().messages.slice(baseline);
+const messagesSince = (baseline: number) => trackedMessages().slice(baseline);
 
-/** A user message was sent after the first `baseline` messages. */
+/** A user message was sent since `baseline` (from `chatMessageCount`). */
 export const sentMessageSince = (baseline: number) =>
   messagesSince(baseline).some((m) => m.type === "user");
 

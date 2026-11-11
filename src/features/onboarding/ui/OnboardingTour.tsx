@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 
+import useChatStore from "@/app/store/chatStore";
 import useMapStore from "@/app/store/mapStore";
 import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
 import {
@@ -11,21 +12,25 @@ import {
 } from "@/src/shared/lib/router";
 
 import { readProgress, writeProgress } from "../lib/progress-storage";
-import useOnboardingStore from "../model/onboarding-store";
-import { ONBOARDING_FEATURE_FLAG, START_TOUR_PARAM } from "./tour-entry";
+import useOnboardingStore, {
+  selectTourActive,
+} from "../model/onboarding-store";
+import {
+  ONBOARDING_FEATURE_FLAG,
+  START_TOUR_PARAM,
+  shouldStartTour,
+} from "./tour-entry";
 import { TourOverlay } from "./TourOverlay";
 import { createFirstRunTour } from "./tours/first-run-tour";
 
 /** Let the map settle (default layers, first paint) before dimming it. */
 const START_DELAY_MS = 800;
 
-const NEW_CONVERSATION_PATH = "/app";
-
 /**
  * The guided tour: loads and saves onboarding progress, starts the first-run
  * tour for new users or when the URL carries `?tour` ("Take the tour"), and
- * renders whichever tour is running. Only starts on a fresh conversation,
- * where the tour's map and chat steps make sense. Mount once, desktop only.
+ * renders whichever tour is running. When it starts: `shouldStartTour`.
+ * Mount once, desktop only.
  */
 export function OnboardingTour() {
   const enabled = useFeatureFlag(ONBOARDING_FEATURE_FLAG);
@@ -36,7 +41,8 @@ export function OnboardingTour() {
   const mapReady = useMapStore((s) => s.mapRef !== null);
   const hydrated = useOnboardingStore((s) => s.hydrated);
   const firstVisit = useOnboardingStore((s) => s.progress.tourOutcome === null);
-  const tourRunning = useOnboardingStore((s) => s.tour !== null);
+  const tourRunning = useOnboardingStore(selectTourActive);
+  const conversationStarted = useChatStore((s) => s.currentThreadId !== null);
 
   // Load once, then persist every change.
   useEffect(() => {
@@ -51,8 +57,13 @@ export function OnboardingTour() {
 
   useEffect(() => {
     if (!enabled || !hydrated || !mapReady || tourRunning) return;
-    if (pathname !== NEW_CONVERSATION_PATH) return;
-    if (!startRequested && !firstVisit) return;
+    const start = shouldStartTour({
+      pathname,
+      params: searchParams,
+      firstVisit,
+      conversationStarted,
+    });
+    if (!start) return;
 
     const timer = window.setTimeout(() => {
       useOnboardingStore.getState().startTour(createFirstRunTour());
@@ -73,6 +84,7 @@ export function OnboardingTour() {
     pathname,
     startRequested,
     firstVisit,
+    conversationStarted,
     searchParams,
     router,
   ]);

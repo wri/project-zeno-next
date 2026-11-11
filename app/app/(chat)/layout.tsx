@@ -29,7 +29,11 @@ import { CATALOG_COLUMN_Z_INDEX } from "@/app/explorationLayout";
 import { ViewAnalysisTrigger } from "@/src/features/analysis";
 import { CreateDashboardTrigger } from "@/src/features/dashboards";
 import { ProfileAskTrigger } from "@/src/features/front-door";
-import { OnboardingChecklist, OnboardingTour } from "@/src/features/onboarding";
+import {
+  OnboardingChecklist,
+  OnboardingTour,
+  useIsTourActive,
+} from "@/src/features/onboarding";
 
 export default function DashboardLayout({
   children,
@@ -41,6 +45,8 @@ export default function DashboardLayout({
   const { toggleSidebar } = useSidebarStore();
   const isMobile = useBreakpointValue({ base: true, md: false });
   const [mobileHeight, setMobileHeight] = useState("0");
+  // The profile card or banner would land mid-tour, under the spotlight.
+  const tourActive = useIsTourActive();
 
   useEffect(() => {
     // Set layout heights after mount to avoid flash of both layouts at once
@@ -175,7 +181,7 @@ export default function DashboardLayout({
       <AnalysisCtaTrigger />
       <ViewAnalysisTrigger />
       <CreateDashboardTrigger />
-      <ProfileAskTrigger />
+      <ProfileAskTrigger paused={tourActive} />
 
       {!isMobile && (
         <Box>

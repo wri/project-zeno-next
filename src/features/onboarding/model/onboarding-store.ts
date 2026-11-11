@@ -135,4 +135,8 @@ const useOnboardingStore = create<OnboardingState>((set, get) => ({
     })),
 }));
 
+/** A tour (the first-run tour or a checklist walkthrough) is running. */
+export const selectTourActive = (state: OnboardingState): boolean =>
+  state.tour !== null;
+
 export default useOnboardingStore;
