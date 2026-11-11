@@ -1,9 +1,16 @@
 /**
- * What we remember about a user's onboarding between visits. Kept tiny and
- * versioned so a future tour can re-show itself by bumping the storage key.
+ * What we remember about a user's onboarding between visits. Kept tiny; a
+ * future tour re-shows itself by raising `FIRST_RUN_TOUR_VERSION`.
  */
 
 export type TourOutcome = "completed" | "skipped";
+
+/**
+ * The first-run tour version a stored outcome belongs to. Raise it to show
+ * the tour again to everyone who finished or skipped an older one; their
+ * checklist progress is kept.
+ */
+export const FIRST_RUN_TOUR_VERSION = 1;
 
 /** Checklist item ids; the checklist shows them in this order. */
 export const CHECKLIST_ITEM_IDS = [
