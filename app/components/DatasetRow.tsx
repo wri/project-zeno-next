@@ -17,6 +17,8 @@ export interface DatasetRowProps {
   showKind?: boolean;
   /** Static (chat) when omitted; a show-on-map switch in the panels and picker. */
   interaction?: CardInteraction;
+  /** Marks the row as a guided-tour target (see `EntityCard`). */
+  tourAnchorId?: string;
 }
 
 /**
@@ -30,6 +32,7 @@ export function DatasetRow({
   viewOnly = false,
   showKind,
   interaction,
+  tourAnchorId,
 }: DatasetRowProps) {
   const { open, onOpen, onClose } = useDisclosure();
 
@@ -47,6 +50,7 @@ export function DatasetRow({
         showKind={showKind}
         interaction={interaction}
         onInfo={onOpen}
+        tourAnchorId={tourAnchorId}
       />
     </>
   );

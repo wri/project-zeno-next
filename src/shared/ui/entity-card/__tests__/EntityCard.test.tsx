@@ -227,6 +227,25 @@ describe("EntityCard — toggle", () => {
   });
 });
 
+describe("EntityCard — tour anchor", () => {
+  it("marks the whole card, not a part of it, as the tour target", () => {
+    const { container } = renderCard({
+      tourAnchorId: "catalog-card-4",
+      interaction: toggle({}),
+    });
+    const anchored = container.querySelectorAll('[data-tour="catalog-card-4"]');
+    expect(anchored).toHaveLength(1);
+    // The root holds both the title and the switch.
+    expect(anchored[0].contains(screen.getByText("Pará, Brazil"))).toBe(true);
+    expect(anchored[0].querySelector('input[type="checkbox"]')).not.toBeNull();
+  });
+
+  it("sets no tour attribute without an anchor id", () => {
+    const { container } = renderCard();
+    expect(container.querySelector("[data-tour]")).toBeNull();
+  });
+});
+
 describe("EntityCard — link", () => {
   const link = (onClick = vi.fn()): EntityCardProps["interaction"] => ({
     mode: "link",
