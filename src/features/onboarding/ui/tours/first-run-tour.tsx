@@ -27,7 +27,18 @@ import {
   type TourOutcome,
 } from "../../model/onboarding-progress";
 import useOnboardingStore from "../../model/onboarding-store";
-import { TREE_COVER_LOSS_DATASET_ID } from "@/app/constants/datasets";
+import { DATA_CATALOG_LABEL } from "@/app/components/CatalogPanel";
+import { ChatContextOptions } from "@/app/components/ContextButton";
+import { WIDGET_CONTROL_LABELS } from "@/app/components/WidgetMessage";
+import { ANALYSES_LABEL } from "@/app/components/chatInputLabels";
+import { VIEW_ANALYSIS_MENU_LABEL } from "@/app/components/map/aoiActionsMenuLabels";
+import { SHOW_PARAMS_LABEL } from "@/app/components/widgets/AnalysisParameters";
+import { DOWNLOAD_LABEL } from "@/app/components/widgets/DownloadMenu";
+import {
+  DATASET_CARD_BY_ID,
+  TREE_COVER_LOSS_DATASET_ID,
+} from "@/app/constants/datasets";
+import { viewAnalysisNudgeLabel } from "@/src/features/analysis";
 import {
   GADM_BOUNDARY_LAYER,
   KENYA_BOUNDS,
@@ -69,6 +80,13 @@ import {
 } from "../tour-content";
 import { anchorTarget } from "../../model/tour";
 import type { UiTour } from "../types";
+
+// UI labels come from the components that render them, so a rename reaches
+// the copy too (checked by tests/architecture/tour-contract.test.ts).
+const DATASETS_LABEL = ChatContextOptions.layer.label;
+const AREAS_LABEL = ChatContextOptions.area.label;
+const TCL_NAME = DATASET_CARD_BY_ID[TREE_COVER_LOSS_DATASET_ID].dataset_name;
+const VIEW_ANALYSIS_NUDGE = viewAnalysisNudgeLabel(TCL_NAME, "Kenya");
 
 /** The chat half's question: same dataset, new area, plus a context layer and dates. */
 const CHAT_DEMO_PROMPT =
@@ -172,16 +190,16 @@ export function createFirstRunTour(): UiTour {
         placement: "top",
         padding: 5,
         eyebrow: "Step 1 of 3 · Dataset",
-        title: "Open the Data catalog",
+        title: `Open the ${DATA_CATALOG_LABEL}`,
         onEnter: clearMapOnce,
         body: (
           <p>
-            Click <InlineIcon icon={StackSimpleIcon} /> <b>Datasets</b> in the
-            chat box. It lists every dataset Horizon can show on the map.
+            Click <InlineIcon icon={StackSimpleIcon} /> <b>{DATASETS_LABEL}</b>{" "}
+            in the chat box. It lists every dataset Horizon can show on the map.
           </p>
         ),
         waitFor: isDataCatalogOpen,
-        hint: "Click Datasets",
+        hint: `Click ${DATASETS_LABEL}`,
         onSkip: openDataCatalog,
       },
       {
@@ -189,17 +207,17 @@ export function createFirstRunTour(): UiTour {
         target: anchorTarget(catalogCardAnchor(TREE_COVER_LOSS_DATASET_ID)),
         placement: "right",
         eyebrow: "Step 1 of 3 · Dataset",
-        title: "Turn on Tree cover loss",
+        title: `Turn on ${TCL_NAME}`,
         body: (
           <p>
-            Flip the switch on the <b>Tree cover loss</b> row. Pink pixels show
-            where trees were lost each year since 2001. The{" "}
+            Flip the switch on the <b>{TCL_NAME}</b> row. Pink pixels show where
+            trees were lost each year since 2001. The{" "}
             <InlineIcon icon={InfoIcon} /> button on a row explains that
             dataset&apos;s coverage and caveats.
           </p>
         ),
         waitFor: isDatasetOnMap(TREE_COVER_LOSS_DATASET_ID),
-        hint: "Turn on Tree cover loss",
+        hint: `Turn on ${TCL_NAME}`,
         onSkip: () => showDatasetOnMap(TREE_COVER_LOSS_DATASET_ID),
       },
       {
@@ -211,11 +229,11 @@ export function createFirstRunTour(): UiTour {
         title: "Now choose an area",
         body: (
           <p>
-            Click <InlineIcon icon={PolygonIcon} /> <b>Areas</b>.
+            Click <InlineIcon icon={PolygonIcon} /> <b>{AREAS_LABEL}</b>.
           </p>
         ),
         waitFor: isAreasPanelOpen,
-        hint: "Click Areas",
+        hint: `Click ${AREAS_LABEL}`,
         onSkip: openAreasPanel,
       },
       {
@@ -273,21 +291,21 @@ export function createFirstRunTour(): UiTour {
             <p>
               Horizon now offers to analyse your dataset and area. In the chat,
               click <InlineIcon icon={ChartLineIcon} />{" "}
-              <b>View Tree cover loss Analysis for Kenya</b>.
+              <b>{VIEW_ANALYSIS_NUDGE}</b>.
             </p>
             <Tip>
               Ignore the other offers for now. <b>Generate … Insight</b> asks
               the agent for a written insight instead.
             </Tip>
             <Tip>
-              You can also choose <b>View Analysis</b> from the{" "}
+              You can also choose <b>{VIEW_ANALYSIS_MENU_LABEL}</b> from the{" "}
               <InlineIcon icon={DotsThreeVerticalIcon} /> menu on the
               area&apos;s label on the map.
             </Tip>
           </>
         ),
         waitFor: hasAcceptedViewAnalysis,
-        hint: "Click View Tree cover loss Analysis",
+        hint: `Click ${VIEW_ANALYSIS_NUDGE}`,
         skippable: true,
         // No area (Kenya skipped): nothing is offered to analyse.
         skipIf: () => !hasSelectedArea(),
@@ -309,25 +327,28 @@ export function createFirstRunTour(): UiTour {
             <p>The chart opens on the map, next to the data it describes.</p>
             <ul>
               <li>
-                <InlineIcon icon={ChartBarIcon} /> <b>Chart</b> /{" "}
-                <InlineIcon icon={TableIcon} /> <b>Table</b> switch views, or
-                open it <b>Full-screen</b>
+                <InlineIcon icon={ChartBarIcon} />{" "}
+                <b>{WIDGET_CONTROL_LABELS.chart}</b> /{" "}
+                <InlineIcon icon={TableIcon} />{" "}
+                <b>{WIDGET_CONTROL_LABELS.table}</b> switch views, or open it{" "}
+                <b>{WIDGET_CONTROL_LABELS.fullScreen}</b>
               </li>
               <li>
-                <InlineIcon icon={MicroscopeIcon} /> <b>Show working</b> shows
-                how the chart was made
+                <InlineIcon icon={MicroscopeIcon} />{" "}
+                <b>{WIDGET_CONTROL_LABELS.showWorking}</b> shows how the chart
+                was made
               </li>
               <li>
-                <InlineIcon icon={DownloadSimpleIcon} /> <b>Download</b> the
-                data or the chart
+                <InlineIcon icon={DownloadSimpleIcon} /> <b>{DOWNLOAD_LABEL}</b>{" "}
+                the data or the chart
               </li>
               <li>
-                <b>Show params</b> lists the settings it used
+                <b>{SHOW_PARAMS_LABEL}</b> lists the settings it used
               </li>
             </ul>
             <Tip>
-              Every analysis is kept under <b>Analyses</b> in the chat box,
-              where you can also add it to a dashboard.
+              Every analysis is kept under <b>{ANALYSES_LABEL}</b> in the chat
+              box, where you can also add it to a dashboard.
             </Tip>
           </>
         ),
@@ -463,9 +484,9 @@ export function createFirstRunTour(): UiTour {
         body: (
           <p>
             It has the same controls as the analysis you ran by hand, such as{" "}
-            <b>Show working</b> and <b>Download</b>. Horizon is still writing up
-            the answer, which will appear in the chat with a card for this
-            chart.
+            <b>{WIDGET_CONTROL_LABELS.showWorking}</b> and{" "}
+            <b>{DOWNLOAD_LABEL}</b>. Horizon is still writing up the answer,
+            which will appear in the chat with a card for this chart.
           </p>
         ),
       },

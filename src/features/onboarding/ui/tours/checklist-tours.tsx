@@ -13,6 +13,12 @@ import {
   type ChecklistItemId,
 } from "../../model/onboarding-progress";
 import useOnboardingStore from "../../model/onboarding-store";
+import { DATA_CATALOG_LABEL } from "@/app/components/CatalogPanel";
+import { ChatContextOptions } from "@/app/components/ContextButton";
+import { WIDGET_CONTROL_LABELS } from "@/app/components/WidgetMessage";
+import { ANALYSES_LABEL } from "@/app/components/chatInputLabels";
+import { SHOW_PARAMS_LABEL } from "@/app/components/widgets/AnalysisParameters";
+import { DOWNLOAD_LABEL } from "@/app/components/widgets/DownloadMenu";
 import {
   closeExplorationPanels,
   openAreasPanel,
@@ -22,6 +28,11 @@ import { TOUR_ANCHORS } from "@/src/shared/lib/tour-anchors";
 import { Example, InlineIcon, Tip } from "../tour-content";
 import { anchorTarget } from "../../model/tour";
 import type { UiTour, UiTourStep } from "../types";
+
+// UI labels come from the components that render them, so a rename reaches
+// the copy too (checked by tests/architecture/tour-contract.test.ts).
+const DATASETS_LABEL = ChatContextOptions.layer.label;
+const AREAS_LABEL = ChatContextOptions.area.label;
 
 export interface ChecklistItem {
   readonly id: ChecklistItemId;
@@ -80,11 +91,11 @@ const ITEMS: Record<ChecklistItemId, Omit<ChecklistItem, "id">> = {
         placement: "top",
         padding: 5,
         onEnter: closeExplorationPanels,
-        title: "Datasets live here",
+        title: `${DATASETS_LABEL} live here`,
         body: (
           <p>
-            <InlineIcon icon={StackSimpleIcon} /> <b>Datasets</b> opens the Data
-            catalog.
+            <InlineIcon icon={StackSimpleIcon} /> <b>{DATASETS_LABEL}</b> opens
+            the {DATA_CATALOG_LABEL}.
           </p>
         ),
       },
@@ -113,8 +124,8 @@ const ITEMS: Record<ChecklistItemId, Omit<ChecklistItem, "id">> = {
           <p>
             Change a layer&apos;s opacity or read about it here. To remove it,
             switch it off in the catalogue.{" "}
-            <InlineIcon icon={StackSimpleIcon} /> <b>Datasets</b> in this header
-            opens the catalogue again.
+            <InlineIcon icon={StackSimpleIcon} /> <b>{DATASETS_LABEL}</b> in
+            this header opens the catalogue again.
           </p>
         ),
       },
@@ -130,11 +141,11 @@ const ITEMS: Record<ChecklistItemId, Omit<ChecklistItem, "id">> = {
         placement: "top",
         padding: 5,
         onEnter: closeExplorationPanels,
-        title: "Areas live here",
+        title: `${AREAS_LABEL} live here`,
         body: (
           <p>
-            <InlineIcon icon={PolygonIcon} /> <b>Areas</b> opens the boundary
-            layers and your saved areas.
+            <InlineIcon icon={PolygonIcon} /> <b>{AREAS_LABEL}</b> opens the
+            boundary layers and your saved areas.
           </p>
         ),
       },
@@ -184,9 +195,11 @@ const ITEMS: Record<ChecklistItemId, Omit<ChecklistItem, "id">> = {
         body: (
           <>
             <p>
-              Switch between <b>Chart</b> and <b>Table</b>, use{" "}
-              <b>Show working</b> to see how it was made, and <b>Show params</b>{" "}
-              to check the inputs. <b>Download</b> saves the data.
+              Switch between <b>{WIDGET_CONTROL_LABELS.chart}</b> and{" "}
+              <b>{WIDGET_CONTROL_LABELS.table}</b>, use{" "}
+              <b>{WIDGET_CONTROL_LABELS.showWorking}</b> to see how it was made,
+              and <b>{SHOW_PARAMS_LABEL}</b> to check the inputs.{" "}
+              <b>{DOWNLOAD_LABEL}</b> saves the data.
             </p>
             <Tip>
               Nothing highlighted? No analysis is open yet. Ask a question
@@ -253,10 +266,11 @@ const ITEMS: Record<ChecklistItemId, Omit<ChecklistItem, "id">> = {
         title: "Keep the analyses you like",
         body: (
           <p>
-            <b>Analyses</b> has tabs for <b>Curated</b>, <b>AI generated</b> and{" "}
-            <b>In this conversation</b>. <b>Add to dashboard</b> saves one to a
-            dashboard for its area, where you can add notes and build a report.
-            Open your dashboards from <b>Dashboards</b> in the menu.
+            <b>{ANALYSES_LABEL}</b> has tabs for <b>Curated</b>,{" "}
+            <b>AI generated</b> and <b>In this conversation</b>.{" "}
+            <b>Add to dashboard</b> saves one to a dashboard for its area, where
+            you can add notes and build a report. Open your dashboards from{" "}
+            <b>Dashboards</b> in the menu.
           </p>
         ),
       },
