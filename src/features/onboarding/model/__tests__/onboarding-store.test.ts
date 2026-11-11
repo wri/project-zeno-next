@@ -21,6 +21,7 @@ beforeEach(() => {
     checklistExpanded: true,
     progress: EMPTY_PROGRESS,
     hydrated: false,
+    tourAbandoned: false,
   });
 });
 
@@ -116,6 +117,110 @@ describe("onboarding store", () => {
   it("dismisses the checklist", () => {
     state().dismissChecklist();
     expect(state().progress.checklistDismissed).toBe(true);
+  });
+
+  it("ignores a move made from a step the tour has already left", () => {
+    state().startTour(tour());
+    state().advance(true, 0);
+    // A late timer, a second click, or StrictMode's second effect run.
+    state().advance(true, 0);
+    state().advance(false, 0);
+    expect(state().stepIndex).toBe(1);
+    state().advance(false, 1);
+    expect(state().stepIndex).toBe(2);
+  });
+
+  it("passes over steps whose skipIf holds, without showing them", () => {
+    const onEnterB = vi.fn();
+    state().startTour({
+      id: "t",
+      steps: [
+        step("a"),
+        { ...step("b"), onEnter: onEnterB, skipIf: () => true },
+        step("c"),
+      ],
+    });
+    state().advance(false, 0);
+    expect(state().stepIndex).toBe(2);
+    // Set-up still runs: skipIf may depend on it.
+    expect(onEnterB).toHaveBeenCalledTimes(1);
+    state().back();
+    expect(state().stepIndex).toBe(0);
+  });
+
+  it("passes over a wait on the app that is already done", () => {
+    state().startTour({
+      id: "t",
+      steps: [
+        step("a"),
+        { ...step("wait"), waitFor: () => true, waitsOnApp: true },
+        step("c"),
+      ],
+    });
+    state().advance();
+    expect(state().stepIndex).toBe(2);
+  });
+
+  it("shows a done wait that asks to be read (autoAdvance false)", () => {
+    state().startTour({
+      id: "t",
+      steps: [
+        step("a"),
+        {
+          ...step("read"),
+          waitFor: () => true,
+          waitsOnApp: true,
+          autoAdvance: false,
+        },
+      ],
+    });
+    state().advance();
+    expect(state().stepIndex).toBe(1);
+  });
+
+  it("finishes when every step left is passed over", () => {
+    const onEnd = vi.fn();
+    state().startTour({
+      id: "t",
+      steps: [step("a"), { ...step("b"), skipIf: () => true }],
+      onEnd,
+    });
+    state().advance();
+    expect(state().tour).toBeNull();
+    expect(onEnd).toHaveBeenCalledWith(true);
+  });
+
+  it("runs the step's onSkip when the user skips it, then moves on", () => {
+    const onSkip = vi.fn();
+    state().startTour({
+      id: "t",
+      steps: [{ ...step("a"), onSkip }, step("b")],
+    });
+    state().skipStep(0);
+    expect(onSkip).toHaveBeenCalledTimes(1);
+    expect(state().stepIndex).toBe(1);
+    // The user saw the skipped step: Back returns to it.
+    expect(state().history).toEqual([0]);
+    state().skipStep(0);
+    expect(onSkip).toHaveBeenCalledTimes(1);
+  });
+
+  it("abandons a tour without an outcome", () => {
+    const onEnd = vi.fn();
+    state().startTour(tour(onEnd));
+    state().advance();
+    state().abandonTour();
+    expect(state().tour).toBeNull();
+    expect(state().stepIndex).toBe(0);
+    expect(onEnd).not.toHaveBeenCalled();
+    expect(state().progress).toEqual(EMPTY_PROGRESS);
+    expect(state().tourAbandoned).toBe(true);
+    expect(selectTourActive(state())).toBe(false);
+  });
+
+  it("only marks a tour abandoned when one was running", () => {
+    state().abandonTour();
+    expect(state().tourAbandoned).toBe(false);
   });
 
   it("is active from a tour's start until it ends, finished or not", () => {

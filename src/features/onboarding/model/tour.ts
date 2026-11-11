@@ -66,6 +66,16 @@ export interface TourStep<Body> {
   readonly hint?: string;
   /** Let the user skip an action step that can't complete (e.g. no nudge). */
   readonly skippable?: boolean;
+  /**
+   * Pass over the step when this holds: as it opens, or later while it is
+   * still waiting (e.g. answer steps once the answer has failed).
+   */
+  readonly skipIf?: () => boolean;
+  /**
+   * Runs when the user presses Skip step: does what the step asked, so the
+   * steps after it still find what they need (e.g. opens the panel).
+   */
+  readonly onSkip?: () => void;
   /** Skip the step when its target never appears (e.g. a card the agent didn't emit). */
   readonly optional?: boolean;
   /** How long an optional step waits for its target before skipping, ms. */
