@@ -179,10 +179,18 @@ export function TourPopover(props: TourPopoverProps) {
       </Box>
       <Flex align="center" gap="2" px="5" pb="4" pt="1">
         <Flex flex="1" direction="column" gap="1.5" minW={0}>
-          <ProgressDots current={stepNumber - 1} total={stepCount} />
-          <Text srOnly>
-            Step {stepNumber} of {stepCount}
-          </Text>
+          {/* A one-step guide has no progress to show. */}
+          {stepCount > 1 && (
+            <Flex align="center" gap="2">
+              <ProgressDots current={stepNumber - 1} total={stepCount} />
+              <Text fontSize="xs" color="fg.muted" aria-hidden>
+                {stepNumber} of {stepCount}
+              </Text>
+              <Text srOnly>
+                Step {stepNumber} of {stepCount}
+              </Text>
+            </Flex>
+          )}
           {awaitingAction && (
             <Flex align="center" gap="2" fontSize="xs" color="fg.muted">
               <Box

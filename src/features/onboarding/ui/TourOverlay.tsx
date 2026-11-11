@@ -21,6 +21,7 @@ import useOnboardingStore from "../model/onboarding-store";
 import {
   APP_WAIT_SKIP_AFTER_MS,
   MISSING_TARGET_GRACE_MS,
+  advanceDelayMs,
   canSkipWhileWaiting,
   missingTargetExpired,
   stepKind,
@@ -34,8 +35,6 @@ import { useTargetRect, type TargetState } from "./use-target-rect";
 /** Above the chat panel (1100) and Chakra overlays used inside the app. */
 const OVERLAY_Z_INDEX = 2100;
 const WAIT_POLL_MS = 250;
-/** Pause after an action completes so the user sees the result before moving on. */
-const ADVANCE_DELAY_MS = 450;
 const DEFAULT_PADDING_PX = 6;
 /** Footer hint once a wait on the app offers Skip step. */
 const SLOW_WAIT_HINT = "This is taking a while. You can skip this step.";
@@ -280,7 +279,7 @@ function StepView({
       window.clearInterval(poll);
       if (tick === "skip") skip();
       else if (tick === "advance")
-        advanceTimer = window.setTimeout(next, ADVANCE_DELAY_MS);
+        advanceTimer = window.setTimeout(next, advanceDelayMs(step));
       else setUnlocked(true);
     }, WAIT_POLL_MS);
     return () => {

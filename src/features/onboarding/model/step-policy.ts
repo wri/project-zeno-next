@@ -12,6 +12,19 @@ import type { TourStep } from "./tour";
  */
 export const APP_WAIT_SKIP_AFTER_MS = 30_000;
 
+/** Pause after an action is done before the tour moves on, ms. */
+export const DEFAULT_ADVANCE_DELAY_MS = 450;
+
+/**
+ * A longer pause for actions that change the map (a dataset or an area
+ * switched on), so the user sees the result before the next step covers it.
+ */
+export const SHOW_RESULT_MS = 1_500;
+
+/** How long the step waits, once done, before it moves on. */
+export const advanceDelayMs = (step: TourStep<unknown>): number =>
+  step.advanceDelayMs ?? DEFAULT_ADVANCE_DELAY_MS;
+
 /**
  * How long an optional step looks for a missing target before it is passed
  * over, ms. Counted from the latest of: the step opening, the target last

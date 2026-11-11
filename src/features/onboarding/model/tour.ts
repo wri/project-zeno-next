@@ -87,6 +87,11 @@ export interface TourStep<Body> {
    */
   readonly holdWhile?: () => boolean;
   /**
+   * How long to wait after `waitFor` passes before moving on, ms, so the user
+   * sees what their action did. Default `DEFAULT_ADVANCE_DELAY_MS`.
+   */
+  readonly advanceDelayMs?: number;
+  /**
    * Default true: move on once `waitFor` passes. False shows Next instead, for
    * steps the user should read after the wait (e.g. the finished answer).
    */

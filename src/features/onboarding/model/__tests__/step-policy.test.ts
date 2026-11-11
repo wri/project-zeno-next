@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  DEFAULT_ADVANCE_DELAY_MS,
   MISSING_TARGET_GRACE_MS,
+  SHOW_RESULT_MS,
+  advanceDelayMs,
   canSkipWhileWaiting,
   missingTargetExpired,
   passesOverAtEntry,
@@ -143,5 +146,15 @@ describe("missingTargetExpired", () => {
         graceMs,
       })
     ).toBe(true);
+  });
+});
+
+describe("advanceDelayMs", () => {
+  it("pauses briefly after an action, longer where a step asks", () => {
+    expect(advanceDelayMs(step())).toBe(DEFAULT_ADVANCE_DELAY_MS);
+    expect(advanceDelayMs(step({ advanceDelayMs: SHOW_RESULT_MS }))).toBe(
+      SHOW_RESULT_MS
+    );
+    expect(SHOW_RESULT_MS).toBeGreaterThan(DEFAULT_ADVANCE_DELAY_MS);
   });
 });
