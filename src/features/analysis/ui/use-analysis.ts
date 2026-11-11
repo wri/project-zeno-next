@@ -25,6 +25,19 @@ const defaultSink: InsightSink = {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+/** Controllers of the runs in flight across every mounted `useAnalysis`. */
+const runningControllers = new Set<AbortController>();
+
+/**
+ * Aborts every direct analysis in flight, as each hook's own `cancel` would.
+ * For code outside React that empties the map (the onboarding tour), so a
+ * chart that is still loading can't land on it later.
+ */
+export function cancelRunningAnalyses(): void {
+  for (const controller of runningControllers) controller.abort();
+  runningControllers.clear();
+}
+
 /**
  * The dataset name to use in a chart's "{dataset} in {location}" title. Every
  * dataset uses its own name, with one exception: a tree cover loss analysis
@@ -114,6 +127,7 @@ export function useAnalysis(
       controllerRef.current?.abort();
       const controller = new AbortController();
       controllerRef.current = controller;
+      runningControllers.add(controller);
 
       setStatus("running");
       setResult(null);
@@ -130,6 +144,7 @@ export function useAnalysis(
 
       service.run(request, controller.signal).then(
         (analysisResult) => {
+          runningControllers.delete(controller);
           setResult(analysisResult);
           setStatus("done");
           // Carry the dataset and date range through as well as the area, so
@@ -184,6 +199,7 @@ export function useAnalysis(
           useChatStore.getState().setGeneratingInsight(false);
         },
         (cause: unknown) => {
+          runningControllers.delete(controller);
           useChatStore.getState().setGeneratingInsight(false);
           // An AbortError means the user cancelled or the component unmounted —
           // not a failure. Silently return to idle so the UI stays clean.

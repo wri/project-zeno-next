@@ -6,7 +6,11 @@
  */
 export { default as ViewAnalysisNudge } from "./ui/ViewAnalysisNudge";
 export { ViewAnalysisTrigger } from "./ui/ViewAnalysisTrigger";
-export { useAnalysis, type AnalysisStatus } from "./ui/use-analysis";
+export {
+  useAnalysis,
+  cancelRunningAnalyses,
+  type AnalysisStatus,
+} from "./ui/use-analysis";
 export { analysisService } from "./ui/analysis-service";
 export type { AnalysisService } from "./model/analysis-service";
 export { AnalysisJobFailedError } from "./model/analysis-error";
