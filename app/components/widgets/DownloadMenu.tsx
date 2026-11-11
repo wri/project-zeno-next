@@ -11,6 +11,12 @@ import {
 /** The menu button's text. The onboarding tour's copy imports it, so a rename reaches both. */
 export const DOWNLOAD_LABEL = "Download";
 
+/** The instant items' default names. The onboarding tour's copy imports them too. */
+export const DOWNLOAD_ITEM_LABELS = {
+  csv: "Data (CSV)",
+  image: "Chart image (PNG)",
+} as const;
+
 /**
  * The widget action bar's "Download ▾" menu: the data as CSV and, for a
  * chart, its image. Shared by the chart card and the dashboard alerts list,
@@ -22,7 +28,7 @@ export const DOWNLOAD_LABEL = "Download";
  */
 export default function DownloadMenu({
   onCsv,
-  csvLabel = "Data (CSV)",
+  csvLabel = DOWNLOAD_ITEM_LABELS.csv,
   csvDescription,
   onImage,
   loading,
@@ -54,7 +60,7 @@ export default function DownloadMenu({
         <DownloadMenuItem
           value="png"
           icon={<ImageIcon size={14} />}
-          label="Chart image (PNG)"
+          label={DOWNLOAD_ITEM_LABELS.image}
           onSelect={onImage}
         />
       )}

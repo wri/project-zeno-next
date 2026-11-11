@@ -355,6 +355,9 @@ export const NET_FLUX_FEATURE_FLAG = "net-flux";
 /** The Tree cover loss card, the map's default dataset. */
 export const TREE_COVER_LOSS_DATASET_ID = 4;
 
+/** The Integrated alerts card. */
+export const INTEGRATED_ALERTS_DATASET_ID = 11;
+
 /** Same URL the backend hands back as the `primary_forest` context layer. */
 const PRIMARY_FOREST_TILE_URL =
   "https://tiles.globalforestwatch.org/umd_regional_primary_forest_2001/v201901/uint16/{z}/{x}/{y}.png";
@@ -466,7 +469,7 @@ const lgmsEmissionsLegend = (
 
 export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
   {
-    dataset_id: 11,
+    dataset_id: INTEGRATED_ALERTS_DATASET_ID,
     dataset_name: "Integrated alerts",
     shortName: "Integrated alerts",
     data_layer: "Integrated alerts",

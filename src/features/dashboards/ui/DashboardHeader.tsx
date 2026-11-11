@@ -19,6 +19,7 @@ import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
 import type { Dashboard } from "../api/schemas";
 import { wasJustCreated } from "../lib/dates";
 import DashboardAlertsMenu from "./DashboardAlertsMenu";
+import { DASHBOARD_EXPORT_LABEL } from "./dashboard-labels";
 import { useRenameDashboard } from "./dashboardQueries";
 
 /** The 30px dashboard title, shared with the report page's document header. */
@@ -197,7 +198,7 @@ export default function DashboardHeader({
         )}
         <Button {...DASHBOARD_ACTION_PROPS} onClick={openReport}>
           <FilePdfIcon size={16} />
-          Export
+          {DASHBOARD_EXPORT_LABEL}
         </Button>
         <Button
           {...DASHBOARD_ACTION_PROPS}

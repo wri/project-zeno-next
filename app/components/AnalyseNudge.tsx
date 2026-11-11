@@ -5,6 +5,13 @@ import useChatStore from "@/app/store/chatStore";
 import { trackEvent } from "@/app/lib/track-event";
 import { runAnalysis } from "@/app/lib/analysis/runAnalysis";
 
+/**
+ * The nudge's button text. The onboarding tour's copy builds its label with
+ * this, so a rename reaches both.
+ */
+export const analyseNudgeLabel = (datasetName: string, areaName: string) =>
+  `Generate ${datasetName} Insight for ${areaName}`;
+
 export default function AnalyseNudge({
   messageId,
   suggestion,
@@ -30,7 +37,7 @@ export default function AnalyseNudge({
 
   // Matches the agent prompt wording (buildAnalysisPrompt) so the message the
   // user sends on accept reads identically to the button they clicked.
-  const label = `Generate ${suggestion.datasetName} Insight for ${suggestion.areaName}`;
+  const label = analyseNudgeLabel(suggestion.datasetName, suggestion.areaName);
 
   return (
     <Button

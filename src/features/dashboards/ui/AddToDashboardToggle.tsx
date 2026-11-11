@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@chakra-ui/react";
 import { CheckIcon, SquaresFourIcon } from "@phosphor-icons/react";
 
+import { ADD_TO_DASHBOARD_LABEL } from "./dashboard-labels";
 import RemoveAnalysisDialog from "./RemoveAnalysisDialog";
 import { useAddInsightToDashboard } from "./useAddInsightToDashboard";
 
@@ -44,7 +45,7 @@ export default function AddToDashboardToggle({
         }
       >
         {added ? <CheckIcon size={12} /> : <SquaresFourIcon size={12} />}
-        {added ? "On dashboard" : "Add to dashboard"}
+        {added ? "On dashboard" : ADD_TO_DASHBOARD_LABEL}
       </Button>
       <RemoveAnalysisDialog
         open={confirmOpen}

@@ -5,6 +5,7 @@ import { SquaresFourIcon } from "@phosphor-icons/react";
 import type { CreateDashboardSuggestion } from "@/app/types/chat";
 import { trackEvent } from "@/app/lib/track-event";
 
+import { createDashboardNudgeLabel } from "./dashboard-labels";
 import { useCreateDashboardForArea } from "./useCreateDashboardForArea";
 
 /**
@@ -28,7 +29,7 @@ export default function CreateDashboardNudge({
 
   const label = existing
     ? `Open ${suggestion.areaName} Dashboard`
-    : `Create Dashboard for ${suggestion.areaName}`;
+    : createDashboardNudgeLabel(suggestion.areaName);
 
   const handleClick = () => {
     trackEvent({

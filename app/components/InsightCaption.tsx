@@ -5,6 +5,12 @@ import { Tooltip } from "./ui/tooltip";
 const AI_DISCLAIMER =
   "This visualization includes AI-generated charts and data summaries. AI models may produce incomplete or incorrect information. Please verify all outputs before using them in your work.";
 
+/** The caption's two labels. The onboarding tour's copy imports them, so a rename reaches both. */
+export const INSIGHT_CAPTION_LABELS = {
+  curated: "CURATED",
+  aiAssisted: "AI-ASSISTED",
+} as const;
+
 // Curated insights come from a verified, direct data query — not AI — so the
 // hover note reassures rather than disclaims.
 const CURATED_NOTE =
@@ -66,7 +72,9 @@ export default function InsightCaption({
         color={curated ? "#656E7B" : "#737C94"}
         whiteSpace="nowrap"
       >
-        {curated ? "CURATED" : "AI-ASSISTED"}
+        {curated
+          ? INSIGHT_CAPTION_LABELS.curated
+          : INSIGHT_CAPTION_LABELS.aiAssisted}
         {showLearnMore && (
           <>
             {" · "}
@@ -74,9 +82,15 @@ export default function InsightCaption({
               variant="dark"
               content={
                 curated ? (
-                  <CaptionTooltip heading="CURATED" body={CURATED_NOTE} />
+                  <CaptionTooltip
+                    heading={INSIGHT_CAPTION_LABELS.curated}
+                    body={CURATED_NOTE}
+                  />
                 ) : (
-                  <CaptionTooltip heading="AI-ASSISTED" body={AI_DISCLAIMER} />
+                  <CaptionTooltip
+                    heading={INSIGHT_CAPTION_LABELS.aiAssisted}
+                    body={AI_DISCLAIMER}
+                  />
                 )
               }
               showArrow
