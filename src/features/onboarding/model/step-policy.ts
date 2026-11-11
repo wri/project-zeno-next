@@ -27,9 +27,8 @@ export const advanceDelayMs = (step: TourStep<unknown>): number =>
 
 /**
  * How long an optional step looks for a missing target before it is passed
- * over, ms. Counted from the latest of: the step opening, the target last
- * being seen, and the step last holding for it (`holdWhile`), so a card that
- * renders just after the answer ends is still found.
+ * over, ms. Counted from the latest of: the step opening and the target last
+ * being seen.
  */
 export const MISSING_TARGET_GRACE_MS = 2_000;
 
@@ -38,14 +37,11 @@ export const MISSING_TARGET_GRACE_MS = 2_000;
  *  - `action`: the user does something (`waitFor`); Skip step is always there.
  *  - `app-wait`: waits on the app (`waitFor` + `waitsOnApp`); Skip step after
  *    {@link APP_WAIT_SKIP_AFTER_MS}.
- *  - `answer-card`: shows a card the app is still making (`holdWhile`); waits
- *    while it holds, Skip step after {@link APP_WAIT_SKIP_AFTER_MS}.
  */
-export type StepKind = "info" | "action" | "app-wait" | "answer-card";
+export type StepKind = "info" | "action" | "app-wait";
 
 export function stepKind(step: TourStep<unknown>): StepKind {
   if (step.waitFor) return step.waitsOnApp ? "app-wait" : "action";
-  if (step.holdWhile) return "answer-card";
   return "info";
 }
 
@@ -68,7 +64,7 @@ export function canSkipWhileWaiting(
   step: TourStep<unknown>,
   waitedLong: boolean
 ): boolean {
-  return stepKind(step) === "action" || !!step.skippable || waitedLong;
+  return stepKind(step) === "action" || waitedLong;
 }
 
 /**
@@ -87,13 +83,11 @@ export interface MissingTargetTimes {
   readonly now: number;
   /** When the step started missing its target (opened, or last saw it). */
   readonly missingSince: number;
-  /** When the step last held for its target, if it ever did. */
-  readonly lastHeldAt: number | null;
   readonly graceMs: number;
 }
 
 /** Whether an optional step has looked for its missing target long enough. */
 export function missingTargetExpired(times: MissingTargetTimes): boolean {
-  const { now, missingSince, lastHeldAt, graceMs } = times;
-  return now - Math.max(missingSince, lastHeldAt ?? missingSince) >= graceMs;
+  const { now, missingSince, graceMs } = times;
+  return now - missingSince >= graceMs;
 }

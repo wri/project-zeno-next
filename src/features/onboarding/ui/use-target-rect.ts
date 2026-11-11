@@ -2,13 +2,12 @@
 
 import { useEffect, useState } from "react";
 
-import useMapStore from "@/app/store/mapStore";
 import {
   tourAnchorSelector,
   type TourAnchorId,
 } from "@/src/shared/lib/tour-anchors";
 
-import { clipToViewport, rectFromPoints, sameRect } from "../lib/geometry";
+import { clipToViewport, sameRect } from "../lib/geometry";
 import type { Rect, TourTarget } from "../model/tour";
 
 const POLL_MS = 80;
@@ -116,20 +115,6 @@ export function findAnchor(id: TourAnchorId): HTMLElement | null {
   return null;
 }
 
-function mapRect(target: Extract<TourTarget, { kind: "map" }>): Rect | null {
-  const map = useMapStore.getState().mapRef?.getMap();
-  if (!map) return null;
-  const box = map.getContainer().getBoundingClientRect();
-  const [[west, south], [east, north]] = target.bounds;
-  const nw = map.project([west, north]);
-  const se = map.project([east, south]);
-  const r = rectFromPoints(nw, se);
-  return clipToViewport(
-    { ...r, x: r.x + box.left, y: r.y + box.top },
-    viewport()
-  );
-}
-
 /**
  * Track where the current step's target is on screen. Lives for the whole
  * tour (`stepKey` marks a new step) so the spotlight can move between steps.
@@ -156,7 +141,6 @@ export function useTargetRect(
 
     const locate = (): Rect | null => {
       if (!target) return null;
-      if (target.kind === "map") return mapRect(target);
       // Re-query only when the cached element is gone or hidden.
       if (!el || !el.isConnected || !isVisible(el)) el = findAnchor(target.id);
       if (!el) return null;

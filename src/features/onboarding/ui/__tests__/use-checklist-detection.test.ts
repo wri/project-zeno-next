@@ -27,6 +27,7 @@ const protectedArea = (id: string): Layer => ({
 
 const tour = (id: string): Tour<unknown> => ({
   id,
+  version: 1,
   steps: [{ id: "a", title: "a", body: null }],
 });
 const done = () => useOnboardingStore.getState().progress.checklistDone;

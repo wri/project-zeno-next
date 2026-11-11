@@ -23,15 +23,7 @@ const TOUR: Tour<unknown> = {
     step("welcome"),
     step("open-catalog", { target: anchorTarget("datasets-button") }),
     step("card", { target: anchorTarget("insight-workspace"), optional: true }),
-    step("map", {
-      target: {
-        kind: "map",
-        bounds: [
-          [0, 0],
-          [1, 1],
-        ],
-      },
-    }),
+    step("map", { target: anchorTarget("chat-panel") }),
   ],
 };
 
@@ -87,12 +79,6 @@ describe("tourTelemetryEvents", () => {
     const progress = { ...EMPTY_PROGRESS, tourOutcome: "skipped" as const };
     const [started] = events(state({ tour: null }), state({ progress }));
     expect(started).toMatchObject({ first_visit: false });
-  });
-
-  it("reports version 0 for a tour that declares none", () => {
-    const tour = { ...TOUR, version: undefined };
-    const [started] = events(state({ tour: null }), state({ tour }));
-    expect(started).toMatchObject({ tour_version: 0 });
   });
 
   it("sends nothing when the tour, step and skips are unchanged", () => {
@@ -236,7 +222,11 @@ describe("tourTelemetryEvents", () => {
   });
 
   it("ends a tour another one replaces with no outcome", () => {
-    const other: Tour<unknown> = { id: "checklist-ask", steps: [step("a")] };
+    const other: Tour<unknown> = {
+      id: "checklist-ask",
+      version: 1,
+      steps: [step("a")],
+    };
     const list = events(state(), state({ tour: other }));
     expect(list[0]).toMatchObject({
       event: "tour_ended",

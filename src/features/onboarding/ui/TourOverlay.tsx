@@ -261,11 +261,8 @@ function StepView({
   );
   const close = useCallback(() => endTour(false), [endTour]);
 
-  // A target that's still on its way (see `holdWhile`): wait, don't skip.
-  const waitingForTarget = !!step.target && !found && !!step.holdWhile?.();
   // Action steps: poll the app until the user has done the thing.
-  const awaitingAction =
-    (!!step.waitFor && !doneAtEntry && !unlocked) || waitingForTarget;
+  const awaitingAction = !!step.waitFor && !doneAtEntry && !unlocked;
   useEffect(
     () => onAwaitingChange(awaitingAction),
     [awaitingAction, onAwaitingChange]
@@ -302,19 +299,19 @@ function StepView({
   }, [waitingOnApp]);
 
   // Optional steps whose target never shows up (e.g. a card the agent didn't
-  // emit) are passed over rather than pointing at nothing. `holdWhile` defers
-  // it, and the grace restarts when the hold ends: a card can render just
-  // after the answer finishes.
+  // emit) are passed over rather than pointing at nothing.
   useEffect(() => {
     if (!step.optional || !step.target || found || missingSince === null)
       return;
-    const graceMs = step.targetTimeoutMs ?? MISSING_TARGET_GRACE_MS;
-    let lastHeldAt: number | null = null;
     const check = () => {
       if (step.skipIf?.()) return skip();
-      const now = Date.now();
-      if (step.holdWhile?.()) lastHeldAt = now;
-      else if (missingTargetExpired({ now, missingSince, lastHeldAt, graceMs }))
+      if (
+        missingTargetExpired({
+          now: Date.now(),
+          missingSince,
+          graceMs: MISSING_TARGET_GRACE_MS,
+        })
+      )
         skip();
     };
     check();
@@ -378,14 +375,8 @@ function StepView({
         stepNumber={stepIndex + 1}
         stepCount={stepCount}
         awaitingAction={awaitingAction}
-        userTurn={awaitingAction && !waitingForTarget && !step.waitsOnApp}
-        hint={
-          waitingOnApp && waitedLong
-            ? SLOW_WAIT_HINT
-            : waitingForTarget
-              ? "Waiting for Horizon…"
-              : step.hint
-        }
+        userTurn={awaitingAction && !waitingOnApp}
+        hint={waitingOnApp && waitedLong ? SLOW_WAIT_HINT : step.hint}
         ctaLabel={step.ctaLabel ?? (isLast ? "Finish" : "Next")}
         secondaryLabel={step.secondary?.label}
         showBack={canGoBack && !step.noBack && !awaitingAction}

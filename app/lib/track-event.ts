@@ -47,7 +47,7 @@ export type OnboardingTourEvent =
   | {
       event: "tour_started";
       tour_id: string;
-      /** The tour's content version (0 if it declares none). */
+      /** The tour's content version. */
       tour_version: number;
       step_count: number;
       /** The user had not finished or skipped the first-run tour before. */

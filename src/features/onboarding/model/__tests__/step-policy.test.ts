@@ -23,13 +23,10 @@ const yes = () => true;
 const no = () => false;
 
 describe("stepKind", () => {
-  it("tells the four kinds apart", () => {
+  it("tells the three kinds apart", () => {
     expect(stepKind(step())).toBe("info");
     expect(stepKind(step({ waitFor: no }))).toBe("action");
     expect(stepKind(step({ waitFor: no, waitsOnApp: true }))).toBe("app-wait");
-    expect(stepKind(step({ holdWhile: yes, optional: true }))).toBe(
-      "answer-card"
-    );
   });
 });
 
@@ -66,20 +63,8 @@ describe("canSkipWhileWaiting", () => {
 
   it("lets the user skip a wait on the app only after a while", () => {
     const appWait = step({ waitFor: no, waitsOnApp: true });
-    const card = step({ holdWhile: yes, optional: true });
     expect(canSkipWhileWaiting(appWait, false)).toBe(false);
     expect(canSkipWhileWaiting(appWait, true)).toBe(true);
-    expect(canSkipWhileWaiting(card, false)).toBe(false);
-    expect(canSkipWhileWaiting(card, true)).toBe(true);
-  });
-
-  it("honours skippable on a wait on the app", () => {
-    expect(
-      canSkipWhileWaiting(
-        step({ waitFor: no, waitsOnApp: true, skippable: true }),
-        false
-      )
-    ).toBe(true);
   });
 });
 
@@ -111,7 +96,6 @@ describe("missingTargetExpired", () => {
       missingTargetExpired({
         now: missingSince + graceMs - 1,
         missingSince,
-        lastHeldAt: null,
         graceMs,
       })
     ).toBe(false);
@@ -119,30 +103,6 @@ describe("missingTargetExpired", () => {
       missingTargetExpired({
         now: missingSince + graceMs,
         missingSince,
-        lastHeldAt: null,
-        graceMs,
-      })
-    ).toBe(true);
-  });
-
-  it("restarts the grace when the hold ends, for a card that renders late", () => {
-    // Missing for a minute while the answer streamed; the answer ended just
-    // now and the card arrives 120 ms later.
-    const missingSince = 0;
-    const lastHeldAt = 60_000;
-    expect(
-      missingTargetExpired({
-        now: lastHeldAt + 120,
-        missingSince,
-        lastHeldAt,
-        graceMs,
-      })
-    ).toBe(false);
-    expect(
-      missingTargetExpired({
-        now: lastHeldAt + graceMs,
-        missingSince,
-        lastHeldAt,
         graceMs,
       })
     ).toBe(true);

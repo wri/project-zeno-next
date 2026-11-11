@@ -20,16 +20,6 @@ export function clipToViewport(rect: Rect, viewport: Size): Rect | null {
   return { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };
 }
 
-/** Bounding rect of two screen points (e.g. projected map corners). */
-export function rectFromPoints(
-  a: { x: number; y: number },
-  b: { x: number; y: number }
-): Rect {
-  const x = Math.min(a.x, b.x);
-  const y = Math.min(a.y, b.y);
-  return { x, y, width: Math.abs(a.x - b.x), height: Math.abs(a.y - b.y) };
-}
-
 /**
  * `clip-path` for the veil: the whole viewport minus a rectangular hole,
  * using the even-odd rule. Always the same ten points (outer frame, then the

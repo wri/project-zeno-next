@@ -57,8 +57,6 @@ export function endOutcome(next: TourTelemetryState): TourEndOutcome {
   return next.lastTourEnd ?? "abandoned";
 }
 
-const version = (tour: Tour<unknown>) => tour.version ?? 0;
-
 /** Steps `from` to `to` (exclusive), each passed over without being shown. */
 function passedOver(
   tour: Tour<unknown>,
@@ -160,7 +158,7 @@ export function tourTelemetryEvents(
     events.push({
       event: "tour_ended",
       tour_id: prev.tour.id,
-      tour_version: version(prev.tour),
+      tour_version: prev.tour.version,
       outcome: endOutcome(next),
       step_id: prev.tour.steps[at]?.id ?? "none",
       step_number: at + 1,
@@ -172,7 +170,7 @@ export function tourTelemetryEvents(
     events.push({
       event: "tour_started",
       tour_id: next.tour.id,
-      tour_version: version(next.tour),
+      tour_version: next.tour.version,
       step_count: next.tour.steps.length,
       first_visit: next.progress.tourOutcome === null,
     });

@@ -4,7 +4,6 @@ import {
   clipToViewport,
   padRect,
   placePopover,
-  rectFromPoints,
   sameRect,
   veilClipPath,
 } from "../geometry";
@@ -34,17 +33,6 @@ describe("clipToViewport", () => {
     expect(
       clipToViewport({ x: 1200, y: 0, width: 50, height: 50 }, VIEWPORT)
     ).toBeNull();
-  });
-});
-
-describe("rectFromPoints", () => {
-  it("normalises corners given in any order", () => {
-    expect(rectFromPoints({ x: 50, y: 10 }, { x: 10, y: 60 })).toEqual({
-      x: 10,
-      y: 10,
-      width: 40,
-      height: 50,
-    });
   });
 });
 

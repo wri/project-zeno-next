@@ -7,6 +7,7 @@ import type { Tour } from "../tour";
 const step = (id: string) => ({ id, title: id, body: null });
 const tour = (onEnd?: (c: boolean) => void): Tour<unknown> => ({
   id: "test",
+  version: 1,
   steps: [step("a"), step("b"), step("c")],
   onEnd,
 });
@@ -37,6 +38,7 @@ describe("onboarding store", () => {
     const onEnterB = vi.fn();
     state().startTour({
       id: "t",
+      version: 1,
       steps: [
         { ...step("a"), onEnter: onEnterA },
         { ...step("b"), onEnter: onEnterB },
@@ -156,6 +158,7 @@ describe("onboarding store", () => {
     const onEnterB = vi.fn();
     state().startTour({
       id: "t",
+      version: 1,
       steps: [
         step("a"),
         { ...step("b"), onEnter: onEnterB, skipIf: () => true },
@@ -173,6 +176,7 @@ describe("onboarding store", () => {
   it("passes over a wait on the app that is already done", () => {
     state().startTour({
       id: "t",
+      version: 1,
       steps: [
         step("a"),
         { ...step("wait"), waitFor: () => true, waitsOnApp: true },
@@ -186,6 +190,7 @@ describe("onboarding store", () => {
   it("shows a done wait that asks to be read (autoAdvance false)", () => {
     state().startTour({
       id: "t",
+      version: 1,
       steps: [
         step("a"),
         {
@@ -204,6 +209,7 @@ describe("onboarding store", () => {
     const onEnd = vi.fn();
     state().startTour({
       id: "t",
+      version: 1,
       steps: [step("a"), { ...step("b"), skipIf: () => true }],
       onEnd,
     });
@@ -216,6 +222,7 @@ describe("onboarding store", () => {
     const onSkip = vi.fn();
     state().startTour({
       id: "t",
+      version: 1,
       steps: [{ ...step("a"), onSkip }, step("b")],
     });
     state().skipStep(0);

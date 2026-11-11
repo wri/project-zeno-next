@@ -20,22 +20,14 @@ export interface Size {
 
 export type Side = "top" | "right" | "bottom" | "left";
 
-/** Geographic bounds as `[[west, south], [east, north]]`. */
-export type LngLatBounds = readonly [
-  readonly [number, number],
-  readonly [number, number],
-];
-
 /**
- * What a step points at.
- *  - `selector`: a `[data-tour="…"]` anchor in the DOM. The LAST match wins, so
- *    chat-card anchors resolve to the newest card in the thread.
- *  - `map`: a geographic box projected onto the map canvas (map features are
- *    not DOM nodes, so they can't be targeted by selector).
+ * What a step points at: a `[data-tour="…"]` anchor in the DOM. The LAST match
+ * wins, so chat-card anchors resolve to the newest card in the thread.
  */
-export type TourTarget =
-  | { readonly kind: "selector"; readonly id: TourAnchorId }
-  | { readonly kind: "map"; readonly bounds: LngLatBounds };
+export type TourTarget = {
+  readonly kind: "selector";
+  readonly id: TourAnchorId;
+};
 
 export interface TourStep<Body> {
   readonly id: string;
@@ -65,8 +57,6 @@ export interface TourStep<Body> {
   readonly waitsOnApp?: boolean;
   /** Footer hint while waiting, e.g. "Click Datasets". */
   readonly hint?: string;
-  /** Let the user skip an action step that can't complete (e.g. no nudge). */
-  readonly skippable?: boolean;
   /**
    * Pass over the step when this holds: as it opens, or later while it is
    * still waiting (e.g. answer steps once the answer has failed).
@@ -79,13 +69,6 @@ export interface TourStep<Body> {
   readonly onSkip?: () => void;
   /** Skip the step when its target never appears (e.g. a card the agent didn't emit). */
   readonly optional?: boolean;
-  /** How long an optional step waits for its target before skipping, ms. */
-  readonly targetTimeoutMs?: number;
-  /**
-   * While true, a missing target means "not here yet" rather than "skip":
-   * the step waits for it (e.g. a chat card while the answer streams).
-   */
-  readonly holdWhile?: () => boolean;
   /**
    * How long to wait after `waitFor` passes before moving on, ms, so the user
    * sees what their action did. Default `DEFAULT_ADVANCE_DELAY_MS`.
@@ -111,7 +94,7 @@ export interface Tour<Body> {
    * Content version, sent with tour telemetry so funnels from different
    * versions of a tour aren't mixed. Raise it when the steps change.
    */
-  readonly version?: number;
+  readonly version: number;
   readonly steps: readonly TourStep<Body>[];
   /** Runs when the tour closes; `completed` is false when skipped. */
   readonly onEnd?: (completed: boolean) => void;
