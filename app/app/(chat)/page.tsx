@@ -2,17 +2,13 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "@/src/shared/lib/router";
 import useChatStore from "@/app/store/chatStore";
 import useMapStore from "@/app/store/mapStore";
+import { NET_FLUX_FEATURE_FLAG } from "@/app/constants/datasets";
 import {
-  DATASET_CARDS,
-  NET_FLUX_FEATURE_FLAG,
-  TREE_COVER_LOSS_DATASET_ID,
-} from "@/app/constants/datasets";
-import { getLayerContextFromDatasetCard } from "@/app/utils/datasetCardLayerContext";
-import { buildDatasetLayers } from "@/app/utils/datasetLayerContext";
+  getDefaultDatasetId,
+  seedDefaultDatasetLayer,
+} from "@/app/utils/defaultMapLayers";
 import { firstMessageRedirectPath } from "@/app/utils/threadNavigation";
 import { useFeatureFlag } from "@/src/shared/lib/feature-flags/use-feature-flag";
-
-const LGMS_NET_FLUX_DATASET_ID = 12;
 
 export default function NewThread() {
   const {
@@ -27,26 +23,12 @@ export default function NewThread() {
   const isNetFlux = useFeatureFlag(NET_FLUX_FEATURE_FLAG);
 
   // NOTE: This is super custom code for ff=net-flux. We should remove asap.
-  const defaultDatasetId = isNetFlux
-    ? LGMS_NET_FLUX_DATASET_ID
-    : TREE_COVER_LOSS_DATASET_ID;
+  const defaultDatasetId = getDefaultDatasetId(isNetFlux);
 
   useEffect(() => {
     resetChatStore();
     resetMapStore();
-
-    const { layers, addLayer } = useMapStore.getState();
-    const hasDatasetLayer = layers.some((l) => typeof l.datasetId === "number");
-    if (hasDatasetLayer) return;
-
-    const defaultCard = DATASET_CARDS.find(
-      (card) => card.dataset_id === defaultDatasetId
-    );
-    if (!defaultCard) return;
-
-    buildDatasetLayers(getLayerContextFromDatasetCard(defaultCard)).forEach(
-      addLayer
-    );
+    seedDefaultDatasetLayer(defaultDatasetId);
   }, [resetChatStore, resetMapStore, defaultDatasetId]);
 
   useEffect(() => {
