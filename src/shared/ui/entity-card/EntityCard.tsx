@@ -2,7 +2,7 @@ import { Box, Flex, Switch, Text, chakra } from "@chakra-ui/react";
 import { ArrowRightIcon } from "@phosphor-icons/react";
 import { useRef, type MouseEvent, type ReactNode } from "react";
 
-import { tourAnchor } from "@/src/shared/lib/tour-anchors";
+import { tourAnchor, type TourAnchorId } from "@/src/shared/lib/tour-anchors";
 
 import {
   ENTITY_KINDS,
@@ -68,7 +68,7 @@ export interface EntityCardProps {
    * root because the lists often wrap cards in `display: contents` boxes,
    * which have no size for a spotlight to measure.
    */
-  tourAnchorId?: string;
+  tourAnchorId?: TourAnchorId;
 }
 
 /**

@@ -4,6 +4,7 @@
  * one target (or none, for a centred dialog) and either waits for the user to
  * press Next or waits for app state to satisfy `waitFor`.
  */
+import type { TourAnchorId } from "@/src/shared/lib/tour-anchors";
 
 export interface Rect {
   readonly x: number;
@@ -33,7 +34,7 @@ export type LngLatBounds = readonly [
  *    not DOM nodes, so they can't be targeted by selector).
  */
 export type TourTarget =
-  | { readonly kind: "selector"; readonly id: string }
+  | { readonly kind: "selector"; readonly id: TourAnchorId }
   | { readonly kind: "map"; readonly bounds: LngLatBounds };
 
 export interface TourStep<Body> {
@@ -107,7 +108,7 @@ export interface Tour<Body> {
 }
 
 /** Target the `[data-tour="id"]` anchor. */
-export const anchorTarget = (id: string): TourTarget => ({
+export const anchorTarget = (id: TourAnchorId): TourTarget => ({
   kind: "selector",
   id,
 });

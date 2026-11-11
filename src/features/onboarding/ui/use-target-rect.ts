@@ -3,7 +3,10 @@
 import { useEffect, useState } from "react";
 
 import useMapStore from "@/app/store/mapStore";
-import { tourAnchorSelector } from "@/src/shared/lib/tour-anchors";
+import {
+  tourAnchorSelector,
+  type TourAnchorId,
+} from "@/src/shared/lib/tour-anchors";
 
 import { clipToViewport, rectFromPoints, sameRect } from "../lib/geometry";
 import type { Rect, TourTarget } from "../model/tour";
@@ -104,7 +107,8 @@ const isVisible = (el: HTMLElement) => {
   return r.width > 0 && r.height > 0;
 };
 
-function findAnchor(id: string): HTMLElement | null {
+/** The anchor's newest visible element, as the spotlight sees it; null if none. */
+export function findAnchor(id: TourAnchorId): HTMLElement | null {
   const all = document.querySelectorAll<HTMLElement>(tourAnchorSelector(id));
   // Last match: chat anchors resolve to the newest card in the thread.
   for (let i = all.length - 1; i >= 0; i--)

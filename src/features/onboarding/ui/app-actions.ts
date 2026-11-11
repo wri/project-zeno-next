@@ -10,6 +10,7 @@ import useInsightStore from "@/app/store/insightStore";
 import { isAreaLayer } from "@/app/store/layerManagerSlice";
 import useMapStore from "@/app/store/mapStore";
 import useSidebarStore from "@/app/store/sidebarStore";
+import type { LayerId } from "@/app/types/map";
 import {
   getDefaultDatasetId,
   seedDefaultDatasetLayer,
@@ -22,7 +23,8 @@ import { isFeatureEnabled } from "@/src/shared/lib/feature-flags";
 
 import type { LngLatBounds } from "../model/tour";
 
-export const GADM_BOUNDARY_LAYER = "GADM";
+// Typed so the build fails if the boundary layer the tour shows is removed.
+export const GADM_BOUNDARY_LAYER: LayerId = "GADM";
 
 /** Kenya, padded slightly so the whole outline sits inside the spotlight. */
 export const KENYA_BOUNDS: LngLatBounds = [

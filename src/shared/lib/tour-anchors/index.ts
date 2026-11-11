@@ -8,4 +8,5 @@ export {
   catalogCardAnchor,
   tourAnchor,
   tourAnchorSelector,
+  type TourAnchorId,
 } from "./tour-anchors";
