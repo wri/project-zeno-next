@@ -14,7 +14,6 @@ import {
   type ChecklistItemId,
   type ChecklistTickedBy,
 } from "../../model/onboarding-progress";
-import useOnboardingStore from "../../model/onboarding-store";
 import { AI_ASSISTANT_LABEL } from "@/app/ChatPanelHeader";
 import { AREA_ACTION_LABELS } from "@/app/components/AreaActionBar";
 import { BOUNDARIES_TAB_LABEL } from "@/app/components/AreasPanel";
@@ -66,7 +65,10 @@ export const CHECKLIST_TOURS_VERSION = 2;
 /** The last step's button: the guide ends, the task is the user's to do. */
 export const GUIDE_DONE_LABEL = "OK";
 
-/** The button that ticks a task the app can't see being done. */
+/**
+ * The control on a checklist row that ticks a task the app can't see being
+ * done. The PDF guide's copy names it too.
+ */
 export const MANUAL_TICK_LABEL = "I have done this";
 
 const COMPARE_PROMPT =
@@ -280,8 +282,8 @@ const ITEMS: Record<ChecklistItemId, Omit<ChecklistItem, "id">> = {
               </li>
             </ul>
             <p>
-              Then return to the map. In <b>{CHECKLIST_NAME}</b>, click this
-              task again. On this step, click <b>{MANUAL_TICK_LABEL}</b>.
+              Then return to the map. In <b>{CHECKLIST_NAME}</b>, click{" "}
+              <b>{MANUAL_TICK_LABEL}</b> on this task.
             </p>
           </>
         ),
@@ -333,28 +335,16 @@ export const CHECKLIST_ITEMS: readonly ChecklistItem[] = CHECKLIST_ITEM_IDS.map(
 /**
  * A task's guide. It shows where the task starts and leaves the panels it
  * opened open, for the user to carry on. Finishing it ticks nothing: the
- * checklist watcher ticks a task when the app shows it was done. Only a
- * `manual` task offers a button that ticks it.
+ * checklist watcher ticks a task when the app shows it was done, and the
+ * user ticks a `manual` task on its checklist row (`MANUAL_TICK_LABEL`).
  */
 export function createChecklistTour(item: ChecklistItem): UiTour {
   const last = item.steps.length - 1;
-  const markDone = (end: (completed: boolean) => void) => {
-    useOnboardingStore.getState().markChecklistDone([item.id], "manual");
-    end(true);
-  };
   return {
     id: `checklist-${item.id}`,
     version: CHECKLIST_TOURS_VERSION,
     steps: item.steps.map((s, i) =>
-      i === last
-        ? {
-            ...s,
-            ctaLabel: s.ctaLabel ?? GUIDE_DONE_LABEL,
-            ...(item.completion === "manual" && {
-              secondary: { label: MANUAL_TICK_LABEL, onClick: markDone },
-            }),
-          }
-        : s
+      i === last ? { ...s, ctaLabel: s.ctaLabel ?? GUIDE_DONE_LABEL } : s
     ),
   };
 }

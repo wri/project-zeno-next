@@ -606,8 +606,9 @@ export function createFirstRunTour(): UiTour {
               To remove a chip, click the × on the chip.
             </p>
             <p>
-              Next, try <b>{CHECKLIST_NAME}</b>. It has {CHECKLIST_ITEMS.length}{" "}
-              short tasks. You do each task yourself.
+              Next, try <b>{CHECKLIST_NAME}</b>. It is at the top right of the
+              page. It has {CHECKLIST_ITEMS.length} short tasks. You do each
+              task yourself.
             </p>
             <Tip>
               If something does not work, click{" "}

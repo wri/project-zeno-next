@@ -741,6 +741,15 @@ describe("first-run tour flow", () => {
     vi.unstubAllGlobals();
   });
 
+  it("says on its last step where Get started is", () => {
+    const done = createFirstRunTour().steps.find((s) => s.id === "done")!;
+    expect(bodyText(done.body)).toMatch(
+      new RegExp(
+        `${CHECKLIST_NAME}\\s*\\. It is at the top right of the page\\.`
+      )
+    );
+  });
+
   it("opens Get started from its last step, and only from its button", () => {
     // Ending puts the default dataset back, which reads the URL's flags.
     vi.stubGlobal("window", { location: { search: "" } });
@@ -906,16 +915,15 @@ describe("checklist tasks", () => {
     expect(state().progress.checklistDone).toEqual([]);
   });
 
-  it("let the user tick the PDF task, as theirs", () => {
+  it("leave the PDF task's tick to its row, and say where it is", () => {
     const item = CHECKLIST_ITEMS.find((i) => i.id === "dashboard-pdf")!;
-    state().startTour(createChecklistTour(item));
-    goTo("dashboard-pdf");
-    const last = current()!;
-    expect(last.secondary?.label).toBe(MANUAL_TICK_LABEL);
-    last.secondary!.onClick(state().endTour);
-    expect(state().progress.checklistDone).toEqual(["dashboard-pdf"]);
-    expect(state().lastTickedBy).toBe("manual");
-    expect(state().tour).toBeNull();
+    const steps = createChecklistTour(item).steps;
+    expect(steps.map((s) => s.secondary)).toEqual([undefined, undefined]);
+    const last = bodyText(steps.at(-1)!.body);
+    expect(last).toContain(MANUAL_TICK_LABEL);
+    expect(last).toContain(CHECKLIST_NAME);
+    // Nothing sends the user back into the guide.
+    expect(last).not.toMatch(/again|this step/i);
   });
 
   it("clear the other datasets first, so View analysis offers the alerts", () => {
