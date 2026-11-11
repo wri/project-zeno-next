@@ -10,25 +10,33 @@ export type TourOutcome = "completed" | "skipped";
  * the tour again to everyone who finished or skipped an older one; their
  * checklist progress is kept.
  */
-export const FIRST_RUN_TOUR_VERSION = 1;
+export const FIRST_RUN_TOUR_VERSION = 2;
 
-/** Checklist item ids; the checklist shows them in this order. */
+/**
+ * Checklist item ids; the checklist shows them in this order. Each is a task
+ * the user does in the app, ticked when the app shows it was done. Stored
+ * ids that are not listed here are dropped on load, so renaming an item
+ * clears its old tick.
+ */
 export const CHECKLIST_ITEM_IDS = [
-  "ask",
-  "data",
-  "area",
-  "insight",
-  "imagery",
-  "dashboard",
+  "alerts",
+  "protected-area",
+  "own-area",
+  "compare",
+  "dashboard-pdf",
+  "satellite-imagery",
 ] as const;
 
 export type ChecklistItemId = (typeof CHECKLIST_ITEM_IDS)[number];
+
+/** How an item got its tick: from what the app shows, or the user's word. */
+export type ChecklistTickedBy = "detected" | "manual";
 
 export interface OnboardingProgress {
   /** Outcome of the first-run tour; null until it has run once. */
   readonly tourOutcome: TourOutcome | null;
   readonly checklistDone: readonly ChecklistItemId[];
-  /** The user closed the checklist for good. */
+  /** The user hid the checklist. Taking the tour again brings it back. */
   readonly checklistDismissed: boolean;
 }
 
@@ -37,11 +45,3 @@ export const EMPTY_PROGRESS: OnboardingProgress = {
   checklistDone: [],
   checklistDismissed: false,
 };
-
-/** Items the first-run tour teaches, ticked off when it completes. */
-export const ITEMS_COVERED_BY_FIRST_RUN_TOUR: readonly ChecklistItemId[] = [
-  "ask",
-  "data",
-  "area",
-  "insight",
-];

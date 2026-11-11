@@ -3,6 +3,7 @@ import { create } from "zustand";
 import {
   EMPTY_PROGRESS,
   type ChecklistItemId,
+  type ChecklistTickedBy,
   type OnboardingProgress,
   type TourOutcome,
 } from "./onboarding-progress";
@@ -38,6 +39,8 @@ export interface OnboardingState {
   lastTourEnd: TourEnd | null;
   /** Times the user pressed Skip step, for telemetry (each is one skip). */
   userSkips: number;
+  /** How the latest checklist tick was made, for telemetry. */
+  lastTickedBy: ChecklistTickedBy | null;
 
   hydrate: (progress: OnboardingProgress) => void;
   startTour: (tour: Tour<unknown>) => void;
@@ -60,14 +63,18 @@ export interface OnboardingState {
    * finished nor dismissed, e.g. its overlay went away or the route changed.
    */
   abandonTour: () => void;
-  /** Record the first-run outcome and tick off the items it covered, in one write. */
-  recordTourOutcome: (
-    outcome: TourOutcome,
-    covered?: readonly ChecklistItemId[]
-  ) => void;
+  /**
+   * Record the first-run outcome. It ticks nothing: the checklist's tasks are
+   * ones the tour doesn't teach. It brings back a hidden checklist, so taking
+   * the tour again (even skipping it) is the way back to it.
+   */
+  recordTourOutcome: (outcome: TourOutcome) => void;
   setDraftPrompt: (text: string) => void;
   consumeDraftPrompt: () => string | null;
-  markChecklistDone: (ids: readonly ChecklistItemId[]) => void;
+  markChecklistDone: (
+    ids: readonly ChecklistItemId[],
+    by: ChecklistTickedBy
+  ) => void;
   setChecklistExpanded: (expanded: boolean) => void;
   dismissChecklist: () => void;
 }
@@ -107,6 +114,7 @@ const useOnboardingStore = create<OnboardingState>((set, get) => ({
   tourAbandoned: false,
   lastTourEnd: null,
   userSkips: 0,
+  lastTickedBy: null,
 
   hydrate: (progress) => set({ progress, hydrated: true }),
 
@@ -171,12 +179,12 @@ const useOnboardingStore = create<OnboardingState>((set, get) => ({
     });
   },
 
-  recordTourOutcome: (outcome, covered = []) =>
+  recordTourOutcome: (outcome) =>
     set((state) => ({
       progress: {
         ...state.progress,
         tourOutcome: outcome,
-        checklistDone: mergeDone(state.progress.checklistDone, covered),
+        checklistDismissed: false,
       },
     })),
 
@@ -188,12 +196,15 @@ const useOnboardingStore = create<OnboardingState>((set, get) => ({
     return draftPrompt;
   },
 
-  markChecklistDone: (ids) =>
+  markChecklistDone: (ids, by) =>
     set((state) => {
       const checklistDone = mergeDone(state.progress.checklistDone, ids);
       return checklistDone === state.progress.checklistDone
         ? state
-        : { progress: { ...state.progress, checklistDone } };
+        : {
+            progress: { ...state.progress, checklistDone },
+            lastTickedBy: by,
+          };
     }),
 
   setChecklistExpanded: (expanded) => set({ checklistExpanded: expanded }),

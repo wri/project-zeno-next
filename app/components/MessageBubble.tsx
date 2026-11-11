@@ -256,7 +256,7 @@ function MessageBubble({
 
   if (isAreaCard && message.aoiSelection) {
     return (
-      <Box my={2} width="100%" {...tourAnchor(TOUR_ANCHORS.chatAreaCard)}>
+      <Box my={2} width="100%">
         <AreaCard aoiSelection={message.aoiSelection} />
       </Box>
     );
@@ -349,8 +349,6 @@ function MessageBubble({
         key={`${widget.title} ${message.id}`}
         id={`widget-${message.id}-${idx}`}
         scrollMarginTop="32px"
-        {...(widget.type === "dataset-card" &&
-          tourAnchor(TOUR_ANCHORS.chatDatasetCard))}
       >
         <WidgetMessage widget={widget} />
       </Box>
@@ -487,13 +485,7 @@ function MessageBubble({
           </Box>
         )}
         {analysisWidgets.length > 0 && (
-          <Flex
-            direction="column"
-            gap="2"
-            mt="2"
-            w="100%"
-            {...tourAnchor(TOUR_ANCHORS.chatAnalysisCard)}
-          >
+          <Flex direction="column" gap="2" mt="2" w="100%">
             {analysisWidgets.map((widget, idx) => (
               <AnalysisCard
                 key={`${message.id}-analysis-${idx}`}

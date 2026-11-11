@@ -1,292 +1,284 @@
 "use client";
 
 import {
-  MapTrifoldIcon,
-  PolygonIcon,
+  ChartLineIcon,
+  FilePdfIcon,
+  PrinterIcon,
   SelectionPlusIcon,
-  StackSimpleIcon,
   UploadSimpleIcon,
 } from "@phosphor-icons/react";
 
 import {
   CHECKLIST_ITEM_IDS,
   type ChecklistItemId,
+  type ChecklistTickedBy,
 } from "../../model/onboarding-progress";
 import useOnboardingStore from "../../model/onboarding-store";
-import { DATA_CATALOG_LABEL } from "@/app/components/CatalogPanel";
-import { ChatContextOptions } from "@/app/components/ContextButton";
-import { WIDGET_CONTROL_LABELS } from "@/app/components/WidgetMessage";
+import { AI_ASSISTANT_LABEL } from "@/app/ChatPanelHeader";
+import { AREA_ACTION_LABELS } from "@/app/components/AreaActionBar";
 import { ANALYSES_LABEL } from "@/app/components/chatInputLabels";
-import { SHOW_PARAMS_LABEL } from "@/app/components/widgets/AnalysisParameters";
-import { DOWNLOAD_LABEL } from "@/app/components/widgets/DownloadMenu";
 import {
+  DATASET_CARD_BY_ID,
+  INTEGRATED_ALERTS_DATASET_ID,
+} from "@/app/constants/datasets";
+import { selectLayerOptions, type LayerId } from "@/app/types/map";
+import { viewAnalysisNudgeLabel } from "@/src/features/analysis";
+// The leaf module, not the feature's barrel: through the barrel this import
+// would close a cycle (the dashboard page mounts the chat, which mounts the
+// tour).
+import {
+  ADD_TO_DASHBOARD_LABEL,
+  DASHBOARD_EXPORT_LABEL,
+  SAVE_AS_PDF_LABEL,
+  createDashboardNudgeLabel,
+} from "@/src/features/dashboards/ui/dashboard-labels";
+import {
+  clearDatasetLayers,
   closeExplorationPanels,
   openAreasPanel,
   openDataCatalog,
 } from "../app-actions";
-import { TOUR_ANCHORS } from "@/src/shared/lib/tour-anchors";
-import { Example, InlineIcon, Tip } from "../tour-content";
+import { TOUR_ANCHORS, catalogCardAnchor } from "@/src/shared/lib/tour-anchors";
+import { DailyPromptsNote, Example, InlineIcon, Tip } from "../tour-content";
 import { anchorTarget } from "../../model/tour";
 import type { UiTour, UiTourStep } from "../types";
 
-// UI labels come from the components that render them, so a rename reaches
-// the copy too (checked by tests/architecture/tour-contract.test.ts).
-const DATASETS_LABEL = ChatContextOptions.layer.label;
-const AREAS_LABEL = ChatContextOptions.area.label;
+const ALERTS_NAME =
+  DATASET_CARD_BY_ID[INTEGRATED_ALERTS_DATASET_ID].dataset_name;
+// Typed so the build fails if the layer the copy names is removed.
+const OIL_PALM_LAYER: LayerId = "OIL_PALM";
+const OIL_PALM_NAME = selectLayerOptions.find(
+  (o) => o.id === OIL_PALM_LAYER
+)?.name;
 
-/** Content version of the walkthroughs, sent with tour telemetry. */
-const CHECKLIST_TOURS_VERSION = 1;
+/** Content version of the guides, sent with tour telemetry. */
+export const CHECKLIST_TOURS_VERSION = 2;
+
+/** The last step's button: the guide ends, the task is the user's to do. */
+export const GUIDE_DONE_LABEL = "Got it";
+
+/** The button that ticks a task the app can't see being done. */
+export const MANUAL_TICK_LABEL = "I have done this";
+
+const COMPARE_PROMPT =
+  "Compare tree cover loss in Kenya and Tanzania between 2015 and 2024.";
+const IMAGERY_PROMPT = "Show recent satellite imagery of the Mau Forest";
+
+const NO_PROMPTS_LEFT =
+  "You have used all your daily prompts. They refresh every 24 hours.";
 
 export interface ChecklistItem {
   readonly id: ChecklistItemId;
   readonly label: string;
-  /** Rough time to complete, shown beside the label. */
-  readonly duration: string;
+  /**
+   * How the task gets ticked: `detected` from what the app shows (see
+   * `checklistEvidence`), `manual` by the user's own word when the app
+   * can't see it (the PDF is made in another tab).
+   */
+  readonly completion: ChecklistTickedBy;
+  /** A short guide to where the task starts. It never ticks the task. */
   readonly steps: readonly UiTourStep[];
 }
 
 /** Keyed by id, so the compiler catches a missing or unknown item. */
 const ITEMS: Record<ChecklistItemId, Omit<ChecklistItem, "id">> = {
-  ask: {
-    label: "Ask your first question",
-    duration: "30s",
+  alerts: {
+    label: "Check recent alerts for an area",
+    completion: "detected",
     steps: [
       {
-        id: "ask-input",
-        target: anchorTarget(TOUR_ANCHORS.chatInput),
+        id: "alerts-row",
+        target: anchorTarget(catalogCardAnchor(INTEGRATED_ALERTS_DATASET_ID)),
         placement: "right",
-        title: "Ask in plain language",
-        body: (
-          <>
-            <p>Include an area, a dataset and a time range:</p>
-            <Example>
-              How much natural land was converted to cropland in Spain between
-              2015 and 2024?
-            </Example>
-            <Tip>
-              Dates come from what you type, e.g. “since 2015” or “last year”.
-            </Tip>
-          </>
-        ),
-      },
-      {
-        id: "ask-samples",
-        target: anchorTarget(TOUR_ANCHORS.samplePrompts),
-        placement: "right",
-        optional: true,
-        title: "Or start from a suggestion",
-        body: (
-          <p>
-            Click any suggestion to run it. They&apos;re a quick way to see what
-            Horizon can answer.
-          </p>
-        ),
-      },
-    ],
-  },
-  data: {
-    label: "Add a dataset to the map",
-    duration: "40s",
-    steps: [
-      {
-        id: "data-button",
-        target: anchorTarget(TOUR_ANCHORS.datasetsButton),
-        placement: "top",
-        padding: 5,
-        onEnter: closeExplorationPanels,
-        title: `${DATASETS_LABEL} live here`,
-        body: (
-          <p>
-            <InlineIcon icon={StackSimpleIcon} /> <b>{DATASETS_LABEL}</b> opens
-            the {DATA_CATALOG_LABEL}.
-          </p>
-        ),
-      },
-      {
-        id: "data-catalog",
-        target: anchorTarget(TOUR_ANCHORS.catalogPanel),
-        placement: "right",
-        onEnter: openDataCatalog,
-        title: "Switch a dataset on",
-        body: (
-          <p>
-            Search or pick a category, then use the switch on a row to add the
-            dataset as a layer. Active layers are pinned under <b>On map</b>,
-            and they are included with your next question.
-          </p>
-        ),
-      },
-      {
-        id: "data-legend",
-        target: anchorTarget(TOUR_ANCHORS.mapLegend),
-        placement: "left",
-        optional: true,
-        onEnter: closeExplorationPanels,
-        title: "It appears in Map layers",
-        body: (
-          <p>
-            Change a layer&apos;s opacity or read about it here. To remove it,
-            switch it off in the catalogue.{" "}
-            <InlineIcon icon={StackSimpleIcon} /> <b>{DATASETS_LABEL}</b> in
-            this header opens the catalogue again.
-          </p>
-        ),
-      },
-    ],
-  },
-  area: {
-    label: "Change your area",
-    duration: "40s",
-    steps: [
-      {
-        id: "area-button",
-        target: anchorTarget(TOUR_ANCHORS.areasButton),
-        placement: "top",
-        padding: 5,
-        onEnter: closeExplorationPanels,
-        title: `${AREAS_LABEL} live here`,
-        body: (
-          <p>
-            <InlineIcon icon={PolygonIcon} /> <b>{AREAS_LABEL}</b> opens the
-            boundary layers and your saved areas.
-          </p>
-        ),
-      },
-      {
-        id: "area-panel",
-        target: anchorTarget(TOUR_ANCHORS.areasPanel),
-        placement: "right",
-        onEnter: openAreasPanel,
-        title: "Search, or show a boundary",
-        body: (
-          <p>
-            Search for a place, or turn on a boundary layer under{" "}
-            <b>Boundaries</b> (administrative areas, Key Biodiversity Areas,
-            protected areas, Indigenous lands or commodities) and click an area
-            on the map. Only one boundary layer shows at a time. Areas from your
-            chat are under <b>In this conversation</b>.
-          </p>
-        ),
-      },
-      {
-        id: "area-tools",
-        target: anchorTarget(TOUR_ANCHORS.areaTools),
-        placement: "bottom",
-        padding: 4,
-        optional: true,
-        title: "Or draw or upload your own",
-        body: (
-          <p>
-            <InlineIcon icon={SelectionPlusIcon} /> <b>Draw on map</b> makes a
-            shape, or <InlineIcon icon={UploadSimpleIcon} /> <b>Upload file</b>{" "}
-            adds a boundary file. Saved shapes appear under <b>My areas</b>,
-            also in the menu.
-          </p>
-        ),
-      },
-    ],
-  },
-  insight: {
-    label: "Read an insight",
-    duration: "30s",
-    steps: [
-      {
-        id: "insight-card",
-        target: anchorTarget(TOUR_ANCHORS.insightWorkspace),
-        placement: "left",
-        title: "Answers open on the map",
+        // View analysis offers the first dataset on the map: with the default
+        // one still there, it would offer that instead of the alerts.
+        onEnter: () => {
+          clearDatasetLayers();
+          openDataCatalog();
+        },
+        title: `Turn on ${ALERTS_NAME}`,
         body: (
           <>
             <p>
-              Switch between <b>{WIDGET_CONTROL_LABELS.chart}</b> and{" "}
-              <b>{WIDGET_CONTROL_LABELS.table}</b>, use{" "}
-              <b>{WIDGET_CONTROL_LABELS.showWorking}</b> to see how it was made,
-              and <b>{SHOW_PARAMS_LABEL}</b> to check the inputs.{" "}
-              <b>{DOWNLOAD_LABEL}</b> saves the data.
+              {ALERTS_NAME} show recent signs of disturbance to forests and
+              other vegetation. They are updated daily.
+            </p>
+            <p>
+              We have taken the other datasets off the map. Use the switch on
+              this row. Then choose an area, and in the chat click{" "}
+              <InlineIcon icon={ChartLineIcon} />{" "}
+              <b>{viewAnalysisNudgeLabel(ALERTS_NAME, "…")}</b>
             </p>
             <Tip>
-              Nothing highlighted? No analysis is open yet. Ask a question
-              first, then come back.
+              An alert shows possible disturbance. It does not prove that forest
+              was cleared.
             </Tip>
           </>
         ),
       },
     ],
   },
-  imagery: {
-    label: "See satellite imagery",
-    duration: "20s",
+  "protected-area": {
+    label: "Choose a protected area or concession",
+    completion: "detected",
+    steps: [
+      {
+        id: "protected-area-panel",
+        target: anchorTarget(TOUR_ANCHORS.areasPanel),
+        placement: "right",
+        onEnter: openAreasPanel,
+        title: "Find a protected area or concession",
+        body: (
+          <>
+            <p>
+              Type a protected area&apos;s name in the search box, for example
+              Serengeti. Then use the switch on its row.
+            </p>
+            <p>
+              For a concession, turn on a layer such as <b>{OIL_PALM_NAME}</b>{" "}
+              in this panel. Zoom in and click a concession on the map.
+            </p>
+            <Tip>Concession layers cover some countries only.</Tip>
+          </>
+        ),
+      },
+    ],
+  },
+  "own-area": {
+    label: "Draw or upload your own area",
+    completion: "detected",
+    steps: [
+      {
+        id: "own-area-tools",
+        // The whole panel, not the two buttons: a search left in the box
+        // hides them, and the spotlight would find nothing.
+        target: anchorTarget(TOUR_ANCHORS.areasPanel),
+        placement: "right",
+        onEnter: openAreasPanel,
+        title: "Add your own area",
+        body: (
+          <>
+            <p>Use the buttons under the search box:</p>
+            <ul>
+              <li>
+                <InlineIcon icon={SelectionPlusIcon} />{" "}
+                <b>{AREA_ACTION_LABELS.draw}</b>: click the map to add points,
+                then double-click to finish.
+              </li>
+              <li>
+                <InlineIcon icon={UploadSimpleIcon} />{" "}
+                <b>{AREA_ACTION_LABELS.upload}</b>: add a file with your
+                boundary.
+              </li>
+            </ul>
+            <Tip>No buttons? Clear the search box first.</Tip>
+          </>
+        ),
+      },
+    ],
+  },
+  compare: {
+    label: "Compare two places",
+    completion: "detected",
+    steps: [
+      {
+        id: "compare-ask",
+        target: anchorTarget(TOUR_ANCHORS.chatInput),
+        placement: "right",
+        onEnter: () => {
+          closeExplorationPanels();
+          useOnboardingStore.getState().setDraftPrompt(COMPARE_PROMPT);
+        },
+        title: "Ask about two places at once",
+        body: (
+          <>
+            <p>
+              Name both places in one question. We have written one for you:
+            </p>
+            <Example>{COMPARE_PROMPT}</Example>
+            <p>Change the places if you like. Then press send.</p>
+            <Tip>
+              Remove any area chips first, so Horizon uses only the places you
+              type.
+            </Tip>
+            <DailyPromptsNote whenNoneLeft={NO_PROMPTS_LEFT} />
+          </>
+        ),
+      },
+    ],
+  },
+  "dashboard-pdf": {
+    label: "Save a chart to a dashboard and get a PDF",
+    completion: "manual",
+    steps: [
+      {
+        id: "dashboard-create",
+        target: anchorTarget(TOUR_ANCHORS.analysesButton),
+        placement: "top",
+        padding: 5,
+        onEnter: closeExplorationPanels,
+        title: "Make a dashboard for an area",
+        body: (
+          <>
+            <p>
+              Choose an area with a dataset on the map. In the chat, click{" "}
+              <b>{createDashboardNudgeLabel("…")}</b>
+            </p>
+            <p>
+              Then click <b>{ADD_TO_DASHBOARD_LABEL}</b> on a chart.{" "}
+              <InlineIcon icon={ChartLineIcon} /> <b>{ANALYSES_LABEL}</b> lists
+              all your charts.
+            </p>
+            <Tip>
+              On the dashboard, you can also ask for a satellite imagery map of
+              the area.
+            </Tip>
+          </>
+        ),
+      },
+      {
+        id: "dashboard-pdf",
+        title: "Get a PDF",
+        body: (
+          <p>
+            Open your dashboard. Click <InlineIcon icon={FilePdfIcon} />{" "}
+            <b>{DASHBOARD_EXPORT_LABEL}</b> at the top, then{" "}
+            <InlineIcon icon={PrinterIcon} /> <b>{SAVE_AS_PDF_LABEL}</b>. Then
+            come back and press <b>{MANUAL_TICK_LABEL}</b>.
+          </p>
+        ),
+      },
+    ],
+  },
+  "satellite-imagery": {
+    label: "See satellite imagery of a place",
+    completion: "detected",
     steps: [
       {
         id: "imagery-ask",
         target: anchorTarget(TOUR_ANCHORS.chatInput),
         placement: "right",
-        onEnter: () =>
-          useOnboardingStore
-            .getState()
-            .setDraftPrompt("Show recent satellite imagery of the Mau Forest"),
-        title: "Ask for imagery in chat",
+        // Imagery draws below dataset layers, which would cover it.
+        onEnter: () => {
+          closeExplorationPanels();
+          clearDatasetLayers();
+          useOnboardingStore.getState().setDraftPrompt(IMAGERY_PROMPT);
+        },
+        title: "Ask for satellite imagery",
         body: (
           <>
             <p>
-              Ask for imagery of a place and date and it&apos;s loaded onto the
-              map. We&apos;ve put an example in the chat box for you to send
-              when you&apos;re ready.
+              We have taken the datasets off the map, so you can see the
+              imagery. Send this question, or change the place:
             </p>
+            <Example>{IMAGERY_PROMPT}</Example>
             <Tip>
-              Sentinel-2 covers most places. In the Amazon, Planet monthly
-              mosaics (from September 2020) show under disturbance alerts.
+              Sentinel-2 imagery covers most places. In the Amazon, you can also
+              ask the {AI_ASSISTANT_LABEL} for Planet imagery: monthly images
+              back to September 2020.
             </Tip>
+            <DailyPromptsNote whenNoneLeft={NO_PROMPTS_LEFT} />
           </>
-        ),
-      },
-      {
-        id: "imagery-basemap",
-        target: anchorTarget(TOUR_ANCHORS.basemapButton),
-        placement: "left",
-        padding: 4,
-        optional: true,
-        title: "Or switch the basemap",
-        body: (
-          <p>
-            For a general satellite backdrop, change the basemap with{" "}
-            <InlineIcon icon={MapTrifoldIcon} />.
-          </p>
-        ),
-      },
-    ],
-  },
-  dashboard: {
-    label: "Save to a dashboard",
-    duration: "20s",
-    steps: [
-      {
-        id: "dashboard-analyses",
-        target: anchorTarget(TOUR_ANCHORS.analysesButton),
-        placement: "top",
-        padding: 5,
-        onEnter: closeExplorationPanels,
-        title: "Keep the analyses you like",
-        body: (
-          <p>
-            <b>{ANALYSES_LABEL}</b> has tabs for <b>Curated</b>,{" "}
-            <b>AI generated</b> and <b>In this conversation</b>.{" "}
-            <b>Add to dashboard</b> saves one to a dashboard for its area, where
-            you can add notes and build a report. Open your dashboards from{" "}
-            <b>Dashboards</b> in the menu.
-          </p>
-        ),
-      },
-      {
-        id: "dashboard-ask",
-        target: anchorTarget(TOUR_ANCHORS.chatInput),
-        placement: "right",
-        title: "Or ask for one",
-        body: (
-          <p>
-            You can also ask the assistant to “create a dashboard for this
-            area”.
-          </p>
         ),
       },
     ],
@@ -298,18 +290,31 @@ export const CHECKLIST_ITEMS: readonly ChecklistItem[] = CHECKLIST_ITEM_IDS.map(
   (id) => ({ id, ...ITEMS[id] })
 );
 
-/** A checklist item's walkthrough; finishing it ticks the item off. */
+/**
+ * A task's guide. It shows where the task starts and leaves the panels it
+ * opened open, for the user to carry on. Finishing it ticks nothing: the
+ * checklist watcher ticks a task when the app shows it was done. Only a
+ * `manual` task offers a button that ticks it.
+ */
 export function createChecklistTour(item: ChecklistItem): UiTour {
   const last = item.steps.length - 1;
+  const markDone = (end: (completed: boolean) => void) => {
+    useOnboardingStore.getState().markChecklistDone([item.id], "manual");
+    end(true);
+  };
   return {
     id: `checklist-${item.id}`,
     version: CHECKLIST_TOURS_VERSION,
     steps: item.steps.map((s, i) =>
-      i === last ? { ...s, ctaLabel: s.ctaLabel ?? "Done" } : s
+      i === last
+        ? {
+            ...s,
+            ctaLabel: s.ctaLabel ?? GUIDE_DONE_LABEL,
+            ...(item.completion === "manual" && {
+              secondary: { label: MANUAL_TICK_LABEL, onClick: markDone },
+            }),
+          }
+        : s
     ),
-    onEnd: (completed) => {
-      closeExplorationPanels();
-      if (completed) useOnboardingStore.getState().markChecklistDone([item.id]);
-    },
   };
 }

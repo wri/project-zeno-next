@@ -7,7 +7,12 @@ import useMapStore from "@/app/store/mapStore";
 import { addCustomAreaToMap } from "@/app/utils/addCustomAreaToMap";
 import { formatAreaWithUnits } from "@/app/utils/formatArea";
 import { MAX_AREA_KM2 } from "@/src/entities/custom-area";
-import { TOUR_ANCHORS, tourAnchor } from "@/src/shared/lib/tour-anchors";
+
+/** The two buttons' text. The onboarding tour's copy imports it, so a rename reaches both. */
+export const AREA_ACTION_LABELS = {
+  draw: "Draw on map",
+  upload: "Upload file",
+} as const;
 
 /**
  * Draw and Upload for the `AreasPanel`, above the filter chips. While drawing,
@@ -57,14 +62,14 @@ export function AreaActionBar({
   if (hideIdle) return null;
 
   return (
-    <Flex gap="6px" flexShrink={0} {...tourAnchor(TOUR_ANCHORS.areaTools)}>
+    <Flex gap="6px" flexShrink={0}>
       <Button {...actionButtonProps} onClick={handleDraw}>
         <SelectionPlusIcon size={16} />
-        Draw on map
+        {AREA_ACTION_LABELS.draw}
       </Button>
       <Button {...actionButtonProps} onClick={handleUpload}>
         <UploadSimpleIcon size={16} />
-        Upload file
+        {AREA_ACTION_LABELS.upload}
       </Button>
     </Flex>
   );

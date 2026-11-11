@@ -53,6 +53,8 @@ import { TOUR_ANCHORS, tourAnchor } from "@/src/shared/lib/tour-anchors";
 function WorkspaceSkeleton() {
   return (
     <Box
+      // The onboarding tour spotlights the chart's place while it loads.
+      {...tourAnchor(TOUR_ANCHORS.insightWorkspace)}
       flex="0 1 auto"
       minH="0"
       overflowY="auto"

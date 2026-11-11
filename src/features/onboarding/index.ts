@@ -9,4 +9,8 @@ export { OnboardingTour } from "./ui/OnboardingTour";
 export { OnboardingChecklist } from "./ui/OnboardingChecklist";
 export { useOnboardingDraft } from "./ui/use-onboarding-draft";
 export { useIsTourActive } from "./ui/use-is-tour-active";
-export { ONBOARDING_FEATURE_FLAG, startTourHref } from "./ui/tour-entry";
+export {
+  ONBOARDING_FEATURE_FLAG,
+  TAKE_THE_TOUR_LABEL,
+  startTourHref,
+} from "./ui/tour-entry";

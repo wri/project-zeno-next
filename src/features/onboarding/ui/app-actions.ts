@@ -1,16 +1,25 @@
 /**
  * The tour's hands on the app: side effects that set the stage for a step,
- * and predicates that tell an action step the user has done the thing. This is
- * the only onboarding file that touches app stores, so the coupling is easy to
- * find when those stores change.
+ * predicates that tell an action step the user has done the thing, and the
+ * evidence that ticks checklist tasks. This is the only onboarding file that
+ * touches app stores, so the coupling is easy to find when those stores
+ * change.
  */
-import { NET_FLUX_FEATURE_FLAG } from "@/app/constants/datasets";
+import { useCallback, useSyncExternalStore } from "react";
+
+import {
+  DATASET_CARD_BY_ID,
+  INTEGRATED_ALERTS_DATASET_ID,
+  NET_FLUX_FEATURE_FLAG,
+} from "@/app/constants/datasets";
+import useAuthStore from "@/app/store/authStore";
 import useChatStore from "@/app/store/chatStore";
 import useInsightStore from "@/app/store/insightStore";
-import { isAreaLayer } from "@/app/store/layerManagerSlice";
+import { isAreaLayer, type Layer } from "@/app/store/layerManagerSlice";
 import useMapStore from "@/app/store/mapStore";
 import useSidebarStore from "@/app/store/sidebarStore";
-import type { LayerId } from "@/app/types/map";
+import type { InsightWidget } from "@/app/types/chat";
+import { CONCESSION_STYLES, type LayerId } from "@/app/types/map";
 import {
   getDefaultDatasetId,
   seedDefaultDatasetLayer,
@@ -21,16 +30,10 @@ import {
 } from "@/src/features/analysis";
 import { isFeatureEnabled } from "@/src/shared/lib/feature-flags";
 
-import type { LngLatBounds } from "../model/tour";
+import type { ChecklistItemId } from "../model/onboarding-progress";
 
-// Typed so the build fails if the boundary layer the tour shows is removed.
+// Typed so the build fails if the boundary layer the tour restores is removed.
 export const GADM_BOUNDARY_LAYER: LayerId = "GADM";
-
-/** Kenya, padded slightly so the whole outline sits inside the spotlight. */
-export const KENYA_BOUNDS: LngLatBounds = [
-  [33.7, -4.9],
-  [42.1, 5.2],
-];
 
 /* ------------------------------------------------------------------ */
 /* Side effects                                                        */
@@ -70,6 +73,32 @@ export function clearMap(): void {
 }
 
 /**
+ * Takes the areas and charts off the map but keeps the dataset, before the
+ * chat question: its dataset chip shows what goes with a question, while the
+ * place comes from what the user types (an old Kenya chip would contradict a
+ * changed place).
+ */
+export function clearAreasAndCharts(): void {
+  closeExplorationPanels();
+  const map = useMapStore.getState();
+  for (const layer of map.layers.filter(isAreaLayer)) {
+    (layer.featureRefs ?? []).forEach(map.removeFromRegistry);
+    map.removeLayer(layer.id);
+  }
+  map.clearAnalysis();
+  // As in clearMap: the analysis feature's own copy of the selection, and a
+  // chart still loading, would otherwise come back after the clear.
+  useSelectionStore.getState().clear();
+  cancelRunningAnalyses();
+  useInsightStore.getState().clearInsights();
+}
+
+/** Takes every dataset layer off the map (and so its chip off the chat box). */
+export function clearDatasetLayers(): void {
+  useMapStore.getState().removeDatasetLayers();
+}
+
+/**
  * Put back what a fresh /app shows (default dataset + admin boundaries) if
  * the tour left the map empty, e.g. when skipped midway.
  */
@@ -98,24 +127,6 @@ export function showDatasetOnMap(datasetId: number): void {
   seedDefaultDatasetLayer(datasetId);
 }
 
-/** Shows a boundary layer, as its switch in the Areas panel does. */
-export function showBoundaryLayer(layerId: typeof GADM_BOUNDARY_LAYER): void {
-  useMapStore.getState().setSelectAreaLayer(layerId);
-}
-
-/**
- * Frame `bounds` in the open map area. flyToBounds already keeps clear of the
- * chat panel, any open side panel and the legend, reading them from the store
- * a frame later, so call it after closing the exploration panels.
- */
-export function flyMapTo(bounds: LngLatBounds): void {
-  const [[west, south], [east, north]] = bounds;
-  useMapStore.getState().flyToBounds([
-    [west, south],
-    [east, north],
-  ]);
-}
-
 /* ------------------------------------------------------------------ */
 /* Predicates (polled by action steps)                                 */
 /* ------------------------------------------------------------------ */
@@ -130,9 +141,6 @@ export const isDatasetOnMap = (datasetId: number) => () =>
     .getState()
     .layers.some((l) => l.datasetId === datasetId && !l.parentLayerId);
 
-export const isBoundaryLayerShown = (layerId: string) => () =>
-  useMapStore.getState().selectAreaLayer === layerId;
-
 export const hasSelectedArea = () =>
   useMapStore.getState().layers.some((l) => isAreaLayer(l) && l.visible);
 
@@ -144,14 +152,12 @@ export const hasAcceptedViewAnalysis = () =>
         m.type === "view-analysis-nudge" && m.viewAnalysisSuggestion?.accepted
     );
 
-// Only the kinds the predicates below look for, which a conversation never
-// removes. The whole list would make a shifting baseline: sending drops a
-// transient profile ask and a pending nudge can be withdrawn, either of which
-// moves the next message below a baseline counted while it was there.
+// Only the user's questions, which a conversation never removes. The whole
+// list would make a shifting baseline: sending drops a transient profile ask
+// and a pending nudge can be withdrawn, either of which moves the next
+// message below a baseline counted while it was there.
 const trackedMessages = () =>
-  useChatStore
-    .getState()
-    .messages.filter((m) => m.type === "user" || m.type === "area-card");
+  useChatStore.getState().messages.filter((m) => m.type === "user");
 
 /** The baseline for the `...Since` predicates. */
 export const chatMessageCount = () => trackedMessages().length;
@@ -173,10 +179,6 @@ const messagesSince = (baseline: number) => trackedMessages().slice(baseline);
 export const sentMessageSince = (baseline: number) =>
   messagesSince(baseline).some((m) => m.type === "user");
 
-/** The agent has picked an area (an area card arrived) since `baseline`. */
-export const areaCardSince = (baseline: number) =>
-  messagesSince(baseline).some((m) => m.type === "area-card");
-
 /** The request started after `baseline` has finished streaming. */
 export const chatSettledSince = (baseline: number) =>
   !isChatLoading() && sentMessageSince(baseline);
@@ -189,3 +191,137 @@ export const chatSettledSince = (baseline: number) =>
  */
 export const answerFailedSince = (baseline: number, answerBaseline: number) =>
   chatSettledSince(baseline) && answeredCount() === answerBaseline;
+
+/**
+ * The hand-run chart failed: the user accepted View analysis, nothing is
+ * loading any more and no chart arrived. Accepting the nudge starts the load
+ * in the same click, so this can't hold in between.
+ */
+export const handRunChartFailed = () =>
+  hasAcceptedViewAnalysis() && !isGeneratingInsight() && insightCount() === 0;
+
+/**
+ * The chart that leads the map's card (the newest analysis; its charts share
+ * one origin) offers Show working: it was made with code the AI wrote. A
+ * curated chart has none. Same rule as `WidgetMessage`.
+ */
+export const leadChartShowsWorking = () =>
+  !!useInsightStore.getState().insights.at(-1)?.generation;
+
+/**
+ * Reads app state in a step body and re-renders it when the chat or the
+ * charts change. `read` must return a primitive (compared by value).
+ */
+export function useAppValue<T extends boolean | number | string>(
+  read: () => T
+): T {
+  const subscribe = useCallback((onChange: () => void) => {
+    const stops = [
+      useChatStore.subscribe(onChange),
+      useInsightStore.subscribe(onChange),
+    ];
+    return () => stops.forEach((stop) => stop());
+  }, []);
+  return useSyncExternalStore(subscribe, read, read);
+}
+
+/**
+ * Reads the user's daily prompt allowance, as the server last reported it,
+ * through `read` (which must return a primitive), and re-renders on change.
+ */
+export function useDailyPrompts<T extends string | number | boolean | null>(
+  read: (used: number, total: number) => T
+): T {
+  const snapshot = () => {
+    const { usedPrompts, totalPrompts } = useAuthStore.getState();
+    return read(usedPrompts, totalPrompts);
+  };
+  return useSyncExternalStore(useAuthStore.subscribe, snapshot, snapshot);
+}
+
+/* ------------------------------------------------------------------ */
+/* Checklist evidence                                                  */
+/* ------------------------------------------------------------------ */
+
+/** The checklist tasks the app can see being done; the rest are ticked by hand. */
+export type DetectedChecklistItemId = Exclude<ChecklistItemId, "dashboard-pdf">;
+
+// Typed so the build fails if the protected areas boundary layer goes.
+const PROTECTED_AREAS_LAYER: LayerId = "WDPA";
+
+/**
+ * Area sources that are a protected area or a concession. A boundary click
+ * names the source by its layer id ("WDPA", "OIL_PALM"); search and the
+ * assistant use the backend key, which is that id lowercased.
+ */
+const PROTECTED_OR_CONCESSION_SOURCES: ReadonlySet<string> = new Set(
+  [PROTECTED_AREAS_LAYER, ...Object.keys(CONCESSION_STYLES)].map((id) =>
+    id.toLowerCase()
+  )
+);
+
+const CUSTOM_AREA_SOURCE = "custom";
+
+const areaSources = (layer: Layer): string[] =>
+  [
+    ...(layer.featureRefs ?? []).map((r) => r.source),
+    ...(layer.aoiSelection?.aois ?? []).map((a) => a.source),
+  ].map((source) => source.toLowerCase());
+
+/** One key per place on a layer: an assistant selection can hold several. */
+const placeKeys = (layer: Layer): string[] =>
+  layer.aoiSelection?.aois.length
+    ? layer.aoiSelection.aois.map(
+        (a) => `${a.source.toLowerCase()}:${a.src_id}`
+      )
+    : (layer.featureRefs ?? []).map(
+        (r) => `${r.source.toLowerCase()}:${r.srcId ?? r.name}`
+      );
+
+const chartKey = (w: InsightWidget): string => w.insightId ?? w.id ?? w.title;
+
+/**
+ * What on the map now shows each detectable task was done, as stable keys
+ * (layer ids, chart ids). The watcher ticks a task when a key appears that it
+ * has not seen before, so state left over from the first-run tour can't
+ * tick anything.
+ */
+export function checklistEvidence(): Record<
+  DetectedChecklistItemId,
+  readonly string[]
+> {
+  const { layers } = useMapStore.getState();
+  const areas = layers.filter((l) => l.visible && isAreaLayer(l));
+  // Only the assistant's picks (`selectionName` is set by pick_aoi): a drawn
+  // area kept beside a searched place is two places, but no comparison.
+  const asked = areas.filter((l) => !!l.selectionName);
+  const places = [...new Set(asked.flatMap(placeKeys))].sort();
+  const alerts = DATASET_CARD_BY_ID[INTEGRATED_ALERTS_DATASET_ID].dataset_name;
+  const { insights } = useInsightStore.getState();
+  return {
+    alerts: insights
+      .filter((w) => (w.datasetName ?? w.analysisParams?.dataset) === alerts)
+      .map(chartKey),
+    "protected-area": areas
+      .filter((l) =>
+        areaSources(l).some((s) => PROTECTED_OR_CONCESSION_SOURCES.has(s))
+      )
+      .map((l) => l.id),
+    "own-area": areas
+      .filter((l) => areaSources(l).includes(CUSTOM_AREA_SOURCE))
+      .map((l) => l.id),
+    // Two places the assistant picked, in one selection or two. Keyed by
+    // the places.
+    compare: places.length >= 2 ? [places.join("|")] : [],
+    "satellite-imagery": layers.filter((l) => !!l.imagery).map((l) => l.id),
+  };
+}
+
+/** Calls `onChange` whenever the map or the charts change; returns the stop. */
+export function subscribeToChecklistEvidence(onChange: () => void): () => void {
+  const stops = [
+    useMapStore.subscribe(onChange),
+    useInsightStore.subscribe(onChange),
+  ];
+  return () => stops.forEach((stop) => stop());
+}

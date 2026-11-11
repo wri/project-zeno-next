@@ -4,7 +4,6 @@
  */
 export {
   TOUR_ANCHORS,
-  boundaryCardAnchor,
   catalogCardAnchor,
   tourAnchor,
   tourAnchorSelector,

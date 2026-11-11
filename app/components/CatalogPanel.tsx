@@ -29,11 +29,7 @@ import { filterDatasetsByCategory } from "@/app/utils/filterDatasetsByCategory";
 import { filterDatasetsByFeatureFlag } from "@/app/utils/filterDatasetsByFeatureFlag";
 import { searchDatasets } from "@/app/utils/searchDatasets";
 import { useEnabledFlags } from "@/src/shared/lib/feature-flags";
-import {
-  TOUR_ANCHORS,
-  catalogCardAnchor,
-  tourAnchor,
-} from "@/src/shared/lib/tour-anchors";
+import { catalogCardAnchor } from "@/src/shared/lib/tour-anchors";
 
 import { DatasetRow } from "./DatasetRow";
 import { PanelEmpty, PanelList, PanelPills, PanelSection } from "./PanelList";
@@ -94,10 +90,7 @@ export default function DataCatalogPanel() {
           transition={catalogPanelSlideTransition}
           style={getCatalogColumnMotionStyle(leftPx)}
         >
-          <Flex
-            {...getCatalogColumnPanelFlexProps(isChatFullSize)}
-            {...tourAnchor(TOUR_ANCHORS.catalogPanel)}
-          >
+          <Flex {...getCatalogColumnPanelFlexProps(isChatFullSize)}>
             <Flex
               flexShrink={0}
               h="40px"

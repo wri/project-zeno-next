@@ -39,8 +39,9 @@ type FrontDoorEvent =
 
 /**
  * Onboarding tours (behind ?ff=onboarding). Every value is a fixed id from the
- * tour definitions ("first-run", "checklist-ask", step and anchor ids), never
- * user text. `step_number` counts from 1, as the popover does.
+ * tour definitions ("first-run", "checklist-alerts", step, anchor and
+ * checklist item ids), never user text. `step_number` counts from 1, as the
+ * popover does.
  */
 export type OnboardingTourEvent =
   | {
@@ -91,6 +92,13 @@ export type OnboardingTourEvent =
       anchor_id: string;
       optional: boolean;
       ms_on_step: number;
+    }
+  | {
+      /** A checklist task was ticked off. */
+      event: "checklist_item_done";
+      item_id: string;
+      /** "detected": the app saw it done. "manual": the user said so. */
+      ticked_by: "detected" | "manual";
     };
 
 type TrackableEvent = NudgeClickEvent | FrontDoorEvent | OnboardingTourEvent;

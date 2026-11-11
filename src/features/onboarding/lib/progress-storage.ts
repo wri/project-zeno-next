@@ -26,11 +26,13 @@ export type KeyValueStorage = Pick<Storage, "getItem" | "setItem">;
 const isChecklistItemId = (id: unknown): id is ChecklistItemId =>
   (CHECKLIST_ITEM_IDS as readonly unknown[]).includes(id);
 
+/** The first-run tour version of values stored before versions existed. */
+const UNVERSIONED_TOUR_VERSION = 1;
+
 // Each field falls back on its own, so one stale or unknown value (e.g. a
 // renamed checklist item) doesn't reset everything and re-run the tour.
-// Values stored before the versions existed have none: they are version 1.
 const storedSchema = z.object({
-  tourVersion: z.number().catch(FIRST_RUN_TOUR_VERSION),
+  tourVersion: z.number().catch(UNVERSIONED_TOUR_VERSION),
   tourOutcome: z.enum(["completed", "skipped"]).nullable().catch(null),
   checklistDone: z
     .array(z.unknown())

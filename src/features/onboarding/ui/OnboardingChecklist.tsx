@@ -17,6 +17,8 @@ const LIME_VAR = "var(--chakra-colors-lime-400)";
 const SUCCESS = "#2F8F4E";
 /** Above the map, below the catalog column (1095) so open panels cover it. */
 const CHECKLIST_Z_INDEX = 1090;
+const CHECKLIST_INTRO =
+  "Try each task yourself. It is ticked when you have done it.";
 
 /** Small progress ring for the collapsed pill. */
 function ProgressRing({ ratio }: { ratio: number }) {
@@ -48,8 +50,10 @@ function ProgressRing({ ratio }: { ratio: number }) {
 }
 
 /**
- * "Get to know Horizon" checklist shown after the first-run tour. Each item
- * runs a short walkthrough; items the tour already covered start ticked.
+ * "Get to know Horizon" checklist shown after the first-run tour: tasks the
+ * user does in the app. Each item runs a short guide to where the task
+ * starts; it is ticked when the app shows the task was done
+ * (`useChecklistDetection`), or by the user for a task the app can't see.
  */
 export function OnboardingChecklist() {
   const enabled = useFeatureFlag(ONBOARDING_FEATURE_FLAG);
@@ -137,9 +141,10 @@ function Checklist() {
           </Button>
         </Flex>
         <Text fontSize="xs" opacity={0.75}>
-          {doneCount === total
-            ? "All done. Nice work."
-            : `${doneCount} of ${total} done`}
+          {doneCount === total ? "All done." : `${doneCount} of ${total} done`}
+        </Text>
+        <Text fontSize="xs" opacity={0.75}>
+          {CHECKLIST_INTRO}
         </Text>
         <Box
           h="4px"
@@ -190,13 +195,11 @@ function Checklist() {
                 <Text
                   flex="1"
                   textAlign="left"
+                  whiteSpace="normal"
                   color={isDone ? "fg.muted" : "fg"}
                   textDecoration={isDone ? "line-through" : "none"}
                 >
                   {item.label}
-                </Text>
-                <Text fontFamily="mono" fontSize="11px" color="fg.muted">
-                  {item.duration}
                 </Text>
               </Button>
             </li>
@@ -210,8 +213,9 @@ function Checklist() {
         py="2"
         justify="flex-end"
       >
+        {/* Taking the tour again (menu, Take the tour) brings it back. */}
         <Button size="2xs" variant="plain" color="fg.link" onClick={dismiss}>
-          Dismiss
+          Hide checklist
         </Button>
       </Flex>
     </Box>

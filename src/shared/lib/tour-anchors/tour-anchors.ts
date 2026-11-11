@@ -10,38 +10,23 @@
 export const TOUR_ANCHORS = {
   chatPanel: "chat-panel",
   chatInput: "chat-input",
-  samplePrompts: "sample-prompts",
   datasetsButton: "datasets-button",
-  areasButton: "areas-button",
-  catalogPanel: "catalog-panel",
   areasPanel: "areas-panel",
-  areaTools: "area-tools",
   viewAnalysisNudge: "view-analysis-nudge",
-  reasoning: "reasoning",
-  chatAreaCard: "chat-area-card",
-  chatDatasetCard: "chat-dataset-card",
-  chatAnalysisCard: "chat-analysis-card",
   insightWorkspace: "insight-workspace",
   analysesButton: "analyses-button",
-  mapLegend: "map-legend",
-  basemapButton: "basemap-button",
-  menuButton: "menu-button",
 } as const;
 
 /**
  * Every id a tour can point at: the fixed anchors, plus one id per catalogue
- * row and per boundary layer. A typo in a step target fails typecheck.
+ * row. A typo in a step target fails typecheck.
  */
 export type TourAnchorId =
   | (typeof TOUR_ANCHORS)[keyof typeof TOUR_ANCHORS]
-  | `catalog-card-${number}`
-  | `boundary-card-${string}`;
+  | `catalog-card-${number}`;
 
 export const catalogCardAnchor = (datasetId: number): TourAnchorId =>
   `catalog-card-${datasetId}`;
-
-export const boundaryCardAnchor = (layerId: string): TourAnchorId =>
-  `boundary-card-${layerId}`;
 
 /** Props to mark an element as a tour target. */
 export const tourAnchor = (id: TourAnchorId) => ({ "data-tour": id });

@@ -13,19 +13,24 @@ import {
   ndjsonResponse,
 } from "@/app/store/__tests__/stream-fixtures";
 import useChatStore from "@/app/store/chatStore";
+import useInsightStore from "@/app/store/insightStore";
+import type { Layer } from "@/app/store/layerManagerSlice";
 import useMapStore from "@/app/store/mapStore";
 import useSidebarStore from "@/app/store/sidebarStore";
-import type { ChatMessage } from "@/app/types/chat";
+import type { ChatMessage, InsightWidget } from "@/app/types/chat";
+import { useSelectionStore } from "@/src/features/analysis";
 
 import {
-  KENYA_BOUNDS,
   answerFailedSince,
   answeredCount,
-  areaCardSince,
   chatMessageCount,
   chatSettledSince,
+  checklistEvidence,
+  clearAreasAndCharts,
+  clearDatasetLayers,
   clearMap,
-  flyMapTo,
+  handRunChartFailed,
+  leadChartShowsWorking,
   openAreasPanel,
   openDataCatalog,
   sentMessageSince,
@@ -50,15 +55,14 @@ describe("chat progress predicates", () => {
     setChat([msg("user"), msg("area-card")]);
     const baseline = chatMessageCount();
     expect(sentMessageSince(baseline)).toBe(false);
-    expect(areaCardSince(baseline)).toBe(false);
-    expect(areaCardSince(0)).toBe(true);
+    expect(sentMessageSince(0)).toBe(true);
   });
 
-  it("sees the area card as soon as it arrives, mid-stream", () => {
+  it("is not settled while the answer streams", () => {
     setChat([msg("assistant")]);
     const baseline = chatMessageCount();
     setChat([msg("assistant"), msg("user"), msg("area-card")], true);
-    expect(areaCardSince(baseline)).toBe(true);
+    expect(sentMessageSince(baseline)).toBe(true);
     expect(chatSettledSince(baseline)).toBe(false);
   });
 
@@ -155,14 +159,220 @@ describe("setting the stage", () => {
     expect(areasPanelOpen).toBe(true);
     expect(areasPanelFilter).toBe("boundaries");
   });
+});
 
-  it("frames bounds through the map's own clear-of-the-chrome fit", () => {
-    const flyToBounds = vi.fn();
-    useMapStore.setState({ flyToBounds });
-    flyMapTo(KENYA_BOUNDS);
-    expect(flyToBounds).toHaveBeenCalledWith([
-      [33.7, -4.9],
-      [42.1, 5.2],
-    ]);
+const layer = (over: Partial<Layer> & Pick<Layer, "id">): Layer => ({
+  name: over.id,
+  type: "geojson",
+  visible: true,
+  ...over,
+});
+const aoi = (source: string, src_id: string, name = src_id) => ({
+  name,
+  source,
+  src_id,
+  subtype: "x",
+});
+const widget = (over: Partial<InsightWidget> = {}): InsightWidget => ({
+  id: Math.random().toString(36),
+  type: "bar",
+  title: "t",
+  description: "",
+  data: [],
+  xAxis: "x",
+  yAxis: "y",
+  ...over,
+});
+const TCL_LAYER = layer({ id: "tcl", type: "raster", datasetId: 4 });
+const KENYA = layer({
+  id: "Kenya",
+  featureRefs: [{ name: "Kenya", source: "gadm", srcId: "KEN" }],
+  aoiSelection: { name: "Kenya", aois: [aoi("gadm", "KEN", "Kenya")] },
+});
+
+describe("the chat question's stage", () => {
+  beforeEach(() => {
+    useMapStore.getState().reset();
+    useInsightStore.getState().clearInsights();
+  });
+
+  it("takes the area and charts off but keeps the dataset", () => {
+    vi.mocked(cancelRunningAnalyses).mockClear();
+    useMapStore.setState({ layers: [TCL_LAYER, KENYA] });
+    useInsightStore.setState({ insights: [widget()] });
+    useSelectionStore.getState().select({
+      name: "Kenya",
+      source: "gadm",
+      srcId: "KEN",
+    });
+
+    clearAreasAndCharts();
+
+    expect(useMapStore.getState().layers.map((l) => l.id)).toEqual(["tcl"]);
+    expect(useInsightStore.getState().insights).toEqual([]);
+    // Or the View analysis nudge would offer Kenya again.
+    expect(useSelectionStore.getState().selection).toBeNull();
+    expect(cancelRunningAnalyses).toHaveBeenCalledTimes(1);
+  });
+
+  it("takes every dataset off for the imagery task, leaving the areas", () => {
+    useMapStore.setState({ layers: [TCL_LAYER, KENYA] });
+    clearDatasetLayers();
+    expect(useMapStore.getState().layers.map((l) => l.id)).toEqual(["Kenya"]);
+  });
+});
+
+describe("chart predicates", () => {
+  beforeEach(() => {
+    useInsightStore.getState().clearInsights();
+    useChatStore.setState({ isGeneratingInsight: false, messages: [] });
+  });
+
+  const acceptedNudge = () =>
+    msg("view-analysis-nudge", {
+      viewAnalysisSuggestion: {
+        area: { name: "Kenya", source: "gadm", srcId: "KEN" },
+        datasetId: 4,
+        datasetName: "Tree cover loss",
+        startDate: "2001-01-01",
+        endDate: "2025-12-31",
+        accepted: true,
+      },
+    });
+
+  it("sees a hand-run chart fail only once nothing is loading", () => {
+    expect(handRunChartFailed()).toBe(false); // not accepted yet
+    useChatStore.setState({
+      messages: [acceptedNudge()],
+      isGeneratingInsight: true,
+    });
+    expect(handRunChartFailed()).toBe(false);
+    useChatStore.setState({ isGeneratingInsight: false });
+    expect(handRunChartFailed()).toBe(true);
+    useInsightStore.setState({ insights: [widget()] });
+    expect(handRunChartFailed()).toBe(false);
+  });
+
+  it("offers Show working only on a chart made with the AI's code", () => {
+    expect(leadChartShowsWorking()).toBe(false);
+    useInsightStore.setState({ insights: [widget({ curated: true })] });
+    expect(leadChartShowsWorking()).toBe(false);
+    useInsightStore.setState({
+      insights: [
+        widget({ curated: true }),
+        widget({
+          curated: false,
+          generation: { codeact_parts: [{ type: "code_block", content: "" }] },
+        }),
+      ],
+    });
+    expect(leadChartShowsWorking()).toBe(true);
+  });
+});
+
+describe("checklistEvidence", () => {
+  beforeEach(() => {
+    useMapStore.getState().reset();
+    useInsightStore.getState().clearInsights();
+  });
+
+  const evidence = () => checklistEvidence();
+  const setLayers = (...layers: Layer[]) => useMapStore.setState({ layers });
+
+  it("finds nothing on an empty map, nor for one ordinary area", () => {
+    expect(Object.values(evidence()).flat()).toEqual([]);
+    setLayers(TCL_LAYER, KENYA);
+    expect(Object.values(evidence()).flat()).toEqual([]);
+  });
+
+  it("sees an Integrated alerts chart, from either route", () => {
+    useInsightStore.setState({
+      insights: [
+        widget({ insightId: "a", datasetName: "Integrated alerts" }),
+        widget({
+          insightId: "b",
+          analysisParams: { dataset: "Integrated alerts" },
+        }),
+        widget({ insightId: "c", datasetName: "Tree cover loss" }),
+      ],
+    });
+    expect(evidence().alerts).toEqual(["a", "b"]);
+  });
+
+  it("sees a protected area or concession, however it was picked", () => {
+    setLayers(
+      // A boundary click names the source by the layer id.
+      layer({ id: "Serengeti", featureRefs: [{ name: "S", source: "WDPA" }] }),
+      // Search and the assistant use the lowercase backend key.
+      layer({
+        id: "Palm",
+        aoiSelection: { name: "Palm", aois: [aoi("oil_palm", "p1")] },
+      }),
+      KENYA
+    );
+    expect(evidence()["protected-area"]).toEqual(["Serengeti", "Palm"]);
+  });
+
+  it("ignores a hidden area", () => {
+    setLayers(
+      layer({
+        id: "Serengeti",
+        visible: false,
+        featureRefs: [{ name: "S", source: "wdpa" }],
+      })
+    );
+    expect(evidence()["protected-area"]).toEqual([]);
+  });
+
+  it("sees a drawn or uploaded area", () => {
+    setLayers(
+      KENYA,
+      layer({ id: "area-1", featureRefs: [{ name: "Mine", source: "custom" }] })
+    );
+    expect(evidence()["own-area"]).toEqual(["area-1"]);
+  });
+
+  // As pick_aoi adds them: `selectionName` marks the assistant's picks.
+  const picked = (id: string, ...aois: ReturnType<typeof aoi>[]) =>
+    layer({ id, selectionName: id, aoiSelection: { name: id, aois } });
+
+  it("sees two places the assistant picked, in one selection or in two", () => {
+    setLayers(
+      picked("Kenya and Tanzania", aoi("gadm", "KEN"), aoi("gadm", "TZA"))
+    );
+    expect(evidence().compare).toEqual(["gadm:KEN|gadm:TZA"]);
+    setLayers(
+      picked("Kenya", aoi("gadm", "KEN")),
+      picked("Tanzania", aoi("gadm", "TZA"))
+    );
+    expect(evidence().compare).toEqual(["gadm:KEN|gadm:TZA"]);
+  });
+
+  it("doesn't see a comparison in a drawn area kept beside a searched place", () => {
+    setLayers(
+      KENYA,
+      layer({ id: "area-1", featureRefs: [{ name: "Mine", source: "custom" }] })
+    );
+    expect(evidence().compare).toEqual([]);
+  });
+
+  it("counts one place twice as one place", () => {
+    setLayers(
+      picked("Kenya", aoi("gadm", "KEN")),
+      picked("Kenya again", aoi("gadm", "KEN"))
+    );
+    expect(evidence().compare).toEqual([]);
+  });
+
+  it("sees satellite imagery on the map", () => {
+    setLayers(
+      TCL_LAYER,
+      layer({
+        id: "imagery-1",
+        type: "raster",
+        imagery: { tile_url: "x", mosaic_id: "m1", aoi_names: ["Mau"] },
+      })
+    );
+    expect(evidence()["satellite-imagery"]).toEqual(["imagery-1"]);
   });
 });

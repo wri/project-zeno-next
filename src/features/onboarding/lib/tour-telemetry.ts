@@ -13,7 +13,14 @@ import type { Tour } from "../model/tour";
 /** The store fields telemetry reads. */
 export type TourTelemetryState = Pick<
   OnboardingState,
-  "tour" | "stepIndex" | "history" | "lastTourEnd" | "userSkips" | "progress"
+  | "tour"
+  | "stepIndex"
+  | "history"
+  | "lastTourEnd"
+  | "userSkips"
+  | "progress"
+  | "hydrated"
+  | "lastTickedBy"
 >;
 
 export interface TourTelemetryProbe {
@@ -72,6 +79,29 @@ function passedOver(
 }
 
 /**
+ * Checklist items ticked by this change. Loading stored progress is not a
+ * tick: those were reported when they happened.
+ */
+function checklistTicks(
+  prev: TourTelemetryState,
+  next: TourTelemetryState
+): OnboardingTourEvent[] {
+  if (
+    !prev.hydrated ||
+    next.progress.checklistDone === prev.progress.checklistDone
+  )
+    return [];
+  const before = new Set(prev.progress.checklistDone);
+  return next.progress.checklistDone
+    .filter((id) => !before.has(id))
+    .map((id) => ({
+      event: "checklist_item_done",
+      item_id: id,
+      ticked_by: next.lastTickedBy ?? "detected",
+    }));
+}
+
+/**
  * The telemetry events for one store change, in the order they happened.
  * One store change can pass over several steps (and `startTour` or the last
  * `advance` can end the tour too): each step passed over gets its own
@@ -82,7 +112,7 @@ export function tourTelemetryEvents(
   next: TourTelemetryState,
   probe: TourTelemetryProbe
 ): OnboardingTourEvent[] {
-  const events: OnboardingTourEvent[] = [];
+  const events: OnboardingTourEvent[] = checklistTicks(prev, next);
 
   // Skip step: its own store change, made while the step is still current.
   const current = next.tour?.steps[next.stepIndex];

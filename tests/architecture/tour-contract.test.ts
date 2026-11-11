@@ -25,10 +25,9 @@ const ANCHORS_MODULE = "src/shared/lib/tour-anchors/";
 /** Files whose text is tour copy (step titles, bodies, hints). */
 const TOUR_COPY = `${ONBOARDING}ui/tours/`;
 
-/** Builders for the anchor id families (one id per catalogue row, per boundary layer). */
+/** Builders for the anchor id families (one id per catalogue row). */
 const FAMILIES = {
   catalogCardAnchor: "catalogCard",
-  boundaryCardAnchor: "boundaryCard",
 } as const;
 
 type AnchorName =
@@ -45,25 +44,16 @@ const ANCHOR_HOMES: Record<AnchorName, readonly string[]> = {
   // Compact and full-size chat layouts; only one is mounted at a time.
   chatPanel: ["app/ChatPanelCompact.tsx", "app/ChatPanelFullSize.tsx"],
   chatInput: ["app/components/ChatInput.tsx"],
-  samplePrompts: ["app/components/SamplePrompts.tsx"],
   datasetsButton: ["app/components/ChatInput.tsx"],
-  areasButton: ["app/components/ChatInput.tsx"],
-  catalogPanel: ["app/components/CatalogPanel.tsx"],
   areasPanel: ["app/components/AreasPanel.tsx"],
-  areaTools: ["app/components/AreaActionBar.tsx"],
   viewAnalysisNudge: ["app/components/MessageBubble.tsx"],
-  // The loading and the finished branch; only one renders at a time.
-  reasoning: ["app/components/Reasoning.tsx", "app/components/Reasoning.tsx"],
-  chatAreaCard: ["app/components/MessageBubble.tsx"],
-  chatDatasetCard: ["app/components/MessageBubble.tsx"],
-  chatAnalysisCard: ["app/components/MessageBubble.tsx"],
-  insightWorkspace: ["app/components/InsightWorkspace.tsx"],
+  // The loading skeleton and the chart card; only one renders at a time.
+  insightWorkspace: [
+    "app/components/InsightWorkspace.tsx",
+    "app/components/InsightWorkspace.tsx",
+  ],
   analysesButton: ["app/components/ChatInput.tsx"],
-  mapLegend: ["app/components/legend/Legend.tsx"],
-  basemapButton: ["app/components/map/BasemapSelector.tsx"],
-  menuButton: ["app/components/PageHeader.tsx"],
   catalogCard: ["app/components/CatalogPanel.tsx"],
-  boundaryCard: ["app/components/BoundariesList.tsx"],
 };
 
 /** Verbs the copy puts before a label ("Click Datasets"). */
@@ -424,11 +414,12 @@ function catalogIdValue(
 /* ------------------------------------------------------------------ */
 
 /**
- * Imports into tour copy from a component (`@/app/components/...`) or another
- * feature's public API are UI labels. Covering a new label is one import.
+ * Imports into tour copy from a component (`@/app/components/...`, or a chat
+ * panel file such as `@/app/ChatPanelHeader`) or another feature are UI
+ * labels. Covering a new label is one import.
  */
 const LABEL_SOURCE =
-  /^@\/(app\/components\/|src\/features\/(?!onboarding(\/|$)))/;
+  /^@\/(app\/(components\/|ChatPanel)|src\/features\/(?!onboarding(\/|$)))/;
 
 interface Label {
   readonly local: string;
@@ -576,7 +567,7 @@ describe("tour contract: anchors", () => {
   it("(a) every anchor is set with TOUR_ANCHORS or a family builder", () => {
     expect(
       scan.unreadable,
-      "Pass TOUR_ANCHORS.x, catalogCardAnchor(...) or boundaryCardAnchor(...) so this contract can see the anchor"
+      "Pass TOUR_ANCHORS.x or catalogCardAnchor(...) so this contract can see the anchor"
     ).toEqual([]);
   });
 

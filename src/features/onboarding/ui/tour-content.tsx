@@ -9,6 +9,10 @@ import {
 } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
 
+import { UNLIMITED_PROMPTS_THRESHOLD } from "@/app/hooks/usePromptQuota";
+
+import { useDailyPrompts } from "./app-actions";
+
 /** Small bordered chip that shows a UI icon inline in running text. */
 export function InlineIcon({ icon: IconComponent }: { icon: Icon }) {
   return (
@@ -70,17 +74,17 @@ const INGREDIENTS = [
   {
     icon: <MapPinIcon />,
     title: "An area",
-    text: "Country, region, park or your own shape",
+    text: "A country, region, park or your own shape",
   },
   {
     icon: <StackSimpleIcon />,
     title: "A dataset",
-    text: "Tree cover loss, land cover, grasslands, alerts…",
+    text: "Tree cover loss, land cover, alerts and more",
   },
   {
     icon: <CalendarBlankIcon />,
     title: "A time range",
-    text: "“Since 2015”, “last year”, “2020–2024”",
+    text: "“Since 2015”, “last year”, “2020 to 2024”",
   },
 ];
 
@@ -137,4 +141,28 @@ export function SummaryPair({
       ))}
     </Grid>
   );
+}
+
+/**
+ * What sending a question costs, from the allowance the server reports: one
+ * of the user's daily prompts. Null when the allowance is effectively
+ * unlimited (internal accounts), as the header meter treats it.
+ * `whenNoneLeft` is the copy for a user with none left today.
+ */
+export function dailyPromptsNote(
+  used: number,
+  total: number,
+  whenNoneLeft: string
+): string | null {
+  if (total <= 0 || total > UNLIMITED_PROMPTS_THRESHOLD) return null;
+  if (used >= total) return whenNoneLeft;
+  return `Sending this question uses 1 of your ${total} daily prompts.`;
+}
+
+/** `dailyPromptsNote` as a tip, live from the server's last count. */
+export function DailyPromptsNote({ whenNoneLeft }: { whenNoneLeft: string }) {
+  const note = useDailyPrompts((used, total) =>
+    dailyPromptsNote(used, total, whenNoneLeft)
+  );
+  return note ? <Tip>{note}</Tip> : null;
 }

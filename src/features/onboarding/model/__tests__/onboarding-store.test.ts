@@ -89,29 +89,51 @@ describe("onboarding store", () => {
   });
 
   it("merges checklist items without duplicates", () => {
-    state().markChecklistDone(["ask", "data"]);
-    state().markChecklistDone(["data", "imagery"]);
-    expect(state().progress.checklistDone).toEqual(["ask", "data", "imagery"]);
+    state().markChecklistDone(["alerts", "compare"], "detected");
+    state().markChecklistDone(["compare", "own-area"], "detected");
+    expect(state().progress.checklistDone).toEqual([
+      "alerts",
+      "compare",
+      "own-area",
+    ]);
   });
 
   it("leaves progress untouched when nothing new is done", () => {
-    state().markChecklistDone(["ask"]);
+    state().markChecklistDone(["alerts"], "detected");
     const before = state().progress;
-    state().markChecklistDone(["ask"]);
+    state().markChecklistDone(["alerts"], "manual");
     expect(state().progress).toBe(before);
+    expect(state().lastTickedBy).toBe("detected");
   });
 
-  it("records the outcome and covered items in one update", () => {
+  it("remembers how the latest tick was made, with the tick", () => {
     const listener = vi.fn();
     const unsubscribe = useOnboardingStore.subscribe(listener);
-    state().recordTourOutcome("completed", ["ask", "data"]);
+    state().markChecklistDone(["dashboard-pdf"], "manual");
+    unsubscribe();
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(state().lastTickedBy).toBe("manual");
+  });
+
+  it("records the outcome, ticking nothing, in one update", () => {
+    const listener = vi.fn();
+    const unsubscribe = useOnboardingStore.subscribe(listener);
+    state().recordTourOutcome("completed");
     unsubscribe();
     expect(listener).toHaveBeenCalledTimes(1);
     expect(state().progress).toEqual({
       tourOutcome: "completed",
-      checklistDone: ["ask", "data"],
+      checklistDone: [],
       checklistDismissed: false,
     });
+  });
+
+  it("brings back a hidden checklist when the tour ends, skipped or not", () => {
+    for (const outcome of ["completed", "skipped"] as const) {
+      state().dismissChecklist();
+      state().recordTourOutcome(outcome);
+      expect(state().progress.checklistDismissed).toBe(false);
+    }
   });
 
   it("dismisses the checklist", () => {

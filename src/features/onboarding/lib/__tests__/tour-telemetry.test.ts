@@ -22,7 +22,7 @@ const TOUR: Tour<unknown> = {
   steps: [
     step("welcome"),
     step("open-catalog", { target: anchorTarget("datasets-button") }),
-    step("card", { target: anchorTarget("chat-area-card"), optional: true }),
+    step("card", { target: anchorTarget("insight-workspace"), optional: true }),
     step("map", {
       target: {
         kind: "map",
@@ -42,6 +42,8 @@ const state = (over: Partial<TourTelemetryState> = {}): TourTelemetryState => ({
   lastTourEnd: null,
   userSkips: 0,
   progress: EMPTY_PROGRESS,
+  hydrated: true,
+  lastTickedBy: null,
   ...over,
 });
 
@@ -169,7 +171,7 @@ describe("tourTelemetryEvents", () => {
   });
 
   it("reports a step left while its anchor is not on screen", () => {
-    hidden = new Set(["chat-area-card"]);
+    hidden = new Set(["insight-workspace"]);
     const list = events(
       state({ stepIndex: 2, history: [0, 1] }),
       state({ stepIndex: 3, history: [0, 1] })
@@ -178,7 +180,7 @@ describe("tourTelemetryEvents", () => {
       event: "tour_target_missing",
       tour_id: "first-run",
       step_id: "card",
-      anchor_id: "chat-area-card",
+      anchor_id: "insight-workspace",
       optional: true,
       ms_on_step: 1200,
     });
@@ -190,7 +192,7 @@ describe("tourTelemetryEvents", () => {
   });
 
   it("never reports a map target as missing", () => {
-    hidden = new Set(["datasets-button", "chat-area-card"]);
+    hidden = new Set(["datasets-button", "insight-workspace"]);
     const list = events(
       state({ stepIndex: 3, history: [0, 1, 2] }),
       state({ tour: null, stepIndex: 0, history: [], lastTourEnd: "closed" })
@@ -249,6 +251,58 @@ describe("tourTelemetryEvents", () => {
   });
 });
 
+describe("checklist ticks", () => {
+  const withDone = (
+    checklistDone: TourTelemetryState["progress"]["checklistDone"],
+    over: Partial<TourTelemetryState> = {}
+  ) =>
+    state({
+      tour: null,
+      progress: { ...EMPTY_PROGRESS, checklistDone },
+      ...over,
+    });
+
+  it("reports each newly ticked item, with how it was ticked", () => {
+    expect(
+      events(
+        withDone(["alerts"]),
+        withDone(["alerts", "compare", "own-area"], {
+          lastTickedBy: "detected",
+        })
+      )
+    ).toEqual([
+      {
+        event: "checklist_item_done",
+        item_id: "compare",
+        ticked_by: "detected",
+      },
+      {
+        event: "checklist_item_done",
+        item_id: "own-area",
+        ticked_by: "detected",
+      },
+    ]);
+    expect(
+      events(
+        withDone([]),
+        withDone(["dashboard-pdf"], { lastTickedBy: "manual" })
+      )
+    ).toEqual([
+      {
+        event: "checklist_item_done",
+        item_id: "dashboard-pdf",
+        ticked_by: "manual",
+      },
+    ]);
+  });
+
+  it("doesn't report ticks loaded from storage", () => {
+    expect(
+      events(withDone([], { hydrated: false }), withDone(["alerts"]))
+    ).toEqual([]);
+  });
+});
+
 describe("tour telemetry with the onboarding store", () => {
   beforeEach(() =>
     useOnboardingStore.setState({
@@ -256,9 +310,11 @@ describe("tour telemetry with the onboarding store", () => {
       stepIndex: 0,
       history: [],
       progress: EMPTY_PROGRESS,
+      hydrated: true,
       tourAbandoned: false,
       lastTourEnd: null,
       userSkips: 0,
+      lastTickedBy: null,
     })
   );
 
@@ -392,6 +448,45 @@ describe("tour telemetry with the onboarding store", () => {
     expect(sent.at(-1)).toMatchObject({
       event: "tour_ended",
       outcome: "completed",
+    });
+  });
+
+  it("reports a one-step guide from start to end", () => {
+    const sent = record(() => {
+      store().startTour(tour(step("only")));
+      store().advance(false, 0);
+    });
+    expect(names(sent)).toEqual([
+      "tour_started",
+      "tour_step_viewed",
+      "tour_ended",
+    ]);
+    expect(sent.at(-1)).toMatchObject({
+      outcome: "completed",
+      step_id: "only",
+      step_number: 1,
+      step_count: 1,
+    });
+  });
+
+  it("reports a manual tick before the guide that made it ends", () => {
+    const sent = record(() => {
+      store().startTour(tour(step("first"), step("last")));
+      store().advance(false, 0);
+      store().markChecklistDone(["dashboard-pdf"], "manual");
+      store().endTour(true);
+    });
+    expect(names(sent)).toEqual([
+      "tour_started",
+      "tour_step_viewed",
+      "tour_step_viewed",
+      "checklist_item_done",
+      "tour_ended",
+    ]);
+    expect(sent.at(-2)).toEqual({
+      event: "checklist_item_done",
+      item_id: "dashboard-pdf",
+      ticked_by: "manual",
     });
   });
 

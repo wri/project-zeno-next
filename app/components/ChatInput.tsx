@@ -331,7 +331,6 @@ export default function ChatInput({
                   />
                   <ContextButton
                     contextType="area"
-                    {...tourAnchor(TOUR_ANCHORS.areasButton)}
                     onClick={openAreaPicker}
                     disabled={disabled}
                     active={areasPanelOpen}

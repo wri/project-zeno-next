@@ -36,6 +36,7 @@ import useSidebarStore from "@/app/store/sidebarStore";
 import { isAppRoute, mapTabHref } from "@/app/utils/threadNavigation";
 import {
   ONBOARDING_FEATURE_FLAG,
+  TAKE_THE_TOUR_LABEL,
   startTourHref,
 } from "@/src/features/onboarding";
 import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
@@ -267,7 +268,7 @@ export default function MenuSideBar() {
                 />
                 {onboardingEnabled && (
                   <MenuItem
-                    label="Take the tour"
+                    label={TAKE_THE_TOUR_LABEL}
                     icon={CompassIcon}
                     onClick={() =>
                       router.push(startTourHref(window.location.search))

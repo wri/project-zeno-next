@@ -24,6 +24,7 @@ import {
 } from "./tour-entry";
 import { TourOverlay } from "./TourOverlay";
 import { createFirstRunTour } from "./tours/first-run-tour";
+import { useChecklistDetection } from "./use-checklist-detection";
 import { useTourTelemetry } from "./use-tour-telemetry";
 
 /** Let the map settle (default layers, first paint) before dimming it. */
@@ -31,13 +32,15 @@ const START_DELAY_MS = 800;
 
 /**
  * The guided tour: loads and saves onboarding progress, starts the first-run
- * tour for new users or when the URL carries `?tour` ("Take the tour"), and
- * renders whichever tour is running. When it starts: `shouldStartTour`.
+ * tour for new users or when the URL carries `?tour` ("Take the tour"),
+ * renders whichever tour is running, and ticks checklist tasks the user does
+ * (`useChecklistDetection`). When it starts: `shouldStartTour`.
  * Mount once, desktop only.
  */
 export function OnboardingTour() {
   const enabled = useFeatureFlag(ONBOARDING_FEATURE_FLAG);
   useTourTelemetry(enabled);
+  useChecklistDetection(enabled);
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();

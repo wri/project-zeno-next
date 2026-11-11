@@ -31,7 +31,6 @@ import useChatStore from "../store/chatStore";
 import useSidebarStore from "../store/sidebarStore";
 import { Link } from "@/src/shared/lib/router";
 import { usePathname } from "@/src/shared/lib/router";
-import { TOUR_ANCHORS, tourAnchor } from "@/src/shared/lib/tour-anchors";
 import { useLogout } from "@/app/hooks/useLogout";
 import { openWhatsNew, useWhatsNewUnread } from "@/app/hooks/useWhatsNew";
 import { mapTabHref } from "@/app/utils/threadNavigation";
@@ -144,7 +143,6 @@ function PageHeader() {
               _focusVisible={focusRing}
               onClick={() => setMenuOpen(true)}
               aria-label="Open menu"
-              {...tourAnchor(TOUR_ANCHORS.menuButton)}
             >
               <ListIcon size={16} />
             </IconButton>

@@ -11,6 +11,12 @@ export const ONBOARDING_FEATURE_FLAG = "onboarding";
 /** Query param that starts the first-run tour, e.g. `/app?ff=onboarding&tour`. */
 export const START_TOUR_PARAM = "tour";
 
+/** The menu item that starts the tour. Its copy names it too. */
+export const TAKE_THE_TOUR_LABEL = "Take the tour";
+
+/** The first-run tour's id (telemetry, and the checklist watcher's pause). */
+export const FIRST_RUN_TOUR_ID = "first-run";
+
 const FEATURE_FLAGS_PARAM = "ff";
 
 /** The question the landing hero (or What's new) hands a new conversation. */

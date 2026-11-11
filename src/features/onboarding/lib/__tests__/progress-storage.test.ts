@@ -29,7 +29,7 @@ describe("readProgress", () => {
     const storage = memoryStorage();
     const progress = {
       tourOutcome: "completed" as const,
-      checklistDone: ["ask", "data"] as const,
+      checklistDone: ["alerts", "compare"] as const,
       checklistDismissed: false,
     };
     writeProgress(storage, progress);
@@ -44,14 +44,40 @@ describe("readProgress", () => {
   it("drops unknown checklist items and keeps the rest", () => {
     const storage = memoryStorage({
       [ONBOARDING_STORAGE_KEY]: JSON.stringify({
+        tourVersion: FIRST_RUN_TOUR_VERSION,
         tourOutcome: "completed",
-        checklistDone: ["ask", "teleport", "ask", 7, "data"],
+        checklistDone: ["alerts", "teleport", "alerts", 7, "own-area"],
         checklistDismissed: true,
       }),
     });
     expect(readProgress(storage)).toEqual({
       tourOutcome: "completed",
-      checklistDone: ["ask", "data"],
+      checklistDone: ["alerts", "own-area"],
+      checklistDismissed: true,
+    });
+  });
+
+  it("drops the ticks of the old walkthroughs, which the user didn't do", () => {
+    const storage = memoryStorage({
+      [ONBOARDING_STORAGE_KEY]: JSON.stringify({
+        schemaVersion: PROGRESS_SCHEMA_VERSION,
+        tourVersion: 1,
+        tourOutcome: "completed",
+        checklistDone: [
+          "ask",
+          "data",
+          "area",
+          "insight",
+          "imagery",
+          "dashboard",
+        ],
+        checklistDismissed: true,
+      }),
+    });
+    expect(readProgress(storage)).toEqual({
+      // Version 1's outcome: the new tour shows once more.
+      tourOutcome: null,
+      checklistDone: [],
       checklistDismissed: true,
     });
   });
@@ -68,15 +94,19 @@ describe("readProgress", () => {
   });
 
   it("reads values stored before versions existed as version 1", () => {
-    const legacy = {
-      tourOutcome: "skipped",
-      checklistDone: ["imagery"],
-      checklistDismissed: false,
-    };
     const storage = memoryStorage({
-      [ONBOARDING_STORAGE_KEY]: JSON.stringify(legacy),
+      [ONBOARDING_STORAGE_KEY]: JSON.stringify({
+        tourOutcome: "skipped",
+        checklistDone: ["satellite-imagery"],
+        checklistDismissed: false,
+      }),
     });
-    expect(readProgress(storage)).toEqual(legacy);
+    // Older than the current tour, so its outcome no longer counts.
+    expect(readProgress(storage)).toEqual({
+      tourOutcome: null,
+      checklistDone: ["satellite-imagery"],
+      checklistDismissed: false,
+    });
   });
 
   it("forgets the outcome of an older first-run tour, keeping the checklist", () => {
@@ -85,13 +115,13 @@ describe("readProgress", () => {
         schemaVersion: PROGRESS_SCHEMA_VERSION,
         tourVersion: FIRST_RUN_TOUR_VERSION - 1,
         tourOutcome: "completed",
-        checklistDone: ["ask"],
+        checklistDone: ["compare"],
         checklistDismissed: false,
       }),
     });
     expect(readProgress(storage)).toEqual({
       tourOutcome: null,
-      checklistDone: ["ask"],
+      checklistDone: ["compare"],
       checklistDismissed: false,
     });
   });

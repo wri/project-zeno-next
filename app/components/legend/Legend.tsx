@@ -20,7 +20,6 @@ import type { LegendAoi, LegendBoundary } from "./useLegendHook";
 import { LayerEntry } from "./LayerEntry";
 import { ImageryLegendEntry } from "./ImageryLegendEntry";
 import { ParamChip } from "@/app/components/ui/ParamChip";
-import { TOUR_ANCHORS, tourAnchor } from "@/src/shared/lib/tour-anchors";
 
 const ChReorderGroup = chakra(Reorder.Group);
 const ChReorderItem = chakra(Reorder.Item);
@@ -116,7 +115,6 @@ export function Legend(props: LegendProps) {
 
   return (
     <Flex
-      {...tourAnchor(TOUR_ANCHORS.mapLegend)}
       w="100%"
       maxH={{ base: "50vh", md: "60vh" }}
       bg="#F7F9FF"
