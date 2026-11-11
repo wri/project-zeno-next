@@ -241,10 +241,25 @@ describe("first-run tour steps", () => {
     const targets = createFirstRunTour().steps.flatMap((s) =>
       s.target?.kind === "selector" ? [s.target.id] : []
     );
+    // The View analysis step lights the whole chat, so its chips can be
+    // read; its nudge is an inner anchor, not the target.
     expect(targets.filter((id) => id.startsWith("chat-"))).toEqual([
+      "chat-panel",
       "chat-input",
       "chat-panel",
     ]);
+  });
+
+  it("rings the control the copy names inside a large target", () => {
+    const focus = Object.fromEntries(
+      createFirstRunTour().steps.flatMap((s) =>
+        s.focus ? [[s.id, [s.target?.id, s.focus.id]]] : []
+      )
+    );
+    expect(focus).toEqual({
+      "find-area": ["areas-panel", "areas-search"],
+      "view-analysis": ["chat-panel", "view-analysis-nudge"],
+    });
   });
 });
 
@@ -319,6 +334,56 @@ describe("first-run tour flow", () => {
     useInsightStore.setState({ insights: [CURATED_CHART] });
     expect(insight.waitFor?.()).toBe(true);
     expect(insight.skipIf?.()).toBe(false);
+  });
+
+  it("does the View analysis step only on its nudge, even if a question is sent there", () => {
+    const nudge = (accepted: boolean) =>
+      msg("view-analysis-nudge", {
+        viewAnalysisSuggestion: {
+          area: { name: "Kenya", source: "gadm", srcId: "KEN" },
+          datasetId: TREE_COVER_LOSS_DATASET_ID,
+          datasetName: "Tree cover loss",
+          startDate: "2001-01-01",
+          endDate: "2025-12-31",
+          accepted,
+        },
+      });
+    state().startTour(createFirstRunTour());
+    goTo("find-area");
+    pickKenya();
+    useChatStore.setState({ messages: [nudge(false)] });
+    state().advance(false, state().stepIndex);
+    const step = current()!;
+    expect(step.id).toBe("view-analysis");
+
+    // The chat is lit: the user asks a question instead, and it is answered.
+    useChatStore.setState({
+      messages: [nudge(false), msg("user"), msg("assistant")],
+      completedAnswers: 1,
+    });
+    // Not done, still the user's turn, with Skip step there as always.
+    expect(step.waitFor?.()).toBe(false);
+    expect(step.skipIf?.()).toBe(false);
+    expect(statusOf(step)?.tone).toBe("turn");
+    expect(canSkipWhileWaiting(step, false)).toBe(true);
+
+    // Clicking the nudge (still in the chat) does the step.
+    useChatStore.setState({
+      messages: [nudge(true), msg("user"), msg("assistant")],
+      isGeneratingInsight: true,
+    });
+    expect(step.waitFor?.()).toBe(true);
+    state().advance(false, state().stepIndex);
+    expect(currentStepId()).toBe("insight");
+
+    // The chat half counts from its own start: that question is not its.
+    useChatStore.setState({ isGeneratingInsight: false });
+    useInsightStore.setState({ insights: [CURATED_CHART] });
+    goTo("ask-in-chat");
+    const ask = current()!;
+    expect(ask.waitFor?.()).toBe(false);
+    state().skipStep(state().stepIndex);
+    expect(currentStepId()).toBe("done");
   });
 
   it("passes over the hand-run chart step when the chart failed", () => {

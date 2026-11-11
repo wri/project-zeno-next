@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   clipToViewport,
   dockPlacement,
+  intersectRect,
   padRect,
   placePopover,
   pointInRect,
@@ -113,6 +114,58 @@ describe("placePopover", () => {
   it("centres when nothing fits around a huge target", () => {
     const target = { x: 0, y: 0, width: 1000, height: 800 };
     expect(placePopover(target, POPOVER, VIEWPORT).side).toBeNull();
+  });
+
+  describe("pointing at a control inside the target (pointAt)", () => {
+    // A tall panel on the left; its search box near the top.
+    const panel = { x: 20, y: 40, width: 300, height: 700 };
+    const search = { x: 30, y: 60, width: 280, height: 30 };
+
+    it("stays beside the whole target, lined up with the control", () => {
+      const p = placePopover(panel, POPOVER, VIEWPORT, "right", search);
+      expect(p.side).toBe("right");
+      expect(p.x).toBe(20 + 300 + 14);
+      // As high as the margin allows, and the arrow on the search box.
+      expect(p.y).toBe(12);
+      expect(p.y + p.arrowOffset).toBe(75);
+    });
+
+    it("points at the target's middle without one, as before", () => {
+      const without = placePopover(panel, POPOVER, VIEWPORT, "right");
+      expect(without).toEqual(
+        placePopover(panel, POPOVER, VIEWPORT, "right", null)
+      );
+      expect(without.y + without.arrowOffset).toBe(40 + 350);
+    });
+
+    it("lines up along the other axis when it sits above or below", () => {
+      const bar = { x: 0, y: 600, width: 1000, height: 60 };
+      const button = { x: 800, y: 610, width: 40, height: 40 };
+      const p = placePopover(bar, POPOVER, VIEWPORT, "top", button);
+      expect(p.side).toBe("top");
+      expect(p.x + p.arrowOffset).toBe(820);
+    });
+  });
+});
+
+describe("intersectRect", () => {
+  it("gives the shared part", () => {
+    expect(
+      intersectRect(
+        { x: 0, y: 0, width: 100, height: 100 },
+        { x: 50, y: 80, width: 100, height: 100 }
+      )
+    ).toEqual({ x: 50, y: 80, width: 50, height: 20 });
+  });
+
+  it("is null when the rects only touch or do not meet", () => {
+    const a = { x: 0, y: 0, width: 100, height: 100 };
+    expect(intersectRect(a, { x: 100, y: 0, width: 10, height: 10 })).toBe(
+      null
+    );
+    expect(intersectRect(a, { x: 300, y: 300, width: 10, height: 10 })).toBe(
+      null
+    );
   });
 });
 

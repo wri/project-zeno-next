@@ -8,7 +8,7 @@ import type { OnboardingTourEvent } from "@/app/lib/track-event";
 import type { TourAnchorId } from "@/src/shared/lib/tour-anchors";
 
 import type { OnboardingState } from "../model/onboarding-store";
-import type { Tour } from "../model/tour";
+import type { Tour, TourStep } from "../model/tour";
 
 /** The store fields telemetry reads. */
 export type TourTelemetryState = Pick<
@@ -21,6 +21,7 @@ export type TourTelemetryState = Pick<
   | "progress"
   | "hydrated"
   | "lastTickedBy"
+  | "docked"
 >;
 
 export interface TourTelemetryProbe {
@@ -55,6 +56,22 @@ export function endOutcome(next: TourTelemetryState): TourEndOutcome {
   // Replaced by another tour, or ended without a recorded end: no outcome.
   if (next.tour !== null) return "abandoned";
   return next.lastTourEnd ?? "abandoned";
+}
+
+/**
+ * The anchor a step left without: its target, or else the inner anchor it
+ * points at (`focus`). One per step: with the target gone, its inside is too.
+ */
+function missingAnchor(
+  step: TourStep<unknown>,
+  probe: TourTelemetryProbe
+): TourAnchorId | null {
+  const { target, focus } = step;
+  if (target?.kind === "selector" && !probe.anchorShown(target.id))
+    return target.id;
+  if (focus?.kind === "selector" && !probe.anchorShown(focus.id))
+    return focus.id;
+  return null;
 }
 
 /** Steps `from` to `to` (exclusive), each passed over without being shown. */
@@ -129,12 +146,15 @@ export function tourTelemetryEvents(
 
   const left = prev.tour?.steps[prev.stepIndex];
   if (prev.tour && left) {
-    if (left.target?.kind === "selector" && !probe.anchorShown(left.target.id))
+    // A docked step's target can go by the user's own click (a panel closed
+    // with its X): that is no anchor missing.
+    const missing = prev.docked ? null : missingAnchor(left, probe);
+    if (missing)
       events.push({
         event: "tour_target_missing",
         tour_id: prev.tour.id,
         step_id: left.id,
-        anchor_id: left.target.id,
+        anchor_id: missing,
         optional: !!left.optional,
         ms_on_step: probe.msOnStep,
       });

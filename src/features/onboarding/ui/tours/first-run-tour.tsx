@@ -391,7 +391,9 @@ export function createFirstRunTour(): UiTour {
       {
         id: "find-area",
         // The whole panel: the search box and its results both need clicks.
+        // The arrow and the inner ring point at the search box.
         target: anchorTarget(TOUR_ANCHORS.areasPanel),
+        focus: anchorTarget(TOUR_ANCHORS.areasSearch),
         placement: "right",
         eyebrow: "Your area",
         title: "Choose an area",
@@ -416,9 +418,14 @@ export function createFirstRunTour(): UiTour {
       },
       {
         id: "view-analysis",
-        target: anchorTarget(TOUR_ANCHORS.viewAnalysisNudge),
+        // The whole chat, so the chips the body names can be read; the arrow
+        // and the inner ring point at the nudge. The chat input is lit too:
+        // a question sent here is answered as usual, and does not do this
+        // step (only accepting the nudge does).
+        target: anchorTarget(TOUR_ANCHORS.chatPanel),
+        focus: anchorTarget(TOUR_ANCHORS.viewAnalysisNudge),
         placement: "right",
-        padding: 5,
+        padding: 4,
         eyebrow: "Your chart",
         title: "View the chart",
         onEnter: closeExplorationPanels,

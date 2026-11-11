@@ -32,6 +32,12 @@ export type TourTarget = {
 export interface TourStep<Body> {
   readonly id: string;
   readonly target?: TourTarget;
+  /**
+   * The control the copy names, inside a large target (the search box in
+   * the Areas panel): the arrow and an inner ring point at it while the
+   * whole target stays lit and usable. Only shown with the target.
+   */
+  readonly focus?: TourTarget;
   /** Preferred popover side; falls back to whichever side fits. */
   readonly placement?: Side;
   /** Spotlight padding around the target, px. Default 6. */

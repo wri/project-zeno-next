@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useState } from "react";
-import { Flex, IconButton, Stack, Text } from "@chakra-ui/react";
+import { Box, Flex, IconButton, Stack, Text } from "@chakra-ui/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { PolygonIcon, XIcon } from "@phosphor-icons/react";
 
@@ -148,13 +148,15 @@ function AreasPanelBody({
         gap="6px"
         flexShrink={0}
       >
-        <PanelSearchInput
-          label="Search areas"
-          placeholder="Search places, e.g. Pará or Serengeti"
-          value={query}
-          onChange={setQuery}
-          onEscapeEmpty={onClose}
-        />
+        <Box {...tourAnchor(TOUR_ANCHORS.areasSearch)}>
+          <PanelSearchInput
+            label="Search areas"
+            placeholder="Search places, e.g. Pará or Serengeti"
+            value={query}
+            onChange={setQuery}
+            onEscapeEmpty={onClose}
+          />
+        </Box>
         <AreaActionBar hideIdle={searching} />
       </Stack>
       {searching ? (

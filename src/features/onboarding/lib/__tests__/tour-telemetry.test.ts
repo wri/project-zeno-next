@@ -36,6 +36,7 @@ const state = (over: Partial<TourTelemetryState> = {}): TourTelemetryState => ({
   progress: EMPTY_PROGRESS,
   hydrated: true,
   lastTickedBy: null,
+  docked: false,
   ...over,
 });
 
@@ -175,6 +176,59 @@ describe("tourTelemetryEvents", () => {
       "tour_step_skipped",
       "tour_step_viewed",
     ]);
+  });
+
+  it("does not report a target the user's own click took away (docked)", () => {
+    hidden = new Set(["insight-workspace"]);
+    const list = events(
+      state({ stepIndex: 2, history: [0, 1], docked: true }),
+      state({ stepIndex: 3, history: [0, 1, 2] })
+    );
+    expect(names(list)).toEqual(["tour_step_viewed"]);
+  });
+
+  describe("with an inner anchor (focus)", () => {
+    const WITH_FOCUS: Tour<unknown> = {
+      ...TOUR,
+      steps: [
+        step("welcome"),
+        step("find-area", {
+          target: anchorTarget("areas-panel"),
+          focus: anchorTarget("areas-search"),
+        }),
+        step("next"),
+      ],
+    };
+    const leave = () =>
+      events(
+        state({ tour: WITH_FOCUS, stepIndex: 1, history: [0] }),
+        state({ tour: WITH_FOCUS, stepIndex: 2, history: [0, 1] })
+      ).filter((e) => e.event === "tour_target_missing");
+
+    it("reports the inner anchor missing while its target shows", () => {
+      hidden = new Set(["areas-search"]);
+      expect(leave()).toEqual([
+        {
+          event: "tour_target_missing",
+          tour_id: "first-run",
+          step_id: "find-area",
+          anchor_id: "areas-search",
+          optional: false,
+          ms_on_step: 1200,
+        },
+      ]);
+    });
+
+    it("reports only the target when both are gone", () => {
+      hidden = new Set(["areas-panel", "areas-search"]);
+      expect(leave().map((e) => "anchor_id" in e && e.anchor_id)).toEqual([
+        "areas-panel",
+      ]);
+    });
+
+    it("reports nothing when both show", () => {
+      expect(leave()).toEqual([]);
+    });
   });
 
   it("never reports a map target as missing", () => {

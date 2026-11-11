@@ -12,6 +12,7 @@ export const TOUR_ANCHORS = {
   chatInput: "chat-input",
   datasetsButton: "datasets-button",
   areasPanel: "areas-panel",
+  areasSearch: "areas-search",
   viewAnalysisNudge: "view-analysis-nudge",
   insightWorkspace: "insight-workspace",
   analysesButton: "analyses-button",

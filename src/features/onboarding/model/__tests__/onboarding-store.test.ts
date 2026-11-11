@@ -300,6 +300,22 @@ describe("onboarding store", () => {
     });
   });
 
+  it("keeps a step docked until the tour moves, then opens the next in full", () => {
+    state().setDocked(true);
+    expect(state().docked).toBe(false); // no tour, nothing to dock
+    state().startTour(tour());
+    state().setDocked(true);
+    expect(state().docked).toBe(true);
+    state().advance(false, 0);
+    expect(state().docked).toBe(false);
+    state().setDocked(true);
+    state().back();
+    expect(state().docked).toBe(false);
+    state().setDocked(true);
+    state().endTour(false);
+    expect(state().docked).toBe(false);
+  });
+
   it("abandons a tour without an outcome", () => {
     const onEnd = vi.fn();
     state().startTour(tour(onEnd));

@@ -44,11 +44,14 @@ export function findAnchor(id: TourAnchorId): HTMLElement | null {
  * Polls (cheaply) instead of observing, because targets move for many reasons
  * we don't own: panels sliding, the chat streaming, the map flying. State only
  * changes when the spotlight should move, so a missing target costs no
- * re-renders. Scrolls a newly found DOM target into view once per step.
+ * re-renders. Scrolls a newly found DOM target into view once per step,
+ * unless `scroll` is false (an inner anchor: the target around it is
+ * scrolled already, and a second scroll would fight the first).
  */
 export function useTargetRect(
   target: TourTarget | undefined,
-  stepKey: string
+  stepKey: string,
+  { scroll = true }: { scroll?: boolean } = {}
 ): TargetState {
   const [stored, setStored] = useState<MeasuredTargetState>(() =>
     unmeasuredTargetState(stepKey)
@@ -57,7 +60,7 @@ export function useTargetRect(
   useEffect(() => {
     const startedAt = Date.now();
     let el: HTMLElement | null = null;
-    let scrolled = false;
+    let scrolled = !scroll;
 
     const locate = (): Rect | null => {
       if (!target) return null;
@@ -92,7 +95,7 @@ export function useTargetRect(
     if (!target) return;
     const id = window.setInterval(measure, POLL_MS);
     return () => window.clearInterval(id);
-  }, [target, stepKey]);
+  }, [target, stepKey, scroll]);
 
   return targetStateForStep(stored, stepKey);
 }

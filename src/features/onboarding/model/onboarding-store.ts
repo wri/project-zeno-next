@@ -36,6 +36,13 @@ export interface OnboardingState {
    * can say why. Empty after Back or when nothing was passed over.
    */
   passedOver: readonly PassedOverStep[];
+  /**
+   * The current step is moved aside while the user works in its target
+   * (their first press in it). Any move to another step undoes it. Kept
+   * here, not in the overlay, so telemetry can tell a target the user's own
+   * click took away from one that never showed.
+   */
+  docked: boolean;
   checklistExpanded: boolean;
   progress: OnboardingProgress;
   hydrated: boolean;
@@ -65,6 +72,8 @@ export interface OnboardingState {
   skipStep: (from: number) => void;
   /** Return to the last step the user was shown. */
   back: () => void;
+  /** Move the current step aside (true), or back to the full view. */
+  setDocked: (docked: boolean) => void;
   /** Close the running tour and run its `onEnd` (which records any outcome). */
   endTour: (completed: boolean) => void;
   /**
@@ -128,6 +137,7 @@ const useOnboardingStore = create<OnboardingState>((set, get) => ({
   stepIndex: 0,
   history: [],
   passedOver: [],
+  docked: false,
   checklistExpanded: true,
   progress: EMPTY_PROGRESS,
   hydrated: false,
@@ -142,7 +152,7 @@ const useOnboardingStore = create<OnboardingState>((set, get) => ({
   // look at the step already sees the state the set-up produced.
   startTour: (tour) => {
     const { index: stepIndex, passed } = enterFrom(tour.steps, 0);
-    set({ tour, stepIndex, history: [], passedOver: passed });
+    set({ tour, stepIndex, history: [], passedOver: passed, docked: false });
     if (stepIndex >= tour.steps.length) get().endTour(true);
   },
 
@@ -156,6 +166,7 @@ const useOnboardingStore = create<OnboardingState>((set, get) => ({
       stepIndex: next,
       history: skipped ? history : [...history, stepIndex],
       passedOver: [...left, ...passed],
+      docked: false,
     });
     // Past the last step, as in `startTour`: the move is recorded first, so
     // telemetry sees which steps were passed over on the way out.
@@ -180,7 +191,12 @@ const useOnboardingStore = create<OnboardingState>((set, get) => ({
       stepIndex: previous,
       history: history.slice(0, -1),
       passedOver: [],
+      docked: false,
     });
+  },
+
+  setDocked: (docked) => {
+    if (get().tour && get().docked !== docked) set({ docked });
   },
 
   endTour: (completed) => {
@@ -191,6 +207,7 @@ const useOnboardingStore = create<OnboardingState>((set, get) => ({
       stepIndex: 0,
       history: [],
       passedOver: [],
+      docked: false,
       lastTourEnd: completed ? "completed" : "closed",
     });
     tour.onEnd?.(completed);
@@ -203,6 +220,7 @@ const useOnboardingStore = create<OnboardingState>((set, get) => ({
       stepIndex: 0,
       history: [],
       passedOver: [],
+      docked: false,
       tourAbandoned: true,
       lastTourEnd: "abandoned",
     });

@@ -10,6 +10,16 @@ export function padRect(rect: Rect, pad: number): Rect {
   };
 }
 
+/** The part two rects share; null when they do not meet. */
+export function intersectRect(a: Rect, b: Rect): Rect | null {
+  const x0 = Math.max(a.x, b.x);
+  const y0 = Math.max(a.y, b.y);
+  const x1 = Math.min(a.x + a.width, b.x + b.width);
+  const y1 = Math.min(a.y + a.height, b.y + b.height);
+  if (x1 <= x0 || y1 <= y0) return null;
+  return { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };
+}
+
 /** Clip a rect to the viewport; returns null when nothing is left on screen. */
 export function clipToViewport(rect: Rect, viewport: Size): Rect | null {
   const x0 = Math.max(0, rect.x);
@@ -70,13 +80,16 @@ const SIDE_ORDER: readonly Side[] = ["right", "bottom", "left", "top"];
 /**
  * Place a popover of `size` next to `target`, trying `preferred` first and
  * then the other sides; centres it when there's no target or no side fits.
- * The result is clamped inside the viewport with `margin`.
+ * The result is clamped inside the viewport with `margin`. `pointAt`, a
+ * control inside a large target: the popover still sits beside the whole
+ * target, but lines up with that control and its arrow points at it.
  */
 export function placePopover(
   target: Rect | null,
   size: Size,
   viewport: Size,
   preferred?: Side,
+  pointAt?: Rect | null,
   gap = 14,
   margin = 12
 ): PopoverPlacement {
@@ -88,21 +101,25 @@ export function placePopover(
   };
   if (!target) return centred;
 
+  // Beside the whole target; lined up with (and pointing at) `aim`.
+  const aim = pointAt ?? target;
+  const aimX = aim.x + aim.width / 2;
+  const aimY = aim.y + aim.height / 2;
   const candidates: Record<Side, { x: number; y: number }> = {
     right: {
       x: target.x + target.width + gap,
-      y: target.y + target.height / 2 - size.height / 2,
+      y: aimY - size.height / 2,
     },
     left: {
       x: target.x - gap - size.width,
-      y: target.y + target.height / 2 - size.height / 2,
+      y: aimY - size.height / 2,
     },
     bottom: {
-      x: target.x + target.width / 2 - size.width / 2,
+      x: aimX - size.width / 2,
       y: target.y + target.height + gap,
     },
     top: {
-      x: target.x + target.width / 2 - size.width / 2,
+      x: aimX - size.width / 2,
       y: target.y - gap - size.height,
     },
   };
@@ -135,12 +152,8 @@ export function placePopover(
   const arrowMin = 16;
   const arrowOffset =
     side === "left" || side === "right"
-      ? clamp(
-          target.y + target.height / 2 - y,
-          arrowMin,
-          size.height - arrowMin
-        )
-      : clamp(target.x + target.width / 2 - x, arrowMin, size.width - arrowMin);
+      ? clamp(aimY - y, arrowMin, size.height - arrowMin)
+      : clamp(aimX - x, arrowMin, size.width - arrowMin);
 
   return { x, y, side, arrowOffset };
 }

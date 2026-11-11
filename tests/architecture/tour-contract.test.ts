@@ -46,6 +46,7 @@ const ANCHOR_HOMES: Record<AnchorName, readonly string[]> = {
   chatInput: ["app/components/ChatInput.tsx"],
   datasetsButton: ["app/components/ChatInput.tsx"],
   areasPanel: ["app/components/AreasPanel.tsx"],
+  areasSearch: ["app/components/AreasPanel.tsx"],
   viewAnalysisNudge: ["app/components/MessageBubble.tsx"],
   // The loading skeleton and the chart card; only one renders at a time.
   insightWorkspace: [

@@ -11,6 +11,7 @@ import {
 
 import {
   dockPlacement,
+  intersectRect,
   padRect,
   placePopover,
   pointInRect,
@@ -65,16 +66,19 @@ const SHAKE_KEYFRAMES: Keyframe[] = [
 const SPOTLIGHT_EASE = "0.4s cubic-bezier(.3,.7,.2,1)";
 
 /**
- * One blurred, dimmed layer with the spotlight cut out by `clip-path`, so the
- * hole moves as a single shape: no seams, gaps or doubled-up darkness. The
- * cut-out lets presses through to the target; the rest of the veil catches
- * them (and nudges the popover) until the step is docked.
+ * One dimmed layer with the spotlight cut out by `clip-path`, so the hole
+ * moves as a single shape: no seams, gaps or doubled-up darkness. No blur:
+ * what the copy names just outside the cut-out stays readable. Without the
+ * blur the dimming alone sets the target apart, so it is darker than it was
+ * with blur: white outside reads 4.1:1 against white inside, and body text
+ * outside keeps 4.2:1 on its dimmed page. The cut-out lets presses through
+ * to the target; the rest of the veil catches them (and nudges the popover)
+ * until the step is docked.
  */
 const VEIL_CSS = {
   position: "fixed" as const,
   inset: 0,
-  background: "rgba(15, 20, 32, 0.52)",
-  backdropFilter: "blur(3px) saturate(0.75)",
+  background: "rgba(15, 20, 32, 0.55)",
   pointerEvents: "auto" as const,
   transition: `clip-path ${SPOTLIGHT_EASE}, opacity 0.2s`,
   animation: "onboardingVeilIn 0.25s ease-out",
@@ -87,6 +91,16 @@ const VEIL_CSS = {
 const RING_SHADOW = "0 0 0 2px white, 0 0 0 5px rgba(227,243,127,0.9)";
 
 /**
+ * The inner ring sits inside the cut-out, on the app's own (mostly white)
+ * surface, not on the veil: white and lime vanish there (lime is 1.2:1 on
+ * white). A solid primary line instead (8.8:1 on white), which never fades;
+ * only the halo around it pulses. A CSS variable, as the keyframes below are
+ * plain CSS.
+ */
+const INNER = "var(--chakra-colors-primary-solid)";
+const INNER_RING_SHADOW = `0 0 0 2px ${INNER}`;
+
+/**
  * Plain CSS keyframes. Kept out of Chakra's `css` prop, which breaks when a
  * nested `@keyframes` block shares a property name with a top-level style.
  */
@@ -95,6 +109,10 @@ const KEYFRAMES = `
 @keyframes onboardingPulse {
   0% { box-shadow: ${RING_SHADOW} }
   100% { box-shadow: 0 0 0 2px white, 0 0 0 14px rgba(227,243,127,0) }
+}
+@keyframes onboardingInnerPulse {
+  0% { box-shadow: ${INNER_RING_SHADOW}, 0 0 0 3px color-mix(in srgb, ${INNER} 45%, transparent) }
+  100% { box-shadow: ${INNER_RING_SHADOW}, 0 0 0 11px color-mix(in srgb, ${INNER} 0%, transparent) }
 }`;
 const RING_CSS = {
   position: "fixed" as const,
@@ -111,10 +129,26 @@ const RING_CSS = {
  * In the css prop, not inline: an inline `animation` would beat the
  * reduced-motion query above.
  */
-const RING_PULSE_CSS = {
+const PULSE = "onboardingPulse 1.4s ease-out infinite";
+const RING_PULSE_CSS = { ...RING_CSS, animation: PULSE };
+/**
+ * Around the whole target when the step points at a control inside it
+ * (`focus`): a thin edge, so the inner ring is the one the eye goes to.
+ */
+const RING_THIN_CSS = {
   ...RING_CSS,
-  animation: "onboardingPulse 1.4s ease-out infinite",
+  boxShadow: "0 0 0 1px rgba(255,255,255,0.85)",
 };
+const INNER_RING_CSS = {
+  ...RING_CSS,
+  borderRadius: "6px",
+  boxShadow: INNER_RING_SHADOW,
+};
+const INNER_RING_PULSE_CSS = {
+  ...INNER_RING_CSS,
+  animation: "onboardingInnerPulse 1.4s ease-out infinite",
+};
+const INNER_PADDING_PX = 4;
 
 /** Placement size until the popover has measured itself (it is hidden). */
 const UNMEASURED_POPOVER: Size = { width: POPOVER_WIDTH_PX, height: 0 };
@@ -165,6 +199,9 @@ function ActiveTour({ tour, stepIndex }: { tour: UiTour; stepIndex: number }) {
   const stepKey = `${tour.id}:${step.id}`;
   const viewport = useViewport();
   const target = useTargetRect(step.target, stepKey);
+  // The control inside the target the copy names. Its target is scrolled
+  // into view already.
+  const focus = useTargetRect(step.focus, stepKey, { scroll: false });
   const popoverRef = useRef<HTMLDivElement>(null);
   const [userTurn, setUserTurn] = useState(false);
   const reduceMotion = usePrefersReducedMotion();
@@ -176,14 +213,10 @@ function ActiveTour({ tour, stepIndex }: { tour: UiTour; stepIndex: number }) {
       setAnnouncement((prev) => nextAnnouncement(prev, input)),
     []
   );
-  // The step the user moved aside to work in its target. Kept by step, so
-  // the next step (or Back) opens in the full view again.
-  const [dockedStep, setDockedStep] = useState<string | null>(null);
-  const docked = dockedStep === stepKey;
-  const setDocked = useCallback(
-    (on: boolean) => setDockedStep(on ? stepKey : null),
-    [stepKey]
-  );
+  // The step the user moved aside to work in its target. Any move to another
+  // step (or Back) opens it in the full view again.
+  const docked = useOnboardingStore((s) => s.docked);
+  const setDocked = useOnboardingStore((s) => s.setDocked);
 
   // Clicking the dimmed area nudges the popover instead of doing nothing.
   const shakePopover = useCallback(() => {
@@ -204,9 +237,16 @@ function ActiveTour({ tour, stepIndex }: { tour: UiTour; stepIndex: number }) {
     width: 0,
     height: 0,
   };
+  // The inner ring, kept inside the cut-out (a control scrolled out of its
+  // panel's view must not be ringed over the rest of the page).
+  const inner =
+    hole && target.found && focus.found && focus.rect
+      ? intersectRect(padRect(focus.rect, INNER_PADDING_PX), hole)
+      : null;
   // Only for "Your turn", and only on this step's own target: not on the
-  // previous one, during the hold.
+  // previous one, during the hold. On the inner ring when there is one.
   const pulse = target.found && userTurn && !docked && !reduceMotion;
+  const outerCss = inner ? RING_THIN_CSS : pulse ? RING_PULSE_CSS : RING_CSS;
 
   return (
     <Box
@@ -228,8 +268,17 @@ function ActiveTour({ tour, stepIndex }: { tour: UiTour; stepIndex: number }) {
         aria-hidden
       />
       <Box
-        css={pulse ? RING_PULSE_CSS : RING_CSS}
+        css={outerCss}
         style={{ ...rectStyle(ringRect), opacity: hole && !docked ? 1 : 0 }}
+        aria-hidden
+      />
+      <Box
+        css={pulse && inner ? INNER_RING_PULSE_CSS : INNER_RING_CSS}
+        // With nothing to ring it sits on the outer ring, so it shrinks in.
+        style={{
+          ...rectStyle(inner ?? ringRect),
+          opacity: inner && !docked ? 1 : 0,
+        }}
         aria-hidden
       />
       <Box role="status" aria-live="polite" srOnly>
@@ -243,6 +292,7 @@ function ActiveTour({ tour, stepIndex }: { tour: UiTour; stepIndex: number }) {
         stepCount={tour.steps.length}
         target={target}
         hole={hole}
+        pointAt={inner}
         viewport={viewport}
         popoverRef={popoverRef}
         docked={docked}
@@ -261,6 +311,7 @@ function StepView({
   stepCount,
   target,
   hole,
+  pointAt,
   viewport,
   popoverRef,
   docked,
@@ -274,6 +325,8 @@ function StepView({
   stepCount: number;
   target: TargetState;
   hole: Rect | null;
+  /** The ringed control inside the target (`focus`), if found. */
+  pointAt: Rect | null;
   viewport: Size;
   popoverRef: RefObject<HTMLDivElement | null>;
   /** Moved aside to a corner while the user works in the target. */
@@ -526,7 +579,7 @@ function StepView({
   const size = popoverSize ?? UNMEASURED_POPOVER;
   const placement: PopoverPlacement = docked
     ? dockPlacement(hole, size, viewport)
-    : placePopover(hole, size, viewport, step.placement);
+    : placePopover(hole, size, viewport, step.placement, pointAt);
 
   return (
     <TourPopover
