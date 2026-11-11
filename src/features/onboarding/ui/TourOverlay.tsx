@@ -18,6 +18,14 @@ import {
 import usePrefersReducedMotion from "@/app/hooks/usePrefersReducedMotion";
 
 import useOnboardingStore from "../model/onboarding-store";
+import {
+  APP_WAIT_SKIP_AFTER_MS,
+  MISSING_TARGET_GRACE_MS,
+  canSkipWhileWaiting,
+  missingTargetExpired,
+  stepKind,
+  waitTick,
+} from "../model/step-policy";
 import type { Rect, Size } from "../model/tour";
 import { POPOVER_WIDTH_PX, TourPopover } from "./TourPopover";
 import type { UiTour, UiTourStep } from "./types";
@@ -28,9 +36,9 @@ const OVERLAY_Z_INDEX = 2100;
 const WAIT_POLL_MS = 250;
 /** Pause after an action completes so the user sees the result before moving on. */
 const ADVANCE_DELAY_MS = 450;
-/** Default wait before skipping an optional step whose target hasn't appeared. */
-const OPTIONAL_TARGET_TIMEOUT_MS = 2000;
 const DEFAULT_PADDING_PX = 6;
+/** Footer hint once a wait on the app offers Skip step. */
+const SLOW_WAIT_HINT = "This is taking a while. You can skip this step.";
 
 /** A gentle side-to-side shake: "the tour is still open, look here". */
 const SHAKE_KEYFRAMES: Keyframe[] = [
@@ -231,13 +239,27 @@ function StepView({
   });
 
   const advance = useOnboardingStore((s) => s.advance);
+  const skipStepFrom = useOnboardingStore((s) => s.skipStep);
   const back = useOnboardingStore((s) => s.back);
   const endTour = useOnboardingStore((s) => s.endTour);
   const canGoBack = useOnboardingStore((s) => s.history.length > 0);
   const isLast = stepIndex === stepCount - 1;
-  const next = useCallback(() => advance(), [advance]);
+  // Each move names the step it was made from, so a late timer or a second
+  // click can't move the tour on twice.
+  const next = useCallback(
+    () => advance(false, stepIndex),
+    [advance, stepIndex]
+  );
   /** Move on without the user having seen this step (Back skips it). */
-  const skip = useCallback(() => advance(true), [advance]);
+  const skip = useCallback(
+    () => advance(true, stepIndex),
+    [advance, stepIndex]
+  );
+  /** The user's Skip step: the step's `onSkip` does it for them. */
+  const skipStep = useCallback(
+    () => skipStepFrom(stepIndex),
+    [skipStepFrom, stepIndex]
+  );
   const close = useCallback(() => endTour(false), [endTour]);
 
   // A target that's still on its way (see `holdWhile`): wait, don't skip.
@@ -251,48 +273,54 @@ function StepView({
   );
   useEffect(() => {
     if (doneAtEntry || !step.waitFor) return;
-    const waitFor = step.waitFor;
-    const autoAdvance = step.autoAdvance ?? true;
     let advanceTimer: number | undefined;
     const poll = window.setInterval(() => {
-      if (!waitFor()) return;
+      const tick = waitTick(step);
+      if (tick === "wait") return;
       window.clearInterval(poll);
-      if (autoAdvance) advanceTimer = window.setTimeout(next, ADVANCE_DELAY_MS);
+      if (tick === "skip") skip();
+      else if (tick === "advance")
+        advanceTimer = window.setTimeout(next, ADVANCE_DELAY_MS);
       else setUnlocked(true);
     }, WAIT_POLL_MS);
     return () => {
       window.clearInterval(poll);
       window.clearTimeout(advanceTimer);
     };
-  }, [doneAtEntry, step, next]);
+  }, [doneAtEntry, step, next, skip]);
 
-  // A step waiting on the app, which is already done, has nothing to show.
+  // A wait on the app (not on the user) offers Skip step after a while, so a
+  // slow or stuck answer never holds the user in the tour.
+  const waitingOnApp = awaitingAction && stepKind(step) !== "action";
+  const [waitedLong, setWaitedLong] = useState(false);
   useEffect(() => {
-    const autoAdvances = step.autoAdvance ?? true;
-    if (step.waitsOnApp && autoAdvances && step.waitFor && doneAtEntry) skip();
-  }, [step, doneAtEntry, skip]);
+    if (!waitingOnApp) return;
+    const timer = window.setTimeout(
+      () => setWaitedLong(true),
+      APP_WAIT_SKIP_AFTER_MS
+    );
+    return () => window.clearTimeout(timer);
+  }, [waitingOnApp]);
 
   // Optional steps whose target never shows up (e.g. a card the agent didn't
-  // emit) are skipped rather than pointing at nothing; `holdWhile` defers it.
+  // emit) are passed over rather than pointing at nothing. `holdWhile` defers
+  // it, and the grace restarts when the hold ends: a card can render just
+  // after the answer finishes.
   useEffect(() => {
     if (!step.optional || !step.target || found || missingSince === null)
       return;
-    const timeout = step.targetTimeoutMs ?? OPTIONAL_TARGET_TIMEOUT_MS;
-    const skipUnlessHeld = () => {
-      if (!step.holdWhile?.()) skip();
+    const graceMs = step.targetTimeoutMs ?? MISSING_TARGET_GRACE_MS;
+    let lastHeldAt: number | null = null;
+    const check = () => {
+      if (step.skipIf?.()) return skip();
+      const now = Date.now();
+      if (step.holdWhile?.()) lastHeldAt = now;
+      else if (missingTargetExpired({ now, missingSince, lastHeldAt, graceMs }))
+        skip();
     };
-    let poll: number | undefined;
-    const timer = window.setTimeout(
-      () => {
-        skipUnlessHeld();
-        poll = window.setInterval(skipUnlessHeld, WAIT_POLL_MS);
-      },
-      Math.max(0, missingSince + timeout - Date.now())
-    );
-    return () => {
-      window.clearTimeout(timer);
-      window.clearInterval(poll);
-    };
+    check();
+    const poll = window.setInterval(check, WAIT_POLL_MS);
+    return () => window.clearInterval(poll);
   }, [step, found, missingSince, skip]);
 
   // Keyboard: Escape closes; arrows page through passive steps.
@@ -352,12 +380,19 @@ function StepView({
         stepCount={stepCount}
         awaitingAction={awaitingAction}
         userTurn={awaitingAction && !waitingForTarget && !step.waitsOnApp}
-        hint={waitingForTarget ? "Waiting for Horizon…" : step.hint}
+        hint={
+          waitingOnApp && waitedLong
+            ? SLOW_WAIT_HINT
+            : waitingForTarget
+              ? "Waiting for Horizon…"
+              : step.hint
+        }
         ctaLabel={step.ctaLabel ?? (isLast ? "Finish" : "Next")}
         secondaryLabel={step.secondary?.label}
         showBack={canGoBack && !step.noBack && !awaitingAction}
-        showSkipStep={!!step.skippable}
+        showSkipStep={canSkipWhileWaiting(step, waitedLong)}
         onNext={next}
+        onSkipStep={skipStep}
         onBack={back}
         onSecondary={
           step.secondary ? () => step.secondary?.onClick(endTour) : undefined

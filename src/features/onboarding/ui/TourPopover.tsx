@@ -49,6 +49,8 @@ export interface TourPopoverProps {
   showBack: boolean;
   showSkipStep: boolean;
   onNext: () => void;
+  /** Skip step: move on without the action (the tour may do it instead). */
+  onSkipStep: () => void;
   onBack: () => void;
   onSecondary?: () => void;
   onClose: () => void;
@@ -97,6 +99,7 @@ export function TourPopover(props: TourPopoverProps) {
     showBack,
     showSkipStep,
     onNext,
+    onSkipStep,
     onBack,
     onSecondary,
     onClose,
@@ -205,7 +208,7 @@ export function TourPopover(props: TourPopoverProps) {
         )}
         {awaitingAction ? (
           showSkipStep && (
-            <Button size="xs" variant="ghost" onClick={onNext}>
+            <Button size="xs" variant="ghost" onClick={onSkipStep}>
               Skip step
             </Button>
           )
