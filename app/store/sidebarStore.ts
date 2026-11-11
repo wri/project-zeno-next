@@ -3,6 +3,7 @@ import { API_CONFIG } from "@/app/config/api";
 import { apiFetch } from "@/app/lib/api-client";
 import { queryClient } from "@/app/lib/query-client";
 import type { InfiniteData } from "@tanstack/react-query";
+import type { DatasetCategoryId } from "@/app/constants/datasets";
 import type { ThreadEntry } from "@/app/hooks/useThreadsInfinite";
 
 interface ThreadsPage {
@@ -55,6 +56,9 @@ interface SidebarState {
   /** The Areas panel's selected tab. Here so the menu can open "My areas". */
   areasPanelFilter: AreasPanelFilter;
   setAreasPanelFilter: (filter: AreasPanelFilter) => void;
+  /** The Data Catalog's selected category chip. Here so the tour can reset it. */
+  catalogCategory: DatasetCategoryId;
+  setCatalogCategory: (category: DatasetCategoryId) => void;
   /** Opens the Areas panel on the given tab (closing its column siblings). */
   openAreasPanel: (filter: AreasPanelFilter) => void;
   /**
@@ -154,6 +158,9 @@ const useSidebarStore = create<SidebarState>(() => ({
   areasPanelFilter: "boundaries",
   setAreasPanelFilter: (filter) =>
     useSidebarStore.setState({ areasPanelFilter: filter }),
+  catalogCategory: "all",
+  setCatalogCategory: (category) =>
+    useSidebarStore.setState({ catalogCategory: category }),
   openAreasPanel: (filter) =>
     useSidebarStore.setState({
       areasPanelOpen: true,

@@ -69,9 +69,13 @@ const catalogListScrollStyle = {
  * appears there with its visibility and opacity controls.
  */
 export default function DataCatalogPanel() {
-  const [category, setCategory] = useState<DatasetCategoryId>("all");
-  const { dataCatalogOpen, setDataCatalogOpen, isChatFullSize } =
-    useSidebarStore();
+  const {
+    dataCatalogOpen,
+    setDataCatalogOpen,
+    isChatFullSize,
+    catalogCategory: category,
+    setCatalogCategory: setCategory,
+  } = useSidebarStore();
   const leftPx = getCatalogLeftPx(isChatFullSize);
 
   const compactSlide = !isChatFullSize;

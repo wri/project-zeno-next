@@ -20,6 +20,7 @@ import {
   clearMap,
   flyMapTo,
   openAreasPanel,
+  openDataCatalog,
   sentMessageSince,
 } from "../app-actions";
 
@@ -90,7 +91,20 @@ describe("setting the stage", () => {
     useSidebarStore.setState({
       areasPanelOpen: false,
       areasPanelFilter: "mine",
+      catalogCategory: "wildfires",
     });
+  });
+
+  it("clears the map back to the All catalogue category, so every tour row shows", () => {
+    clearMap();
+    expect(useSidebarStore.getState().catalogCategory).toBe("all");
+  });
+
+  it("opens the Data Catalog on All, whatever category was last picked", () => {
+    openDataCatalog();
+    const { dataCatalogOpen, catalogCategory } = useSidebarStore.getState();
+    expect(dataCatalogOpen).toBe(true);
+    expect(catalogCategory).toBe("all");
   });
 
   it("clears the map back to the Boundaries tab, where the tour's cards are", () => {

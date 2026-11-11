@@ -99,6 +99,12 @@ describe("sidebarStore — catalog column panels", () => {
     expect(state.dataCatalogOpen).toBe(false);
   });
 
+  it("keeps the catalogue category, defaulting to all", () => {
+    expect(useSidebarStore.getState().catalogCategory).toBe("all");
+    useSidebarStore.getState().setCatalogCategory("wildfires");
+    expect(useSidebarStore.getState().catalogCategory).toBe("wildfires");
+  });
+
   it("opening a sibling panel closes the insights panel", () => {
     useSidebarStore.getState().setInsightsPanelOpen(true);
     useSidebarStore.getState().toggleAreasPanel();

@@ -48,6 +48,9 @@ export function clearMap(): void {
   // The Areas panel reopens on its last tab; the tour needs the boundary
   // cards, which only the Boundaries tab lists.
   useSidebarStore.getState().setAreasPanelFilter("boundaries");
+  // Likewise the Data Catalog: a category without Tree cover loss hides the
+  // row the first step points at.
+  useSidebarStore.getState().setCatalogCategory("all");
   const map = useMapStore.getState();
   // reset() clears layers, area geometry and the map's analysis selection.
   map.reset();
@@ -72,7 +75,9 @@ export function restoreMapDefaults(): void {
 }
 
 export function openDataCatalog(): void {
-  useSidebarStore.getState().setDataCatalogOpen(true);
+  const sidebar = useSidebarStore.getState();
+  sidebar.setCatalogCategory("all");
+  sidebar.setDataCatalogOpen(true);
 }
 
 /** Opens the Areas panel on Boundaries, the tab the tour's steps describe. */

@@ -15,6 +15,7 @@ import {
   ShieldCheckIcon,
   SparkleIcon,
   StackSimpleIcon,
+  TreePalmIcon,
   TableIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
@@ -76,10 +77,14 @@ const BOUNDARY_TYPES = (
       <InlineIcon icon={BirdIcon} /> <b>Key Biodiversity Areas</b>
     </li>
     <li>
-      <InlineIcon icon={ShieldCheckIcon} /> <b>Protected areas</b>
+      <InlineIcon icon={ShieldCheckIcon} /> <b>Protected Areas</b>
     </li>
     <li>
-      <InlineIcon icon={UsersThreeIcon} /> <b>Indigenous lands</b>
+      <InlineIcon icon={UsersThreeIcon} /> <b>Indigenous Lands</b>
+    </li>
+    <li>
+      <InlineIcon icon={TreePalmIcon} /> <b>Commodities</b>: logging, mining,
+      oil palm and wood fibre concessions
     </li>
   </ul>
 );
