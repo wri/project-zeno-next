@@ -8,6 +8,7 @@ import {
   XIcon,
 } from "@phosphor-icons/react";
 
+import { VIEW_ANALYSIS_MENU_LABEL } from "./aoiActionsMenuLabels";
 import { useAoiActions, type AoiActionsTarget } from "./useAoiActions";
 import {
   AOI_LABEL_BG,
@@ -82,7 +83,7 @@ export default function AoiActionsMenu({
                     onSelect={actions.viewAnalysis}
                   >
                     <ChartLineIcon size={16} color={ITEM_ICON_COLOR} />
-                    View Analysis
+                    {VIEW_ANALYSIS_MENU_LABEL}
                   </Menu.Item>
                 )}
               </Menu.ItemGroup>

@@ -8,6 +8,9 @@ import {
   ImageIcon,
 } from "@phosphor-icons/react";
 
+/** The menu button's text. The onboarding tour's copy imports it, so a rename reaches both. */
+export const DOWNLOAD_LABEL = "Download";
+
 /**
  * The widget action bar's "Download ▾" menu: the data as CSV and, for a
  * chart, its image. Shared by the chart card and the dashboard alerts list,
@@ -71,7 +74,7 @@ export default function DownloadMenu({
           disabled={disabled}
         >
           <DownloadSimpleIcon size={14} />
-          Download
+          {DOWNLOAD_LABEL}
           <CaretDownIcon size={12} />
         </Button>
       </Menu.Trigger>

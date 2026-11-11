@@ -39,6 +39,9 @@ import { DatasetRow } from "./DatasetRow";
 import { PanelEmpty, PanelList, PanelPills, PanelSection } from "./PanelList";
 import { PanelSearchInput } from "./PanelSearchInput";
 
+/** The panel's title. The onboarding tour's copy imports it, so a rename reaches both. */
+export const DATA_CATALOG_LABEL = "Data catalog";
+
 /** Matches ChatPanel compact/full-size enter & exit (slide from the left). */
 const catalogPanelSlideTransition = {
   duration: 0.2,
@@ -117,7 +120,7 @@ export default function DataCatalogPanel() {
                   color="#656E7B"
                   m={0}
                 >
-                  Data catalog
+                  {DATA_CATALOG_LABEL}
                 </Text>
               </Flex>
               <IconButton
