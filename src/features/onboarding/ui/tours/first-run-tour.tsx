@@ -55,6 +55,7 @@ import {
   leadChartShowsWorking,
   openAreasPanel,
   openDataCatalog,
+  prefillChatInput,
   restoreMapDefaults,
   sentMessageSince,
   showDatasetOnMap,
@@ -416,7 +417,7 @@ export function createFirstRunTour(): UiTour {
           mapCleared = true;
           chatBaseline = chatMessageCount();
           answerBaseline = answeredCount();
-          useOnboardingStore.getState().setDraftPrompt(CHAT_DEMO_PROMPT);
+          prefillChatInput(CHAT_DEMO_PROMPT);
         },
         body: (
           <>

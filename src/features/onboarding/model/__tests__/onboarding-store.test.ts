@@ -18,7 +18,6 @@ beforeEach(() => {
     tour: null,
     stepIndex: 0,
     history: [],
-    draftPrompt: null,
     checklistExpanded: true,
     progress: EMPTY_PROGRESS,
     hydrated: false,
@@ -82,12 +81,6 @@ describe("onboarding store", () => {
     state().endTour(false);
     expect(state().tour).toBeNull();
     expect(onEnd).toHaveBeenCalledWith(false);
-  });
-
-  it("hands the draft prompt over exactly once", () => {
-    state().setDraftPrompt("hello");
-    expect(state().consumeDraftPrompt()).toBe("hello");
-    expect(state().consumeDraftPrompt()).toBeNull();
   });
 
   it("merges checklist items without duplicates", () => {

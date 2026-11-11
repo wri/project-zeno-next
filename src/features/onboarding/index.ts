@@ -7,7 +7,6 @@
  */
 export { OnboardingTour } from "./ui/OnboardingTour";
 export { OnboardingChecklist } from "./ui/OnboardingChecklist";
-export { useOnboardingDraft } from "./ui/use-onboarding-draft";
 export { useIsTourActive } from "./ui/use-is-tour-active";
 export {
   ONBOARDING_FEATURE_FLAG,

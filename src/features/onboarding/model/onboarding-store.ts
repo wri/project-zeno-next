@@ -14,8 +14,7 @@ import type { Tour, TourStep } from "./tour";
 export type TourEnd = "completed" | "closed" | "abandoned";
 
 /**
- * Onboarding state: the running tour (if any), the checklist, and a one-shot
- * draft prompt the tour hands to the chat input.
+ * Onboarding state: the running tour (if any) and the checklist.
  *
  * Persistence is not done here (the model stays storage-agnostic): the ui
  * layer hydrates `progress` on mount and writes it back on change.
@@ -25,8 +24,6 @@ export interface OnboardingState {
   stepIndex: number;
   /** Steps the user was shown, for Back. Steps skipped automatically aren't. */
   history: readonly number[];
-  /** Text for the chat input to adopt once, then clear via `consumeDraftPrompt`. */
-  draftPrompt: string | null;
   checklistExpanded: boolean;
   progress: OnboardingProgress;
   hydrated: boolean;
@@ -69,8 +66,6 @@ export interface OnboardingState {
    * the tour again (even skipping it) is the way back to it.
    */
   recordTourOutcome: (outcome: TourOutcome) => void;
-  setDraftPrompt: (text: string) => void;
-  consumeDraftPrompt: () => string | null;
   markChecklistDone: (
     ids: readonly ChecklistItemId[],
     by: ChecklistTickedBy
@@ -107,7 +102,6 @@ const useOnboardingStore = create<OnboardingState>((set, get) => ({
   tour: null,
   stepIndex: 0,
   history: [],
-  draftPrompt: null,
   checklistExpanded: true,
   progress: EMPTY_PROGRESS,
   hydrated: false,
@@ -187,14 +181,6 @@ const useOnboardingStore = create<OnboardingState>((set, get) => ({
         checklistDismissed: false,
       },
     })),
-
-  setDraftPrompt: (text) => set({ draftPrompt: text }),
-
-  consumeDraftPrompt: () => {
-    const { draftPrompt } = get();
-    if (draftPrompt !== null) set({ draftPrompt: null });
-    return draftPrompt;
-  },
 
   markChecklistDone: (ids, by) =>
     set((state) => {

@@ -37,6 +37,7 @@ import {
   closeExplorationPanels,
   openAreasPanel,
   openDataCatalog,
+  prefillChatInput,
 } from "../app-actions";
 import { TOUR_ANCHORS, catalogCardAnchor } from "@/src/shared/lib/tour-anchors";
 import { DailyPromptsNote, Example, InlineIcon, Tip } from "../tour-content";
@@ -187,7 +188,7 @@ const ITEMS: Record<ChecklistItemId, Omit<ChecklistItem, "id">> = {
         placement: "right",
         onEnter: () => {
           closeExplorationPanels();
-          useOnboardingStore.getState().setDraftPrompt(COMPARE_PROMPT);
+          prefillChatInput(COMPARE_PROMPT);
         },
         title: "Ask about two places at once",
         body: (
@@ -262,7 +263,7 @@ const ITEMS: Record<ChecklistItemId, Omit<ChecklistItem, "id">> = {
         onEnter: () => {
           closeExplorationPanels();
           clearDatasetLayers();
-          useOnboardingStore.getState().setDraftPrompt(IMAGERY_PROMPT);
+          prefillChatInput(IMAGERY_PROMPT);
         },
         title: "Ask for satellite imagery",
         body: (

@@ -121,7 +121,6 @@ beforeEach(() => {
     tour: null,
     stepIndex: 0,
     history: [],
-    draftPrompt: null,
     progress: EMPTY_PROGRESS,
     hydrated: true,
     tourAbandoned: false,
@@ -131,6 +130,7 @@ beforeEach(() => {
     isLoading: false,
     completedAnswers: 0,
     isGeneratingInsight: false,
+    draftPrompt: null,
   });
   useInsightStore.getState().clearInsights();
   useMapStore.getState().reset();
@@ -308,7 +308,7 @@ describe("first-run tour flow", () => {
 
     expect(useMapStore.getState().layers.map((l) => l.id)).toEqual(["tcl"]);
     expect(useInsightStore.getState().insights).toEqual([]);
-    expect(state().draftPrompt).toBe(CHAT_DEMO_PROMPT);
+    expect(useChatStore.getState().draftPrompt).toBe(CHAT_DEMO_PROMPT);
   });
 
   it("offers Skip step on the question, quota or not", () => {
@@ -571,6 +571,6 @@ describe("checklist tasks", () => {
     const item = CHECKLIST_ITEMS.find((i) => i.id === "satellite-imagery")!;
     state().startTour(createChecklistTour(item));
     expect(useMapStore.getState().layers.map((l) => l.id)).toEqual(["Kenya"]);
-    expect(state().draftPrompt).toContain("satellite imagery");
+    expect(useChatStore.getState().draftPrompt).toContain("satellite imagery");
   });
 });

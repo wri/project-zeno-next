@@ -33,6 +33,7 @@ import {
   leadChartShowsWorking,
   openAreasPanel,
   openDataCatalog,
+  prefillChatInput,
   sentMessageSince,
 } from "../app-actions";
 
@@ -373,5 +374,15 @@ describe("checklistEvidence", () => {
       })
     );
     expect(evidence()["satellite-imagery"]).toEqual(["imagery-1"]);
+  });
+});
+
+describe("prefillChatInput", () => {
+  it("leaves the text in the chat store for the input to take", () => {
+    prefillChatInput("Compare Kenya and Uganda");
+    expect(useChatStore.getState().draftPrompt).toBe(
+      "Compare Kenya and Uganda"
+    );
+    useChatStore.setState({ draftPrompt: null });
   });
 });

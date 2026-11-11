@@ -22,7 +22,6 @@ import ContextButton, {
   PanelToggleButton,
 } from "./ContextButton";
 import { TOUR_ANCHORS, tourAnchor } from "@/src/shared/lib/tour-anchors";
-import { useOnboardingDraft } from "@/src/features/onboarding";
 import ContextTag from "./ContextTag";
 import ContextMenu from "./ContextMenu";
 import VoiceListeningPanel from "./voice/VoiceListeningPanel";
@@ -31,6 +30,7 @@ import useMapStore from "../store/mapStore";
 import { isAreaLayer } from "../store/layerManagerSlice";
 import useSidebarStore from "../store/sidebarStore";
 import useSpeechInput from "../hooks/useSpeechInput";
+import { useDraftPrompt } from "../hooks/useDraftPrompt";
 import usePrefersReducedMotion from "../hooks/usePrefersReducedMotion";
 import { speechLangForLocale } from "../utils/speechLang";
 import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
@@ -54,8 +54,8 @@ export default function ChatInput({
   onAfterSend?: () => void;
 }) {
   const [inputValue, setInputValue] = useState("");
-  // The onboarding tour can hand us a ready-made question to send.
-  useOnboardingDraft(setInputValue);
+  // Another feature (the onboarding tour) can hand us a ready-made question.
+  useDraftPrompt(setInputValue);
   const [contextModalOpen, setContextModalOpen] = useState(false);
   const [selectedContextType, setSelectedContextType] =
     useState<ChatContextType | null>(null);

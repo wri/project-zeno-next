@@ -92,10 +92,16 @@ interface ChatState {
   // signal for UI that reacts to a finished answer (the front door's profile
   // ask); reset() zeroes it, so watch for increases.
   completedAnswers: number;
+  // Text another feature (the onboarding tour) wants in the chat input: the
+  // input adopts it once via takeDraftPrompt. Client-only; never sent to the
+  // backend. reset() clears it, so a new conversation starts without it.
+  draftPrompt: string | null;
 }
 
 interface ChatActions {
   reset: () => void;
+  setDraftPrompt: (text: string) => void;
+  takeDraftPrompt: () => string | null;
   addMessage: (
     message: Omit<ChatMessage, "id" | "timestamp"> & { timestamp?: string }
   ) => void;
@@ -160,6 +166,7 @@ You can ask me about land cover change, forest loss, or biodiversity risks in pl
   lastSentContext: emptyContextKeys(),
   excludedContextLayerIds: [],
   completedAnswers: 0,
+  draftPrompt: null,
 };
 
 /**
@@ -574,6 +581,14 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
   reset: () => {
     set(initialState);
     useInsightStore.getState().clearInsights();
+  },
+
+  setDraftPrompt: (text) => set({ draftPrompt: text }),
+
+  takeDraftPrompt: () => {
+    const { draftPrompt } = get();
+    if (draftPrompt !== null) set({ draftPrompt: null });
+    return draftPrompt;
   },
 
   setDateRange: (range) => set({ dateRange: range }),

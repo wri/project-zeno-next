@@ -37,6 +37,11 @@ import type { ChecklistItemId } from "../model/onboarding-progress";
 /* Side effects                                                        */
 /* ------------------------------------------------------------------ */
 
+/** Put a ready-made question in the chat input, for the user to edit and send. */
+export function prefillChatInput(text: string): void {
+  useChatStore.getState().setDraftPrompt(text);
+}
+
 export function closeExplorationPanels(): void {
   const sidebar = useSidebarStore.getState();
   sidebar.setDataCatalogOpen(false);
