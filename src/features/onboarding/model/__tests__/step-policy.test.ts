@@ -9,7 +9,9 @@ import {
   missingTargetExpired,
   passesOverAtEntry,
   stepKind,
+  stepStatusTone,
   waitTick,
+  type StepStatusFacts,
 } from "../step-policy";
 import type { TourStep } from "../tour";
 
@@ -106,6 +108,75 @@ describe("missingTargetExpired", () => {
         graceMs,
       })
     ).toBe(true);
+  });
+});
+
+describe("stepStatusTone", () => {
+  const facts = (over: Partial<StepStatusFacts>): StepStatusFacts => ({
+    kind: "action",
+    awaitingAction: true,
+    waitedLong: false,
+    completing: false,
+    failed: false,
+    asked: false,
+    blocked: false,
+    ...over,
+  });
+
+  it("says nothing on an info step, or once a wait is over with nothing to report", () => {
+    expect(stepStatusTone(facts({ kind: "info", awaitingAction: false }))).toBe(
+      "none"
+    );
+    // Back to an action already done, before the step's own facts change.
+    expect(stepStatusTone(facts({ awaitingAction: false }))).toBe("none");
+  });
+
+  it("is the user's turn on an action, a wait on a wait on the app", () => {
+    expect(stepStatusTone(facts({}))).toBe("turn");
+    expect(stepStatusTone(facts({ kind: "app-wait" }))).toBe("wait");
+    expect(stepStatusTone(facts({ kind: "app-wait", waitedLong: true }))).toBe(
+      "slow"
+    );
+  });
+
+  it("is slow only for a wait on the app: an action never says so", () => {
+    expect(stepStatusTone(facts({ waitedLong: true }))).toBe("turn");
+  });
+
+  it("follows blocked > asked > failed > done > slow > wait > turn", () => {
+    const all = facts({
+      kind: "app-wait",
+      waitedLong: true,
+      completing: true,
+      failed: true,
+      asked: true,
+      blocked: true,
+    });
+    expect(stepStatusTone(all)).toBe("blocked");
+    expect(stepStatusTone({ ...all, blocked: false })).toBe("asked");
+    expect(stepStatusTone({ ...all, blocked: false, asked: false })).toBe(
+      "failed"
+    );
+    expect(
+      stepStatusTone({ ...all, blocked: false, asked: false, failed: false })
+    ).toBe("done");
+  });
+
+  it("is done once the wait is over, moving on or showing Next", () => {
+    expect(stepStatusTone(facts({ completing: true }))).toBe("done");
+    expect(
+      stepStatusTone(
+        facts({ kind: "app-wait", awaitingAction: false, completing: true })
+      )
+    ).toBe("done");
+  });
+
+  it("says blocked even on a step that waits for nothing (a guide)", () => {
+    expect(
+      stepStatusTone(
+        facts({ kind: "info", awaitingAction: false, blocked: true })
+      )
+    ).toBe("blocked");
   });
 });
 

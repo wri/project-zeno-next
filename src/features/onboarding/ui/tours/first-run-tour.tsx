@@ -79,7 +79,7 @@ import {
 } from "../tour-content";
 import { FIRST_RUN_TOUR_ID } from "../../model/tour-entry";
 import { CHECKLIST_NAME, TAKE_THE_TOUR_LABEL } from "../tour-entry";
-import { NEXT_LABEL, SKIP_STEP_LABEL } from "../TourPopover";
+import { NEXT_LABEL } from "../TourPopover";
 import { anchorTarget } from "../../model/tour";
 import type { UiTour } from "../types";
 import { CHECKLIST_ITEMS } from "./checklist-tours";
@@ -146,7 +146,7 @@ function removedFromMapCopy(area: boolean, chart: boolean): string | null {
 
 /**
  * The chat question. With no prompts left the chat input is disabled, so
- * the step tells the user to skip it instead of asking them to send.
+ * the step does not ask the user to send; its status says to skip it.
  */
 function AskStepBody({ removed }: { removed: () => string | null }) {
   const noneLeft = useAppValue(promptsExhausted);
@@ -155,9 +155,7 @@ function AskStepBody({ removed }: { removed: () => string | null }) {
     return (
       <>
         {removedNote && <p>{removedNote}</p>}
-        <p>
-          {NO_PROMPTS_TODAY} Click <b>{SKIP_STEP_LABEL}</b>.
-        </p>
+        <p>{NO_PROMPTS_TODAY}</p>
       </>
     );
   return (
@@ -184,8 +182,9 @@ function AskStepBody({ removed }: { removed: () => string | null }) {
 /**
  * The answer step's body: what to check once the answer is in, the question
  * the assistant asked back, or what went wrong when it failed. Re-renders as
- * the answer streams. The step blocks clicks on the chat once the answer is
- * in, so a question asked back is answered after the tour.
+ * the answer streams. The status bar says which (and how long the wait is),
+ * so the body does not repeat it. The step blocks clicks on the chat once
+ * the answer is in, so a question asked back is answered after the tour.
  */
 function AnswerStepBody({
   failed,
@@ -199,27 +198,21 @@ function AnswerStepBody({
   if (isAskedBack)
     return (
       <p>
-        The {AI_ASSISTANT_LABEL} has a question for you. You can answer it in
-        the chat after the tour. Click <b>{NEXT_LABEL}</b>.
+        You can answer the question in the chat after the tour. Click{" "}
+        <b>{NEXT_LABEL}</b>.
       </p>
     );
   if (isFailed)
     return (
-      <>
-        <p>
-          The {AI_ASSISTANT_LABEL} could not finish this answer. The chat shows
-          what went wrong.
-        </p>
-        <p>
-          Try the question again after the tour, or ask it in a different way.
-        </p>
-      </>
+      <p>
+        Try the question again after the tour, or ask it in a different way.
+      </p>
     );
   return (
     <>
       <p>
-        {ANSWER_WAIT_COPY} The steps the {AI_ASSISTANT_LABEL} takes show here
-        while it works. When the answer is ready, scroll the chat and check it:
+        The steps the {AI_ASSISTANT_LABEL} takes show here while it works. When
+        the answer is ready, scroll the chat and check it:
       </p>
       <ul>
         <li>
@@ -448,6 +441,7 @@ export function createFirstRunTour(): UiTour {
         hint: `Click ${VIEW_NUDGE}`,
         // No area (the search skipped): nothing is offered to analyse.
         skipIf: () => !hasSelectedArea(),
+        skipNote: "There is no area on the map.",
       },
       {
         id: "insight",
@@ -463,8 +457,13 @@ export function createFirstRunTour(): UiTour {
         waitFor: () => insightCount() > 0,
         waitsOnApp: true,
         autoAdvance: false,
-        hint: "Waiting for your chart…",
+        hint: "Waiting for your chart.",
+        readyHint: `Your chart is ready. Click ${NEXT_LABEL}.`,
         skipIf: () => !hasAcceptedViewAnalysis() || handRunChartFailed(),
+        skipNote: () =>
+          hasAcceptedViewAnalysis()
+            ? "The chart did not load."
+            : "There is no chart to read.",
         body: (
           <>
             <p>
@@ -513,9 +512,10 @@ export function createFirstRunTour(): UiTour {
         },
         body: <AskStepBody removed={() => removedFromMap} />,
         waitFor: () => sentMessageSince(chatBaseline),
-        // With no prompts left the input is disabled: point at Skip step.
-        hint: () =>
-          promptsExhausted() ? `Click ${SKIP_STEP_LABEL}` : "Send the question",
+        hint: "Send the question",
+        // With no prompts left the input is disabled: the status points at
+        // Skip step.
+        blockedIf: promptsExhausted,
       },
       {
         id: "answer",
@@ -530,8 +530,12 @@ export function createFirstRunTour(): UiTour {
         waitFor: () => chatSettledSince(chatBaseline),
         waitsOnApp: true,
         autoAdvance: false,
-        hint: "Waiting for your answer…",
+        hint: `Waiting for the ${AI_ASSISTANT_LABEL}. ${ANSWER_WAIT_COPY}`,
+        readyHint: `The answer is ready. Click ${NEXT_LABEL}.`,
+        failedIf: answerFailed,
+        askedIf: askedBack,
         skipIf: noQuestion,
+        skipNote: "There is no question to answer.",
         body: <AnswerStepBody failed={answerFailed} askedBack={askedBack} />,
       },
       {
@@ -546,6 +550,13 @@ export function createFirstRunTour(): UiTour {
         optional: true,
         // No answer, or an answer without a chart: nothing to check here.
         skipIf: () => noAnswer() || insightCount() === 0,
+        // The last case: a chart came, but its card never showed.
+        skipNote: () =>
+          noAnswer()
+            ? "There is no chart to check."
+            : insightCount() === 0
+              ? "The answer has no chart."
+              : "The chart did not show on the map.",
         body: <AiChartStepBody />,
       },
       {

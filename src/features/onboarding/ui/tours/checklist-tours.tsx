@@ -38,6 +38,7 @@ import {
   openAreasPanel,
   openDataCatalog,
   prefillChatInput,
+  promptsExhausted,
 } from "../app-actions";
 import { TOUR_ANCHORS, catalogCardAnchor } from "@/src/shared/lib/tour-anchors";
 import {
@@ -71,8 +72,6 @@ export const MANUAL_TICK_LABEL = "I have done this";
 const COMPARE_PROMPT =
   "Compare tree cover loss in Kenya and Tanzania between 2015 and 2024.";
 const IMAGERY_PROMPT = "Show recent satellite imagery of the Mau Forest";
-
-const NO_PROMPTS_LEFT = `${NO_PROMPTS_TODAY} You can do this task tomorrow.`;
 
 /** The chat input's send button, as the copy shows it. */
 const SEND_ICON = <InlineIcon icon={ArrowBendRightUpIcon} weight="bold" />;
@@ -213,9 +212,11 @@ const ITEMS: Record<ChecklistItemId, Omit<ChecklistItem, "id">> = {
               that the {AI_ASSISTANT_LABEL} uses only the places you type. Then
               click {SEND_ICON} to send the question.
             </p>
-            <DailyPromptsNote whenNoneLeft={NO_PROMPTS_LEFT} />
+            <DailyPromptsNote whenNoneLeft={NO_PROMPTS_TODAY} />
           </>
         ),
+        // The status says when the task can be done instead.
+        blockedIf: promptsExhausted,
       },
     ],
   },
@@ -315,9 +316,10 @@ const ITEMS: Record<ChecklistItemId, Omit<ChecklistItem, "id">> = {
               can also ask for Planet imagery near recent alerts: monthly images
               from September 2020.
             </Tip>
-            <DailyPromptsNote whenNoneLeft={NO_PROMPTS_LEFT} />
+            <DailyPromptsNote whenNoneLeft={NO_PROMPTS_TODAY} />
           </>
         ),
+        blockedIf: promptsExhausted,
       },
     ],
   },

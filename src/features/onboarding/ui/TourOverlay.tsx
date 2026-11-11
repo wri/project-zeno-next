@@ -21,6 +21,7 @@ import useOnboardingStore from "../model/onboarding-store";
 import {
   APP_WAIT_SKIP_AFTER_MS,
   MISSING_TARGET_GRACE_MS,
+  SKIPPED_NOTICE_MS,
   advanceDelayMs,
   canSkipWhileWaiting,
   missingTargetExpired,
@@ -28,22 +29,23 @@ import {
   waitTick,
 } from "../model/step-policy";
 import type { Rect, Size } from "../model/tour";
-import {
-  NEXT_LABEL,
-  POPOVER_WIDTH_PX,
-  SKIP_STEP_LABEL,
-  TourPopover,
-} from "./TourPopover";
+import { NEXT_LABEL, POPOVER_WIDTH_PX, TourPopover } from "./TourPopover";
 import type { UiTour, UiTourStep } from "./types";
 import { popoverReady, type TargetState } from "../lib/target-state";
+import {
+  NO_ANNOUNCEMENT,
+  nextAnnouncement,
+  type AnnouncementInput,
+} from "../lib/tour-announcement";
+import { useAppValue } from "./app-actions";
+import { skippedNotice, stepStatus } from "./status-copy";
 import { useTargetRect } from "./use-target-rect";
 
 /** Above the chat panel (1100) and Chakra overlays used inside the app. */
 const OVERLAY_Z_INDEX = 2100;
 const WAIT_POLL_MS = 250;
 const DEFAULT_PADDING_PX = 6;
-/** Footer hint once a wait on the app offers Skip step. */
-const SLOW_WAIT_HINT = `This is taking a long time. You can click ${SKIP_STEP_LABEL}.`;
+const NEVER = () => false;
 
 /** A gentle side-to-side shake: "the tour is still open, look here". */
 const SHAKE_KEYFRAMES: Keyframe[] = [
@@ -156,8 +158,16 @@ function ActiveTour({ tour, stepIndex }: { tour: UiTour; stepIndex: number }) {
   const viewport = useViewport();
   const target = useTargetRect(step.target, stepKey);
   const popoverRef = useRef<HTMLDivElement>(null);
-  const [awaitingAction, setAwaitingAction] = useState(false);
+  const [userTurn, setUserTurn] = useState(false);
   const reduceMotion = usePrefersReducedMotion();
+  // One live region for the whole tour: a region that mounts with its text
+  // is often not read, and each step's popover mounts fresh.
+  const [announcement, setAnnouncement] = useState(NO_ANNOUNCEMENT);
+  const announce = useCallback(
+    (input: AnnouncementInput) =>
+      setAnnouncement((prev) => nextAnnouncement(prev, input)),
+    []
+  );
 
   // Clicking the dimmed area nudges the popover instead of doing nothing.
   const shakePopover = useCallback(() => {
@@ -178,8 +188,9 @@ function ActiveTour({ tour, stepIndex }: { tour: UiTour; stepIndex: number }) {
     width: 0,
     height: 0,
   };
-  // Only on this step's own target: not on the previous one, during the hold.
-  const pulse = target.found && awaitingAction && !reduceMotion;
+  // Only for "Your turn", and only on this step's own target: not on the
+  // previous one, during the hold.
+  const pulse = target.found && userTurn && !reduceMotion;
 
   return (
     <Box
@@ -200,8 +211,12 @@ function ActiveTour({ tour, stepIndex }: { tour: UiTour; stepIndex: number }) {
         style={{ ...rectStyle(ringRect), opacity: hole ? 1 : 0 }}
         aria-hidden
       />
+      <Box role="status" aria-live="polite" srOnly>
+        {announcement.text}
+      </Box>
       <StepView
         key={stepKey}
+        stepKey={stepKey}
         step={step}
         stepIndex={stepIndex}
         stepCount={tour.steps.length}
@@ -210,13 +225,15 @@ function ActiveTour({ tour, stepIndex }: { tour: UiTour; stepIndex: number }) {
         viewport={viewport}
         popoverRef={popoverRef}
         onBlockedClick={shakePopover}
-        onAwaitingChange={setAwaitingAction}
+        onTurnChange={setUserTurn}
+        onAnnounce={announce}
       />
     </Box>
   );
 }
 
 function StepView({
+  stepKey,
   step,
   stepIndex,
   stepCount,
@@ -225,8 +242,10 @@ function StepView({
   viewport,
   popoverRef,
   onBlockedClick,
-  onAwaitingChange,
+  onTurnChange,
+  onAnnounce,
 }: {
+  stepKey: string;
   step: UiTourStep;
   stepIndex: number;
   stepCount: number;
@@ -235,7 +254,9 @@ function StepView({
   viewport: Size;
   popoverRef: RefObject<HTMLDivElement | null>;
   onBlockedClick: () => void;
-  onAwaitingChange: (awaiting: boolean) => void;
+  /** The status is "Your turn" (the ring pulses). */
+  onTurnChange: (userTurn: boolean) => void;
+  onAnnounce: (input: AnnouncementInput) => void;
 }) {
   const { found, missingSince } = target;
   // Whether the action was already done when the step opened (e.g. the user
@@ -244,6 +265,8 @@ function StepView({
   const [doneAtEntry] = useState(() => step.waitFor?.() ?? true);
   // Steps with `autoAdvance: false` unlock Next instead of moving on.
   const [unlocked, setUnlocked] = useState(false);
+  // The action is done and the step moves on after `advanceDelayMs`.
+  const [advancing, setAdvancing] = useState(false);
   // Null until the popover has measured itself; it stays hidden until then.
   const [popoverSize, setPopoverSize] = useState<Size | null>(null);
   const visible =
@@ -279,10 +302,6 @@ function StepView({
 
   // Action steps: poll the app until the user has done the thing.
   const awaitingAction = !!step.waitFor && !doneAtEntry && !unlocked;
-  useEffect(
-    () => onAwaitingChange(awaitingAction),
-    [awaitingAction, onAwaitingChange]
-  );
   useEffect(() => {
     if (doneAtEntry || !step.waitFor) return;
     let advanceTimer: number | undefined;
@@ -291,9 +310,10 @@ function StepView({
       if (tick === "wait") return;
       window.clearInterval(poll);
       if (tick === "skip") skip();
-      else if (tick === "advance")
+      else if (tick === "advance") {
+        setAdvancing(true);
         advanceTimer = window.setTimeout(next, advanceDelayMs(step));
-      else setUnlocked(true);
+      } else setUnlocked(true);
     }, WAIT_POLL_MS);
     return () => {
       window.clearInterval(poll);
@@ -313,6 +333,67 @@ function StepView({
     );
     return () => window.clearTimeout(timer);
   }, [waitingOnApp]);
+
+  // The status bar. Failed, asked and blocked read app stores, and are kept
+  // live after the wait's poll has stopped (e.g. once the answer is in).
+  const failed = useAppValue(step.failedIf ?? NEVER);
+  const asked = useAppValue(step.askedIf ?? NEVER);
+  const blocked = useAppValue(step.blockedIf ?? NEVER);
+  const status = stepStatus(step, {
+    awaitingAction,
+    waitedLong,
+    completing: !!step.waitFor && (doneAtEntry || unlocked || advancing),
+    failed,
+    asked,
+    blocked,
+  });
+  const userTurn = status?.tone === "turn";
+  useEffect(() => onTurnChange(userTurn), [userTurn, onTurnChange]);
+
+  // After steps the tour passed over by itself, say so, for a few seconds
+  // from when the popover shows.
+  const notice = skippedNotice(useOnboardingStore((s) => s.passedOver));
+  const [noticeOver, setNoticeOver] = useState(false);
+  useEffect(() => {
+    if (!visible || !notice) return;
+    const timer = window.setTimeout(
+      () => setNoticeOver(true),
+      SKIPPED_NOTICE_MS
+    );
+    return () => window.clearTimeout(timer);
+  }, [visible, notice]);
+
+  // Focus moves to the popover as the step opens (once it shows), never on
+  // a status change, so a keyboard or screen reader user lands on the step.
+  const focused = useRef(false);
+  useEffect(() => {
+    if (!visible || focused.current) return;
+    focused.current = true;
+    popoverRef.current?.focus({ preventScroll: true });
+  }, [visible, popoverRef]);
+
+  // The live region: the step as it opens, then each change of status.
+  const statusText = status?.text ?? null;
+  useEffect(() => {
+    if (!visible) return;
+    onAnnounce({
+      stepKey,
+      stepNumber: stepIndex + 1,
+      stepCount,
+      title: step.title,
+      status: statusText,
+      notice,
+    });
+  }, [
+    visible,
+    onAnnounce,
+    stepKey,
+    stepIndex,
+    stepCount,
+    step.title,
+    statusText,
+    notice,
+  ]);
 
   // Optional steps whose target never shows up (e.g. a card the agent didn't
   // emit) are passed over rather than pointing at nothing.
@@ -370,7 +451,6 @@ function StepView({
     viewport,
     step.placement
   );
-  const hint = typeof step.hint === "function" ? step.hint() : step.hint;
 
   return (
     <>
@@ -394,12 +474,13 @@ function StepView({
         stepNumber={stepIndex + 1}
         stepCount={stepCount}
         awaitingAction={awaitingAction}
-        userTurn={awaitingAction && !waitingOnApp}
-        hint={waitingOnApp && waitedLong ? SLOW_WAIT_HINT : hint}
+        status={status}
+        notice={noticeOver ? null : notice}
         ctaLabel={step.ctaLabel ?? (isLast ? "Finish" : NEXT_LABEL)}
         secondaryLabel={step.secondary?.label}
         showBack={canGoBack && !step.noBack && !awaitingAction}
-        showSkipStep={canSkipWhileWaiting(step, waitedLong)}
+        // Not once the action is done and the step is moving on.
+        showSkipStep={canSkipWhileWaiting(step, waitedLong) && !advancing}
         onNext={next}
         onSkipStep={skipStep}
         onBack={back}

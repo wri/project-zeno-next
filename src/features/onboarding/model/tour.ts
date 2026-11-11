@@ -56,15 +56,41 @@ export interface TourStep<Body> {
    */
   readonly waitsOnApp?: boolean;
   /**
-   * Footer hint while waiting, e.g. "Click Datasets". A function is read as
-   * the step renders, for a hint that depends on app state.
+   * The status while waiting: what the user does ("Click Datasets") on an
+   * action step, what the step waits for on a wait on the app. A function is
+   * read as the step renders, for a hint that depends on app state.
    */
   readonly hint?: string | (() => string);
+  /**
+   * The status once a wait on the app is over and the step shows Next, e.g.
+   * "The answer is ready. Click Next." Default: a plain "Done".
+   */
+  readonly readyHint?: string;
+  /**
+   * The step failed (e.g. the answer did not finish). Polled; the status
+   * says so instead of "done".
+   */
+  readonly failedIf?: () => boolean;
+  /**
+   * The assistant asked the user a question back instead of answering.
+   * Polled; it wins over `failedIf`, which also holds for such a turn.
+   */
+  readonly askedIf?: () => boolean;
+  /**
+   * The user cannot do what the step asks (e.g. no daily prompts left).
+   * Polled; the status wins over every other.
+   */
+  readonly blockedIf?: () => boolean;
   /**
    * Pass over the step when this holds: as it opens, or later while it is
    * still waiting (e.g. answer steps once the answer has failed).
    */
   readonly skipIf?: () => boolean;
+  /**
+   * Why the tour passed this step over, said on the next step it shows
+   * ("The chart did not load."). Read at the moment it is passed over.
+   */
+  readonly skipNote?: string | (() => string);
   /**
    * Runs when the user presses Skip step: does what the step asked, so the
    * steps after it still find what they need (e.g. opens the panel).

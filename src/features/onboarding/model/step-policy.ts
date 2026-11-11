@@ -1,6 +1,7 @@
 /**
  * The rules that keep a tour moving: what kind of step this is, when it is
- * passed over, when the user may skip it, and when a missing target gives up.
+ * passed over, when the user may skip it, when a missing target gives up,
+ * and what status the step shows.
  * Pure (no React, no DOM), so the store and the overlay share one tested rule
  * and no step can leave the user without a way forward.
  */
@@ -78,6 +79,59 @@ export function waitTick(step: TourStep<unknown>): WaitTick {
   if (!step.waitFor?.()) return "wait";
   return (step.autoAdvance ?? true) ? "advance" : "unlock";
 }
+
+/**
+ * What the popover's status bar shows. One at a time, in this order of
+ * precedence: `blocked` > `asked` > `failed` > `done` > `slow` > `wait` >
+ * `turn` > `none`.
+ *  - `blocked`: the user cannot do what the step asks (`blockedIf`).
+ *  - `asked`: the assistant asked the user a question back (`askedIf`).
+ *  - `failed`: the step failed (`failedIf`).
+ *  - `done`: the wait is over; the step moves on soon, or shows Next.
+ *  - `slow`, `wait`: a wait on the app, before and after
+ *    {@link APP_WAIT_SKIP_AFTER_MS}.
+ *  - `turn`: the step waits for the user. The only status that pulses the
+ *    highlight ring.
+ *  - `none`: nothing to say (an info step).
+ */
+export type StepStatusTone =
+  | "blocked"
+  | "asked"
+  | "failed"
+  | "done"
+  | "slow"
+  | "wait"
+  | "turn"
+  | "none";
+
+export interface StepStatusFacts {
+  readonly kind: StepKind;
+  /** Still waiting for `waitFor`. */
+  readonly awaitingAction: boolean;
+  /** The step has waited {@link APP_WAIT_SKIP_AFTER_MS}. */
+  readonly waitedLong: boolean;
+  /** `waitFor` has passed: the step moves on soon, or shows Next. */
+  readonly completing: boolean;
+  readonly failed: boolean;
+  readonly asked: boolean;
+  readonly blocked: boolean;
+}
+
+export function stepStatusTone(facts: StepStatusFacts): StepStatusTone {
+  if (facts.blocked) return "blocked";
+  if (facts.asked) return "asked";
+  if (facts.failed) return "failed";
+  if (facts.completing) return "done";
+  if (!facts.awaitingAction) return "none";
+  if (facts.kind === "app-wait") return facts.waitedLong ? "slow" : "wait";
+  return facts.kind === "action" ? "turn" : "none";
+}
+
+/**
+ * How long the step after one the tour passed over by itself says so ("We
+ * skipped a step."), ms, counted from when its popover shows.
+ */
+export const SKIPPED_NOTICE_MS = 4_000;
 
 export interface MissingTargetTimes {
   readonly now: number;

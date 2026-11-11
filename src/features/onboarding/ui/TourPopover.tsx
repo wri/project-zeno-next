@@ -4,6 +4,7 @@ import { Box, Button, CloseButton, Flex, Text } from "@chakra-ui/react";
 import { useEffect, useState, type ReactNode, type Ref } from "react";
 
 import type { PopoverPlacement } from "../lib/geometry";
+import { StepStatusBar, type StatusLine } from "./StepStatusBar";
 
 export const POPOVER_WIDTH_PX = 360;
 export const POPOVER_WIDE_WIDTH_PX = 480;
@@ -76,9 +77,10 @@ export interface TourPopoverProps {
   stepCount: number;
   /** Waiting before the step can move on (no Next button). */
   awaitingAction: boolean;
-  /** The wait is on the user ("Your turn"), not on Horizon. */
-  userTurn: boolean;
-  hint?: string;
+  /** The step's status, on its own row above the buttons. */
+  status: StatusLine | null;
+  /** For a few seconds after the tour skipped a step: that it did, and why. */
+  notice: string | null;
   ctaLabel: string;
   secondaryLabel?: string;
   showBack: boolean;
@@ -128,8 +130,8 @@ export function TourPopover(props: TourPopoverProps) {
     stepNumber,
     stepCount,
     awaitingAction,
-    userTurn,
-    hint,
+    status,
+    notice,
     ctaLabel,
     secondaryLabel,
     showBack,
@@ -148,6 +150,9 @@ export function TourPopover(props: TourPopoverProps) {
       role="dialog"
       aria-modal="false"
       aria-labelledby="onboarding-step-title"
+      // Takes focus when a step opens (the overlay calls focus()).
+      tabIndex={-1}
+      outline="none"
       position="fixed"
       left={`${placement.x}px`}
       top={`${placement.y}px`}
@@ -178,10 +183,8 @@ export function TourPopover(props: TourPopoverProps) {
           aria-label="Close tour"
           onClick={onClose}
         />
-        {(eyebrow || userTurn) && (
-          <Flex
-            align="center"
-            gap="2"
+        {eyebrow && (
+          <Text
             mb="1"
             fontFamily="mono"
             fontSize="10px"
@@ -189,13 +192,8 @@ export function TourPopover(props: TourPopoverProps) {
             textTransform="uppercase"
             color="primary.solid"
           >
-            {userTurn && (
-              <Box as="span" bg="lime.400" color="fg" rounded="xs" px="1.5">
-                Your turn
-              </Box>
-            )}
             {eyebrow}
-          </Flex>
+          </Text>
         )}
         <Text
           id="onboarding-step-title"
@@ -222,54 +220,46 @@ export function TourPopover(props: TourPopoverProps) {
           {body}
         </Box>
       </Box>
-      <Flex align="center" gap="2" flexShrink={0} px="5" pb="4" pt="1">
-        <Flex flex="1" direction="column" gap="1.5" minW={0}>
-          {/* A one-step guide has no progress to show. */}
-          {stepCount > 1 && (
-            <Flex align="center" gap="2">
-              <ProgressDots current={stepNumber - 1} total={stepCount} />
-              <Text fontSize="xs" color="fg.muted" aria-hidden>
-                {stepNumber} of {stepCount}
-              </Text>
-              <Text srOnly>
-                Step {stepNumber} of {stepCount}
-              </Text>
-            </Flex>
+      <Flex direction="column" gap="2.5" flexShrink={0} px="5" pb="4" pt="1">
+        {notice && <StepStatusBar tone="skipped" text={notice} />}
+        {status && <StepStatusBar tone={status.tone} text={status.text} />}
+        <Flex align="center" gap="2">
+          <Flex flex="1" align="center" gap="2" minW={0}>
+            {/* A one-step guide has no progress to show. */}
+            {stepCount > 1 && (
+              <>
+                <ProgressDots current={stepNumber - 1} total={stepCount} />
+                <Text fontSize="xs" color="fg.muted" aria-hidden>
+                  {stepNumber} of {stepCount}
+                </Text>
+                <Text srOnly>
+                  Step {stepNumber} of {stepCount}
+                </Text>
+              </>
+            )}
+          </Flex>
+          {secondaryLabel && onSecondary && (
+            <Button size="xs" variant="ghost" onClick={onSecondary}>
+              {secondaryLabel}
+            </Button>
           )}
-          {awaitingAction && (
-            <Flex align="center" gap="2" fontSize="xs" color="fg.muted">
-              <Box
-                w="8px"
-                h="8px"
-                rounded="full"
-                bg="secondary.400"
-                boxShadow="0 0 0 3px {colors.secondary.200}"
-              />
-              {hint ?? "Use the highlighted control"}
-            </Flex>
+          {showBack && (
+            <Button size="xs" variant="outline" onClick={onBack}>
+              Back
+            </Button>
+          )}
+          {awaitingAction ? (
+            showSkipStep && (
+              <Button size="xs" variant="ghost" onClick={onSkipStep}>
+                {SKIP_STEP_LABEL}
+              </Button>
+            )
+          ) : (
+            <Button size="xs" colorPalette="primary" onClick={onNext}>
+              {ctaLabel}
+            </Button>
           )}
         </Flex>
-        {secondaryLabel && onSecondary && (
-          <Button size="xs" variant="ghost" onClick={onSecondary}>
-            {secondaryLabel}
-          </Button>
-        )}
-        {showBack && (
-          <Button size="xs" variant="outline" onClick={onBack}>
-            Back
-          </Button>
-        )}
-        {awaitingAction ? (
-          showSkipStep && (
-            <Button size="xs" variant="ghost" onClick={onSkipStep}>
-              {SKIP_STEP_LABEL}
-            </Button>
-          )
-        ) : (
-          <Button size="xs" colorPalette="primary" onClick={onNext}>
-            {ctaLabel}
-          </Button>
-        )}
       </Flex>
     </Box>
   );

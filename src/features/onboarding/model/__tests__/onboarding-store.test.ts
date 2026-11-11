@@ -227,6 +227,79 @@ describe("onboarding store", () => {
     expect(onSkip).toHaveBeenCalledTimes(1);
   });
 
+  describe("passedOver: the steps the next step says were skipped", () => {
+    it("lists steps passed over at entry, with their notes read then", () => {
+      let reason = "no area";
+      state().startTour({
+        id: "t",
+        version: 1,
+        steps: [
+          step("a"),
+          { ...step("b"), skipIf: () => true, skipNote: () => reason },
+          { ...step("c"), skipIf: () => true },
+          // Its set-up changes what b's note would say now.
+          { ...step("d"), onEnter: () => (reason = "changed") },
+        ],
+      });
+      state().advance(false, 0);
+      expect(state().stepIndex).toBe(3);
+      expect(state().passedOver).toEqual([
+        { stepId: "b", note: "no area" },
+        { stepId: "c", note: null },
+      ]);
+    });
+
+    it("lists a step the overlay passed over, before the ones after it", () => {
+      state().startTour({
+        id: "t",
+        version: 1,
+        steps: [
+          { ...step("a"), skipNote: "chart did not load" },
+          { ...step("b"), skipIf: () => true, skipNote: "no chart" },
+          step("c"),
+        ],
+      });
+      state().advance(true, 0);
+      expect(state().passedOver).toEqual([
+        { stepId: "a", note: "chart did not load" },
+        { stepId: "b", note: "no chart" },
+      ]);
+    });
+
+    it("leaves out the step the user skipped: they know", () => {
+      state().startTour({
+        id: "t",
+        version: 1,
+        steps: [
+          { ...step("a"), skipNote: "never said" },
+          { ...step("b"), skipIf: () => true },
+          step("c"),
+        ],
+      });
+      state().skipStep(0);
+      expect(state().passedOver.map((p) => p.stepId)).toEqual(["b"]);
+    });
+
+    it("is empty after a plain Next, after Back and once the tour ends", () => {
+      state().startTour({
+        id: "t",
+        version: 1,
+        steps: [step("a"), { ...step("b"), skipIf: () => true }, step("c")],
+      });
+      state().advance(false, 0);
+      expect(state().passedOver).toHaveLength(1);
+      state().back();
+      expect(state().passedOver).toEqual([]);
+      state().advance(false, 0);
+      state().endTour(false);
+      expect(state().passedOver).toEqual([]);
+
+      state().startTour(tour());
+      state().advance(false, 0);
+      expect(state().passedOver).toEqual([]);
+    });
+  });
+
   it("abandons a tour without an outcome", () => {
     const onEnd = vi.fn();
     state().startTour(tour(onEnd));

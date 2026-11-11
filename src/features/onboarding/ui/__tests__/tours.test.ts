@@ -26,8 +26,11 @@ import {
   canSkipWhileWaiting,
   stepKind,
   type StepKind,
+  type StepStatusFacts,
 } from "../../model/step-policy";
+import type { TourStep } from "../../model/tour";
 import { checklistEvidence, isDatasetOnMap } from "../app-actions";
+import { skippedNotice, stepStatus } from "../status-copy";
 import { NO_PROMPTS_TODAY, dailyPromptsNote } from "../tour-content";
 import {
   CHECKLIST_ITEMS,
@@ -47,6 +50,28 @@ const currentStepId = () => current()?.id;
 /** The footer hint as the overlay shows it (a hint may be a function). */
 const hintOf = (step: { hint?: string | (() => string) }) =>
   typeof step.hint === "function" ? step.hint() : step.hint;
+
+/**
+ * The status bar as the overlay shows it: the step's own predicates read
+ * now, waiting unless `over` says otherwise.
+ */
+const statusOf = (
+  step: TourStep<unknown>,
+  over: Partial<Omit<StepStatusFacts, "kind">> = {}
+) =>
+  stepStatus(step, {
+    awaitingAction: !!step.waitFor,
+    waitedLong: false,
+    completing: false,
+    failed: !!step.failedIf?.(),
+    asked: !!step.askedIf?.(),
+    blocked: !!step.blockedIf?.(),
+    ...over,
+  });
+/** The settled answer step: Next shows. */
+const SETTLED = { awaitingAction: false, completing: true } as const;
+/** What the step now open says about the steps passed over to reach it. */
+const noticeNow = () => skippedNotice(state().passedOver);
 
 /** Move on as the overlay's Next would, until `id` shows. */
 function goTo(id: string) {
@@ -356,6 +381,10 @@ describe("first-run tour flow", () => {
     const ask = current()!;
     expect(bodyText(ask.body)).toContain("to send the question");
     expect(hintOf(ask)).toBe("Send the question");
+    expect(statusOf(ask)).toEqual({
+      tone: "turn",
+      text: "Your turn. Send the question.",
+    });
   });
 
   it("never asks for a send with no prompts left: it points at Skip step", () => {
@@ -365,9 +394,26 @@ describe("first-run tour flow", () => {
     const ask = current()!;
     const text = bodyText(ask.body);
     expect(text).toContain(NO_PROMPTS_TODAY);
-    expect(text).toContain("Skip step");
     expect(text).not.toMatch(/send/i);
-    expect(hintOf(ask)).toBe("Click Skip step");
+    // Blocked, not "Your turn": the ring does not pulse on a disabled input.
+    expect(statusOf(ask)).toEqual({
+      tone: "blocked",
+      text: "No daily prompts left. Click Skip step.",
+    });
+  });
+
+  it("says how long the answer can take while it waits", () => {
+    state().startTour(createFirstRunTour());
+    goTo("ask-in-chat");
+    useChatStore.setState({ messages: [msg("user")], isLoading: true });
+    state().advance(false, state().stepIndex);
+    expect(currentStepId()).toBe("answer");
+    const step = current()!;
+    expect(statusOf(step)?.text).toBe(
+      "Waiting for the AI Assistant. This can take about 1 minute."
+    );
+    // Said once: in the status, not in the body too.
+    expect(bodyText(step.body)).not.toContain("about 1 minute");
   });
 
   it("names no allowance: the store's count is a default until /auth/me answers", () => {
@@ -386,10 +432,15 @@ describe("first-run tour flow", () => {
     expect(currentStepId()).toBe("answer");
     const step = current()!;
     expect(step.waitFor?.()).toBe(true);
-    expect(bodyText(step.body)).toContain("could not finish this answer");
+    expect(statusOf(step, SETTLED)).toEqual({
+      tone: "failed",
+      text: "The AI Assistant could not finish this answer. The chat shows what went wrong.",
+    });
+    expect(bodyText(step.body)).toContain("Try the question again");
 
     state().advance(false, state().stepIndex);
     expect(currentStepId()).toBe("done");
+    expect(noticeNow()).toBe("We skipped a step. There is no chart to check.");
   });
 
   it("tells the user the assistant asked a question back, not that it failed", () => {
@@ -398,13 +449,29 @@ describe("first-run tour flow", () => {
     answer({ ok: false, askedBack: true });
     state().advance(false, state().stepIndex);
     expect(currentStepId()).toBe("answer");
-    const text = bodyText(current()!.body);
-    expect(text).toContain("has a question for you");
+    const step = current()!;
+    expect(statusOf(step, SETTLED)).toEqual({
+      tone: "asked",
+      text: "The AI Assistant has a question for you.",
+    });
+    const text = bodyText(step.body);
+    expect(text).toContain("answer the question in the chat after the tour");
     expect(text).not.toContain("could not finish");
 
     // No answer yet, so no chart to check.
     state().advance(false, state().stepIndex);
     expect(currentStepId()).toBe("done");
+  });
+
+  it("says the answer is ready once it is in", () => {
+    state().startTour(createFirstRunTour());
+    goTo("ask-in-chat");
+    answer({ ok: true, charts: [AI_CHART] });
+    state().advance(false, state().stepIndex);
+    expect(statusOf(current()!, SETTLED)).toEqual({
+      tone: "done",
+      text: "The answer is ready. Click Next.",
+    });
   });
 
   it("walks a good answer with an AI-assisted chart through Show working", () => {
@@ -437,6 +504,69 @@ describe("first-run tour flow", () => {
     state().advance(false, state().stepIndex);
     state().advance(false, state().stepIndex);
     expect(currentStepId()).toBe("done");
+    expect(noticeNow()).toBe("We skipped a step. The answer has no chart.");
+  });
+
+  describe("says why it skipped steps", () => {
+    it("after the area search was skipped", () => {
+      state().startTour(createFirstRunTour());
+      goTo("find-area");
+      state().skipStep(state().stepIndex);
+      expect(currentStepId()).toBe("ask-in-chat");
+      expect(noticeNow()).toBe(
+        "We skipped 2 steps. There is no area on the map."
+      );
+    });
+
+    it("after the question was skipped", () => {
+      state().startTour(createFirstRunTour());
+      goTo("ask-in-chat");
+      state().skipStep(state().stepIndex);
+      expect(currentStepId()).toBe("done");
+      expect(noticeNow()).toBe(
+        "We skipped 2 steps. There is no question to answer."
+      );
+    });
+
+    it("when the hand-run chart fails while the step waits", () => {
+      state().startTour(createFirstRunTour());
+      goTo("find-area");
+      pickKenya();
+      useChatStore.setState({
+        messages: [
+          msg("view-analysis-nudge", {
+            viewAnalysisSuggestion: {
+              area: { name: "Kenya", source: "gadm", srcId: "KEN" },
+              datasetId: TREE_COVER_LOSS_DATASET_ID,
+              datasetName: "Tree cover loss",
+              startDate: "2001-01-01",
+              endDate: "2025-12-31",
+              accepted: true,
+            },
+          }),
+        ],
+        isGeneratingInsight: true,
+      });
+      goTo("insight");
+      // The load ends with no chart; the overlay's poll passes the step over.
+      useChatStore.setState({ isGeneratingInsight: false });
+      state().advance(true, state().stepIndex);
+      expect(currentStepId()).toBe("ask-in-chat");
+      expect(noticeNow()).toBe("We skipped a step. The chart did not load.");
+    });
+
+    it("when the answer's chart card never shows (the hidden-popover gap)", () => {
+      state().startTour(createFirstRunTour());
+      goTo("ask-in-chat");
+      answer({ ok: true, charts: [AI_CHART] });
+      goTo("ai-chart");
+      // The overlay gives up on the missing card after the grace period.
+      state().advance(true, state().stepIndex);
+      expect(currentStepId()).toBe("done");
+      expect(noticeNow()).toBe(
+        "We skipped a step. The chart did not show on the map."
+      );
+    });
   });
 
   it("ticks nothing when it ends, however it ends", () => {
@@ -613,6 +743,24 @@ describe("checklist tasks", () => {
     state().startTour(createChecklistTour(item));
     expect(useMapStore.getState().layers).toEqual([]);
     expect(useSidebarStore.getState().dataCatalogOpen).toBe(true);
+  });
+
+  it("that need a prompt say when none are left, and when to try again", () => {
+    useAuthStore.setState({ usedPrompts: 25, totalPrompts: 25 });
+    for (const id of ["compare", "satellite-imagery"] as const) {
+      const item = CHECKLIST_ITEMS.find((i) => i.id === id)!;
+      const [ask] = createChecklistTour(item).steps;
+      expect([id, statusOf(ask)]).toEqual([
+        id,
+        {
+          tone: "blocked",
+          text: "No daily prompts left. You can do this task tomorrow.",
+        },
+      ]);
+    }
+    useAuthStore.setState({ usedPrompts: 3, totalPrompts: 25 });
+    const compare = CHECKLIST_ITEMS.find((i) => i.id === "compare")!;
+    expect(statusOf(createChecklistTour(compare).steps[0])).toBeNull();
   });
 
   it("clear the datasets off the map before asking for imagery", () => {

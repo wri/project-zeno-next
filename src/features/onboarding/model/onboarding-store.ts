@@ -13,6 +13,13 @@ import type { Tour, TourStep } from "./tour";
 /** How a tour ended: finished, closed by the user, or stopped with no outcome. */
 export type TourEnd = "completed" | "closed" | "abandoned";
 
+/** A step the tour passed over by itself (not the user's Skip step). */
+export interface PassedOverStep {
+  readonly stepId: string;
+  /** The step's `skipNote` as it read when the step was passed over. */
+  readonly note: string | null;
+}
+
 /**
  * Onboarding state: the running tour (if any) and the checklist.
  *
@@ -24,6 +31,11 @@ export interface OnboardingState {
   stepIndex: number;
   /** Steps the user was shown, for Back. Steps skipped automatically aren't. */
   history: readonly number[];
+  /**
+   * Steps passed over automatically on the way to the current one, so it
+   * can say why. Empty after Back or when nothing was passed over.
+   */
+  passedOver: readonly PassedOverStep[];
   checklistExpanded: boolean;
   progress: OnboardingProgress;
   hydrated: boolean;
@@ -82,26 +94,40 @@ const mergeDone = (
   return merged.length === done.length ? done : merged;
 };
 
+/** Record a step as passed over, reading its note now (app state moves on). */
+function passOver(step: TourStep<unknown>): PassedOverStep {
+  const note =
+    typeof step.skipNote === "function" ? step.skipNote() : step.skipNote;
+  return { stepId: step.id, note: note ?? null };
+}
+
 /**
  * Enter steps from `index` on, running each `onEnter`, and return the first
- * one to show (`steps.length` when none is left). Deciding here, not in the
- * overlay, means a passed-over step never renders and React can't run the
- * decision twice (StrictMode runs effects twice in development).
+ * one to show (`steps.length` when none is left) with the steps passed over
+ * on the way. Deciding here, not in the overlay, means a passed-over step
+ * never renders and React can't run the decision twice (StrictMode runs
+ * effects twice in development).
  */
-function enterFrom(steps: readonly TourStep<unknown>[], index: number): number {
+function enterFrom(
+  steps: readonly TourStep<unknown>[],
+  index: number
+): { index: number; passed: PassedOverStep[] } {
+  const passed: PassedOverStep[] = [];
   let i = index;
   while (i < steps.length) {
     steps[i].onEnter?.();
-    if (!passesOverAtEntry(steps[i])) return i;
+    if (!passesOverAtEntry(steps[i])) break;
+    passed.push(passOver(steps[i]));
     i++;
   }
-  return i;
+  return { index: i, passed };
 }
 
 const useOnboardingStore = create<OnboardingState>((set, get) => ({
   tour: null,
   stepIndex: 0,
   history: [],
+  passedOver: [],
   checklistExpanded: true,
   progress: EMPTY_PROGRESS,
   hydrated: false,
@@ -115,18 +141,21 @@ const useOnboardingStore = create<OnboardingState>((set, get) => ({
   // A step's `onEnter` runs here, before it renders, so the overlay's first
   // look at the step already sees the state the set-up produced.
   startTour: (tour) => {
-    const stepIndex = enterFrom(tour.steps, 0);
-    set({ tour, stepIndex, history: [] });
+    const { index: stepIndex, passed } = enterFrom(tour.steps, 0);
+    set({ tour, stepIndex, history: [], passedOver: passed });
     if (stepIndex >= tour.steps.length) get().endTour(true);
   },
 
   advance: (skipped = false, from) => {
     const { tour, stepIndex, history } = get();
     if (!tour || (from !== undefined && from !== stepIndex)) return;
-    const next = enterFrom(tour.steps, stepIndex + 1);
+    // The left step's note first: the next steps' set-up may change the app.
+    const left = skipped ? [passOver(tour.steps[stepIndex])] : [];
+    const { index: next, passed } = enterFrom(tour.steps, stepIndex + 1);
     set({
       stepIndex: next,
       history: skipped ? history : [...history, stepIndex],
+      passedOver: [...left, ...passed],
     });
     // Past the last step, as in `startTour`: the move is recorded first, so
     // telemetry sees which steps were passed over on the way out.
@@ -147,7 +176,11 @@ const useOnboardingStore = create<OnboardingState>((set, get) => ({
     const previous = history.at(-1);
     if (!tour || previous === undefined) return;
     tour.steps[previous].onEnter?.();
-    set({ stepIndex: previous, history: history.slice(0, -1) });
+    set({
+      stepIndex: previous,
+      history: history.slice(0, -1),
+      passedOver: [],
+    });
   },
 
   endTour: (completed) => {
@@ -157,6 +190,7 @@ const useOnboardingStore = create<OnboardingState>((set, get) => ({
       tour: null,
       stepIndex: 0,
       history: [],
+      passedOver: [],
       lastTourEnd: completed ? "completed" : "closed",
     });
     tour.onEnd?.(completed);
@@ -168,6 +202,7 @@ const useOnboardingStore = create<OnboardingState>((set, get) => ({
       tour: null,
       stepIndex: 0,
       history: [],
+      passedOver: [],
       tourAbandoned: true,
       lastTourEnd: "abandoned",
     });
