@@ -11,6 +11,7 @@ import useOnboardingStore, {
   selectTourActive,
 } from "../model/onboarding-store";
 import { ONBOARDING_FEATURE_FLAG } from "../model/tour-entry";
+import { CHECKLIST_NAME } from "./tour-entry";
 import { CHECKLIST_ITEMS, createChecklistTour } from "./tours/checklist-tours";
 
 const NAVY = "#131E47";
@@ -20,7 +21,7 @@ const SUCCESS = "#2F8F4E";
 /** Above the map, below the catalog column (1095) so open panels cover it. */
 const CHECKLIST_Z_INDEX = 1090;
 const CHECKLIST_INTRO =
-  "Try each task yourself. It is ticked when you have done it.";
+  "Click a task for a short guide. Then do the task yourself. Horizon ticks it when you have done it.";
 
 /** Small progress ring for the collapsed pill. */
 function ProgressRing({ ratio }: { ratio: number }) {
@@ -52,7 +53,7 @@ function ProgressRing({ ratio }: { ratio: number }) {
 }
 
 /**
- * "Get to know Horizon" checklist shown after the first-run tour: tasks the
+ * The "Get started" checklist shown after the first-run tour: tasks the
  * user does in the app. Each item runs a short guide to where the task
  * starts; it is ticked when the app shows the task was done
  * (`useChecklistDetection`), or by the user for a task the app can't see.
@@ -107,7 +108,7 @@ function Checklist() {
         onClick={() => setExpanded(true)}
       >
         <ProgressRing ratio={ratio} />
-        Get started · {doneCount}/{total}
+        {CHECKLIST_NAME} · {doneCount}/{total}
       </Button>
     );
   }
@@ -124,12 +125,12 @@ function Checklist() {
       overflow="hidden"
       boxShadow="0 6px 24px rgba(0,0,0,0.18)"
       role="region"
-      aria-label="Get to know Horizon"
+      aria-label={CHECKLIST_NAME}
     >
       <Box bg={NAVY} color="white" px="4" pt="3" pb="2.5">
         <Flex justify="space-between" align="center">
           <Text fontWeight="semibold" fontSize="sm">
-            Get to know Horizon
+            {CHECKLIST_NAME}
           </Text>
           <Button
             size="2xs"

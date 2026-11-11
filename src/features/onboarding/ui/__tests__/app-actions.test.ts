@@ -12,6 +12,7 @@ import {
   agentTextLine,
   ndjsonResponse,
 } from "@/app/store/__tests__/stream-fixtures";
+import useAuthStore from "@/app/store/authStore";
 import useChatStore from "@/app/store/chatStore";
 import useInsightStore from "@/app/store/insightStore";
 import type { Layer } from "@/app/store/layerManagerSlice";
@@ -30,10 +31,12 @@ import {
   clearDatasetLayers,
   clearMap,
   handRunChartFailed,
+  lastTurnAsksToChoose,
   leadChartShowsWorking,
   openAreasPanel,
   openDataCatalog,
   prefillChatInput,
+  promptsExhausted,
   sentMessageSince,
 } from "../app-actions";
 
@@ -119,6 +122,79 @@ describe("answerFailedSince", () => {
     setChat([msg("user"), msg("assistant")], false);
     useChatStore.setState({ completedAnswers: answers + 1 });
     expect(answerFailedSince(0, answers)).toBe(false);
+  });
+});
+
+describe("lastTurnAsksToChoose", () => {
+  it("is true when the last question's turn ends by asking to choose", () => {
+    setChat([msg("user"), msg("assistant"), msg("nudge")]);
+    expect(lastTurnAsksToChoose()).toBe(true);
+  });
+
+  it("is false for an answer, an error, or no question", () => {
+    setChat([msg("user"), msg("assistant")]);
+    expect(lastTurnAsksToChoose()).toBe(false);
+    setChat([msg("user"), msg("error")]);
+    expect(lastTurnAsksToChoose()).toBe(false);
+    setChat([msg("assistant"), msg("nudge")]);
+    expect(lastTurnAsksToChoose()).toBe(false);
+  });
+
+  it("looks only at the last turn, not a choice asked earlier", () => {
+    setChat([
+      msg("user"),
+      msg("assistant"),
+      msg("nudge"),
+      msg("user"),
+      msg("assistant"),
+    ]);
+    expect(lastTurnAsksToChoose()).toBe(false);
+  });
+
+  it("agrees with the chat store, which counts no answer for it", async () => {
+    // A tool turn whose state carries a nudge, as the backend streams it.
+    const nudgeLine = JSON.stringify({
+      node: "tools",
+      timestamp: "2026-07-30T00:00:00.000Z",
+      update: JSON.stringify({
+        nudge: { type: "clarify", options: ["Puri, India", "Puri, Angola"] },
+        messages: [
+          {
+            lc: 1,
+            type: "constructor",
+            id: ["x"],
+            kwargs: {
+              content: "ok",
+              type: "tool",
+              name: "send_nudge",
+              id: "m-send_nudge",
+              response_metadata: {},
+            },
+          },
+        ],
+      }),
+    });
+    useChatStore.getState().reset();
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([nudgeLine, agentTextLine("Which Puri did you mean?")])
+    );
+    const answers = answeredCount();
+
+    await useChatStore.getState().sendMessage("Puri");
+
+    expect(answeredCount()).toBe(answers);
+    expect(lastTurnAsksToChoose()).toBe(true);
+  });
+});
+
+describe("promptsExhausted", () => {
+  it("follows the allowance the server reported", () => {
+    useAuthStore.setState({ usedPrompts: 24, totalPrompts: 25 });
+    expect(promptsExhausted()).toBe(false);
+    useAuthStore.setState({ usedPrompts: 25, totalPrompts: 25 });
+    expect(promptsExhausted()).toBe(true);
+    useAuthStore.setState({ usedPrompts: 26, totalPrompts: 25 });
+    expect(promptsExhausted()).toBe(true);
   });
 });
 

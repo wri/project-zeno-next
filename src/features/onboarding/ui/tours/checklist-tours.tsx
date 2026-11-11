@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ArrowBendRightUpIcon,
   ChartLineIcon,
   FilePdfIcon,
   PrinterIcon,
@@ -16,6 +17,7 @@ import {
 import useOnboardingStore from "../../model/onboarding-store";
 import { AI_ASSISTANT_LABEL } from "@/app/ChatPanelHeader";
 import { AREA_ACTION_LABELS } from "@/app/components/AreaActionBar";
+import { BOUNDARIES_TAB_LABEL } from "@/app/components/AreasPanel";
 import { ANALYSES_LABEL } from "@/app/components/ChatInput";
 import {
   DATASET_CARD_BY_ID,
@@ -28,6 +30,7 @@ import {
   DASHBOARD_EXPORT_LABEL,
   SAVE_AS_PDF_LABEL,
   createDashboardNudgeLabel,
+  openDashboardNudgeLabel,
 } from "@/src/features/dashboards";
 import {
   clearDatasetLayers,
@@ -37,7 +40,14 @@ import {
   prefillChatInput,
 } from "../app-actions";
 import { TOUR_ANCHORS, catalogCardAnchor } from "@/src/shared/lib/tour-anchors";
-import { DailyPromptsNote, Example, InlineIcon, Tip } from "../tour-content";
+import {
+  DailyPromptsNote,
+  Example,
+  InlineIcon,
+  NO_PROMPTS_TODAY,
+  Tip,
+} from "../tour-content";
+import { CHECKLIST_NAME } from "../tour-entry";
 import { anchorTarget } from "../../model/tour";
 import type { UiTour, UiTourStep } from "../types";
 
@@ -53,7 +63,7 @@ const OIL_PALM_NAME = selectLayerOptions.find(
 export const CHECKLIST_TOURS_VERSION = 2;
 
 /** The last step's button: the guide ends, the task is the user's to do. */
-export const GUIDE_DONE_LABEL = "Got it";
+export const GUIDE_DONE_LABEL = "OK";
 
 /** The button that ticks a task the app can't see being done. */
 export const MANUAL_TICK_LABEL = "I have done this";
@@ -62,8 +72,10 @@ const COMPARE_PROMPT =
   "Compare tree cover loss in Kenya and Tanzania between 2015 and 2024.";
 const IMAGERY_PROMPT = "Show recent satellite imagery of the Mau Forest";
 
-const NO_PROMPTS_LEFT =
-  "You have used all your daily prompts. They refresh every 24 hours.";
+const NO_PROMPTS_LEFT = `${NO_PROMPTS_TODAY} You can do this task tomorrow.`;
+
+/** The chat input's send button, as the copy shows it. */
+const SEND_ICON = <InlineIcon icon={ArrowBendRightUpIcon} weight="bold" />;
 
 export interface ChecklistItem {
   readonly id: ChecklistItemId;
@@ -94,7 +106,7 @@ const ITEMS: Record<ChecklistItemId, Omit<ChecklistItem, "id">> = {
           clearDatasetLayers();
           openDataCatalog();
         },
-        title: `Turn on ${ALERTS_NAME}`,
+        title: "Check recent alerts",
         body: (
           <>
             <p>
@@ -102,8 +114,8 @@ const ITEMS: Record<ChecklistItemId, Omit<ChecklistItem, "id">> = {
               other vegetation. They are updated daily.
             </p>
             <p>
-              We have taken the other datasets off the map. Use the switch on
-              this row. Then choose an area, and in the chat click{" "}
+              We removed the other datasets from the map. Click the switch on
+              this row. Then choose an area. In the chat, click{" "}
               <InlineIcon icon={ChartLineIcon} />{" "}
               <b>{viewAnalysisNudgeLabel(ALERTS_NAME, "…")}</b>
             </p>
@@ -125,16 +137,18 @@ const ITEMS: Record<ChecklistItemId, Omit<ChecklistItem, "id">> = {
         target: anchorTarget(TOUR_ANCHORS.areasPanel),
         placement: "right",
         onEnter: openAreasPanel,
-        title: "Find a protected area or concession",
+        title: "Choose a protected area or concession",
         body: (
           <>
             <p>
-              Type a protected area&apos;s name in the search box, for example
-              Serengeti. Then use the switch on its row.
+              Type a protected area&apos;s name in the search box, for example{" "}
+              <b>Serengeti</b>. Then click the switch on its row.
             </p>
             <p>
-              For a concession, turn on a layer such as <b>{OIL_PALM_NAME}</b>{" "}
-              in this panel. Zoom in and click a concession on the map.
+              A concession is land that a company has the right to use, for
+              example for oil palm. To find one, clear the search box. On the{" "}
+              <b>{BOUNDARIES_TAB_LABEL}</b> tab, turn on <b>{OIL_PALM_NAME}</b>.
+              Zoom in on the map. Click a concession.
             </p>
             <Tip>Concession layers cover some countries only.</Tip>
           </>
@@ -153,23 +167,23 @@ const ITEMS: Record<ChecklistItemId, Omit<ChecklistItem, "id">> = {
         target: anchorTarget(TOUR_ANCHORS.areasPanel),
         placement: "right",
         onEnter: openAreasPanel,
-        title: "Add your own area",
+        title: "Draw or upload your own area",
         body: (
           <>
-            <p>Use the buttons under the search box:</p>
+            <p>Click a button under the search box:</p>
             <ul>
               <li>
                 <InlineIcon icon={SelectionPlusIcon} />{" "}
-                <b>{AREA_ACTION_LABELS.draw}</b>: click the map to add points,
-                then double-click to finish.
+                <b>{AREA_ACTION_LABELS.draw}</b>: click the map to add points.
+                Double-click to finish.
               </li>
               <li>
                 <InlineIcon icon={UploadSimpleIcon} />{" "}
-                <b>{AREA_ACTION_LABELS.upload}</b>: add a file with your
-                boundary.
+                <b>{AREA_ACTION_LABELS.upload}</b>: add a file that contains
+                your area.
               </li>
             </ul>
-            <Tip>No buttons? Clear the search box first.</Tip>
+            <Tip>If you cannot see the buttons, clear the search box.</Tip>
           </>
         ),
       },
@@ -187,18 +201,18 @@ const ITEMS: Record<ChecklistItemId, Omit<ChecklistItem, "id">> = {
           closeExplorationPanels();
           prefillChatInput(COMPARE_PROMPT);
         },
-        title: "Ask about two places at once",
+        title: "Compare two places",
         body: (
           <>
             <p>
               Name both places in one question. We have written one for you:
             </p>
             <Example>{COMPARE_PROMPT}</Example>
-            <p>Change the places if you like. Then press send.</p>
-            <Tip>
-              Remove any area chips first, so Horizon uses only the places you
-              type.
-            </Tip>
+            <p>
+              Change the places if you like. Click the × on any area chip, so
+              that the {AI_ASSISTANT_LABEL} uses only the places you type. Then
+              click {SEND_ICON} to send the question.
+            </p>
             <DailyPromptsNote whenNoneLeft={NO_PROMPTS_LEFT} />
           </>
         ),
@@ -206,44 +220,69 @@ const ITEMS: Record<ChecklistItemId, Omit<ChecklistItem, "id">> = {
     ],
   },
   "dashboard-pdf": {
-    label: "Save a chart to a dashboard and get a PDF",
+    label: "Create a dashboard and save it as a PDF",
     completion: "manual",
+    // Leaving the map ends a guide, so each step says all there is to do
+    // before the user goes to the dashboard and the report.
     steps: [
       {
         id: "dashboard-create",
-        target: anchorTarget(TOUR_ANCHORS.analysesButton),
-        placement: "top",
-        padding: 5,
+        // The chat, where the create button and then the dashboard card show.
+        target: anchorTarget(TOUR_ANCHORS.chatPanel),
+        placement: "right",
+        padding: 4,
         onEnter: closeExplorationPanels,
-        title: "Make a dashboard for an area",
+        title: "Create a dashboard",
         body: (
           <>
+            <p>A dashboard is a page with charts for one area.</p>
             <p>
               Choose an area with a dataset on the map. In the chat, click{" "}
               <b>{createDashboardNudgeLabel("…")}</b>
             </p>
             <p>
-              Then click <b>{ADD_TO_DASHBOARD_LABEL}</b> on a chart.{" "}
-              <InlineIcon icon={ChartLineIcon} /> <b>{ANALYSES_LABEL}</b> lists
-              all your charts.
+              This button creates the dashboard and adds your first chart to it.
+              A dashboard card then shows in the chat.
             </p>
             <Tip>
-              On the dashboard, you can also ask for a satellite imagery map of
-              the area.
+              If the area already has a dashboard, the button says{" "}
+              <b>{openDashboardNudgeLabel("…")}</b>.
             </Tip>
           </>
         ),
       },
       {
         id: "dashboard-pdf",
-        title: "Get a PDF",
+        // The dashboard page's chat box has the same Analyses button.
+        target: anchorTarget(TOUR_ANCHORS.analysesButton),
+        placement: "top",
+        padding: 5,
+        title: "Save the dashboard as a PDF",
         body: (
-          <p>
-            Open your dashboard. Click <InlineIcon icon={FilePdfIcon} />{" "}
-            <b>{DASHBOARD_EXPORT_LABEL}</b> at the top, then{" "}
-            <InlineIcon icon={PrinterIcon} /> <b>{SAVE_AS_PDF_LABEL}</b>. Then
-            come back and press <b>{MANUAL_TICK_LABEL}</b>.
-          </p>
+          <>
+            <p>Click the dashboard card in the chat. The dashboard opens.</p>
+            <ul>
+              <li>
+                To add more charts, click <b>{ADD_TO_DASHBOARD_LABEL}</b> on a
+                chart in the chat, or in <InlineIcon icon={ChartLineIcon} />{" "}
+                <b>{ANALYSES_LABEL}</b>.
+              </li>
+              <li>
+                Click <InlineIcon icon={FilePdfIcon} />{" "}
+                <b>{DASHBOARD_EXPORT_LABEL}</b> at the top. The report opens in
+                a new tab.
+              </li>
+              <li>
+                Click <InlineIcon icon={PrinterIcon} />{" "}
+                <b>{SAVE_AS_PDF_LABEL}</b>. In the print window that opens, save
+                the report as a PDF.
+              </li>
+            </ul>
+            <p>
+              Then return to the map. In <b>{CHECKLIST_NAME}</b>, click this
+              task again. On this step, click <b>{MANUAL_TICK_LABEL}</b>.
+            </p>
+          </>
         ),
       },
     ],
@@ -262,18 +301,19 @@ const ITEMS: Record<ChecklistItemId, Omit<ChecklistItem, "id">> = {
           clearDatasetLayers();
           prefillChatInput(IMAGERY_PROMPT);
         },
-        title: "Ask for satellite imagery",
+        title: "See satellite imagery",
         body: (
           <>
             <p>
-              We have taken the datasets off the map, so you can see the
-              imagery. Send this question, or change the place:
+              We removed the datasets from the map, so that you can see the
+              imagery. Change the place in this question if you like:
             </p>
             <Example>{IMAGERY_PROMPT}</Example>
+            <p>Then click {SEND_ICON} to send the question.</p>
             <Tip>
-              Sentinel-2 imagery covers most places. In the Amazon, you can also
-              ask the {AI_ASSISTANT_LABEL} for Planet imagery: monthly images
-              back to September 2020.
+              Sentinel-2 imagery covers most of the world. In the Amazon, you
+              can also ask for Planet imagery near recent alerts: monthly images
+              from September 2020.
             </Tip>
             <DailyPromptsNote whenNoneLeft={NO_PROMPTS_LEFT} />
           </>

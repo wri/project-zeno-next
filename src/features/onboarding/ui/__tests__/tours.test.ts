@@ -28,7 +28,7 @@ import {
   type StepKind,
 } from "../../model/step-policy";
 import { checklistEvidence, isDatasetOnMap } from "../app-actions";
-import { dailyPromptsNote } from "../tour-content";
+import { NO_PROMPTS_TODAY, dailyPromptsNote } from "../tour-content";
 import {
   CHECKLIST_ITEMS,
   GUIDE_DONE_LABEL,
@@ -44,6 +44,9 @@ import {
 const state = () => useOnboardingStore.getState();
 const current = () => state().tour?.steps[state().stepIndex];
 const currentStepId = () => current()?.id;
+/** The footer hint as the overlay shows it (a hint may be a function). */
+const hintOf = (step: { hint?: string | (() => string) }) =>
+  typeof step.hint === "function" ? step.hint() : step.hint;
 
 /** Move on as the overlay's Next would, until `id` shows. */
 function goTo(id: string) {
@@ -100,16 +103,24 @@ const KENYA: Layer = {
 const pickKenya = () =>
   useMapStore.setState((s) => ({ layers: [...s.layers, KENYA] }));
 
-/** A sent question whose answer finished, with or without a counted answer. */
+/**
+ * A sent question whose answer finished, with or without a counted answer.
+ * `askedBack`: the turn ended by asking the user to choose (a nudge), which
+ * the chat store doesn't count as an answer.
+ */
 function answer({
   ok,
   charts = [],
+  askedBack = false,
 }: {
   ok: boolean;
   charts?: InsightWidget[];
+  askedBack?: boolean;
 }) {
   useChatStore.setState({
-    messages: [msg("user"), msg(ok ? "assistant" : "error")],
+    messages: askedBack
+      ? [msg("user"), msg("assistant"), msg("nudge")]
+      : [msg("user"), msg(ok ? "assistant" : "error")],
     isLoading: false,
     completedAnswers: ok ? 1 : 0,
   });
@@ -309,6 +320,20 @@ describe("first-run tour flow", () => {
     expect(useMapStore.getState().layers.map((l) => l.id)).toEqual(["tcl"]);
     expect(useInsightStore.getState().insights).toEqual([]);
     expect(useChatStore.getState().draftPrompt).toBe(CHAT_DEMO_PROMPT);
+    // It says what it took off, and only that.
+    expect(bodyText(current()!.body)).toContain(
+      "We removed the area and the chart from the map."
+    );
+  });
+
+  it("claims to remove nothing when there was nothing on the map", () => {
+    state().startTour(createFirstRunTour());
+    goTo("find-area");
+    state().skipStep(state().stepIndex);
+    expect(currentStepId()).toBe("ask-in-chat");
+    const text = bodyText(current()!.body);
+    expect(text).not.toContain("We removed");
+    expect(text).toContain("Now ask in the chat.");
   });
 
   it("offers Skip step on the question, quota or not", () => {
@@ -325,16 +350,32 @@ describe("first-run tour flow", () => {
     expect(currentStepId()).toBe("done");
   });
 
-  it("states the allowance from the store, never a fixed number", () => {
-    // A server render reads the store's initial state, not what `setState`
-    // set, so this checks the initial quota; the rule itself is covered by
-    // the `dailyPromptsNote` tests below.
-    const { totalPrompts } = useAuthStore.getInitialState();
+  it("asks for the question to be sent while prompts are left", () => {
     state().startTour(createFirstRunTour());
     goTo("ask-in-chat");
-    expect(bodyText(current()!.body)).toContain(
-      `uses 1 of your ${totalPrompts} daily prompts`
-    );
+    const ask = current()!;
+    expect(bodyText(ask.body)).toContain("to send the question");
+    expect(hintOf(ask)).toBe("Send the question");
+  });
+
+  it("never asks for a send with no prompts left: it points at Skip step", () => {
+    useAuthStore.setState({ usedPrompts: 25, totalPrompts: 25 });
+    state().startTour(createFirstRunTour());
+    goTo("ask-in-chat");
+    const ask = current()!;
+    const text = bodyText(ask.body);
+    expect(text).toContain(NO_PROMPTS_TODAY);
+    expect(text).toContain("Skip step");
+    expect(text).not.toMatch(/send/i);
+    expect(hintOf(ask)).toBe("Click Skip step");
+  });
+
+  it("names no allowance: the store's count is a default until /auth/me answers", () => {
+    state().startTour(createFirstRunTour());
+    goTo("ask-in-chat");
+    const text = bodyText(current()!.body);
+    expect(text).toContain("uses 1 of your daily prompts");
+    expect(text).not.toMatch(/\d+ daily prompts/);
   });
 
   it("explains a failed answer in the answer step, then skips the chart step", () => {
@@ -347,6 +388,21 @@ describe("first-run tour flow", () => {
     expect(step.waitFor?.()).toBe(true);
     expect(bodyText(step.body)).toContain("could not finish this answer");
 
+    state().advance(false, state().stepIndex);
+    expect(currentStepId()).toBe("done");
+  });
+
+  it("tells the user the assistant asked a question back, not that it failed", () => {
+    state().startTour(createFirstRunTour());
+    goTo("ask-in-chat");
+    answer({ ok: false, askedBack: true });
+    state().advance(false, state().stepIndex);
+    expect(currentStepId()).toBe("answer");
+    const text = bodyText(current()!.body);
+    expect(text).toContain("has a question for you");
+    expect(text).not.toContain("could not finish");
+
+    // No answer yet, so no chart to check.
     state().advance(false, state().stepIndex);
     expect(currentStepId()).toBe("done");
   });
@@ -486,9 +542,9 @@ describe("first-run tour flow", () => {
 
 describe("dailyPromptsNote", () => {
   const NONE = "none left";
-  it("counts the prompt a question uses", () => {
+  it("counts the prompt a question uses, naming no allowance", () => {
     expect(dailyPromptsNote(25, false, NONE)).toBe(
-      "Sending this question uses 1 of your 25 daily prompts."
+      "Sending this question uses 1 of your daily prompts."
     );
   });
   it("says what to do when none are left, also when used is above total", () => {
@@ -504,7 +560,7 @@ describe("dailyPromptsNote", () => {
 });
 
 describe("checklist tasks", () => {
-  it("are guides: info steps that end with Got it", () => {
+  it("are guides: info steps that end with OK", () => {
     for (const item of CHECKLIST_ITEMS) {
       const steps = createChecklistTour(item).steps;
       for (const s of steps)

@@ -415,11 +415,12 @@ function catalogIdValue(
 
 /**
  * Imports into tour copy from a component (`@/app/components/...`, or a chat
- * panel file such as `@/app/ChatPanelHeader`) or another feature are UI
- * labels. Covering a new label is one import.
+ * panel file such as `@/app/ChatPanelHeader`), another feature or a shared
+ * UI module (the card kinds' labels) are UI labels. Covering a new label is
+ * one import.
  */
 const LABEL_SOURCE =
-  /^@\/(app\/(components\/|ChatPanel)|src\/features\/(?!onboarding(\/|$)))/;
+  /^@\/(app\/(components\/|ChatPanel)|src\/(features\/(?!onboarding(\/|$))|shared\/ui\/))/;
 
 interface Label {
   readonly local: string;

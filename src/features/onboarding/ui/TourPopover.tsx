@@ -8,6 +8,10 @@ import type { PopoverPlacement } from "../lib/geometry";
 export const POPOVER_WIDTH_PX = 360;
 export const POPOVER_WIDE_WIDTH_PX = 480;
 
+/** Footer buttons the copy names: the default move on, and the skip. */
+export const NEXT_LABEL = "Next";
+export const SKIP_STEP_LABEL = "Skip step";
+
 /**
  * Where the user is in the tour: done steps tinted, the current one a pill,
  * the rest grey. Gives a sense of how much is left at a glance.
@@ -217,7 +221,7 @@ export function TourPopover(props: TourPopoverProps) {
         {awaitingAction ? (
           showSkipStep && (
             <Button size="xs" variant="ghost" onClick={onSkipStep}>
-              Skip step
+              {SKIP_STEP_LABEL}
             </Button>
           )
         ) : (

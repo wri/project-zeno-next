@@ -28,7 +28,12 @@ import {
   waitTick,
 } from "../model/step-policy";
 import type { Rect, Size } from "../model/tour";
-import { POPOVER_WIDTH_PX, TourPopover } from "./TourPopover";
+import {
+  NEXT_LABEL,
+  POPOVER_WIDTH_PX,
+  SKIP_STEP_LABEL,
+  TourPopover,
+} from "./TourPopover";
 import type { UiTour, UiTourStep } from "./types";
 import type { TargetState } from "../lib/target-state";
 import { useTargetRect } from "./use-target-rect";
@@ -38,7 +43,7 @@ const OVERLAY_Z_INDEX = 2100;
 const WAIT_POLL_MS = 250;
 const DEFAULT_PADDING_PX = 6;
 /** Footer hint once a wait on the app offers Skip step. */
-const SLOW_WAIT_HINT = "This is taking a while. You can skip this step.";
+const SLOW_WAIT_HINT = `This is taking a long time. You can click ${SKIP_STEP_LABEL}.`;
 
 /** A gentle side-to-side shake: "the tour is still open, look here". */
 const SHAKE_KEYFRAMES: Keyframe[] = [
@@ -354,6 +359,7 @@ function StepView({
     viewport,
     step.placement
   );
+  const hint = typeof step.hint === "function" ? step.hint() : step.hint;
 
   return (
     <>
@@ -377,8 +383,8 @@ function StepView({
         stepCount={stepCount}
         awaitingAction={awaitingAction}
         userTurn={awaitingAction && !waitingOnApp}
-        hint={waitingOnApp && waitedLong ? SLOW_WAIT_HINT : step.hint}
-        ctaLabel={step.ctaLabel ?? (isLast ? "Finish" : "Next")}
+        hint={waitingOnApp && waitedLong ? SLOW_WAIT_HINT : hint}
+        ctaLabel={step.ctaLabel ?? (isLast ? "Finish" : NEXT_LABEL)}
         secondaryLabel={step.secondary?.label}
         showBack={canGoBack && !step.noBack && !awaitingAction}
         showSkipStep={canSkipWhileWaiting(step, waitedLong)}

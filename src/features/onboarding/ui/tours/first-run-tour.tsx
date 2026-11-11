@@ -2,10 +2,12 @@
 
 import { Link } from "@chakra-ui/react";
 import {
+  ArrowBendRightUpIcon,
   ChartBarIcon,
   ChartLineIcon,
   DownloadSimpleIcon,
   InfoIcon,
+  ListIcon,
   MicroscopeIcon,
   PolygonIcon,
   SparkleIcon,
@@ -22,10 +24,11 @@ import useOnboardingStore from "../../model/onboarding-store";
 import { SHOW_RESULT_MS } from "../../model/step-policy";
 import { AI_ASSISTANT_LABEL } from "@/app/ChatPanelHeader";
 import { analyseNudgeLabel } from "@/app/components/AnalyseNudge";
-import { AREA_ACTION_LABELS } from "@/app/components/AreaActionBar";
+import { BOUNDARIES_TAB_LABEL } from "@/app/components/AreasPanel";
 import { DATA_CATALOG_LABEL } from "@/app/components/CatalogPanel";
 import { ChatContextOptions } from "@/app/components/ContextButton";
 import { INSIGHT_CAPTION_LABELS } from "@/app/components/InsightCaption";
+import { ANALYSIS_CARD_LABEL } from "@/app/components/InsightWorkspace";
 import { WIDGET_CONTROL_LABELS } from "@/app/components/WidgetMessage";
 import { SHOW_PARAMS_LABEL } from "@/app/components/widgets/AnalysisParameters";
 import {
@@ -38,6 +41,7 @@ import {
 } from "@/app/constants/datasets";
 import { PREVIEW_FEEDBACK_FORM } from "@/app/constants/preview-content";
 import { viewAnalysisNudgeLabel } from "@/src/features/analysis";
+import { ENTITY_KINDS } from "@/src/shared/ui/entity-card";
 import {
   answerFailedSince,
   answeredCount,
@@ -52,10 +56,12 @@ import {
   insightCount,
   isDataCatalogOpen,
   isDatasetOnMap,
+  lastTurnAsksToChoose,
   leadChartShowsWorking,
   openAreasPanel,
   openDataCatalog,
   prefillChatInput,
+  promptsExhausted,
   restoreMapDefaults,
   sentMessageSince,
   showDatasetOnMap,
@@ -67,13 +73,16 @@ import {
   Example,
   Ingredients,
   InlineIcon,
+  NO_PROMPTS_TODAY,
   SummaryPair,
   Tip,
 } from "../tour-content";
 import { FIRST_RUN_TOUR_ID } from "../../model/tour-entry";
-import { TAKE_THE_TOUR_LABEL } from "../tour-entry";
+import { CHECKLIST_NAME, TAKE_THE_TOUR_LABEL } from "../tour-entry";
+import { NEXT_LABEL, SKIP_STEP_LABEL } from "../TourPopover";
 import { anchorTarget } from "../../model/tour";
 import type { UiTour } from "../types";
+import { CHECKLIST_ITEMS } from "./checklist-tours";
 
 // UI labels come from the components that render them, so a rename reaches
 // the copy too (checked by tests/architecture/tour-contract.test.ts).
@@ -101,25 +110,105 @@ const TOUR_LENGTH = "about 4 minutes";
  * staging (45 to 60 s), not from the code: one place to change it after a
  * timing.
  */
-export const ANSWER_WAIT_COPY = "This can take about a minute.";
+export const ANSWER_WAIT_COPY = "This can take about 1 minute.";
 
 /** The chat half's question. The user is invited to change the place. */
 export const CHAT_DEMO_PROMPT =
   "How much tree cover was lost in Kenya between 2015 and 2024?";
 
-const NO_PROMPTS_IN_TOUR =
-  "You have used all your daily prompts. They refresh every 24 hours. Press Skip step.";
+/** How to take the tour again: the same sentence at the welcome and the end. */
+const TAKE_THE_TOUR_LATER = (
+  <>
+    To take the tour later, open the menu <InlineIcon icon={ListIcon} /> at the
+    top left. Then click <b>{TAKE_THE_TOUR_LABEL}</b>.
+  </>
+);
+
+/** What Show params lists, the same on the hand-run and the answer's chart. */
+const SHOW_PARAMS_TEXT = (
+  <>
+    <b>{SHOW_PARAMS_LABEL}</b> shows the area, dataset, years and, for some
+    datasets, the canopy threshold.
+  </>
+);
+
+const MORE_CHARTS_TIP =
+  "If there is more than one chart, click the arrows under the chart.";
 
 /**
- * The answer step's body: what to check once the answer is in, or what went
- * wrong when it failed. Re-renders as the answer streams.
+ * What the chat step says it took off the map: only what was there (a user
+ * who skipped the area search had nothing to remove).
  */
-function AnswerStepBody({ failed }: { failed: () => boolean }) {
-  if (useAppValue(failed))
+function removedFromMapCopy(area: boolean, chart: boolean): string | null {
+  const what = [area && "the area", chart && "the chart"].filter(Boolean);
+  return what.length ? `We removed ${what.join(" and ")} from the map.` : null;
+}
+
+/**
+ * The chat question. With no prompts left the chat input is disabled, so
+ * the step tells the user to skip it instead of asking them to send.
+ */
+function AskStepBody({ removed }: { removed: () => string | null }) {
+  const noneLeft = useAppValue(promptsExhausted);
+  const removedNote = removed();
+  if (noneLeft)
+    return (
+      <>
+        {removedNote && <p>{removedNote}</p>}
+        <p>
+          {NO_PROMPTS_TODAY} Click <b>{SKIP_STEP_LABEL}</b>.
+        </p>
+      </>
+    );
+  return (
+    <>
+      <p>
+        {removedNote && `${removedNote} `}Now ask in the chat. We have written a
+        question for you:
+      </p>
+      <Example>{CHAT_DEMO_PROMPT}</Example>
+      <p>
+        Change Kenya to a place you know. Then click{" "}
+        <InlineIcon icon={ArrowBendRightUpIcon} weight="bold" /> to send the
+        question.
+      </p>
+      <Tip>
+        Your question also includes the chips at the top of the chat box. To
+        remove a chip, click the × on the chip.
+      </Tip>
+      <DailyPromptsNote whenNoneLeft={NO_PROMPTS_TODAY} />
+    </>
+  );
+}
+
+/**
+ * The answer step's body: what to check once the answer is in, the question
+ * the assistant asked back, or what went wrong when it failed. Re-renders as
+ * the answer streams. The step blocks clicks on the chat once the answer is
+ * in, so a question asked back is answered after the tour.
+ */
+function AnswerStepBody({
+  failed,
+  askedBack,
+}: {
+  failed: () => boolean;
+  askedBack: () => boolean;
+}) {
+  const isFailed = useAppValue(failed);
+  const isAskedBack = useAppValue(askedBack);
+  if (isAskedBack)
+    return (
+      <p>
+        The {AI_ASSISTANT_LABEL} has a question for you. You can answer it in
+        the chat after the tour. Click <b>{NEXT_LABEL}</b>.
+      </p>
+    );
+  if (isFailed)
     return (
       <>
         <p>
-          Horizon could not finish this answer. The chat shows what went wrong.
+          The {AI_ASSISTANT_LABEL} could not finish this answer. The chat shows
+          what went wrong.
         </p>
         <p>
           Try the question again after the tour, or ask it in a different way.
@@ -129,12 +218,18 @@ function AnswerStepBody({ failed }: { failed: () => boolean }) {
   return (
     <>
       <p>
-        {ANSWER_WAIT_COPY} The steps Horizon takes show here while it works.
-        When the answer is ready, scroll the chat and check it:
+        {ANSWER_WAIT_COPY} The steps the {AI_ASSISTANT_LABEL} takes show here
+        while it works. When the answer is ready, scroll the chat and check it:
       </p>
       <ul>
-        <li>The area card: is it the place you meant?</li>
-        <li>The dataset card: is it the data you wanted?</li>
+        <li>
+          The card marked <b>{ENTITY_KINDS.area.label}</b>: is it the area you
+          meant?
+        </li>
+        <li>
+          The card marked <b>{ENTITY_KINDS.dataset.label}</b>: is it the dataset
+          you wanted?
+        </li>
         <li>
           The written answer: what does the data measure, and what does it not
           measure?
@@ -150,6 +245,7 @@ function AnswerStepBody({ failed }: { failed: () => boolean }) {
 /**
  * The answer's chart, and how to check it. Show working exists only on a
  * chart made with code the AI wrote; a curated answer gets no such advice.
+ * The step blocks clicks on the chart, so Show working is for after the tour.
  */
 function AiChartStepBody() {
   const showsWorking = useAppValue(leadChartShowsWorking);
@@ -162,28 +258,23 @@ function AiChartStepBody() {
           made the chart from your question. AI can make mistakes.
         </li>
         <li>
-          <b>{INSIGHT_CAPTION_LABELS.curated}</b>: the chart comes straight from
+          <b>{INSIGHT_CAPTION_LABELS.curated}</b>: the chart comes directly from
           the source data, like the chart you made manually.
         </li>
       </ul>
       {showsWorking ? (
         <p>
-          On an <b>{INSIGHT_CAPTION_LABELS.aiAssisted}</b> chart, click{" "}
-          <InlineIcon icon={MicroscopeIcon} />{" "}
-          <b>{WIDGET_CONTROL_LABELS.showWorking}</b> to see how it was made.{" "}
-          <b>{SHOW_PARAMS_LABEL}</b> shows the area, dataset and years it used.
+          After the tour, click <InlineIcon icon={MicroscopeIcon} />{" "}
+          <b>{WIDGET_CONTROL_LABELS.showWorking}</b> to see how the chart was
+          made. {SHOW_PARAMS_TEXT}
         </p>
       ) : (
         <p>
-          This answer&apos;s chart is <b>{INSIGHT_CAPTION_LABELS.curated}</b>,
-          like the chart you made manually. <b>{SHOW_PARAMS_LABEL}</b> shows the
-          area, dataset and years it used.
+          This answer&apos;s chart is <b>{INSIGHT_CAPTION_LABELS.curated}</b>.{" "}
+          {SHOW_PARAMS_TEXT}
         </p>
       )}
-      <Tip>
-        If there is more than one chart, use the arrows at the bottom of the
-        card.
-      </Tip>
+      <Tip>{MORE_CHARTS_TIP}</Tip>
     </>
   );
 }
@@ -200,6 +291,7 @@ export function createFirstRunTour(): UiTour {
   let answerBaseline = 0;
   let collapseChecklistOnFinish = false;
   let mapCleared = false;
+  let removedFromMap: string | null = null;
 
   // The hands-on part starts from an empty map, cleared only once the user
   // has pressed "Start the tour": someone who backs out keeps theirs.
@@ -214,6 +306,7 @@ export function createFirstRunTour(): UiTour {
   // over; a failed answer is explained in the answer step.
   const noQuestion = () => !sentMessageSince(chatBaseline);
   const answerFailed = () => answerFailedSince(chatBaseline, answerBaseline);
+  const askedBack = () => answerFailed() && lastTurnAsksToChoose();
   const noAnswer = () => noQuestion() || answerFailed();
 
   // Finishing ticks nothing: the checklist's tasks are ones the tour doesn't
@@ -236,35 +329,32 @@ export function createFirstRunTour(): UiTour {
     steps: [
       {
         id: "welcome",
-        eyebrow: `Welcome · ${FIRST_RUN_STEP_COUNT} steps, ${TOUR_LENGTH}`,
+        eyebrow: `Tour · ${FIRST_RUN_STEP_COUNT} steps, ${TOUR_LENGTH}`,
         title: "Welcome to Global Nature Watch Horizon",
         body: (
           <>
             <p>
-              Horizon answers your questions about nature with data, charts and
-              maps. A good question has three parts:
+              Horizon shows data, charts and maps about nature. A good question
+              to the {AI_ASSISTANT_LABEL} has three parts:
             </p>
             <Ingredients />
             <p>
               First, you make a chart manually: you choose a dataset and an
-              area, then show the chart. Then you ask the {AI_ASSISTANT_LABEL} a
-              question in the chat.
+              area. Then you ask the {AI_ASSISTANT_LABEL} a question in the
+              chat.
             </p>
-            <Tip>
-              To take the tour later, open the menu and choose{" "}
-              <b>{TAKE_THE_TOUR_LABEL}</b>.
-            </Tip>
+            <Tip>{TAKE_THE_TOUR_LATER}</Tip>
           </>
         ),
         ctaLabel: "Start the tour",
-        secondary: { label: "Skip tour", onClick: (end) => end(false) },
+        secondary: { label: "Skip the tour", onClick: (end) => end(false) },
       },
       {
         id: "open-catalog",
         target: anchorTarget(TOUR_ANCHORS.datasetsButton),
         placement: "top",
         padding: 5,
-        eyebrow: "Dataset",
+        eyebrow: "Your dataset",
         title: `Open the ${DATA_CATALOG_LABEL}`,
         onEnter: clearMapOnce,
         body: (
@@ -282,13 +372,13 @@ export function createFirstRunTour(): UiTour {
         id: "turn-on-tcl",
         target: anchorTarget(catalogCardAnchor(TREE_COVER_LOSS_DATASET_ID)),
         placement: "right",
-        eyebrow: "Dataset",
+        eyebrow: "Your dataset",
         title: `Turn on ${TCL_NAME}`,
         body: (
           <>
             <p>
-              Use the switch on the <b>{TCL_NAME}</b> row. Pink areas on the map
-              show where tree cover was lost each year since{" "}
+              Click the switch on the <b>{TCL_NAME}</b> row. The pink colour on
+              the map shows where tree cover was lost each year since{" "}
               {TCL_CARD.defaultStartYear}. Tree cover includes plantations, not
               only natural forest.
             </p>
@@ -308,8 +398,8 @@ export function createFirstRunTour(): UiTour {
         // The whole panel: the search box and its results both need clicks.
         target: anchorTarget(TOUR_ANCHORS.areasPanel),
         placement: "right",
-        eyebrow: "Area",
-        title: "Now choose an area",
+        eyebrow: "Your area",
+        title: "Choose an area",
         // Datasets taught the button; here the tour opens the panel itself.
         onEnter: openAreasPanel,
         body: (
@@ -317,13 +407,11 @@ export function createFirstRunTour(): UiTour {
             <p>
               <InlineIcon icon={PolygonIcon} /> <b>{AREAS_LABEL}</b> in the chat
               box opens this panel. Type <b>Kenya</b> in the search box at the
-              top. Then use the switch on the Kenya row.
+              top. Then click the switch on the <b>Kenya</b> row.
             </p>
             <Tip>
-              You can also show boundaries, such as protected areas, and click
-              an area on the map. Or add your own area with{" "}
-              <b>{AREA_ACTION_LABELS.draw}</b> or{" "}
-              <b>{AREA_ACTION_LABELS.upload}</b>.
+              You can also show a layer from <b>{BOUNDARIES_TAB_LABEL}</b> and
+              click an area on the map. Or draw or upload your own area.
             </Tip>
           </>
         ),
@@ -337,19 +425,22 @@ export function createFirstRunTour(): UiTour {
         placement: "right",
         padding: 5,
         eyebrow: "Your chart",
-        title: "Show the chart",
+        title: "View the chart",
         onEnter: closeExplorationPanels,
         body: (
           <>
             <p>
-              Your dataset and area now show as chips above the chat box. In the
-              chat, click <InlineIcon icon={ChartLineIcon} />{" "}
+              Your dataset and area now show as chips at the top of the chat
+              box. In the chat, click <InlineIcon icon={ChartLineIcon} />{" "}
               <b>{VIEW_NUDGE}</b>
             </p>
+            <p>
+              This button does not use any of your daily prompts: the questions
+              you can ask each day.
+            </p>
             <Tip>
-              This button does not use any of your daily prompts.{" "}
               <b>{GENERATE_NUDGE}</b> asks the {AI_ASSISTANT_LABEL} instead, and
-              uses one prompt.
+              uses 1 of your daily prompts.
             </Tip>
           </>
         ),
@@ -365,21 +456,22 @@ export function createFirstRunTour(): UiTour {
         target: anchorTarget(TOUR_ANCHORS.insightWorkspace),
         placement: "left",
         eyebrow: "Your chart",
-        title: "The chart is on the map",
+        title: "Read the chart",
         noBack: true,
         // Next once the chart is in, not while it loads. A failed analysis
         // shows no chart, so the step is passed over.
         waitFor: () => insightCount() > 0,
         waitsOnApp: true,
         autoAdvance: false,
-        hint: "Making your chart…",
+        hint: "Waiting for your chart…",
         skipIf: () => !hasAcceptedViewAnalysis() || handRunChartFailed(),
         body: (
           <>
             <p>
-              The chart opens on the map. The label at the top says{" "}
-              <b>{INSIGHT_CAPTION_LABELS.curated}</b>. This means the chart
-              comes straight from the source data, with no AI.
+              The chart opens in the card marked <b>{ANALYSIS_CARD_LABEL}</b> on
+              the right. The label at the top of the chart says{" "}
+              <b>{INSIGHT_CAPTION_LABELS.curated}</b>. This means that the chart
+              comes directly from the source data, with no AI.
             </p>
             <ul>
               <li>
@@ -391,18 +483,13 @@ export function createFirstRunTour(): UiTour {
               </li>
               <li>
                 <InlineIcon icon={DownloadSimpleIcon} /> <b>{DOWNLOAD_LABEL}</b>{" "}
-                gives you <b>{DOWNLOAD_ITEM_LABELS.csv}</b> or{" "}
-                <b>{DOWNLOAD_ITEM_LABELS.image}</b>.
+                gives you <b>{DOWNLOAD_ITEM_LABELS.csv}</b>, or{" "}
+                <b>{DOWNLOAD_ITEM_LABELS.image}</b> in{" "}
+                <b>{WIDGET_CONTROL_LABELS.chart}</b> view.
               </li>
-              <li>
-                <b>{SHOW_PARAMS_LABEL}</b> shows the area, dataset and years the
-                chart uses.
-              </li>
+              <li>{SHOW_PARAMS_TEXT}</li>
             </ul>
-            <Tip>
-              If there is more than one chart, use the arrows at the bottom of
-              the card.
-            </Tip>
+            <Tip>{MORE_CHARTS_TIP}</Tip>
           </>
         ),
       },
@@ -410,33 +497,25 @@ export function createFirstRunTour(): UiTour {
         id: "ask-in-chat",
         target: anchorTarget(TOUR_ANCHORS.chatInput),
         placement: "right",
-        eyebrow: `Ask the ${AI_ASSISTANT_LABEL}`,
-        title: "Now ask in your own words",
+        eyebrow: "Your question",
+        title: "Ask in your own words",
         noBack: true,
         onEnter: () => {
+          removedFromMap = removedFromMapCopy(
+            hasSelectedArea(),
+            insightCount() > 0
+          );
           clearAreasAndCharts();
           mapCleared = true;
           chatBaseline = chatMessageCount();
           answerBaseline = answeredCount();
           prefillChatInput(CHAT_DEMO_PROMPT);
         },
-        body: (
-          <>
-            <p>
-              You can also ask in the chat. We have written a question for you:
-            </p>
-            <Example>{CHAT_DEMO_PROMPT}</Example>
-            <p>Change Kenya to a place you care about. Then press send.</p>
-            <Tip>
-              The chips above the box go with your question. There is no area
-              chip now, so Horizon uses the place you type. Remove a chip with ×
-              to leave it out.
-            </Tip>
-            <DailyPromptsNote whenNoneLeft={NO_PROMPTS_IN_TOUR} />
-          </>
-        ),
+        body: <AskStepBody removed={() => removedFromMap} />,
         waitFor: () => sentMessageSince(chatBaseline),
-        hint: "Press send",
+        // With no prompts left the input is disabled: point at Skip step.
+        hint: () =>
+          promptsExhausted() ? `Click ${SKIP_STEP_LABEL}` : "Send the question",
       },
       {
         id: "answer",
@@ -444,23 +523,23 @@ export function createFirstRunTour(): UiTour {
         target: anchorTarget(TOUR_ANCHORS.chatPanel),
         placement: "right",
         padding: 4,
-        eyebrow: `Ask the ${AI_ASSISTANT_LABEL}`,
-        title: "Your answer",
+        eyebrow: "Your answer",
+        title: "Check the answer",
         noBack: true,
         // Next once the answer is done (or has failed), not while it streams.
         waitFor: () => chatSettledSince(chatBaseline),
         waitsOnApp: true,
         autoAdvance: false,
-        hint: "Horizon is working…",
+        hint: "Waiting for your answer…",
         skipIf: noQuestion,
-        body: <AnswerStepBody failed={answerFailed} />,
+        body: <AnswerStepBody failed={answerFailed} askedBack={askedBack} />,
       },
       {
         id: "ai-chart",
         target: anchorTarget(TOUR_ANCHORS.insightWorkspace),
         placement: "left",
         eyebrow: "Your answer",
-        title: "Check how the chart was made",
+        title: "Check the chart",
         // Optional because the copy only makes sense with the chart card on
         // screen: if the card doesn't show, the step is passed over rather
         // than describing a card the user can't see.
@@ -490,7 +569,7 @@ export function createFirstRunTour(): UiTour {
                 {
                   title: (
                     <>
-                      <SparkleIcon /> In the chat
+                      <SparkleIcon /> With the {AI_ASSISTANT_LABEL}
                     </>
                   ),
                   text: "Ask with an area, a dataset and a time range",
@@ -498,17 +577,21 @@ export function createFirstRunTour(): UiTour {
               ]}
             />
             <p>
-              The chips above the chat box carry into your next question. Remove
-              them with × to start fresh.
+              A chart you make manually uses no prompts and comes directly from
+              the source data. Use the {AI_ASSISTANT_LABEL} for other questions,
+              such as a comparison.
             </p>
             <p>
-              Next, try the checklist. It has six short tasks that you do
-              yourself: alerts, protected areas and concessions, your own areas,
-              comparing places, dashboards and PDFs, and satellite imagery.
+              Your next question includes the chips at the top of the chat box.
+              To remove a chip, click the × on the chip.
+            </p>
+            <p>
+              Next, try <b>{CHECKLIST_NAME}</b>. It has {CHECKLIST_ITEMS.length}{" "}
+              short tasks. You do each task yourself.
             </p>
             <Tip>
-              Something not working? Rate the answer with{" "}
-              <InlineIcon icon={ThumbsDownIcon} />, or{" "}
+              If something does not work, click{" "}
+              <InlineIcon icon={ThumbsDownIcon} /> on the answer, or{" "}
               <Link
                 href={PREVIEW_FEEDBACK_FORM}
                 target="_blank"
@@ -516,14 +599,13 @@ export function createFirstRunTour(): UiTour {
                 color="fg.link"
                 textDecoration="underline"
               >
-                send us a request
+                send us feedback
               </Link>
-              . To see this tour again, open the menu and choose{" "}
-              <b>{TAKE_THE_TOUR_LABEL}</b>.
+              . {TAKE_THE_TOUR_LATER}
             </Tip>
           </>
         ),
-        ctaLabel: "Open the checklist",
+        ctaLabel: `Open ${CHECKLIST_NAME}`,
         secondary: {
           label: "Close",
           onClick: (end) => {

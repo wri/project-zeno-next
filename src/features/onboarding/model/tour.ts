@@ -55,8 +55,11 @@ export interface TourStep<Body> {
    * step is passed over when the app is already done as it opens.
    */
   readonly waitsOnApp?: boolean;
-  /** Footer hint while waiting, e.g. "Click Datasets". */
-  readonly hint?: string;
+  /**
+   * Footer hint while waiting, e.g. "Click Datasets". A function is read as
+   * the step renders, for a hint that depends on app state.
+   */
+  readonly hint?: string | (() => string);
   /**
    * Pass over the step when this holds: as it opens, or later while it is
    * still waiting (e.g. answer steps once the answer has failed).

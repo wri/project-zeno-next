@@ -13,7 +13,9 @@ import {
   INTEGRATED_ALERTS_DATASET_ID,
   NET_FLUX_FEATURE_FLAG,
 } from "@/app/constants/datasets";
-import useChatStore from "@/app/store/chatStore";
+import { isQuotaExhausted } from "@/app/hooks/usePromptQuota";
+import useAuthStore from "@/app/store/authStore";
+import useChatStore, { isClarifyingTurn } from "@/app/store/chatStore";
 import useInsightStore from "@/app/store/insightStore";
 import { isAreaLayer, type Layer } from "@/app/store/layerManagerSlice";
 import useMapStore from "@/app/store/mapStore";
@@ -195,6 +197,23 @@ export const answerFailedSince = (baseline: number, answerBaseline: number) =>
   chatSettledSince(baseline) && answeredCount() === answerBaseline;
 
 /**
+ * The last question's turn ends by asking the user to choose (a nudge): the
+ * assistant asked a question back. The chat store's rule (`isClarifyingTurn`),
+ * which is also why `answerFailedSince` holds for such a turn.
+ */
+export const lastTurnAsksToChoose = () => {
+  const { messages } = useChatStore.getState();
+  const question = messages.findLastIndex((m) => m.type === "user");
+  return question !== -1 && isClarifyingTurn(messages.slice(question + 1));
+};
+
+/** Today's prompts are used up, so the chat input is disabled. */
+export const promptsExhausted = () => {
+  const { usedPrompts, totalPrompts } = useAuthStore.getState();
+  return isQuotaExhausted(usedPrompts, totalPrompts);
+};
+
+/**
  * The hand-run chart failed: nothing is loading any more and no chart
  * arrived. Meaningful once the user has accepted View analysis (check
  * `hasAcceptedViewAnalysis` first); accepting starts the load in the same
@@ -214,8 +233,9 @@ export const leadChartShowsWorking = () => {
 };
 
 /**
- * Reads app state in a step body and re-renders it when the chat or the
- * charts change. `read` must return a primitive (compared by value).
+ * Reads app state in a step body and re-renders it when the chat, the
+ * charts or the prompt allowance change. `read` must return a primitive
+ * (compared by value).
  */
 export function useAppValue<T extends boolean | number | string>(
   read: () => T
@@ -224,6 +244,7 @@ export function useAppValue<T extends boolean | number | string>(
     const stops = [
       useChatStore.subscribe(onChange),
       useInsightStore.subscribe(onChange),
+      useAuthStore.subscribe(onChange),
     ];
     return () => stops.forEach((stop) => stop());
   }, []);

@@ -6,13 +6,23 @@ import {
   MapPinIcon,
   StackSimpleIcon,
   type Icon,
+  type IconWeight,
 } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
 
 import { hasLimitedQuota, usePromptQuota } from "@/app/hooks/usePromptQuota";
 
-/** Small bordered chip that shows a UI icon inline in running text. */
-export function InlineIcon({ icon: IconComponent }: { icon: Icon }) {
+/**
+ * Small bordered chip that shows a UI icon inline in running text. `weight`
+ * matches an icon the app draws in another weight (the bold send arrow).
+ */
+export function InlineIcon({
+  icon: IconComponent,
+  weight,
+}: {
+  icon: Icon;
+  weight?: IconWeight;
+}) {
   return (
     <Box
       as="span"
@@ -29,7 +39,7 @@ export function InlineIcon({ icon: IconComponent }: { icon: Icon }) {
       bg="bg"
       fontSize="13px"
     >
-      <IconComponent />
+      <IconComponent weight={weight} />
     </Box>
   );
 }
@@ -72,7 +82,7 @@ const INGREDIENTS = [
   {
     icon: <MapPinIcon />,
     title: "An area",
-    text: "A country, region, park or your own shape",
+    text: "A country, region, park or your own area",
   },
   {
     icon: <StackSimpleIcon />,
@@ -141,11 +151,17 @@ export function SummaryPair({
   );
 }
 
+/** Said where a step asks for a question and the user has no prompts left. */
+export const NO_PROMPTS_TODAY =
+  "You have used all your daily prompts. You get new prompts tomorrow.";
+
 /**
- * What sending a question costs, from the allowance the server reports: one
- * of the user's daily prompts. Null when the allowance is effectively
- * unlimited (internal accounts), as the header meter treats it.
- * `whenNoneLeft` is the copy for a user with none left today.
+ * What sending a question costs: one of the user's daily prompts. Null when
+ * the allowance is effectively unlimited (internal accounts), as the header
+ * meter treats it. `whenNoneLeft` is the copy for a user with none left today.
+ *
+ * It names no allowance: the auth store holds a default until /api/auth/me
+ * answers, and has no sign of when the real one is in.
  */
 export function dailyPromptsNote(
   total: number,
@@ -154,7 +170,7 @@ export function dailyPromptsNote(
 ): string | null {
   if (!hasLimitedQuota(total)) return null;
   if (exhausted) return whenNoneLeft;
-  return `Sending this question uses 1 of your ${total} daily prompts.`;
+  return "Sending this question uses 1 of your daily prompts.";
 }
 
 /** `dailyPromptsNote` as a tip, live from the server's last count. */
