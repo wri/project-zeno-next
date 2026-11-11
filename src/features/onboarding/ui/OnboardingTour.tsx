@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 import useChatStore from "@/app/store/chatStore";
 import useMapStore from "@/app/store/mapStore";
@@ -15,9 +15,11 @@ import { readProgress, writeProgress } from "../lib/progress-storage";
 import useOnboardingStore, {
   selectTourActive,
 } from "../model/onboarding-store";
+import { closeExplorationPanels } from "./app-actions";
 import {
   ONBOARDING_FEATURE_FLAG,
   START_TOUR_PARAM,
+  routeChangeEndsTour,
   shouldStartTour,
 } from "./tour-entry";
 import { TourOverlay } from "./TourOverlay";
@@ -42,6 +44,7 @@ export function OnboardingTour() {
   const hydrated = useOnboardingStore((s) => s.hydrated);
   const firstVisit = useOnboardingStore((s) => s.progress.tourOutcome === null);
   const tourRunning = useOnboardingStore(selectTourActive);
+  const tourAbandoned = useOnboardingStore((s) => s.tourAbandoned);
   const conversationStarted = useChatStore((s) => s.currentThreadId !== null);
 
   // Load once, then persist every change.
@@ -62,6 +65,7 @@ export function OnboardingTour() {
       params: searchParams,
       firstVisit,
       conversationStarted,
+      tourAbandoned,
     });
     if (!start) return;
 
@@ -85,9 +89,45 @@ export function OnboardingTour() {
     startRequested,
     firstVisit,
     conversationStarted,
+    tourAbandoned,
     searchParams,
     router,
   ]);
 
-  return enabled ? <TourOverlay /> : null;
+  return enabled ? (
+    <>
+      <EndTourWhenLeft />
+      <TourOverlay />
+    </>
+  ) : null;
+}
+
+/** Stop the running tour (no outcome) and close the panels it opened. */
+function abandonRunningTour(): void {
+  const store = useOnboardingStore.getState();
+  if (!store.tour) return;
+  store.abandonTour();
+  closeExplorationPanels();
+}
+
+/**
+ * Ends a running tour, with no outcome, once it can't be followed: its
+ * overlay goes away (the window narrows to the mobile layout, the user leaves
+ * the map) or the page changes under it (see `routeChangeEndsTour`).
+ * Otherwise it stays "running" and keeps holding back the profile ask.
+ */
+function EndTourWhenLeft() {
+  const pathname = usePathname();
+  const previousPathname = useRef(pathname);
+
+  useEffect(() => {
+    const from = previousPathname.current;
+    previousPathname.current = pathname;
+    const threadId = useChatStore.getState().currentThreadId;
+    if (routeChangeEndsTour(from, pathname, threadId)) abandonRunningTour();
+  }, [pathname]);
+
+  useEffect(() => abandonRunningTour, []);
+
+  return null;
 }

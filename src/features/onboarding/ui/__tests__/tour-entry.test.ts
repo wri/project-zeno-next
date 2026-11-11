@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { shouldStartTour, startTourHref } from "../tour-entry";
+import {
+  routeChangeEndsTour,
+  shouldStartTour,
+  startTourHref,
+} from "../tour-entry";
 
 describe("startTourHref", () => {
   it("keeps the feature flags and adds the start param", () => {
@@ -25,6 +29,7 @@ describe("shouldStartTour", () => {
     pathname: "/app",
     firstVisit: true,
     conversationStarted: false,
+    tourAbandoned: false,
   };
   const at = (search: string, overrides: Partial<typeof fresh> = {}) =>
     shouldStartTour({
@@ -60,5 +65,36 @@ describe("shouldStartTour", () => {
     expect(at("?tour=1", { pathname: "/app/threads/t-1" })).toBe(false);
     expect(at("", { conversationStarted: true })).toBe(false);
     expect(at("?tour=1", { conversationStarted: true })).toBe(false);
+  });
+
+  it("doesn't restart by itself after a tour was abandoned this session", () => {
+    expect(at("", { tourAbandoned: true })).toBe(false);
+  });
+
+  it("still starts when asked after a tour was abandoned", () => {
+    expect(at("?tour=1", { tourAbandoned: true })).toBe(true);
+  });
+});
+
+describe("routeChangeEndsTour", () => {
+  it("keeps the tour on its own question's move to the new thread", () => {
+    expect(routeChangeEndsTour("/app", "/app/threads/t-1", "t-1")).toBe(false);
+  });
+
+  it("ends the tour on a move to any other thread", () => {
+    expect(routeChangeEndsTour("/app", "/app/threads/t-2", "t-1")).toBe(true);
+    expect(routeChangeEndsTour("/app", "/app/threads/t-1", null)).toBe(true);
+    expect(
+      routeChangeEndsTour("/app/threads/t-1", "/app/threads/t-2", "t-2")
+    ).toBe(true);
+  });
+
+  it("ends the tour when leaving a thread or the map", () => {
+    expect(routeChangeEndsTour("/app/threads/t-1", "/app", "t-1")).toBe(true);
+    expect(routeChangeEndsTour("/app", "/dashboards", null)).toBe(true);
+  });
+
+  it("keeps the tour when only the query changes", () => {
+    expect(routeChangeEndsTour("/app", "/app", null)).toBe(false);
   });
 });

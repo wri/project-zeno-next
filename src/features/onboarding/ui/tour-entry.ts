@@ -1,4 +1,9 @@
-/** How users get into the tour: the review flag and the start link. */
+/**
+ * How users get into the tour (the review flag and the start link), and
+ * which route changes take them out of it.
+ */
+
+import { threadHref } from "@/app/utils/threadNavigation";
 
 /** Hidden-feature flag gating the tour while it's in review: `?ff=onboarding`. */
 export const ONBOARDING_FEATURE_FLAG = "onboarding";
@@ -21,6 +26,8 @@ export interface TourStartContext {
   firstVisit: boolean;
   /** A question was already sent in this conversation (it has a thread). */
   conversationStarted: boolean;
+  /** A tour stopped without an outcome earlier in this page session. */
+  tourAbandoned: boolean;
 }
 
 /**
@@ -30,13 +37,33 @@ export interface TourStartContext {
  * "Take the tour" link) always starts it; a first visit starts it unless the
  * URL carries a `?prompt=`, which the page sends at once and whose answer the
  * tour would clear. No outcome is recorded then, so the next plain `/app`
- * visit starts it.
+ * visit starts it. Nor does a first visit start it again in a page session
+ * where it was abandoned (e.g. the window narrowed, or the user went Back):
+ * it would restart from the welcome by itself.
  */
 export function shouldStartTour(context: TourStartContext): boolean {
-  const { pathname, params, firstVisit, conversationStarted } = context;
+  const { pathname, params, firstVisit, conversationStarted, tourAbandoned } =
+    context;
   if (pathname !== NEW_CONVERSATION_PATH || conversationStarted) return false;
   if (params.has(START_TOUR_PARAM)) return true;
-  return firstVisit && !params.has(LANDING_PROMPT_PARAM);
+  return firstVisit && !tourAbandoned && !params.has(LANDING_PROMPT_PARAM);
+}
+
+/**
+ * Whether moving from pathname `from` to `to` ends a running tour (with no
+ * outcome): the page under it changed. All moves do except the one the
+ * tour's own question makes, when a new conversation's URL becomes its
+ * thread's once the answer has arrived.
+ */
+export function routeChangeEndsTour(
+  from: string,
+  to: string,
+  currentThreadId: string | null
+): boolean {
+  if (from === to) return false;
+  const toOwnThread =
+    currentThreadId !== null && to === threadHref(currentThreadId);
+  return !(from === NEW_CONVERSATION_PATH && toOwnThread);
 }
 
 /**
