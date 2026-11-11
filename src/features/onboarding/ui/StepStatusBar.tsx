@@ -17,7 +17,7 @@ import {
 import type { StepStatusTone } from "../model/step-policy";
 
 /** A step's status, or the note that the tour skipped a step. */
-export type StatusBarTone = Exclude<StepStatusTone, "none"> | "skipped";
+export type StatusBarTone = StepStatusTone | "skipped";
 
 /** The words a status bar shows, and how it looks. */
 export interface StatusLine {

@@ -145,12 +145,23 @@ function enterFrom(
   return { index: i, passed };
 }
 
-const useOnboardingStore = create<OnboardingState>((set, get) => ({
+/**
+ * The per-step state of a tour that is not running. Every field a step adds
+ * goes here, so the places that clear it cannot drift apart.
+ */
+const IDLE_TOUR = {
   tour: null,
   stepIndex: 0,
   history: [],
   passedOver: [],
   docked: false,
+} satisfies Pick<
+  OnboardingState,
+  "tour" | "stepIndex" | "history" | "passedOver" | "docked"
+>;
+
+const useOnboardingStore = create<OnboardingState>((set, get) => ({
+  ...IDLE_TOUR,
   checklistExpanded: false,
   checklistOpenedFrom: null,
   progress: EMPTY_PROGRESS,
@@ -224,11 +235,7 @@ const useOnboardingStore = create<OnboardingState>((set, get) => ({
     const { tour } = get();
     if (!tour) return;
     set({
-      tour: null,
-      stepIndex: 0,
-      history: [],
-      passedOver: [],
-      docked: false,
+      ...IDLE_TOUR,
       lastTourEnd: completed ? "completed" : "closed",
     });
     tour.onEnd?.(completed);
@@ -237,11 +244,7 @@ const useOnboardingStore = create<OnboardingState>((set, get) => ({
   abandonTour: () => {
     if (!get().tour) return;
     set({
-      tour: null,
-      stepIndex: 0,
-      history: [],
-      passedOver: [],
-      docked: false,
+      ...IDLE_TOUR,
       tourAbandoned: true,
       lastTourEnd: "abandoned",
     });

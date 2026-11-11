@@ -63,10 +63,9 @@ export interface TourStep<Body> {
   readonly waitsOnApp?: boolean;
   /**
    * The status while waiting: what the user does ("Click Datasets") on an
-   * action step, what the step waits for on a wait on the app. A function is
-   * read as the step renders, for a hint that depends on app state.
+   * action step, what the step waits for on a wait on the app.
    */
-  readonly hint?: string | (() => string);
+  readonly hint?: string;
   /**
    * The status once a wait on the app is over and the step shows Next, e.g.
    * "The answer is ready. Click Next." Default: a plain "Done".
@@ -87,6 +86,12 @@ export interface TourStep<Body> {
    * Polled; the status wins over every other.
    */
   readonly blockedIf?: () => boolean;
+  /**
+   * The status line while `blockedIf` holds. Required with it: the wording
+   * depends on what the step offers (Skip step on an action step, nothing on
+   * a guide).
+   */
+  readonly blockedNote?: string;
   /**
    * Pass over the step when this holds: as it opens, or later while it is
    * still waiting (e.g. answer steps once the answer has failed).

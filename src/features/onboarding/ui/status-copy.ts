@@ -10,7 +10,6 @@ import type { PassedOverStep } from "../model/onboarding-store";
 import {
   stepKind,
   stepStatusTone,
-  type StepKind,
   type StepStatusFacts,
   type StepStatusTone,
 } from "../model/step-policy";
@@ -22,18 +21,17 @@ export const SLOW_WAIT_STATUS = `This is taking a long time. You can wait, or cl
 export const DONE_MOVING_ON_STATUS = "Done. The next step opens soon.";
 export const FAILED_STATUS = `The ${AI_ASSISTANT_LABEL} could not finish this answer. The chat shows what went wrong.`;
 export const ASKED_STATUS = `The ${AI_ASSISTANT_LABEL} has a question for you.`;
-const NO_PROMPTS = "No daily prompts left.";
 
 interface StatusCopyInput {
-  readonly tone: Exclude<StepStatusTone, "none">;
-  readonly kind: StepKind;
+  readonly tone: StepStatusTone;
   readonly awaitingAction: boolean;
   readonly hint?: string;
   readonly readyHint?: string;
+  readonly blockedNote?: string;
 }
 
 function statusCopy(input: StatusCopyInput): string {
-  const { tone, kind, awaitingAction, hint, readyHint } = input;
+  const { tone, awaitingAction, hint, readyHint, blockedNote } = input;
   switch (tone) {
     case "turn":
       return `Your turn. ${sentence(hint ?? "Use the highlighted control")}`;
@@ -51,11 +49,9 @@ function statusCopy(input: StatusCopyInput): string {
     case "asked":
       return ASKED_STATUS;
     case "blocked":
-      // The one block today is a used-up allowance (see `blockedIf`). An
-      // action step offers Skip step; a guide just ends.
-      return kind === "action"
-        ? `${NO_PROMPTS} Click ${SKIP_STEP_LABEL}.`
-        : `${NO_PROMPTS} You can do this task tomorrow.`;
+      if (blockedNote === undefined)
+        throw new Error("A step with `blockedIf` needs a `blockedNote`.");
+      return blockedNote;
   }
 }
 
@@ -69,16 +65,15 @@ export function stepStatus(
 ): StatusLine | null {
   const kind = stepKind(step);
   const tone = stepStatusTone({ ...facts, kind });
-  if (tone === "none") return null;
-  const hint = typeof step.hint === "function" ? step.hint() : step.hint;
+  if (tone === null) return null;
   return {
     tone,
     text: statusCopy({
       tone,
-      kind,
       awaitingAction: facts.awaitingAction,
-      hint,
+      hint: step.hint,
       readyHint: step.readyHint,
+      blockedNote: step.blockedNote,
     }),
   };
 }

@@ -83,7 +83,7 @@ export function waitTick(step: TourStep<unknown>): WaitTick {
 /**
  * What the popover's status bar shows. One at a time, in this order of
  * precedence: `blocked` > `asked` > `failed` > `done` > `slow` > `wait` >
- * `turn` > `none`.
+ * `turn`. No status (null) on an info step.
  *  - `blocked`: the user cannot do what the step asks (`blockedIf`).
  *  - `asked`: the assistant asked the user a question back (`askedIf`).
  *  - `failed`: the step failed (`failedIf`).
@@ -92,7 +92,6 @@ export function waitTick(step: TourStep<unknown>): WaitTick {
  *    {@link APP_WAIT_SKIP_AFTER_MS}.
  *  - `turn`: the step waits for the user. The only status that pulses the
  *    highlight ring.
- *  - `none`: nothing to say (an info step).
  */
 export type StepStatusTone =
   | "blocked"
@@ -101,8 +100,7 @@ export type StepStatusTone =
   | "done"
   | "slow"
   | "wait"
-  | "turn"
-  | "none";
+  | "turn";
 
 export interface StepStatusFacts {
   readonly kind: StepKind;
@@ -117,14 +115,15 @@ export interface StepStatusFacts {
   readonly blocked: boolean;
 }
 
-export function stepStatusTone(facts: StepStatusFacts): StepStatusTone {
+/** The status tone, or null when there is nothing to say (an info step). */
+export function stepStatusTone(facts: StepStatusFacts): StepStatusTone | null {
   if (facts.blocked) return "blocked";
   if (facts.asked) return "asked";
   if (facts.failed) return "failed";
   if (facts.completing) return "done";
-  if (!facts.awaitingAction) return "none";
+  if (!facts.awaitingAction) return null;
   if (facts.kind === "app-wait") return facts.waitedLong ? "slow" : "wait";
-  return facts.kind === "action" ? "turn" : "none";
+  return facts.kind === "action" ? "turn" : null;
 }
 
 /**

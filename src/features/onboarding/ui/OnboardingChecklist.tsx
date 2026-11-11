@@ -134,6 +134,8 @@ function Checklist() {
   useEffect(
     () =>
       useOnboardingStore.subscribe((next, prev) => {
+        // The store keeps the same array when nothing was ticked.
+        if (next.progress.checklistDone === prev.progress.checklistDone) return;
         const text = tickAnnouncement(
           prev,
           next,

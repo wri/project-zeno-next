@@ -12,6 +12,8 @@ import type { ReactNode } from "react";
 
 import { hasLimitedQuota, usePromptQuota } from "@/app/hooks/usePromptQuota";
 
+import { SKIP_STEP_LABEL } from "./TourPopover";
+
 /**
  * Small bordered chip that shows a UI icon inline in running text. `weight`
  * matches an icon the app draws in another weight (the bold send arrow).
@@ -150,6 +152,11 @@ export function SummaryPair({
     </Grid>
   );
 }
+
+/** The status of a step that needs a prompt when none are left. */
+export const BLOCKED_NOTE_SKIPPABLE = `No daily prompts left. Click ${SKIP_STEP_LABEL}.`;
+export const BLOCKED_NOTE_TOMORROW =
+  "No daily prompts left. You can do this task tomorrow.";
 
 /** Said where a step asks for a question and the user has no prompts left. */
 export const NO_PROMPTS_TODAY =

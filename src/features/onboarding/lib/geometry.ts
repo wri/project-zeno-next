@@ -77,10 +77,15 @@ export interface PopoverPlacement {
 
 const SIDE_ORDER: readonly Side[] = ["right", "bottom", "left", "top"];
 
+/** Space between a popover and its target, px. */
+const GAP = 14;
+/** The least space between a popover and the viewport edge, px. */
+const MARGIN = 12;
+
 /**
  * Place a popover of `size` next to `target`, trying `preferred` first and
  * then the other sides; centres it when there's no target or no side fits.
- * The result is clamped inside the viewport with `margin`. `pointAt`, a
+ * The result is clamped inside the viewport with `MARGIN`. `pointAt`, a
  * control inside a large target: the popover still sits beside the whole
  * target, but lines up with that control and its arrow points at it.
  */
@@ -89,13 +94,11 @@ export function placePopover(
   size: Size,
   viewport: Size,
   preferred?: Side,
-  pointAt?: Rect | null,
-  gap = 14,
-  margin = 12
+  pointAt?: Rect | null
 ): PopoverPlacement {
   const centred: PopoverPlacement = {
-    x: Math.max(margin, (viewport.width - size.width) / 2),
-    y: Math.max(margin, (viewport.height - size.height) / 2),
+    x: Math.max(MARGIN, (viewport.width - size.width) / 2),
+    y: Math.max(MARGIN, (viewport.height - size.height) / 2),
     side: null,
     arrowOffset: 0,
   };
@@ -107,28 +110,28 @@ export function placePopover(
   const aimY = aim.y + aim.height / 2;
   const candidates: Record<Side, { x: number; y: number }> = {
     right: {
-      x: target.x + target.width + gap,
+      x: target.x + target.width + GAP,
       y: aimY - size.height / 2,
     },
     left: {
-      x: target.x - gap - size.width,
+      x: target.x - GAP - size.width,
       y: aimY - size.height / 2,
     },
     bottom: {
       x: aimX - size.width / 2,
-      y: target.y + target.height + gap,
+      y: target.y + target.height + GAP,
     },
     top: {
       x: aimX - size.width / 2,
-      y: target.y - gap - size.height,
+      y: target.y - GAP - size.height,
     },
   };
 
   const fits = (side: Side): boolean => {
     const { x, y } = candidates[side];
     return side === "left" || side === "right"
-      ? x >= margin && x + size.width <= viewport.width - margin
-      : y >= margin && y + size.height <= viewport.height - margin;
+      ? x >= MARGIN && x + size.width <= viewport.width - MARGIN
+      : y >= MARGIN && y + size.height <= viewport.height - MARGIN;
   };
 
   const order = preferred
@@ -141,13 +144,13 @@ export function placePopover(
     Math.max(lo, Math.min(hi, v));
   const x = clamp(
     candidates[side].x,
-    margin,
-    viewport.width - size.width - margin
+    MARGIN,
+    viewport.width - size.width - MARGIN
   );
   const y = clamp(
     candidates[side].y,
-    margin,
-    viewport.height - size.height - margin
+    MARGIN,
+    viewport.height - size.height - MARGIN
   );
   const arrowMin = 16;
   const arrowOffset =
@@ -188,13 +191,12 @@ const overlapArea = (a: Rect, b: Rect): number =>
 export function dockPlacement(
   hole: Rect | null,
   size: Size,
-  viewport: Size,
-  margin = 12
+  viewport: Size
 ): PopoverPlacement {
-  const left = margin;
-  const right = Math.max(margin, viewport.width - size.width - margin);
-  const top = margin;
-  const bottom = Math.max(margin, viewport.height - size.height - margin);
+  const left = MARGIN;
+  const right = Math.max(MARGIN, viewport.width - size.width - MARGIN);
+  const top = MARGIN;
+  const bottom = Math.max(MARGIN, viewport.height - size.height - MARGIN);
   const corners = [
     { x: right, y: bottom },
     { x: left, y: bottom },

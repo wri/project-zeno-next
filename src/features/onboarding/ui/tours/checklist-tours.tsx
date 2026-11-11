@@ -41,6 +41,7 @@ import {
 } from "../app-actions";
 import { TOUR_ANCHORS, catalogCardAnchor } from "@/src/shared/lib/tour-anchors";
 import {
+  BLOCKED_NOTE_TOMORROW,
   DailyPromptsNote,
   Example,
   InlineIcon,
@@ -219,6 +220,7 @@ const ITEMS: Record<ChecklistItemId, Omit<ChecklistItem, "id">> = {
         ),
         // The status says when the task can be done instead.
         blockedIf: promptsExhausted,
+        blockedNote: BLOCKED_NOTE_TOMORROW,
       },
     ],
   },
@@ -322,6 +324,7 @@ const ITEMS: Record<ChecklistItemId, Omit<ChecklistItem, "id">> = {
           </>
         ),
         blockedIf: promptsExhausted,
+        blockedNote: BLOCKED_NOTE_TOMORROW,
       },
     ],
   },

@@ -127,11 +127,11 @@ describe("stepStatusTone", () => {
   });
 
   it("says nothing on an info step, or once a wait is over with nothing to report", () => {
-    expect(stepStatusTone(facts({ kind: "info", awaitingAction: false }))).toBe(
-      "none"
-    );
+    expect(
+      stepStatusTone(facts({ kind: "info", awaitingAction: false }))
+    ).toBeNull();
     // Back to an action already done, before the step's own facts change.
-    expect(stepStatusTone(facts({ awaitingAction: false }))).toBe("none");
+    expect(stepStatusTone(facts({ awaitingAction: false }))).toBeNull();
   });
 
   it("is the user's turn on an action, a wait on a wait on the app", () => {

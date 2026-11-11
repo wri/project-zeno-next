@@ -216,7 +216,6 @@ function ActiveTour({ tour, stepIndex }: { tour: UiTour; stepIndex: number }) {
   // The step the user moved aside to work in its target. Any move to another
   // step (or Back) opens it in the full view again.
   const docked = useOnboardingStore((s) => s.docked);
-  const setDocked = useOnboardingStore((s) => s.setDocked);
 
   // Clicking the dimmed area nudges the popover instead of doing nothing.
   const shakePopover = useCallback(() => {
@@ -295,8 +294,6 @@ function ActiveTour({ tour, stepIndex }: { tour: UiTour; stepIndex: number }) {
         pointAt={inner}
         viewport={viewport}
         popoverRef={popoverRef}
-        docked={docked}
-        onDock={setDocked}
         onTurnChange={setUserTurn}
         onAnnounce={announce}
       />
@@ -314,8 +311,6 @@ function StepView({
   pointAt,
   viewport,
   popoverRef,
-  docked,
-  onDock,
   onTurnChange,
   onAnnounce,
 }: {
@@ -329,14 +324,14 @@ function StepView({
   pointAt: Rect | null;
   viewport: Size;
   popoverRef: RefObject<HTMLDivElement | null>;
-  /** Moved aside to a corner while the user works in the target. */
-  docked: boolean;
-  onDock: (docked: boolean) => void;
   /** The status is "Your turn" (the ring pulses). */
   onTurnChange: (userTurn: boolean) => void;
   onAnnounce: (input: AnnouncementInput) => void;
 }) {
   const { found, missingSince } = target;
+  // Moved aside to a corner while the user works in the target.
+  const docked = useOnboardingStore((s) => s.docked);
+  const onDock = useOnboardingStore((s) => s.setDocked);
   // Whether the action was already done when the step opened (e.g. the user
   // came Back to it): then show Next instead of waiting. The store has already
   // run the step's `onEnter`, so this sees the prepared state.
@@ -370,7 +365,7 @@ function StepView({
     [advance, stepIndex]
   );
   /** Move on without the user having seen this step (Back skips it). */
-  const skip = useCallback(
+  const passOver = useCallback(
     () => advance(true, stepIndex),
     [advance, stepIndex]
   );
@@ -390,7 +385,7 @@ function StepView({
       const tick = waitTick(step);
       if (tick === "wait") return;
       window.clearInterval(poll);
-      if (tick === "skip") skip();
+      if (tick === "skip") passOver();
       else if (tick === "advance") {
         setAdvancing(true);
         advanceTimer = window.setTimeout(next, advanceDelayMs(step));
@@ -400,7 +395,7 @@ function StepView({
       window.clearInterval(poll);
       window.clearTimeout(advanceTimer);
     };
-  }, [doneAtEntry, step, next, skip]);
+  }, [doneAtEntry, step, next, passOver]);
 
   // A wait on the app (not on the user) offers Skip step after a while, so a
   // slow or stuck answer never holds the user in the tour.
@@ -500,7 +495,7 @@ function StepView({
     )
       return;
     const check = () => {
-      if (step.skipIf?.()) return skip();
+      if (step.skipIf?.()) return passOver();
       if (
         missingTargetExpired({
           now: Date.now(),
@@ -508,12 +503,12 @@ function StepView({
           graceMs: MISSING_TARGET_GRACE_MS,
         })
       )
-        skip();
+        passOver();
     };
     check();
     const poll = window.setInterval(check, WAIT_POLL_MS);
     return () => window.clearInterval(poll);
-  }, [docked, step, found, missingSince, skip]);
+  }, [docked, step, found, missingSince, passOver]);
 
   // The first press inside the cut-out moves the step aside (docks it), so
   // the user can work in the target with the map clear. Capture phase: it

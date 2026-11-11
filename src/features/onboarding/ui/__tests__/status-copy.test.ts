@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { StepStatusFacts } from "../../model/step-policy";
 import type { TourStep } from "../../model/tour";
 import { skippedNotice, stepStatus } from "../status-copy";
+import { BLOCKED_NOTE_SKIPPABLE, BLOCKED_NOTE_TOMORROW } from "../tour-content";
 
 const yes = () => true;
 const no = () => false;
@@ -43,7 +44,11 @@ describe("stepStatus", () => {
     const cases: [TourStep<unknown>, Partial<typeof waiting>, string][] = [
       [action, {}, "Your turn. Click Datasets."],
       [action, { completing: true }, "Done. The next step opens soon."],
-      [action, { blocked: true }, "No daily prompts left. Click Skip step."],
+      [
+        { ...action, blockedNote: BLOCKED_NOTE_SKIPPABLE },
+        { blocked: true },
+        "No daily prompts left. Click Skip step.",
+      ],
       [appWait, {}, "Waiting for your chart."],
       [
         appWait,
@@ -66,7 +71,7 @@ describe("stepStatus", () => {
         "The AI Assistant has a question for you.",
       ],
       [
-        info,
+        { ...info, blockedNote: BLOCKED_NOTE_TOMORROW },
         { awaitingAction: false, blocked: true },
         "No daily prompts left. You can do this task tomorrow.",
       ],
@@ -87,21 +92,13 @@ describe("stepStatus", () => {
     );
   });
 
-  it("reads a hint that depends on app state as it renders", () => {
-    let place = "Kenya";
-    const step = { ...action, hint: () => `Search for ${place}` };
-    expect(stepStatus(step, waiting)?.text).toBe(
-      "Your turn. Search for Kenya."
-    );
-    place = "Peru";
-    expect(stepStatus(step, waiting)?.text).toBe("Your turn. Search for Peru.");
-  });
-
   it("carries the tone the bar draws and the ring pulses for", () => {
     expect(stepStatus(action, waiting)?.tone).toBe("turn");
     expect(
-      stepStatus({ ...action, blockedIf: yes }, { ...waiting, blocked: true })
-        ?.tone
+      stepStatus(
+        { ...action, blockedIf: yes, blockedNote: BLOCKED_NOTE_SKIPPABLE },
+        { ...waiting, blocked: true }
+      )?.tone
     ).toBe("blocked");
   });
 });

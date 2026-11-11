@@ -69,6 +69,7 @@ import {
 } from "../app-actions";
 import { TOUR_ANCHORS, catalogCardAnchor } from "@/src/shared/lib/tour-anchors";
 import {
+  BLOCKED_NOTE_SKIPPABLE,
   DailyPromptsNote,
   Example,
   Ingredients,
@@ -525,6 +526,7 @@ export function createFirstRunTour(): UiTour {
         // With no prompts left the input is disabled: the status points at
         // Skip step.
         blockedIf: promptsExhausted,
+        blockedNote: BLOCKED_NOTE_SKIPPABLE,
       },
       {
         id: "answer",
