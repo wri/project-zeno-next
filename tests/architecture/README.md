@@ -4,6 +4,7 @@ The architecture **fitness function** — see [ADR 0010](../../docs/architecture
 
 - `dependency-cruiser.config.ts` — the FSD segment-direction rules for the `analysis` slice.
 - `architecture.test.ts` — runs them via dependency-cruiser's `cruise()` API, plus a source scan for global `fetch`/`XMLHttpRequest` (which the import graph can't see).
+- `tour-contract.test.ts` — the onboarding tour's contract with the UI it points at, checked statically (TypeScript AST, no components imported): each `TOUR_ANCHORS` id is set where `ANCHOR_HOMES` says and used by a step; step targets go through `anchorTarget`; a `tourAnchorId` prop is forwarded; the catalogue row the tour switches on is listed by default; every label constant the tour copy imports (from `@/app/components/…` or another feature) is still rendered by its component, and the copy never repeats it as text; the onboarding slice is in no import cycle. When it fails because you moved an anchor or renamed a label, check the tour step it names, then update the table or the constant.
 
 Run with `pnpm test:arch` (also runs in CI).
 
