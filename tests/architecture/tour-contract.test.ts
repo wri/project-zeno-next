@@ -716,7 +716,7 @@ describe("tour contract: imports", () => {
       parsedOut.summary.violations;
     expect(
       violations.map((v) => `${v.from} → ${v.to}`),
-      "Import cycle through the onboarding feature (put the label in a file the component imports, as chatInputLabels.ts does)"
+      "Import cycle through the onboarding feature (import labels through the feature's barrel or the component's own module)"
     ).toEqual([]);
   }, 30_000);
 });

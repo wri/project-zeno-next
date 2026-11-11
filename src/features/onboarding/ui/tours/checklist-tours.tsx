@@ -16,22 +16,19 @@ import {
 import useOnboardingStore from "../../model/onboarding-store";
 import { AI_ASSISTANT_LABEL } from "@/app/ChatPanelHeader";
 import { AREA_ACTION_LABELS } from "@/app/components/AreaActionBar";
-import { ANALYSES_LABEL } from "@/app/components/chatInputLabels";
+import { ANALYSES_LABEL } from "@/app/components/ChatInput";
 import {
   DATASET_CARD_BY_ID,
   INTEGRATED_ALERTS_DATASET_ID,
 } from "@/app/constants/datasets";
 import { selectLayerOptions, type LayerId } from "@/app/types/map";
 import { viewAnalysisNudgeLabel } from "@/src/features/analysis";
-// The leaf module, not the feature's barrel: through the barrel this import
-// would close a cycle (the dashboard page mounts the chat, which mounts the
-// tour).
 import {
   ADD_TO_DASHBOARD_LABEL,
   DASHBOARD_EXPORT_LABEL,
   SAVE_AS_PDF_LABEL,
   createDashboardNudgeLabel,
-} from "@/src/features/dashboards/ui/dashboard-labels";
+} from "@/src/features/dashboards";
 import {
   clearDatasetLayers,
   closeExplorationPanels,
