@@ -2,7 +2,7 @@
 
 - **Status:** Proposed (used as the base for implementing PZB-1533)
 - **Date:** 2026-10-27
-- **Updated:** 2026-10-29 (product feedback from AJ; review comments; project-zeno PR #885); 2026-11-03 (tech team: in-app opt-out per dashboard; Option D chosen); 2026-11-04 (F3: endpoint confirmed); 2026-11-05 (tech team, after Solomon's comment on project-zeno PR #890: in-app becomes the monitoring state, the `subscriptions` table holds email only, eligibility is stored; Justin: a dashboard that becomes ineligible loses its email subscription)
+- **Updated:** 2026-10-29 (product feedback from AJ; review comments; project-zeno PR #885); 2026-11-03 (tech team: in-app opt-out per dashboard; Option D chosen); 2026-11-04 (F3: endpoint confirmed); 2026-11-05 (tech team, after Solomon's comment on project-zeno PR #890: in-app becomes the monitoring state, the `subscriptions` table holds email only, eligibility is stored; Justin: a dashboard that becomes ineligible loses its email subscription); 2026-11-10 (Solomon's review of project-zeno PR #890: "mode" renamed "channel", the response key `alerts` renamed `subscriptions`)
 - **Implemented in:** project-zeno PR #890 (backend) and project-zeno-next PR #804 (frontend)
 
 **Story:** PZB-1533 (email toggle), part of the email alerts MVP (PZB-1531).
@@ -49,11 +49,12 @@ After Solomon's comment on project-zeno PR #890 (2026-11-05, https://github.com/
 12. **Subscriptions live in their own `subscriptions` table (Option D), one row per mode.** The dashboard concept may change, but the area of interest is stable. Keeping subscriptions in their own table, tied to the AOI, lets other parts change without migrating subscriptions. Fields: `dashboard_id: UUID`, `subscription_id: UUID`, `aoi_id: UUID`, `user_id: str`, `dataset: Dataset`, `mode: Enum["email", "in-app"]`. In-app and email are separate modes. Decided by the tech team, 2026-11-03. **The `in-app` mode is superseded 2026-11-05 by decisions 13 and 15: `mode` is `email` only.** The table and Option D stand.
 13. **In-app is the dashboard's default monitoring state, not a delivery channel or a subscription mode.** This story has no user toggle for it. Decided by the tech team, 2026-11-05.
 14. **Email does not require in-app, and the coupling rule is removed.** No write has an in-app guard. Decided by the tech team, 2026-11-05.
-15. **The `subscriptions` table holds only email rows for now. A row means email is on; turning email off deletes it.** The unique key stays `(dashboard_id, dataset, mode)`. Decided by the tech team, 2026-11-05.
+15. **The `subscriptions` table holds only email rows for now. A row means email is on; turning email off deletes it.** The unique key stays `(dashboard_id, dataset, mode)`, now `(dashboard_id, dataset, channel)` (decision 20). Decided by the tech team, 2026-11-05.
 16. **Eligibility is stored: `dashboards.eligible_for_subscription`, NOT NULL DEFAULT false.** It is true when the dashboard has at least one integrated-alerts widget: an insight with an integrated-alerts chart, or a map or alerts widget whose dataset is integrated alerts (clarified by Willian Viana, 2026-11-06). All area types qualify: admin areas, protected areas, key biodiversity areas, indigenous lands, custom areas and concessions. The GADM-only rule was for an earlier delivery. Decided by the tech team, 2026-11-05.
 17. **The backend recomputes eligibility when a dashboard is created or its widgets change:** a widget added or removed, a widget's dataset changed, a template section added, or a section removed with its widgets. The frontend never sets it. Deleting a dashboard needs no update. Decided by the tech team, 2026-11-05.
 18. **A dashboard that becomes ineligible loses its email subscription.** The same recompute deletes the email row; the owner has to turn email on again if the widget comes back. Decided by Justin, 2026-11-05. Resolves F1.
 19. **Eligibility is in every dashboard response.** It is shown to every viewer (inferred: the decision doesn't say who sees it). The frontend uses it to decide whether to show the email toggle. The backend checks it before saving a subscription: `409` when the dashboard is not eligible, and nothing is saved. Decided by the tech team, 2026-11-05.
+20. **Naming: "alerts" is the dataset, "subscription" is the feature, "channel" is how it is delivered, and what gets sent is a "notification email".** The `mode` column, enum and request field are renamed `channel` / `channels`, and the dashboard response key `alerts` is renamed `subscriptions`. Earlier decisions keep the word "mode" for the record; read it as "channel". Requested by Solomon in his review of project-zeno PR #890 (https://github.com/wri/project-zeno/pull/890#discussion_r4525377323), 2026-11-10.
 
 ### Conditional decisions
 
@@ -109,16 +110,16 @@ PR #885 implements only the read side (next section). The endpoint, verb and bod
 
 ### Endpoint
 
-`PUT /api/dashboards/{dashboard_id}/subscriptions` (confirmed 2026-11-04, F3), signed in (`require_auth`). The body is the desired state for the listed datasets; an empty `modes` turns email off:
+`PUT /api/dashboards/{dashboard_id}/subscriptions` (confirmed 2026-11-04, F3), signed in (`require_auth`). The body is the desired state for the listed datasets; an empty `channels` unsubscribes (decision 20):
 
 ```json
 {
   "datasets": ["integrated_alerts"],
-  "modes": ["email"]
+  "channels": ["email"]
 }
 ```
 
-- Only `integrated_alerts` is accepted for now (decision 7), and only the `email` mode (decisions 13 and 15).
+- Only `integrated_alerts` is accepted for now (decision 7), and only the `email` channel (decisions 13, 15 and 20).
 - The write checks eligibility (decision 19), then adds or deletes the email row (decision 15). The unsubscribe endpoint deletes the same row (inferred).
 
 ### Response
@@ -126,16 +127,16 @@ PR #885 implements only the read side (next section). The endpoint, verb and bod
 The endpoint returns the updated dashboard. Every dashboard response (detail, list, and the write responses) gains one field, keyed by dataset, that is **present only when the viewer is the owner or a superuser** (decision 2) and omitted otherwise (inferred):
 
 ```json
-"alerts": {
+"subscriptions": {
   "integrated_alerts": {
-    "modes": ["email"],
+    "channels": ["email"],
     "last_updated": "2026-10-27T10:00:00",
     "last_updated_source": "app"
   }
 }
 ```
 
-- `modes` is `["email"]` when email is on and `[]` when it is off.
+- `channels` is `["email"]` when subscribed to email and `[]` when not. The key was `alerts` before decision 20.
 - Every dashboard response also gains a top-level `eligible_for_subscription: bool`, for every viewer (decision 19).
 - `last_updated_source` says how the last change was made: `'app'` when the owner changed it in the app, `'unsubscribe'` when it came from an unsubscribe link in an email (decision 6). It tells "the user turned it off" from "the user unsubscribed from an email". A never-set subscription has no time and no source. Where these are stored is F-d.
 - Public dashboards are readable by anyone (code: `get_dashboard`, `project-zeno/src/api/routers/dashboards.py:224-250`), so the check is on the viewer being the owner or a superuser when building the response, not on read access. `_expanded_response` already receives the viewer (code: `dashboards.py:159`).
@@ -146,7 +147,7 @@ The endpoint returns the updated dashboard. Every dashboard response (detail, li
 | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Not signed in                                                                           | `401`, from `require_auth` (code).                                                                                                                                                                                                                                                                                                                                                             |
 | Signed in but not the owner, **including admins and superusers**                        | `404 "Dashboard not found"`, the same response as a missing dashboard, following the existing rule that not-found and not-owned are indistinguishable (code: `_get_owned_dashboard`, `dashboards.py:140-148`). The existing helper can't be reused as is, because it lets admins and superusers through (code: `_is_privileged`, `dashboards.py:88-92`); decision 1 needs an owner-only check. |
-| A dataset or mode other than `integrated_alerts` / `email`, including `in-app`          | `422`: invalid input. Nothing is written (inferred).                                                                                                                                                                                                                                                                                                                                           |
+| A dataset or channel other than `integrated_alerts` / `email`, including `in-app`       | `422`: invalid input. Nothing is written (inferred).                                                                                                                                                                                                                                                                                                                                           |
 | Turning email **on** for a dashboard that is not eligible (no integrated-alerts widget) | `409` with a readable `detail`: the request conflicts with the dashboard's state, not its input (review comment). The router already returns 409 for a state conflict (code: duplicate insight widget, `dashboards.py:466`). Nothing is written (decision 19).                                                                                                                                 |
 | Turning email **off**, eligible or not                                                  | Always allowed (inferred). The email row is deleted.                                                                                                                                                                                                                                                                                                                                           |
 | The last integrated-alerts widget removed while email is on                             | The recompute sets `eligible_for_subscription` to false and deletes the email row (decision 18).                                                                                                                                                                                                                                                                                               |
@@ -165,7 +166,7 @@ After any write through this path:
 
 ### How the write is stored
 
-Insert the `email` row to turn email on, delete it to turn email off (decision 15). Unique key `(dashboard_id, dataset, mode)`.
+Insert the `email` row to turn email on, delete it to turn email off (decision 15). Unique key `(dashboard_id, dataset, channel)` (decision 20).
 
 ## Subscriptions read by the pipeline (PR #885)
 
@@ -279,7 +280,7 @@ Stores `subscription_id` and has room for more datasets and modes without a migr
 
 ## Decision
 
-**Option D, a `subscriptions` table** (decision 12). One row per dashboard, dataset and mode: `subscription_id` PK, `dashboard_id` → `dashboards.id ON DELETE CASCADE` plus the ORM cascade, `aoi_id` UUID, `user_id`, `dataset`, `mode`. A new dataset or mode is a new row, not a migration. Since 2026-11-05 the table holds only email rows, and eligibility is a stored column on `dashboards` (decisions 13 to 19). Open point: F-d.
+**Option D, a `subscriptions` table** (decision 12). One row per dashboard, dataset and mode: `subscription_id` PK, `dashboard_id` → `dashboards.id ON DELETE CASCADE` plus the ORM cascade, `aoi_id` UUID, `user_id`, `dataset`, `mode`. A new dataset or mode is a new row, not a migration. Since 2026-11-05 the table holds only email rows, and eligibility is a stored column on `dashboards` (decisions 13 to 19). Since 2026-11-10 the `mode` column is named `channel` (decision 20). Open point: F-d.
 
 Reason (tech team, 2026-11-03): the dashboard concept may change, but the area of interest is stable, so keeping subscriptions in their own table, tied to the AOI, lets other parts change without migrating subscriptions.
 
@@ -310,7 +311,7 @@ Reason (tech team, 2026-11-03): the dashboard concept may change, but the area o
 5. ~~**jterry64: must `subscription_id` be stored?**~~ **Resolved 2026-11-03:** yes, Option D stores it.
 6. ~~**PZB-1452 owner and jterry64: should in-app become a contact type?**~~ **Resolved 2026-11-03:** in-app is a mode (decision 12). Superseded 2026-11-05: in-app is not a mode (decision 13).
 7. ~~**Pipeline owner: what is the dedup key, and is it one marker per dashboard?**~~ **Resolved during Coffee + code:** the pipeline will have `aoi_id`, `dashboard_id` and `subscription_id`. Sent markers, if any, go on the subscription row.
-8. ~~**F3, jterry64: endpoint path, verb and body (`modes`).**~~ **Resolved 2026-11-04:** `PUT /api/dashboards/{dashboard_id}/subscriptions` with `{"datasets": [...], "modes": [...]}` as the desired state.
+8. ~~**F3, jterry64: endpoint path, verb and body (`modes`).**~~ **Resolved 2026-11-04:** `PUT /api/dashboards/{dashboard_id}/subscriptions` with `{"datasets": [...], "modes": [...]}` as the desired state. Renamed `channels` on 2026-11-10 (decision 20).
 9. ~~**F-a, mode:**~~ **Resolved 2026-11-05:** `list_active` returns email rows only, so `Subscription` needs no `mode` (decision 15).
 10. ~~**F-b, `aoi_id`:**~~ **Resolved in project-zeno PR #890:** the stored `aoi_id` is `dashboard_aois.id`; the pipeline gets the area's own id and type.
 11. ~~**F-c, `user_email`:**~~ **Resolved in project-zeno PR #890:** joined from `users`.
