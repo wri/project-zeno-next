@@ -70,7 +70,8 @@ import {
   SummaryPair,
   Tip,
 } from "../tour-content";
-import { FIRST_RUN_TOUR_ID, TAKE_THE_TOUR_LABEL } from "../tour-entry";
+import { FIRST_RUN_TOUR_ID } from "../../model/tour-entry";
+import { TAKE_THE_TOUR_LABEL } from "../tour-entry";
 import { anchorTarget } from "../../model/tour";
 import type { UiTour } from "../types";
 

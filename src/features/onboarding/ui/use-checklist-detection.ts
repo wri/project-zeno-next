@@ -8,7 +8,7 @@ import {
   subscribeToChecklistEvidence,
   type DetectedChecklistItemId,
 } from "./app-actions";
-import { FIRST_RUN_TOUR_ID } from "./tour-entry";
+import { FIRST_RUN_TOUR_ID } from "../model/tour-entry";
 
 /**
  * One watcher's check: ticks every detectable task whose evidence shows a

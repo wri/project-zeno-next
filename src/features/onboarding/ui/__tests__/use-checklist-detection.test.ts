@@ -7,7 +7,7 @@ import useInsightStore from "@/app/store/insightStore";
 import { EMPTY_PROGRESS } from "../../model/onboarding-progress";
 import useOnboardingStore from "../../model/onboarding-store";
 import type { Tour } from "../../model/tour";
-import { FIRST_RUN_TOUR_ID } from "../tour-entry";
+import { FIRST_RUN_TOUR_ID } from "../../model/tour-entry";
 import { createChecklistWatcher } from "../use-checklist-detection";
 
 const imagery = (id: string): Layer => ({

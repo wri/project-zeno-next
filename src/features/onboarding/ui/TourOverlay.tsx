@@ -30,7 +30,8 @@ import {
 import type { Rect, Size } from "../model/tour";
 import { POPOVER_WIDTH_PX, TourPopover } from "./TourPopover";
 import type { UiTour, UiTourStep } from "./types";
-import { useTargetRect, type TargetState } from "./use-target-rect";
+import type { TargetState } from "../lib/target-state";
+import { useTargetRect } from "./use-target-rect";
 
 /** Above the chat panel (1100) and Chakra overlays used inside the app. */
 const OVERLAY_Z_INDEX = 2100;

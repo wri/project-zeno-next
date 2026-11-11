@@ -10,7 +10,7 @@ import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
 import useOnboardingStore, {
   selectTourActive,
 } from "../model/onboarding-store";
-import { ONBOARDING_FEATURE_FLAG } from "./tour-entry";
+import { ONBOARDING_FEATURE_FLAG } from "../model/tour-entry";
 import { CHECKLIST_ITEMS, createChecklistTour } from "./tours/checklist-tours";
 
 const NAVY = "#131E47";

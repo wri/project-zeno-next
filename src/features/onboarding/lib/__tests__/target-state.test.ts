@@ -4,7 +4,7 @@ import {
   nextTargetState,
   targetStateForStep,
   type MeasuredTargetState,
-} from "../use-target-rect";
+} from "../target-state";
 
 const rect = { x: 10, y: 20, width: 100, height: 40 };
 const other = { x: 300, y: 20, width: 100, height: 40 };

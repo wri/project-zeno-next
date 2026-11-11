@@ -21,7 +21,7 @@ import {
   START_TOUR_PARAM,
   routeChangeEndsTour,
   shouldStartTour,
-} from "./tour-entry";
+} from "../model/tour-entry";
 import { TourOverlay } from "./TourOverlay";
 import { createFirstRunTour } from "./tours/first-run-tour";
 import { useChecklistDetection } from "./use-checklist-detection";
