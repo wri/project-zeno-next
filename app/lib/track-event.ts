@@ -99,6 +99,15 @@ export type OnboardingTourEvent =
       item_id: string;
       /** "detected": the app saw it done. "manual": the user said so. */
       ticked_by: "detected" | "manual";
+    }
+  | {
+      /** The Get started checklist panel opened. */
+      event: "checklist_opened";
+      /**
+       * "header": the user clicked Get started in the header. "tour_end":
+       * Open Get started on the first-run tour's last step.
+       */
+      source: "header" | "tour_end";
     };
 
 type TrackableEvent = NudgeClickEvent | FrontDoorEvent | OnboardingTourEvent;

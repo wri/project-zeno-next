@@ -3,8 +3,8 @@
  * predicates that tell an action step the user has done the thing, and the
  * evidence that ticks checklist tasks. It holds nearly all of the tour's
  * coupling to app stores, so that is easy to find when those stores change.
- * Two components also read a store directly: `OnboardingTour` (chat and map
- * stores) and `OnboardingChecklist` (sidebar store, for where to sit).
+ * One component also reads app stores directly: `OnboardingTour` (chat and
+ * map stores).
  */
 import { useCallback, useSyncExternalStore } from "react";
 

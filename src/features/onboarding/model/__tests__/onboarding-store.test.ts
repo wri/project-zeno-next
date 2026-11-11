@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { EMPTY_PROGRESS } from "../onboarding-progress";
-import useOnboardingStore, { selectTourActive } from "../onboarding-store";
+import useOnboardingStore, {
+  selectChecklistShown,
+  selectTourActive,
+} from "../onboarding-store";
 import type { Tour } from "../tour";
 
 const step = (id: string) => ({ id, title: id, body: null });
@@ -18,7 +21,8 @@ beforeEach(() => {
     tour: null,
     stepIndex: 0,
     history: [],
-    checklistExpanded: true,
+    checklistExpanded: false,
+    checklistOpenedFrom: null,
     progress: EMPTY_PROGRESS,
     hydrated: false,
     tourAbandoned: false,
@@ -134,6 +138,61 @@ describe("onboarding store", () => {
   it("dismisses the checklist", () => {
     state().dismissChecklist();
     expect(state().progress.checklistDismissed).toBe(true);
+  });
+
+  describe("the checklist panel", () => {
+    it("starts closed", () => {
+      expect(useOnboardingStore.getInitialState()).toMatchObject({
+        checklistExpanded: false,
+        checklistOpenedFrom: null,
+      });
+    });
+
+    it("opens with what opened it, and closes", () => {
+      state().openChecklist("header");
+      expect(state()).toMatchObject({
+        checklistExpanded: true,
+        checklistOpenedFrom: "header",
+      });
+      state().closeChecklist();
+      expect(state().checklistExpanded).toBe(false);
+      state().openChecklist("tour_end");
+      expect(state().checklistOpenedFrom).toBe("tour_end");
+    });
+
+    it("closes when a tour starts, and stays closed when it ends", () => {
+      state().openChecklist("header");
+      state().startTour(tour());
+      expect(state().checklistExpanded).toBe(false);
+      state().endTour(false);
+      expect(state().checklistExpanded).toBe(false);
+    });
+  });
+
+  describe("selectChecklistShown", () => {
+    const loaded = (over: Partial<typeof EMPTY_PROGRESS> = {}) =>
+      state().hydrate({ ...EMPTY_PROGRESS, tourOutcome: "skipped", ...over });
+
+    it("shows once stored progress has a tour outcome", () => {
+      expect(selectChecklistShown(state())).toBe(false); // not loaded yet
+      state().hydrate(EMPTY_PROGRESS);
+      expect(selectChecklistShown(state())).toBe(false); // no tour yet
+      loaded();
+      expect(selectChecklistShown(state())).toBe(true);
+    });
+
+    it("hides while a tour runs", () => {
+      loaded();
+      state().startTour(tour());
+      expect(selectChecklistShown(state())).toBe(false);
+      state().endTour(false);
+      expect(selectChecklistShown(state())).toBe(true);
+    });
+
+    it("hides once the user hid the checklist", () => {
+      loaded({ checklistDismissed: true });
+      expect(selectChecklistShown(state())).toBe(false);
+    });
   });
 
   it("ignores a move made from a step the tour has already left", () => {

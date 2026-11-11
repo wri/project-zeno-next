@@ -20,7 +20,7 @@ import {
   InfoIcon,
 } from "@phosphor-icons/react";
 import { Tooltip } from "./ui/tooltip";
-import { useState, useEffect, useId, useRef } from "react";
+import { useState, useEffect, useId, useRef, type ReactNode } from "react";
 import PreviewInfoPanel from "./PreviewInfoPanel";
 import PromptQuotaMeter from "./PromptQuotaMeter";
 import WhatsNewModal from "./WhatsNewModal";
@@ -47,7 +47,15 @@ const DISCLAIMER_STORAGE_KEY = "gnw_disclaimer_dismissed_v2";
  * with the PREVIEW badge and the Map / Dashboards tabs on the left; state
  * items (quota meter, What's new) and the avatar on the right.
  */
-function PageHeader() {
+function PageHeader({
+  actions,
+}: {
+  /**
+   * A page's own controls (desktop only), first among the state items. A
+   * slot, so the header imports no feature that puts something here.
+   */
+  actions?: ReactNode;
+}) {
   const { userEmail, isAuthenticated } = useAuthStore();
   const setMenuOpen = useSidebarStore((s) => s.setMenuOpen);
   const { currentThreadId } = useChatStore();
@@ -268,6 +276,7 @@ function PageHeader() {
       </Flex>
       <Flex gap="4" alignItems="center" hideBelow="md">
         {/* State items (quota meter, What's new) sit left of the avatar. */}
+        {actions}
         <PromptQuotaMeter />
         {whatsNewUnread && (
           <Tooltip content="What's new" showArrow>

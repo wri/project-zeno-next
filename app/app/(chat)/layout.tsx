@@ -106,7 +106,6 @@ export default function DashboardLayout({
           <ChatPanel />
         </Box>
       </Box>
-      <OnboardingChecklist />
     </Box>
   );
 
@@ -185,7 +184,8 @@ export default function DashboardLayout({
 
       {!isMobile && (
         <Box>
-          <PageHeader />
+          {/* Get started: the map page only, desktop only like the tour. */}
+          <PageHeader actions={<OnboardingChecklist />} />
           {/* Rebrand announcement sits full-width directly below the header and
               supersedes the preview DisclaimerPanel while it is showing.
               Desktop-only by design: it lives in the desktop header cell and

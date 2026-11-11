@@ -1,40 +1,39 @@
 "use client";
 
-import { Box, Button, Flex, Text } from "@chakra-ui/react";
-import { CaretDownIcon, CheckIcon } from "@phosphor-icons/react";
+import { Box, Button, Flex, Popover, Portal, Text } from "@chakra-ui/react";
+import { CheckCircleIcon, CheckIcon } from "@phosphor-icons/react";
 
-import { getMapControlsLeftPx } from "@/app/explorationLayout";
-import useSidebarStore from "@/app/store/sidebarStore";
 import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
 
+import { checklistSummary, type ChecklistSummary } from "../lib/checklist-view";
+import type { ChecklistItemId } from "../model/onboarding-progress";
 import useOnboardingStore, {
-  selectTourActive,
+  selectChecklistShown,
 } from "../model/onboarding-store";
 import { ONBOARDING_FEATURE_FLAG } from "../model/tour-entry";
 import { CHECKLIST_NAME } from "./tour-entry";
 import { CHECKLIST_ITEMS, createChecklistTour } from "./tours/checklist-tours";
 
-const NAVY = "#131E47";
-/** SVG strokes can't take Chakra tokens, so read the theme's CSS variable. */
-const LIME_VAR = "var(--chakra-colors-lime-400)";
-const SUCCESS = "#2F8F4E";
-/** Above the map, below the catalog column (1095) so open panels cover it. */
-const CHECKLIST_Z_INDEX = 1090;
+/** SVG strokes can't take Chakra tokens, so read the theme's CSS variables. */
+const RING_TRACK = "var(--chakra-colors-border-emphasized)";
+const RING_FILL = "var(--chakra-colors-primary-solid)";
+/** The panel's top band; the arrow to the button takes its colour. */
+const BAND_BG = "primary.900";
 const CHECKLIST_INTRO =
   "Click a task for a short guide. Then do the task yourself. Horizon ticks it when you have done it.";
 
-/** Small progress ring for the collapsed pill. */
+/** Small progress ring for the header button. */
 function ProgressRing({ ratio }: { ratio: number }) {
   const r = 8;
   const circumference = 2 * Math.PI * r;
   return (
-    <svg width="18" height="18" viewBox="0 0 20 20" aria-hidden>
+    <svg width="16" height="16" viewBox="0 0 20 20" aria-hidden>
       <circle
         cx="10"
         cy="10"
         r={r}
         fill="none"
-        stroke="rgba(255,255,255,.25)"
+        stroke={RING_TRACK}
         strokeWidth="3"
       />
       <circle
@@ -42,7 +41,7 @@ function ProgressRing({ ratio }: { ratio: number }) {
         cy="10"
         r={r}
         fill="none"
-        stroke={LIME_VAR}
+        stroke={RING_FILL}
         strokeWidth="3"
         strokeDasharray={circumference}
         strokeDashoffset={circumference * (1 - ratio)}
@@ -54,9 +53,10 @@ function ProgressRing({ ratio }: { ratio: number }) {
 
 /**
  * The "Get started" checklist shown after the first-run tour: tasks the
- * user does in the app. Each item runs a short guide to where the task
- * starts; it is ticked when the app shows the task was done
- * (`useChecklistDetection`), or by the user for a task the app can't see.
+ * user does in the app. A header button (map page, desktop) opens it in a
+ * panel. Each item runs a short guide to where the task starts; it is ticked
+ * when the app shows the task was done (`useChecklistDetection`), or by the
+ * user for a task the app can't see. Mount it in the header's `actions`.
  */
 export function OnboardingChecklist() {
   const enabled = useFeatureFlag(ONBOARDING_FEATURE_FLAG);
@@ -64,88 +64,95 @@ export function OnboardingChecklist() {
 }
 
 function Checklist() {
-  const hydrated = useOnboardingStore((s) => s.hydrated);
-  const progress = useOnboardingStore((s) => s.progress);
+  // Hidden while a tour runs, so the panel can't cover the tour's popover.
+  const shown = useOnboardingStore(selectChecklistShown);
   const expanded = useOnboardingStore((s) => s.checklistExpanded);
-  const tourRunning = useOnboardingStore(selectTourActive);
-  const setExpanded = useOnboardingStore((s) => s.setChecklistExpanded);
-  const dismiss = useOnboardingStore((s) => s.dismissChecklist);
-  const startTour = useOnboardingStore((s) => s.startTour);
+  const done = useOnboardingStore((s) => s.progress.checklistDone);
+  const openChecklist = useOnboardingStore((s) => s.openChecklist);
+  const closeChecklist = useOnboardingStore((s) => s.closeChecklist);
 
-  const isChatFullSize = useSidebarStore((s) => s.isChatFullSize);
-  const columnOpen = useSidebarStore(
-    (s) => s.dataCatalogOpen || s.areasPanelOpen || s.insightsPanelOpen
+  const summary = checklistSummary(CHECKLIST_ITEMS, done, CHECKLIST_NAME);
+
+  // The popover stays mounted while its button is hidden: it moves focus
+  // into the panel only when it sees the panel open, and the first-run
+  // tour's last step opens it as the button appears. Not lazily mounted
+  // either: it names the panel from a title it finds as it mounts.
+  return (
+    <Popover.Root
+      open={shown && expanded}
+      onOpenChange={(e) =>
+        e.open ? openChecklist("header") : closeChecklist()
+      }
+      positioning={{ placement: "bottom-end" }}
+    >
+      <Popover.Trigger asChild>
+        <Button
+          display={shown ? undefined : "none"}
+          size="xs"
+          variant="outline"
+          h="32px"
+          ps="2"
+          pe="2.5"
+          gap="1.5"
+          rounded="sm"
+          borderColor="border.emphasized"
+          bg="bg"
+          color="primary.900"
+          fontWeight="medium"
+          _hover={{ bg: "bg.subtle" }}
+          _expanded={{ bg: "primary.25", borderColor: "primary.200" }}
+          aria-label={summary.buttonLabel}
+        >
+          {summary.allDone ? (
+            <Box as="span" display="inline-flex" color="fg.success">
+              <CheckCircleIcon size={16} weight="fill" />
+            </Box>
+          ) : (
+            <ProgressRing ratio={summary.ratio} />
+          )}
+          {/* Between md and lg the header is tight: the ring and count only. */}
+          <Box as="span" hideBelow="lg">
+            {CHECKLIST_NAME}
+          </Box>
+          <Text as="span" fontFamily="mono" color="fg.muted">
+            {summary.count}
+          </Text>
+        </Button>
+      </Popover.Trigger>
+      <Portal>
+        <Popover.Positioner>
+          <Popover.Content w="320px">
+            <Popover.Arrow css={{ "--arrow-background": `colors.${BAND_BG}` }}>
+              <Popover.ArrowTip borderColor={BAND_BG} />
+            </Popover.Arrow>
+            <ChecklistPanel summary={summary} done={done} />
+          </Popover.Content>
+        </Popover.Positioner>
+      </Portal>
+    </Popover.Root>
   );
+}
 
-  if (
-    !hydrated ||
-    tourRunning ||
-    progress.tourOutcome === null ||
-    progress.checklistDismissed
-  )
-    return null;
-
-  const done = new Set(progress.checklistDone);
-  const doneCount = CHECKLIST_ITEMS.filter((i) => done.has(i.id)).length;
-  const total = CHECKLIST_ITEMS.length;
-  const ratio = doneCount / total;
-  const left = getMapControlsLeftPx(isChatFullSize, columnOpen);
-
-  if (!expanded) {
-    return (
-      <Button
-        position="absolute"
-        left={`${left}px`}
-        bottom="4"
-        zIndex={CHECKLIST_Z_INDEX}
-        bg={NAVY}
-        color="white"
-        rounded="full"
-        size="sm"
-        gap="2"
-        boxShadow="0 4px 16px rgba(0,0,0,0.2)"
-        _hover={{ bg: NAVY, opacity: 0.92 }}
-        onClick={() => setExpanded(true)}
-      >
-        <ProgressRing ratio={ratio} />
-        {CHECKLIST_NAME} · {doneCount}/{total}
-      </Button>
-    );
-  }
+function ChecklistPanel({
+  summary,
+  done,
+}: {
+  summary: ChecklistSummary;
+  done: readonly ChecklistItemId[];
+}) {
+  const startTour = useOnboardingStore((s) => s.startTour);
+  const dismiss = useOnboardingStore((s) => s.dismissChecklist);
+  const ticked = new Set(done);
 
   return (
-    <Box
-      position="absolute"
-      left={`${left}px`}
-      bottom="4"
-      zIndex={CHECKLIST_Z_INDEX}
-      w="300px"
-      bg="bg"
-      rounded="lg"
-      overflow="hidden"
-      boxShadow="0 6px 24px rgba(0,0,0,0.18)"
-      role="region"
-      aria-label={CHECKLIST_NAME}
-    >
-      <Box bg={NAVY} color="white" px="4" pt="3" pb="2.5">
-        <Flex justify="space-between" align="center">
-          <Text fontWeight="semibold" fontSize="sm">
-            {CHECKLIST_NAME}
-          </Text>
-          <Button
-            size="2xs"
-            variant="ghost"
-            color="white"
-            _hover={{ bg: "whiteAlpha.200" }}
-            aria-label="Minimise checklist"
-            onClick={() => setExpanded(false)}
-          >
-            <CaretDownIcon />
-          </Button>
-        </Flex>
-        <Text fontSize="xs" opacity={0.75}>
-          {doneCount === total ? "All done." : `${doneCount} of ${total} done`}
-        </Text>
+    <>
+      <Box bg={BAND_BG} color="white" px="4" pt="3" pb="2.5" roundedTop="l3">
+        <Popover.Title fontWeight="semibold" fontSize="sm">
+          {CHECKLIST_NAME}
+        </Popover.Title>
+        <Popover.Description fontSize="xs" opacity={0.75}>
+          {summary.status}
+        </Popover.Description>
         <Text fontSize="xs" opacity={0.75}>
           {CHECKLIST_INTRO}
         </Text>
@@ -159,14 +166,14 @@ function Checklist() {
           <Box
             h="100%"
             bg="lime.400"
-            w={`${ratio * 100}%`}
+            w={`${summary.ratio * 100}%`}
             transition="width 0.4s"
           />
         </Box>
       </Box>
       <Box as="ul" p="1.5" listStyleType="none">
         {CHECKLIST_ITEMS.map((item) => {
-          const isDone = done.has(item.id);
+          const isDone = ticked.has(item.id);
           return (
             <li key={item.id}>
               <Button
@@ -179,6 +186,7 @@ function Checklist() {
                 py="2"
                 fontWeight="normal"
                 fontSize="sm"
+                // Starting the guide closes this panel (see `startTour`).
                 onClick={() => startTour(createChecklistTour(item))}
               >
                 <Flex
@@ -189,9 +197,9 @@ function Checklist() {
                   align="center"
                   justify="center"
                   borderWidth="1.5px"
-                  borderColor={isDone ? SUCCESS : "border.emphasized"}
-                  bg={isDone ? SUCCESS : "transparent"}
-                  color="white"
+                  borderColor={isDone ? "green.solid" : "border.emphasized"}
+                  bg={isDone ? "green.solid" : "transparent"}
+                  color="green.contrast"
                 >
                   {isDone && <CheckIcon size={12} weight="bold" />}
                 </Flex>
@@ -221,6 +229,6 @@ function Checklist() {
           Hide checklist
         </Button>
       </Flex>
-    </Box>
+    </>
   );
 }

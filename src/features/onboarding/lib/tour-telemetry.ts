@@ -22,6 +22,8 @@ export type TourTelemetryState = Pick<
   | "hydrated"
   | "lastTickedBy"
   | "docked"
+  | "checklistExpanded"
+  | "checklistOpenedFrom"
 >;
 
 export interface TourTelemetryProbe {
@@ -116,6 +118,17 @@ function checklistTicks(
     }));
 }
 
+/** The checklist panel opened with this change, and what opened it. */
+function checklistOpened(
+  prev: TourTelemetryState,
+  next: TourTelemetryState
+): OnboardingTourEvent[] {
+  if (prev.checklistExpanded || !next.checklistExpanded) return [];
+  return next.checklistOpenedFrom
+    ? [{ event: "checklist_opened", source: next.checklistOpenedFrom }]
+    : [];
+}
+
 /**
  * The telemetry events for one store change, in the order they happened.
  * One store change can pass over several steps (and `startTour` or the last
@@ -127,7 +140,10 @@ export function tourTelemetryEvents(
   next: TourTelemetryState,
   probe: TourTelemetryProbe
 ): OnboardingTourEvent[] {
-  const events: OnboardingTourEvent[] = checklistTicks(prev, next);
+  const events: OnboardingTourEvent[] = [
+    ...checklistTicks(prev, next),
+    ...checklistOpened(prev, next),
+  ];
 
   // Skip step: its own store change, made while the step is still current.
   const current = next.tour?.steps[next.stepIndex];

@@ -284,7 +284,7 @@ function AiChartStepBody() {
 export function createFirstRunTour(): UiTour {
   let chatBaseline = 0;
   let answerBaseline = 0;
-  let collapseChecklistOnFinish = false;
+  let leaveChecklistClosed = false;
   let mapCleared = false;
   let removedFromMap: string | null = null;
 
@@ -309,9 +309,9 @@ export function createFirstRunTour(): UiTour {
   const finish = (outcome: TourOutcome) => {
     const store = useOnboardingStore.getState();
     store.recordTourOutcome(outcome);
-    store.setChecklistExpanded(
-      outcome === "completed" && !collapseChecklistOnFinish
-    );
+    // Starting the tour closed the panel; only Open Get started opens it.
+    if (outcome === "completed" && !leaveChecklistClosed)
+      store.openChecklist("tour_end");
     if (!mapCleared) return;
     closeExplorationPanels();
     restoreMapDefaults();
@@ -629,7 +629,7 @@ export function createFirstRunTour(): UiTour {
         secondary: {
           label: "Close",
           onClick: (end) => {
-            collapseChecklistOnFinish = true;
+            leaveChecklistClosed = true;
             end(true);
           },
         },

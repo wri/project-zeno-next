@@ -37,6 +37,8 @@ const state = (over: Partial<TourTelemetryState> = {}): TourTelemetryState => ({
   hydrated: true,
   lastTickedBy: null,
   docked: false,
+  checklistExpanded: false,
+  checklistOpenedFrom: null,
   ...over,
 });
 
@@ -347,6 +349,27 @@ describe("checklist ticks", () => {
   });
 });
 
+describe("checklist panel", () => {
+  const panel = (
+    checklistExpanded: boolean,
+    checklistOpenedFrom: TourTelemetryState["checklistOpenedFrom"] = null
+  ) => state({ tour: null, checklistExpanded, checklistOpenedFrom });
+
+  it("reports the panel opening, with what opened it", () => {
+    expect(events(panel(false), panel(true, "header"))).toEqual([
+      { event: "checklist_opened", source: "header" },
+    ]);
+    expect(events(panel(false, "header"), panel(true, "tour_end"))).toEqual([
+      { event: "checklist_opened", source: "tour_end" },
+    ]);
+  });
+
+  it("reports nothing when it closes or stays open", () => {
+    expect(events(panel(true, "header"), panel(false, "header"))).toEqual([]);
+    expect(events(panel(true, "header"), panel(true, "header"))).toEqual([]);
+  });
+});
+
 describe("tour telemetry with the onboarding store", () => {
   beforeEach(() =>
     useOnboardingStore.setState({
@@ -359,6 +382,8 @@ describe("tour telemetry with the onboarding store", () => {
       lastTourEnd: null,
       userSkips: 0,
       lastTickedBy: null,
+      checklistExpanded: false,
+      checklistOpenedFrom: null,
     })
   );
 
@@ -532,6 +557,21 @@ describe("tour telemetry with the onboarding store", () => {
       item_id: "dashboard-pdf",
       ticked_by: "manual",
     });
+  });
+
+  it("reports the checklist opened from the header, once", () => {
+    const sent = record(() => {
+      store().openChecklist("header");
+      store().openChecklist("header");
+      store().closeChecklist();
+    });
+    expect(sent).toEqual([{ event: "checklist_opened", source: "header" }]);
+  });
+
+  it("reports nothing when a tour starts over an open checklist", () => {
+    store().openChecklist("header");
+    const sent = record(() => store().startTour(tour(step("a"))));
+    expect(names(sent)).toEqual(["tour_started", "tour_step_viewed"]);
   });
 
   it("reports a last step the tour passes over on the way out", () => {

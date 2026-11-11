@@ -13,6 +13,12 @@ import type { Tour, TourStep } from "./tour";
 /** How a tour ended: finished, closed by the user, or stopped with no outcome. */
 export type TourEnd = "completed" | "closed" | "abandoned";
 
+/**
+ * What opened the checklist panel: its header button, or the first-run
+ * tour's last step.
+ */
+export type ChecklistOpenSource = "header" | "tour_end";
+
 /** A step the tour passed over by itself (not the user's Skip step). */
 export interface PassedOverStep {
   readonly stepId: string;
@@ -43,7 +49,13 @@ export interface OnboardingState {
    * click took away from one that never showed.
    */
   docked: boolean;
+  /**
+   * The checklist panel is open. Starting a tour closes it, so it does not
+   * open again by itself when the tour ends.
+   */
   checklistExpanded: boolean;
+  /** What opened the checklist panel last, for telemetry. */
+  checklistOpenedFrom: ChecklistOpenSource | null;
   progress: OnboardingProgress;
   hydrated: boolean;
   /**
@@ -91,7 +103,8 @@ export interface OnboardingState {
     ids: readonly ChecklistItemId[],
     by: ChecklistTickedBy
   ) => void;
-  setChecklistExpanded: (expanded: boolean) => void;
+  openChecklist: (from: ChecklistOpenSource) => void;
+  closeChecklist: () => void;
   dismissChecklist: () => void;
 }
 
@@ -138,7 +151,8 @@ const useOnboardingStore = create<OnboardingState>((set, get) => ({
   history: [],
   passedOver: [],
   docked: false,
-  checklistExpanded: true,
+  checklistExpanded: false,
+  checklistOpenedFrom: null,
   progress: EMPTY_PROGRESS,
   hydrated: false,
   tourAbandoned: false,
@@ -152,7 +166,14 @@ const useOnboardingStore = create<OnboardingState>((set, get) => ({
   // look at the step already sees the state the set-up produced.
   startTour: (tour) => {
     const { index: stepIndex, passed } = enterFrom(tour.steps, 0);
-    set({ tour, stepIndex, history: [], passedOver: passed, docked: false });
+    set({
+      tour,
+      stepIndex,
+      history: [],
+      passedOver: passed,
+      docked: false,
+      checklistExpanded: false,
+    });
     if (stepIndex >= tour.steps.length) get().endTour(true);
   },
 
@@ -246,7 +267,10 @@ const useOnboardingStore = create<OnboardingState>((set, get) => ({
           };
     }),
 
-  setChecklistExpanded: (expanded) => set({ checklistExpanded: expanded }),
+  openChecklist: (from) =>
+    set({ checklistExpanded: true, checklistOpenedFrom: from }),
+
+  closeChecklist: () => set({ checklistExpanded: false }),
 
   dismissChecklist: () =>
     set((state) => ({
@@ -257,5 +281,15 @@ const useOnboardingStore = create<OnboardingState>((set, get) => ({
 /** A tour (the first-run tour or a checklist walkthrough) is running. */
 export const selectTourActive = (state: OnboardingState): boolean =>
   state.tour !== null;
+
+/**
+ * The checklist is offered (its header button shows): the first-run tour has
+ * an outcome, the user has not hidden the checklist, and no tour runs.
+ */
+export const selectChecklistShown = (state: OnboardingState): boolean =>
+  state.hydrated &&
+  state.tour === null &&
+  state.progress.tourOutcome !== null &&
+  !state.progress.checklistDismissed;
 
 export default useOnboardingStore;

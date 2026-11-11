@@ -34,6 +34,7 @@ import type { TourStep } from "../../model/tour";
 import { checklistEvidence, isDatasetOnMap } from "../app-actions";
 import { skippedNotice, stepStatus } from "../status-copy";
 import { NO_PROMPTS_TODAY, dailyPromptsNote } from "../tour-content";
+import { CHECKLIST_NAME } from "../tour-entry";
 import {
   CHECKLIST_ITEMS,
   GUIDE_DONE_LABEL,
@@ -737,6 +738,40 @@ describe("first-run tour flow", () => {
     });
     // Skipped at the welcome.
     run(() => state().endTour(false));
+    vi.unstubAllGlobals();
+  });
+
+  it("opens Get started from its last step, and only from its button", () => {
+    // Ending puts the default dataset back, which reads the URL's flags.
+    vi.stubGlobal("window", { location: { search: "" } });
+    useOnboardingStore.setState({ checklistOpenedFrom: null });
+    const end = (how: () => void) => {
+      state().startTour(createFirstRunTour());
+      how();
+      return {
+        open: state().checklistExpanded,
+        from: state().checklistOpenedFrom,
+      };
+    };
+    // Close on the last step, and Skip the tour at the welcome.
+    expect(
+      end(() => {
+        goTo("done");
+        current()!.secondary!.onClick(state().endTour);
+      })
+    ).toEqual({ open: false, from: null });
+    expect(end(() => current()!.secondary!.onClick(state().endTour))).toEqual({
+      open: false,
+      from: null,
+    });
+    // Its main button.
+    expect(
+      end(() => {
+        goTo("done");
+        expect(current()!.ctaLabel).toBe(`Open ${CHECKLIST_NAME}`);
+        state().advance(false, state().stepIndex);
+      })
+    ).toEqual({ open: true, from: "tour_end" });
     vi.unstubAllGlobals();
   });
 
