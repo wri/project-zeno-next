@@ -145,6 +145,58 @@ export function placePopover(
   return { x, y, side, arrowOffset };
 }
 
+/** Whether `point` lies in `rect` (edges included); never in no rect. */
+export function pointInRect(
+  point: { readonly x: number; readonly y: number },
+  rect: Rect | null
+): boolean {
+  return (
+    !!rect &&
+    point.x >= rect.x &&
+    point.x <= rect.x + rect.width &&
+    point.y >= rect.y &&
+    point.y <= rect.y + rect.height
+  );
+}
+
+/** The area two rects share, px². */
+const overlapArea = (a: Rect, b: Rect): number =>
+  Math.max(0, Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x)) *
+  Math.max(0, Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y));
+
+/**
+ * Where a docked popover of `size` sits: the first corner of bottom-right,
+ * bottom-left, top-right and top-left that keeps it off the cut-out, so the
+ * target stays in view while the user works. When every corner meets the
+ * cut-out, the one that covers least of it (a cut-out that meets the
+ * bottom-left and top-right corners always meets the top-left one too, so
+ * top-left is mostly this fallback). No arrow: it points at nothing.
+ */
+export function dockPlacement(
+  hole: Rect | null,
+  size: Size,
+  viewport: Size,
+  margin = 12
+): PopoverPlacement {
+  const left = margin;
+  const right = Math.max(margin, viewport.width - size.width - margin);
+  const top = margin;
+  const bottom = Math.max(margin, viewport.height - size.height - margin);
+  const corners = [
+    { x: right, y: bottom },
+    { x: left, y: bottom },
+    { x: right, y: top },
+    { x: left, y: top },
+  ];
+  const covered = (c: { x: number; y: number }) =>
+    hole ? overlapArea({ ...c, ...size }, hole) : 0;
+  // Strictly less: on a tie the earlier corner in the order wins.
+  const { x, y } = corners.reduce((best, c) =>
+    covered(c) < covered(best) ? c : best
+  );
+  return { x, y, side: null, arrowOffset: 0 };
+}
+
 /** Shallow equality for rects, so render loops can skip no-op updates. */
 export function sameRect(a: Rect | null, b: Rect | null): boolean {
   if (a === b) return true;

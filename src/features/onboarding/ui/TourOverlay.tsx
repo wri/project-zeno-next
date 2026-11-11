@@ -10,8 +10,10 @@ import {
 } from "react";
 
 import {
+  dockPlacement,
   padRect,
   placePopover,
+  pointInRect,
   veilClipPath,
   type PopoverPlacement,
 } from "../lib/geometry";
@@ -24,8 +26,11 @@ import {
   SKIPPED_NOTICE_MS,
   advanceDelayMs,
   canSkipWhileWaiting,
+  docksOnTargetClick,
+  isTypingTarget,
   missingTargetExpired,
   stepKind,
+  waitStartedAgain,
   waitTick,
 } from "../model/step-policy";
 import type { Rect, Size } from "../model/tour";
@@ -46,6 +51,7 @@ const OVERLAY_Z_INDEX = 2100;
 const WAIT_POLL_MS = 250;
 const DEFAULT_PADDING_PX = 6;
 const NEVER = () => false;
+const ALWAYS = () => true;
 
 /** A gentle side-to-side shake: "the tour is still open, look here". */
 const SHAKE_KEYFRAMES: Keyframe[] = [
@@ -60,7 +66,9 @@ const SPOTLIGHT_EASE = "0.4s cubic-bezier(.3,.7,.2,1)";
 
 /**
  * One blurred, dimmed layer with the spotlight cut out by `clip-path`, so the
- * hole moves as a single shape: no seams, gaps or doubled-up darkness.
+ * hole moves as a single shape: no seams, gaps or doubled-up darkness. The
+ * cut-out lets presses through to the target; the rest of the veil catches
+ * them (and nudges the popover) until the step is docked.
  */
 const VEIL_CSS = {
   position: "fixed" as const,
@@ -68,7 +76,7 @@ const VEIL_CSS = {
   background: "rgba(15, 20, 32, 0.52)",
   backdropFilter: "blur(3px) saturate(0.75)",
   pointerEvents: "auto" as const,
-  transition: `clip-path ${SPOTLIGHT_EASE}`,
+  transition: `clip-path ${SPOTLIGHT_EASE}, opacity 0.2s`,
   animation: "onboardingVeilIn 0.25s ease-out",
   "@media (prefers-reduced-motion: reduce)": {
     transition: "none",
@@ -168,6 +176,14 @@ function ActiveTour({ tour, stepIndex }: { tour: UiTour; stepIndex: number }) {
       setAnnouncement((prev) => nextAnnouncement(prev, input)),
     []
   );
+  // The step the user moved aside to work in its target. Kept by step, so
+  // the next step (or Back) opens in the full view again.
+  const [dockedStep, setDockedStep] = useState<string | null>(null);
+  const docked = dockedStep === stepKey;
+  const setDocked = useCallback(
+    (on: boolean) => setDockedStep(on ? stepKey : null),
+    [stepKey]
+  );
 
   // Clicking the dimmed area nudges the popover instead of doing nothing.
   const shakePopover = useCallback(() => {
@@ -190,7 +206,7 @@ function ActiveTour({ tour, stepIndex }: { tour: UiTour; stepIndex: number }) {
   };
   // Only for "Your turn", and only on this step's own target: not on the
   // previous one, during the hold.
-  const pulse = target.found && userTurn && !reduceMotion;
+  const pulse = target.found && userTurn && !docked && !reduceMotion;
 
   return (
     <Box
@@ -202,13 +218,18 @@ function ActiveTour({ tour, stepIndex }: { tour: UiTour; stepIndex: number }) {
       <style>{KEYFRAMES}</style>
       <Box
         css={VEIL_CSS}
-        style={{ clipPath: veilClipPath(hole, viewport) }}
+        style={{
+          clipPath: veilClipPath(hole, viewport),
+          // Docked: gone, and the whole app takes clicks again.
+          opacity: docked ? 0 : 1,
+          pointerEvents: docked ? "none" : undefined,
+        }}
         onClick={shakePopover}
         aria-hidden
       />
       <Box
         css={pulse ? RING_PULSE_CSS : RING_CSS}
-        style={{ ...rectStyle(ringRect), opacity: hole ? 1 : 0 }}
+        style={{ ...rectStyle(ringRect), opacity: hole && !docked ? 1 : 0 }}
         aria-hidden
       />
       <Box role="status" aria-live="polite" srOnly>
@@ -224,7 +245,8 @@ function ActiveTour({ tour, stepIndex }: { tour: UiTour; stepIndex: number }) {
         hole={hole}
         viewport={viewport}
         popoverRef={popoverRef}
-        onBlockedClick={shakePopover}
+        docked={docked}
+        onDock={setDocked}
         onTurnChange={setUserTurn}
         onAnnounce={announce}
       />
@@ -241,7 +263,8 @@ function StepView({
   hole,
   viewport,
   popoverRef,
-  onBlockedClick,
+  docked,
+  onDock,
   onTurnChange,
   onAnnounce,
 }: {
@@ -253,7 +276,9 @@ function StepView({
   hole: Rect | null;
   viewport: Size;
   popoverRef: RefObject<HTMLDivElement | null>;
-  onBlockedClick: () => void;
+  /** Moved aside to a corner while the user works in the target. */
+  docked: boolean;
+  onDock: (docked: boolean) => void;
   /** The status is "Your turn" (the ring pulses). */
   onTurnChange: (userTurn: boolean) => void;
   onAnnounce: (input: AnnouncementInput) => void;
@@ -269,12 +294,15 @@ function StepView({
   const [advancing, setAdvancing] = useState(false);
   // Null until the popover has measured itself; it stays hidden until then.
   const [popoverSize, setPopoverSize] = useState<Size | null>(null);
+  // A docked step was seen and stays in its corner, even if the user's click
+  // took its target away.
   const visible =
     popoverSize !== null &&
-    popoverReady(target, {
-      hasTarget: !!step.target,
-      optional: !!step.optional,
-    });
+    (docked ||
+      popoverReady(target, {
+        hasTarget: !!step.target,
+        optional: !!step.optional,
+      }));
 
   const advance = useOnboardingStore((s) => s.advance);
   const skipStepFrom = useOnboardingStore((s) => s.skipStep);
@@ -339,10 +367,21 @@ function StepView({
   const failed = useAppValue(step.failedIf ?? NEVER);
   const asked = useAppValue(step.askedIf ?? NEVER);
   const blocked = useAppValue(step.blockedIf ?? NEVER);
+  // With the chat usable, the user can ask again on a step whose answer is
+  // in (e.g. answer a question asked back): its status waits again, without
+  // the slow-wait words (Next is there already, not Skip step).
+  const waitDoneNow = useAppValue(
+    step.waitsOnApp && step.waitFor ? step.waitFor : ALWAYS
+  );
+  const again = waitStartedAgain(step, {
+    waitOver: doneAtEntry || unlocked,
+    waitDoneNow,
+  });
   const status = stepStatus(step, {
-    awaitingAction,
-    waitedLong,
-    completing: !!step.waitFor && (doneAtEntry || unlocked || advancing),
+    awaitingAction: awaitingAction || again,
+    waitedLong: waitedLong && !again,
+    completing:
+      !again && !!step.waitFor && (doneAtEntry || unlocked || advancing),
     failed,
     asked,
     blocked,
@@ -396,9 +435,16 @@ function StepView({
   ]);
 
   // Optional steps whose target never shows up (e.g. a card the agent didn't
-  // emit) are passed over rather than pointing at nothing.
+  // emit) are passed over rather than pointing at nothing. Not once docked:
+  // the user saw the step, and their own click may have moved the target.
   useEffect(() => {
-    if (!step.optional || !step.target || found || missingSince === null)
+    if (
+      docked ||
+      !step.optional ||
+      !step.target ||
+      found ||
+      missingSince === null
+    )
       return;
     const check = () => {
       if (step.skipIf?.()) return skip();
@@ -414,20 +460,52 @@ function StepView({
     check();
     const poll = window.setInterval(check, WAIT_POLL_MS);
     return () => window.clearInterval(poll);
-  }, [step, found, missingSince, skip]);
+  }, [docked, step, found, missingSince, skip]);
+
+  // The first press inside the cut-out moves the step aside (docks it), so
+  // the user can work in the target with the map clear. Capture phase: it
+  // docks before the press changes the screen, and the press still reaches
+  // the app. Only on this step's own target, once its popover shows.
+  const canDock =
+    visible && found && !docked && docksOnTargetClick(step, awaitingAction);
+  useEffect(() => {
+    if (!canDock || !hole) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (popoverRef.current?.contains(e.target as Node | null)) return;
+      if (pointInRect({ x: e.clientX, y: e.clientY }, hole)) onDock(true);
+    };
+    window.addEventListener("pointerdown", onPointerDown, true);
+    return () => window.removeEventListener("pointerdown", onPointerDown, true);
+  }, [canDock, hole, popoverRef, onDock]);
+  const showGuide = useCallback(() => {
+    onDock(false);
+    popoverRef.current?.focus({ preventScroll: true });
+  }, [onDock, popoverRef]);
 
   // Keyboard: Escape closes; arrows page through passive steps, once the
   // step's popover shows (no paging past a step the user has not seen).
+  // Not while docked or typing: the keys belong to the app then.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") close();
-      if (awaitingAction || !visible) return;
+      if (awaitingAction || !visible || docked) return;
+      if (isTypingTarget(e.target instanceof HTMLElement ? e.target : null))
+        return;
       if (e.key === "ArrowRight") next();
       if (e.key === "ArrowLeft" && canGoBack && !step.noBack) back();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [awaitingAction, visible, close, next, back, canGoBack, step.noBack]);
+  }, [
+    awaitingAction,
+    visible,
+    docked,
+    close,
+    next,
+    back,
+    canGoBack,
+    step.noBack,
+  ]);
 
   // Track the popover's size (it changes with each step's copy) for placement.
   useEffect(() => {
@@ -445,50 +523,39 @@ function StepView({
     return () => observer.disconnect();
   }, [popoverRef]);
 
-  const placement: PopoverPlacement = placePopover(
-    hole,
-    popoverSize ?? UNMEASURED_POPOVER,
-    viewport,
-    step.placement
-  );
+  const size = popoverSize ?? UNMEASURED_POPOVER;
+  const placement: PopoverPlacement = docked
+    ? dockPlacement(hole, size, viewport)
+    : placePopover(hole, size, viewport, step.placement);
 
   return (
-    <>
-      {/* Passive steps block clicks on the target; action steps let them through. */}
-      {hole && !awaitingAction && (
-        <Box
-          position="fixed"
-          pointerEvents="auto"
-          style={rectStyle(hole)}
-          onClick={onBlockedClick}
-        />
-      )}
-      <TourPopover
-        ref={popoverRef}
-        visible={visible}
-        placement={placement}
-        wide={!step.target}
-        eyebrow={step.eyebrow}
-        title={step.title}
-        body={step.body}
-        stepNumber={stepIndex + 1}
-        stepCount={stepCount}
-        awaitingAction={awaitingAction}
-        status={status}
-        notice={noticeOver ? null : notice}
-        ctaLabel={step.ctaLabel ?? (isLast ? "Finish" : NEXT_LABEL)}
-        secondaryLabel={step.secondary?.label}
-        showBack={canGoBack && !step.noBack && !awaitingAction}
-        // Not once the action is done and the step is moving on.
-        showSkipStep={canSkipWhileWaiting(step, waitedLong) && !advancing}
-        onNext={next}
-        onSkipStep={skipStep}
-        onBack={back}
-        onSecondary={
-          step.secondary ? () => step.secondary?.onClick(endTour) : undefined
-        }
-        onClose={close}
-      />
-    </>
+    <TourPopover
+      ref={popoverRef}
+      visible={visible}
+      placement={placement}
+      wide={!step.target}
+      docked={docked}
+      eyebrow={step.eyebrow}
+      title={step.title}
+      body={step.body}
+      stepNumber={stepIndex + 1}
+      stepCount={stepCount}
+      awaitingAction={awaitingAction}
+      status={status}
+      notice={noticeOver ? null : notice}
+      ctaLabel={step.ctaLabel ?? (isLast ? "Finish" : NEXT_LABEL)}
+      secondaryLabel={step.secondary?.label}
+      showBack={canGoBack && !step.noBack && !awaitingAction}
+      // Not once the action is done and the step is moving on.
+      showSkipStep={canSkipWhileWaiting(step, waitedLong) && !advancing}
+      onNext={next}
+      onSkipStep={skipStep}
+      onBack={back}
+      onSecondary={
+        step.secondary ? () => step.secondary?.onClick(endTour) : undefined
+      }
+      onShowGuide={showGuide}
+      onClose={close}
+    />
   );
 }

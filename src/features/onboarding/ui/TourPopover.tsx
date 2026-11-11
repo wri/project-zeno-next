@@ -12,6 +12,8 @@ export const POPOVER_WIDE_WIDTH_PX = 480;
 /** Footer buttons the copy names: the default move on, and the skip. */
 export const NEXT_LABEL = "Next";
 export const SKIP_STEP_LABEL = "Skip step";
+/** On a docked step: back to the full view (veil, ring and the step's text). */
+export const SHOW_GUIDE_LABEL = "Show the guide";
 
 /**
  * Where the user is in the tour: done steps tinted, the current one a pill,
@@ -70,6 +72,11 @@ export interface TourPopoverProps {
   visible: boolean;
   placement: PopoverPlacement;
   wide: boolean;
+  /**
+   * Moved aside while the user works in the target: title, status and
+   * buttons only, plus Show the guide.
+   */
+  docked: boolean;
   eyebrow?: string;
   title: string;
   body: ReactNode;
@@ -90,6 +97,7 @@ export interface TourPopoverProps {
   onSkipStep: () => void;
   onBack: () => void;
   onSecondary?: () => void;
+  onShowGuide: () => void;
   onClose: () => void;
 }
 
@@ -124,6 +132,7 @@ export function TourPopover(props: TourPopoverProps) {
     visible,
     placement,
     wide,
+    docked,
     eyebrow,
     title,
     body,
@@ -140,6 +149,7 @@ export function TourPopover(props: TourPopoverProps) {
     onSkipStep,
     onBack,
     onSecondary,
+    onShowGuide,
     onClose,
   } = props;
   const glide = useGlideOnceVisible(visible);
@@ -183,7 +193,7 @@ export function TourPopover(props: TourPopoverProps) {
           aria-label="Close tour"
           onClick={onClose}
         />
-        {eyebrow && (
+        {eyebrow && !docked && (
           <Text
             mb="1"
             fontFamily="mono"
@@ -206,27 +216,34 @@ export function TourPopover(props: TourPopoverProps) {
           {title}
         </Text>
       </Box>
-      <Box px="5" pb="3" minH={0} overflowY="auto">
-        <Box
-          fontSize="sm"
-          lineHeight="1.55"
-          css={{
-            "& p": { marginBottom: "8px" },
-            "& p:last-child": { marginBottom: 0 },
-            "& ul": { paddingLeft: "18px", marginBottom: "8px" },
-            "& ul li": { listStyle: "disc", margin: "2px 0" },
-          }}
-        >
-          {body}
+      {!docked && (
+        <Box px="5" pb="3" minH={0} overflowY="auto">
+          <Box
+            fontSize="sm"
+            lineHeight="1.55"
+            css={{
+              "& p": { marginBottom: "8px" },
+              "& p:last-child": { marginBottom: 0 },
+              "& ul": { paddingLeft: "18px", marginBottom: "8px" },
+              "& ul li": { listStyle: "disc", margin: "2px 0" },
+            }}
+          >
+            {body}
+          </Box>
         </Box>
-      </Box>
+      )}
       <Flex direction="column" gap="2.5" flexShrink={0} px="5" pb="4" pt="1">
         {notice && <StepStatusBar tone="skipped" text={notice} />}
         {status && <StepStatusBar tone={status.tone} text={status.text} />}
-        <Flex align="center" gap="2">
+        <Flex align="center" gap="2" flexWrap="wrap">
           <Flex flex="1" align="center" gap="2" minW={0}>
+            {docked && (
+              <Button size="xs" variant="ghost" onClick={onShowGuide}>
+                {SHOW_GUIDE_LABEL}
+              </Button>
+            )}
             {/* A one-step guide has no progress to show. */}
-            {stepCount > 1 && (
+            {!docked && stepCount > 1 && (
               <>
                 <ProgressDots current={stepNumber - 1} total={stepCount} />
                 <Text fontSize="xs" color="fg.muted" aria-hidden>

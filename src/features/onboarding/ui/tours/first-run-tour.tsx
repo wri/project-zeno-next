@@ -183,8 +183,9 @@ function AskStepBody({ removed }: { removed: () => string | null }) {
  * The answer step's body: what to check once the answer is in, the question
  * the assistant asked back, or what went wrong when it failed. Re-renders as
  * the answer streams. The status bar says which (and how long the wait is),
- * so the body does not repeat it. The step blocks clicks on the chat once
- * the answer is in, so a question asked back is answered after the tour.
+ * so the body does not repeat it. The chat stays usable (a press in it docks
+ * the step), so a question asked back can be answered now; the status then
+ * waits for the new answer.
  */
 function AnswerStepBody({
   failed,
@@ -198,7 +199,7 @@ function AnswerStepBody({
   if (isAskedBack)
     return (
       <p>
-        You can answer the question in the chat after the tour. Click{" "}
+        You can answer the question in the chat now. Then click{" "}
         <b>{NEXT_LABEL}</b>.
       </p>
     );
@@ -238,7 +239,8 @@ function AnswerStepBody({
 /**
  * The answer's chart, and how to check it. Show working exists only on a
  * chart made with code the AI wrote; a curated answer gets no such advice.
- * The step blocks clicks on the chart, so Show working is for after the tour.
+ * Show working opens a drawer over the map, so it is left for after the
+ * tour, although the chart can be clicked (a press in it docks the step).
  */
 function AiChartStepBody() {
   const showsWorking = useAppValue(leadChartShowsWorking);

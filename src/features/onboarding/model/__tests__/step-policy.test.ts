@@ -6,14 +6,17 @@ import {
   SHOW_RESULT_MS,
   advanceDelayMs,
   canSkipWhileWaiting,
+  docksOnTargetClick,
+  isTypingTarget,
   missingTargetExpired,
   passesOverAtEntry,
   stepKind,
   stepStatusTone,
+  waitStartedAgain,
   waitTick,
   type StepStatusFacts,
 } from "../step-policy";
-import type { TourStep } from "../tour";
+import { anchorTarget, type TourStep } from "../tour";
 
 const step = (extra: Partial<TourStep<unknown>> = {}): TourStep<unknown> => ({
   id: "s",
@@ -177,6 +180,83 @@ describe("stepStatusTone", () => {
         facts({ kind: "info", awaitingAction: false, blocked: true })
       )
     ).toBe("blocked");
+  });
+});
+
+describe("waitStartedAgain", () => {
+  const appWait = step({ waitFor: no, waitsOnApp: true, autoAdvance: false });
+
+  it("holds once a wait on the app that was over is not done any more", () => {
+    // The user answered a question asked back: a new answer is coming.
+    expect(
+      waitStartedAgain(appWait, { waitOver: true, waitDoneNow: false })
+    ).toBe(true);
+    expect(
+      waitStartedAgain(appWait, { waitOver: true, waitDoneNow: true })
+    ).toBe(false);
+  });
+
+  it("is not a wait starting again before the first one is over", () => {
+    expect(
+      waitStartedAgain(appWait, { waitOver: false, waitDoneNow: false })
+    ).toBe(false);
+  });
+
+  it("never applies to the user's actions or to info steps", () => {
+    expect(
+      waitStartedAgain(step({ waitFor: no }), {
+        waitOver: true,
+        waitDoneNow: false,
+      })
+    ).toBe(false);
+    expect(
+      waitStartedAgain(step(), { waitOver: true, waitDoneNow: false })
+    ).toBe(false);
+  });
+});
+
+describe("docksOnTargetClick", () => {
+  const target = anchorTarget("chat-panel");
+
+  it("docks a step with a target and nothing to wait for", () => {
+    expect(docksOnTargetClick(step({ target }), false)).toBe(true);
+    // An answer that is in: Next shows, the chat is the user's.
+    expect(
+      docksOnTargetClick(
+        step({ target, waitFor: yes, waitsOnApp: true, autoAdvance: false }),
+        false
+      )
+    ).toBe(true);
+  });
+
+  it("never docks while the step waits for the user's action", () => {
+    expect(docksOnTargetClick(step({ target, waitFor: no }), true)).toBe(false);
+  });
+
+  it("never docks a step without a target", () => {
+    expect(docksOnTargetClick(step(), false)).toBe(false);
+  });
+});
+
+describe("isTypingTarget", () => {
+  const el = (tagName: string, isContentEditable = false) => ({
+    tagName,
+    isContentEditable,
+  });
+
+  it("is typing in a text field, a list box or editable text", () => {
+    expect(isTypingTarget(el("INPUT"))).toBe(true);
+    expect(isTypingTarget(el("TEXTAREA"))).toBe(true);
+    expect(isTypingTarget(el("SELECT"))).toBe(true);
+    expect(isTypingTarget(el("div", true))).toBe(true);
+    // Lower case, as in XHTML or SVG documents.
+    expect(isTypingTarget(el("input"))).toBe(true);
+  });
+
+  it("is not typing on a button, the page or nothing", () => {
+    expect(isTypingTarget(el("BUTTON"))).toBe(false);
+    expect(isTypingTarget(el("BODY"))).toBe(false);
+    expect(isTypingTarget(null)).toBe(false);
   });
 });
 

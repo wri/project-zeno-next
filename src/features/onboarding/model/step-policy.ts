@@ -133,6 +133,56 @@ export function stepStatusTone(facts: StepStatusFacts): StepStatusTone {
  */
 export const SKIPPED_NOTICE_MS = 4_000;
 
+/**
+ * A wait on the app that was over has started again on the same step: the
+ * user asked something new (e.g. answered a question the assistant asked
+ * back), and a new answer is coming. The step keeps its Next; its status
+ * waits again. `waitDoneNow`: the step's `waitFor`, read now.
+ */
+export function waitStartedAgain(
+  step: TourStep<unknown>,
+  facts: { readonly waitOver: boolean; readonly waitDoneNow: boolean }
+): boolean {
+  return stepKind(step) === "app-wait" && facts.waitOver && !facts.waitDoneNow;
+}
+
+/**
+ * Whether the user's first press inside the cut-out moves the step aside
+ * (docks it), so the target can be used with the map clear. Steps with
+ * nothing to wait for (a guide, an answer that is in) dock. A step waiting
+ * for the user's action does not: that press is the action, and the tour
+ * moves on by itself once it is done.
+ */
+export function docksOnTargetClick(
+  step: TourStep<unknown>,
+  awaitingAction: boolean
+): boolean {
+  return !!step.target && !awaitingAction;
+}
+
+/** The parts of a key event's target that tell typing from paging. */
+export interface KeyTarget {
+  readonly tagName: string;
+  readonly isContentEditable: boolean;
+}
+
+const TYPING_TAGS: ReadonlySet<string> = new Set([
+  "INPUT",
+  "TEXTAREA",
+  "SELECT",
+]);
+
+/**
+ * The key went to a text field, a list box or editable text: arrow keys move
+ * the caret or the choice there, so the tour must not page on them.
+ */
+export function isTypingTarget(target: KeyTarget | null): boolean {
+  return (
+    !!target &&
+    (TYPING_TAGS.has(target.tagName.toUpperCase()) || target.isContentEditable)
+  );
+}
+
 export interface MissingTargetTimes {
   readonly now: number;
   /** When the step started missing its target (opened, or last saw it). */

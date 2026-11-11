@@ -24,7 +24,9 @@ import useOnboardingStore from "../../model/onboarding-store";
 import {
   SHOW_RESULT_MS,
   canSkipWhileWaiting,
+  docksOnTargetClick,
   stepKind,
+  waitStartedAgain,
   type StepKind,
   type StepStatusFacts,
 } from "../../model/step-policy";
@@ -70,6 +72,17 @@ const statusOf = (
   });
 /** The settled answer step: Next shows. */
 const SETTLED = { awaitingAction: false, completing: true } as const;
+/**
+ * A step whose first wait is over (Next shows), as the overlay works out its
+ * status: waiting again if the app is working again.
+ */
+const statusOnceOver = (step: TourStep<unknown>) => {
+  const again = waitStartedAgain(step, {
+    waitOver: true,
+    waitDoneNow: !!step.waitFor?.(),
+  });
+  return statusOf(step, { awaitingAction: again, completing: !again });
+};
 /** What the step now open says about the steps passed over to reach it. */
 const noticeNow = () => skippedNotice(state().passedOver);
 
@@ -455,12 +468,76 @@ describe("first-run tour flow", () => {
       text: "The AI Assistant has a question for you.",
     });
     const text = bodyText(step.body);
-    expect(text).toContain("answer the question in the chat after the tour");
+    expect(text).toContain("You can answer the question in the chat now.");
     expect(text).not.toContain("could not finish");
 
     // No answer yet, so no chart to check.
     state().advance(false, state().stepIndex);
     expect(currentStepId()).toBe("done");
+  });
+
+  it("waits again when the user answers the question asked back, then says what came", () => {
+    state().startTour(createFirstRunTour());
+    goTo("ask-in-chat");
+    answer({ ok: false, askedBack: true });
+    state().advance(false, state().stepIndex);
+    const step = current()!;
+    expect(statusOnceOver(step)?.tone).toBe("asked");
+
+    // The user replies in the chat (the step is docked): a new turn starts.
+    const asked = useChatStore.getState().messages;
+    useChatStore.setState({
+      messages: [...asked, msg("user")],
+      isLoading: true,
+    });
+    expect(statusOnceOver(step)).toEqual({
+      tone: "wait",
+      text: "Waiting for the AI Assistant. This can take about 1 minute.",
+    });
+    // The body is the plain one again, not "a question for you".
+    expect(bodyText(step.body)).toContain("check it");
+
+    // The new turn answers: ready, and the chart step follows.
+    useChatStore.setState({
+      messages: [...asked, msg("user"), msg("assistant")],
+      isLoading: false,
+      completedAnswers: 1,
+    });
+    useInsightStore.setState({ insights: [AI_CHART] });
+    expect(statusOnceOver(step)).toEqual({
+      tone: "done",
+      text: "The answer is ready. Click Next.",
+    });
+    state().advance(false, state().stepIndex);
+    expect(currentStepId()).toBe("ai-chart");
+  });
+
+  it("asks again, or fails, when the new turn does", () => {
+    state().startTour(createFirstRunTour());
+    goTo("ask-in-chat");
+    answer({ ok: false, askedBack: true });
+    state().advance(false, state().stepIndex);
+    const step = current()!;
+    const asked = useChatStore.getState().messages;
+
+    useChatStore.setState({
+      messages: [...asked, msg("user"), msg("assistant"), msg("nudge")],
+    });
+    expect(statusOnceOver(step)?.tone).toBe("asked");
+
+    useChatStore.setState({ messages: [...asked, msg("user"), msg("error")] });
+    expect(statusOnceOver(step)?.tone).toBe("failed");
+  });
+
+  it("docks a step on a press in its target only once nothing waits on the user", () => {
+    for (const s of createFirstRunTour().steps) {
+      if (!s.target) continue;
+      // Waiting for the user's action: the press is the action, no dock.
+      if (stepKind(s) === "action")
+        expect([s.id, docksOnTargetClick(s, true)]).toEqual([s.id, false]);
+      // Done, or nothing to wait for (an answer that is in, a chart).
+      expect([s.id, docksOnTargetClick(s, false)]).toEqual([s.id, true]);
+    }
   });
 
   it("says the answer is ready once it is in", () => {
@@ -690,6 +767,16 @@ describe("dailyPromptsNote", () => {
 });
 
 describe("checklist tasks", () => {
+  it("point at a target the user can press, which moves the guide aside", () => {
+    for (const item of CHECKLIST_ITEMS)
+      for (const s of createChecklistTour(item).steps)
+        expect([s.id, !!s.target, docksOnTargetClick(s, false)]).toEqual([
+          s.id,
+          true,
+          true,
+        ]);
+  });
+
   it("are guides: info steps that end with OK", () => {
     for (const item of CHECKLIST_ITEMS) {
       const steps = createChecklistTour(item).steps;

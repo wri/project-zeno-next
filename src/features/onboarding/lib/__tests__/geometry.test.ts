@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   clipToViewport,
+  dockPlacement,
   padRect,
   placePopover,
+  pointInRect,
   sameRect,
   veilClipPath,
 } from "../geometry";
@@ -111,6 +113,75 @@ describe("placePopover", () => {
   it("centres when nothing fits around a huge target", () => {
     const target = { x: 0, y: 0, width: 1000, height: 800 };
     expect(placePopover(target, POPOVER, VIEWPORT).side).toBeNull();
+  });
+});
+
+describe("pointInRect", () => {
+  const rect = { x: 100, y: 200, width: 50, height: 20 };
+
+  it("counts the edges as inside", () => {
+    expect(pointInRect({ x: 100, y: 200 }, rect)).toBe(true);
+    expect(pointInRect({ x: 150, y: 220 }, rect)).toBe(true);
+    expect(pointInRect({ x: 120, y: 210 }, rect)).toBe(true);
+  });
+
+  it("is outside past any edge, and with no rect", () => {
+    expect(pointInRect({ x: 99, y: 210 }, rect)).toBe(false);
+    expect(pointInRect({ x: 151, y: 210 }, rect)).toBe(false);
+    expect(pointInRect({ x: 120, y: 199 }, rect)).toBe(false);
+    expect(pointInRect({ x: 120, y: 221 }, rect)).toBe(false);
+    expect(pointInRect({ x: 120, y: 210 }, null)).toBe(false);
+  });
+});
+
+describe("dockPlacement", () => {
+  const corner = (hole: Parameters<typeof dockPlacement>[0]) => {
+    const { x, y } = dockPlacement(hole, POPOVER, VIEWPORT);
+    return `${y < VIEWPORT.height / 2 ? "top" : "bottom"}-${x < VIEWPORT.width / 2 ? "left" : "right"}`;
+  };
+
+  it("docks bottom-right, inside the margin, with no arrow", () => {
+    expect(dockPlacement(null, POPOVER, VIEWPORT)).toEqual({
+      x: 1000 - 300 - 12,
+      y: 800 - 200 - 12,
+      side: null,
+      arrowOffset: 0,
+    });
+  });
+
+  it("takes the next corner clear of the cut-out, in order", () => {
+    // The map's chart card, top-right: bottom-right is clear.
+    expect(corner({ x: 600, y: 20, width: 380, height: 300 })).toBe(
+      "bottom-right"
+    );
+    // A panel down the right side: bottom-left.
+    expect(corner({ x: 600, y: 0, width: 400, height: 800 })).toBe(
+      "bottom-left"
+    );
+    // A strip along the bottom: top-right.
+    expect(corner({ x: 0, y: 500, width: 1000, height: 300 })).toBe(
+      "top-right"
+    );
+    // The first clear corner wins, even when a later one is clear too.
+    expect(corner({ x: 680, y: 580, width: 50, height: 50 })).toBe(
+      "bottom-left"
+    );
+  });
+
+  it("takes the corner that covers least of the cut-out when none is clear", () => {
+    // Everything but a strip along the top and the left.
+    expect(corner({ x: 100, y: 100, width: 900, height: 700 })).toBe(
+      "top-left"
+    );
+    // The whole window: all corners cover as much, so the first one.
+    expect(corner({ x: 0, y: 0, width: 1000, height: 800 })).toBe(
+      "bottom-right"
+    );
+  });
+
+  it("stays inside the margin when the popover is wider than the window", () => {
+    const p = dockPlacement(null, { width: 2000, height: 900 }, VIEWPORT);
+    expect([p.x, p.y]).toEqual([12, 12]);
   });
 });
 
