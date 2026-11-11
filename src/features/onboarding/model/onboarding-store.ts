@@ -31,6 +31,8 @@ export interface OnboardingState {
    * `abandonTour`). In memory only: a reload forgets it.
    */
   tourAbandoned: boolean;
+  /** How the last tour ended (true: finished), for telemetry; null before any. */
+  lastTourCompleted: boolean | null;
 
   hydrate: (progress: OnboardingProgress) => void;
   startTour: (tour: Tour<unknown>) => void;
@@ -98,6 +100,7 @@ const useOnboardingStore = create<OnboardingState>((set, get) => ({
   progress: EMPTY_PROGRESS,
   hydrated: false,
   tourAbandoned: false,
+  lastTourCompleted: null,
 
   hydrate: (progress) => set({ progress, hydrated: true }),
 
@@ -138,7 +141,12 @@ const useOnboardingStore = create<OnboardingState>((set, get) => ({
   endTour: (completed) => {
     const { tour } = get();
     if (!tour) return;
-    set({ tour: null, stepIndex: 0, history: [] });
+    set({
+      tour: null,
+      stepIndex: 0,
+      history: [],
+      lastTourCompleted: completed,
+    });
     tour.onEnd?.(completed);
   },
 

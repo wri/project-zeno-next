@@ -37,7 +37,55 @@ type FrontDoorEvent =
     }
   | { event: "profile_card_dismissed"; surface: "card" | "banner" };
 
-type TrackableEvent = NudgeClickEvent | FrontDoorEvent;
+/**
+ * Onboarding tours (behind ?ff=onboarding). Every value is a fixed id from the
+ * tour definitions ("first-run", "checklist-ask", step and anchor ids), never
+ * user text. `step_number` counts from 1, as the popover does.
+ */
+export type OnboardingTourEvent =
+  | {
+      event: "tour_started";
+      tour_id: string;
+      step_count: number;
+      /** The user had not finished or skipped the first-run tour before. */
+      first_visit: boolean;
+    }
+  | {
+      event: "tour_step_viewed";
+      tour_id: string;
+      step_id: string;
+      step_number: number;
+      step_count: number;
+    }
+  | {
+      event: "tour_step_skipped";
+      tour_id: string;
+      step_id: string;
+      step_number: number;
+      /** "user": left an action step without doing it; "tour": passed over automatically. */
+      skipped_by: "user" | "tour";
+      ms_on_step: number;
+    }
+  | {
+      event: "tour_ended";
+      tour_id: string;
+      outcome: "completed" | "closed";
+      /** The step the tour ended on. */
+      step_id: string;
+      step_number: number;
+      step_count: number;
+    }
+  | {
+      /** A step was left while no visible element carried its anchor. */
+      event: "tour_target_missing";
+      tour_id: string;
+      step_id: string;
+      anchor_id: string;
+      optional: boolean;
+      ms_on_step: number;
+    };
+
+type TrackableEvent = NudgeClickEvent | FrontDoorEvent | OnboardingTourEvent;
 
 declare global {
   interface Window {

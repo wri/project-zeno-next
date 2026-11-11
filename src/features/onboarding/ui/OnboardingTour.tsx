@@ -24,6 +24,7 @@ import {
 } from "./tour-entry";
 import { TourOverlay } from "./TourOverlay";
 import { createFirstRunTour } from "./tours/first-run-tour";
+import { useTourTelemetry } from "./use-tour-telemetry";
 
 /** Let the map settle (default layers, first paint) before dimming it. */
 const START_DELAY_MS = 800;
@@ -36,6 +37,7 @@ const START_DELAY_MS = 800;
  */
 export function OnboardingTour() {
   const enabled = useFeatureFlag(ONBOARDING_FEATURE_FLAG);
+  useTourTelemetry(enabled);
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
