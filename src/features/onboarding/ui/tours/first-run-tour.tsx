@@ -31,6 +31,8 @@ import { TREE_COVER_LOSS_DATASET_ID } from "@/app/constants/datasets";
 import {
   GADM_BOUNDARY_LAYER,
   KENYA_BOUNDS,
+  answerFailedSince,
+  answeredCount,
   areaCardSince,
   chatMessageCount,
   chatSettledSince,
@@ -45,8 +47,13 @@ import {
   isBoundaryLayerShown,
   isDataCatalogOpen,
   isDatasetOnMap,
+  isGeneratingInsight,
+  openAreasPanel,
+  openDataCatalog,
   restoreMapDefaults,
   sentMessageSince,
+  showBoundaryLayer,
+  showDatasetOnMap,
 } from "../app-actions";
 import {
   TOUR_ANCHORS,
@@ -99,7 +106,24 @@ const BOUNDARY_TYPES = (
 export function createFirstRunTour(): UiTour {
   let chatBaseline = 0;
   let insightBaseline = 0;
+  let answerBaseline = 0;
   let collapseChecklistOnFinish = false;
+  let mapCleared = false;
+
+  // The hands-on part starts from an empty map, cleared only once the user
+  // has pressed "Let's go": someone who backs out of the welcome keeps theirs.
+  const clearMapOnce = () => {
+    if (mapCleared) return;
+    clearMap();
+    mapCleared = true;
+  };
+
+  // The chat half's steps only make sense for a question that was sent and
+  // answered. Skipping the question (e.g. no prompts left today) or a failed
+  // answer passes them over; a failed one gets its own step instead.
+  const noQuestion = () => !sentMessageSince(chatBaseline);
+  const answerFailed = () => answerFailedSince(chatBaseline, answerBaseline);
+  const noAnswer = () => noQuestion() || answerFailed();
 
   const finish = (outcome: TourOutcome) => {
     const store = useOnboardingStore.getState();
@@ -110,6 +134,7 @@ export function createFirstRunTour(): UiTour {
     store.setChecklistExpanded(
       outcome === "completed" && !collapseChecklistOnFinish
     );
+    if (!mapCleared) return;
     closeExplorationPanels();
     restoreMapDefaults();
   };
@@ -122,7 +147,6 @@ export function createFirstRunTour(): UiTour {
         id: "welcome",
         eyebrow: "Welcome · about 2 minutes",
         title: "Welcome to Global Nature Watch Horizon",
-        onEnter: clearMap,
         body: (
           <>
             <p>
@@ -149,6 +173,7 @@ export function createFirstRunTour(): UiTour {
         padding: 5,
         eyebrow: "Step 1 of 3 · Dataset",
         title: "Open the Data catalog",
+        onEnter: clearMapOnce,
         body: (
           <p>
             Click <InlineIcon icon={StackSimpleIcon} /> <b>Datasets</b> in the
@@ -157,6 +182,7 @@ export function createFirstRunTour(): UiTour {
         ),
         waitFor: isDataCatalogOpen,
         hint: "Click Datasets",
+        onSkip: openDataCatalog,
       },
       {
         id: "turn-on-tcl",
@@ -174,6 +200,7 @@ export function createFirstRunTour(): UiTour {
         ),
         waitFor: isDatasetOnMap(TREE_COVER_LOSS_DATASET_ID),
         hint: "Turn on Tree cover loss",
+        onSkip: () => showDatasetOnMap(TREE_COVER_LOSS_DATASET_ID),
       },
       {
         id: "open-areas",
@@ -189,6 +216,7 @@ export function createFirstRunTour(): UiTour {
         ),
         waitFor: isAreasPanelOpen,
         hint: "Click Areas",
+        onSkip: openAreasPanel,
       },
       {
         id: "show-gadm",
@@ -207,6 +235,7 @@ export function createFirstRunTour(): UiTour {
         ),
         waitFor: isBoundaryLayerShown(GADM_BOUNDARY_LAYER),
         hint: "Turn on Administrative Areas",
+        onSkip: () => showBoundaryLayer(GADM_BOUNDARY_LAYER),
       },
       {
         id: "pick-kenya",
@@ -260,6 +289,8 @@ export function createFirstRunTour(): UiTour {
         waitFor: hasAcceptedViewAnalysis,
         hint: "Click View Tree cover loss Analysis",
         skippable: true,
+        // No area (Kenya skipped): nothing is offered to analyse.
+        skipIf: () => !hasSelectedArea(),
       },
       {
         id: "insight",
@@ -269,8 +300,10 @@ export function createFirstRunTour(): UiTour {
         title: "Here's your analysis",
         noBack: true,
         optional: true,
-        // The insight appears once the analysis job finishes.
-        targetTimeoutMs: 20000,
+        // The chart appears once the analysis job finishes: hold (no Next)
+        // while it loads. A failed analysis shows none, so the step passes.
+        holdWhile: isGeneratingInsight,
+        skipIf: () => !hasAcceptedViewAnalysis(),
         body: (
           <>
             <p>The chart opens on the map, next to the data it describes.</p>
@@ -308,8 +341,10 @@ export function createFirstRunTour(): UiTour {
         noBack: true,
         onEnter: () => {
           clearMap();
+          mapCleared = true;
           chatBaseline = chatMessageCount();
           insightBaseline = insightCount();
+          answerBaseline = answeredCount();
           useOnboardingStore.getState().setDraftPrompt(CHAT_DEMO_PROMPT);
         },
         body: (
@@ -358,6 +393,7 @@ export function createFirstRunTour(): UiTour {
           areaCardSince(chatBaseline) || chatSettledSince(chatBaseline),
         waitsOnApp: true,
         hint: "Horizon is working…",
+        skipIf: noQuestion,
       },
       {
         id: "area-card",
@@ -369,6 +405,7 @@ export function createFirstRunTour(): UiTour {
         noBack: true,
         optional: true,
         holdWhile: isChatLoading,
+        skipIf: noAnswer,
         body: (
           <p>
             The area Horizon chose, also outlined on the map. Check it&apos;s
@@ -386,6 +423,7 @@ export function createFirstRunTour(): UiTour {
         title: "The dataset card",
         optional: true,
         holdWhile: isChatLoading,
+        skipIf: noAnswer,
         body: (
           <p>
             The dataset it used, with the context layer and date range. The{" "}
@@ -410,6 +448,7 @@ export function createFirstRunTour(): UiTour {
           insightCount() > insightBaseline || chatSettledSince(chatBaseline),
         waitsOnApp: true,
         hint: "Generating…",
+        skipIf: noAnswer,
       },
       {
         id: "analysis-on-map",
@@ -420,6 +459,7 @@ export function createFirstRunTour(): UiTour {
         // Back would land on "generating", which skips straight here again.
         noBack: true,
         optional: true,
+        skipIf: noAnswer,
         body: (
           <p>
             It has the same controls as the analysis you ran by hand, such as{" "}
@@ -438,6 +478,7 @@ export function createFirstRunTour(): UiTour {
         title: "The analysis card",
         optional: true,
         holdWhile: isChatLoading,
+        skipIf: noAnswer,
         body: (
           <p>
             The chart Horizon made, which is open on the map now. Click this
@@ -460,6 +501,7 @@ export function createFirstRunTour(): UiTour {
         autoAdvance: false,
         waitsOnApp: true,
         hint: "Finishing the answer…",
+        skipIf: noAnswer,
         body: (
           <>
             <p>
@@ -479,6 +521,23 @@ export function createFirstRunTour(): UiTour {
         ),
       },
       {
+        id: "answer-failed",
+        target: anchorTarget(TOUR_ANCHORS.chatPanel),
+        placement: "right",
+        padding: 4,
+        eyebrow: "The shortcut · Chat",
+        title: "Horizon couldn't finish this answer",
+        noBack: true,
+        // Only after a failed answer; a good one is read in the step before.
+        skipIf: () => !answerFailed(),
+        body: (
+          <p>
+            The chat shows what went wrong. Try the question again after the
+            tour, or ask it in a different way.
+          </p>
+        ),
+      },
+      {
         id: "menu",
         target: anchorTarget(TOUR_ANCHORS.menuButton),
         placement: "bottom",
@@ -488,8 +547,9 @@ export function createFirstRunTour(): UiTour {
         body: (
           <>
             <p>
-              Open <InlineIcon icon={ListIcon} /> the menu, then choose{" "}
-              <b>Help</b> to open the Horizon Help Center. Look there for:
+              After the tour, open <InlineIcon icon={ListIcon} /> the menu and
+              choose <b>Help</b> to open the Horizon Help Center. Look there
+              for:
             </p>
             <ul>
               <li>

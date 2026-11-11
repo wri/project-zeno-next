@@ -1,8 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/app/lib/api-client", () => ({ apiFetch: vi.fn() }));
+vi.mock("@/src/features/analysis", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/src/features/analysis")>()),
+  cancelRunningAnalyses: vi.fn(),
+}));
 
 import { apiFetch } from "@/app/lib/api-client";
+import { cancelRunningAnalyses } from "@/src/features/analysis";
 import {
   agentTextLine,
   ndjsonResponse,
@@ -14,6 +19,8 @@ import type { ChatMessage } from "@/app/types/chat";
 
 import {
   KENYA_BOUNDS,
+  answerFailedSince,
+  answeredCount,
   areaCardSince,
   chatMessageCount,
   chatSettledSince,
@@ -86,6 +93,30 @@ describe("chat progress predicates", () => {
   });
 });
 
+describe("answerFailedSince", () => {
+  beforeEach(() => useChatStore.setState({ completedAnswers: 2 }));
+
+  it("is false until a question was sent and has finished", () => {
+    const answers = answeredCount();
+    expect(answerFailedSince(0, answers)).toBe(false);
+    setChat([msg("user")], true);
+    expect(answerFailedSince(0, answers)).toBe(false);
+  });
+
+  it("is true when the question finished without an answer", () => {
+    const answers = answeredCount();
+    setChat([msg("user"), msg("error")], false);
+    expect(answerFailedSince(0, answers)).toBe(true);
+  });
+
+  it("is false when the chat store counted the answer", () => {
+    const answers = answeredCount();
+    setChat([msg("user"), msg("assistant")], false);
+    useChatStore.setState({ completedAnswers: answers + 1 });
+    expect(answerFailedSince(0, answers)).toBe(false);
+  });
+});
+
 describe("setting the stage", () => {
   beforeEach(() => {
     useSidebarStore.setState({
@@ -93,6 +124,12 @@ describe("setting the stage", () => {
       areasPanelFilter: "mine",
       catalogCategory: "wildfires",
     });
+  });
+
+  it("stops a chart still loading, so it can't land on the cleared map", () => {
+    vi.mocked(cancelRunningAnalyses).mockClear();
+    clearMap();
+    expect(cancelRunningAnalyses).toHaveBeenCalledTimes(1);
   });
 
   it("clears the map back to the All catalogue category, so every tour row shows", () => {

@@ -14,7 +14,10 @@ import {
   getDefaultDatasetId,
   seedDefaultDatasetLayer,
 } from "@/app/utils/defaultMapLayers";
-import { useSelectionStore } from "@/src/features/analysis";
+import {
+  cancelRunningAnalyses,
+  useSelectionStore,
+} from "@/src/features/analysis";
 import { isFeatureEnabled } from "@/src/shared/lib/feature-flags";
 
 import type { LngLatBounds } from "../model/tour";
@@ -58,6 +61,9 @@ export function clearMap(): void {
   // The analysis feature keeps its own copy of the selection; clear it too or
   // the "View analysis" nudge re-offers the old area.
   useSelectionStore.getState().clear();
+  // A chart still loading (e.g. the hand-run analysis, left before it
+  // finished) would otherwise land on the cleared map, in the next question.
+  cancelRunningAnalyses();
   useInsightStore.getState().clearInsights();
 }
 
@@ -83,6 +89,16 @@ export function openDataCatalog(): void {
 /** Opens the Areas panel on Boundaries, the tab the tour's steps describe. */
 export function openAreasPanel(): void {
   useSidebarStore.getState().openAreasPanel("boundaries");
+}
+
+/** Shows a dataset on the map, unless one already shows. */
+export function showDatasetOnMap(datasetId: number): void {
+  seedDefaultDatasetLayer(datasetId);
+}
+
+/** Shows a boundary layer, as its switch in the Areas panel does. */
+export function showBoundaryLayer(layerId: typeof GADM_BOUNDARY_LAYER): void {
+  useMapStore.getState().setSelectAreaLayer(layerId);
 }
 
 /**
@@ -142,6 +158,13 @@ export const insightCount = () => useInsightStore.getState().insights.length;
 
 export const isChatLoading = () => useChatStore.getState().isLoading;
 
+/** A chart is being made (the insight workspace shows its skeleton). */
+export const isGeneratingInsight = () =>
+  useChatStore.getState().isGeneratingInsight;
+
+/** Answers finished in this conversation: the baseline for `answerFailedSince`. */
+export const answeredCount = () => useChatStore.getState().completedAnswers;
+
 const messagesSince = (baseline: number) => trackedMessages().slice(baseline);
 
 /** A user message was sent since `baseline` (from `chatMessageCount`). */
@@ -155,3 +178,12 @@ export const areaCardSince = (baseline: number) =>
 /** The request started after `baseline` has finished streaming. */
 export const chatSettledSince = (baseline: number) =>
   !isChatLoading() && sentMessageSince(baseline);
+
+/**
+ * The question sent since `baseline` finished without an answer: an error, a
+ * timeout, or a clarifying question instead. The chat store counts an answer
+ * only when the turn ends with one (`completedAnswers`); `answerBaseline` is
+ * that count from before the question (`answeredCount`).
+ */
+export const answerFailedSince = (baseline: number, answerBaseline: number) =>
+  chatSettledSince(baseline) && answeredCount() === answerBaseline;
