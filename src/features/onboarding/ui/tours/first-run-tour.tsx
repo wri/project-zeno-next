@@ -23,6 +23,7 @@ import {
 } from "@phosphor-icons/react";
 
 import {
+  FIRST_RUN_TOUR_VERSION,
   ITEMS_COVERED_BY_FIRST_RUN_TOUR,
   type TourOutcome,
 } from "../../model/onboarding-progress";
@@ -159,6 +160,7 @@ export function createFirstRunTour(): UiTour {
 
   return {
     id: "first-run",
+    version: FIRST_RUN_TOUR_VERSION,
     onEnd: (completed) => finish(completed ? "completed" : "skipped"),
     steps: [
       {

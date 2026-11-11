@@ -9,6 +9,9 @@ import {
 import { passesOverAtEntry } from "./step-policy";
 import type { Tour, TourStep } from "./tour";
 
+/** How a tour ended: finished, closed by the user, or stopped with no outcome. */
+export type TourEnd = "completed" | "closed" | "abandoned";
+
 /**
  * Onboarding state: the running tour (if any), the checklist, and a one-shot
  * draft prompt the tour hands to the chat input.
@@ -31,8 +34,10 @@ export interface OnboardingState {
    * `abandonTour`). In memory only: a reload forgets it.
    */
   tourAbandoned: boolean;
-  /** How the last tour ended (true: finished), for telemetry; null before any. */
-  lastTourCompleted: boolean | null;
+  /** How the last tour ended, for telemetry; null before any has. */
+  lastTourEnd: TourEnd | null;
+  /** Times the user pressed Skip step, for telemetry (each is one skip). */
+  userSkips: number;
 
   hydrate: (progress: OnboardingProgress) => void;
   startTour: (tour: Tour<unknown>) => void;
@@ -100,7 +105,8 @@ const useOnboardingStore = create<OnboardingState>((set, get) => ({
   progress: EMPTY_PROGRESS,
   hydrated: false,
   tourAbandoned: false,
-  lastTourCompleted: null,
+  lastTourEnd: null,
+  userSkips: 0,
 
   hydrate: (progress) => set({ progress, hydrated: true }),
 
@@ -116,17 +122,21 @@ const useOnboardingStore = create<OnboardingState>((set, get) => ({
     const { tour, stepIndex, history } = get();
     if (!tour || (from !== undefined && from !== stepIndex)) return;
     const next = enterFrom(tour.steps, stepIndex + 1);
-    if (next >= tour.steps.length) return get().endTour(true);
     set({
       stepIndex: next,
       history: skipped ? history : [...history, stepIndex],
     });
+    // Past the last step, as in `startTour`: the move is recorded first, so
+    // telemetry sees which steps were passed over on the way out.
+    if (next >= tour.steps.length) get().endTour(true);
   },
 
   skipStep: (from) => {
     const { tour, stepIndex } = get();
     if (!tour || from !== stepIndex) return;
     tour.steps[stepIndex].onSkip?.();
+    // Its own update, before the move: Skip step otherwise advances like Next.
+    set((state) => ({ userSkips: state.userSkips + 1 }));
     get().advance(false, from);
   },
 
@@ -145,14 +155,20 @@ const useOnboardingStore = create<OnboardingState>((set, get) => ({
       tour: null,
       stepIndex: 0,
       history: [],
-      lastTourCompleted: completed,
+      lastTourEnd: completed ? "completed" : "closed",
     });
     tour.onEnd?.(completed);
   },
 
   abandonTour: () => {
     if (!get().tour) return;
-    set({ tour: null, stepIndex: 0, history: [], tourAbandoned: true });
+    set({
+      tour: null,
+      stepIndex: 0,
+      history: [],
+      tourAbandoned: true,
+      lastTourEnd: "abandoned",
+    });
   },
 
   recordTourOutcome: (outcome, covered = []) =>

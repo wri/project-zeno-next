@@ -34,6 +34,9 @@ import type { UiTour, UiTourStep } from "../types";
 const DATASETS_LABEL = ChatContextOptions.layer.label;
 const AREAS_LABEL = ChatContextOptions.area.label;
 
+/** Content version of the walkthroughs, sent with tour telemetry. */
+const CHECKLIST_TOURS_VERSION = 1;
+
 export interface ChecklistItem {
   readonly id: ChecklistItemId;
   readonly label: string;
@@ -300,6 +303,7 @@ export function createChecklistTour(item: ChecklistItem): UiTour {
   const last = item.steps.length - 1;
   return {
     id: `checklist-${item.id}`,
+    version: CHECKLIST_TOURS_VERSION,
     steps: item.steps.map((s, i) =>
       i === last ? { ...s, ctaLabel: s.ctaLabel ?? "Done" } : s
     ),

@@ -102,6 +102,11 @@ export interface TourStep<Body> {
 
 export interface Tour<Body> {
   readonly id: string;
+  /**
+   * Content version, sent with tour telemetry so funnels from different
+   * versions of a tour aren't mixed. Raise it when the steps change.
+   */
+  readonly version?: number;
   readonly steps: readonly TourStep<Body>[];
   /** Runs when the tour closes; `completed` is false when skipped. */
   readonly onEnd?: (completed: boolean) => void;

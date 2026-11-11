@@ -46,6 +46,8 @@ export type OnboardingTourEvent =
   | {
       event: "tour_started";
       tour_id: string;
+      /** The tour's content version (0 if it declares none). */
+      tour_version: number;
       step_count: number;
       /** The user had not finished or skipped the first-run tour before. */
       first_visit: boolean;
@@ -62,15 +64,21 @@ export type OnboardingTourEvent =
       tour_id: string;
       step_id: string;
       step_number: number;
-      /** "user": left an action step without doing it; "tour": passed over automatically. */
+      /**
+       * "user": pressed Skip step. "tour": passed over without being done,
+       * including steps never shown (one event per step).
+       */
       skipped_by: "user" | "tour";
+      /** 0 for a step passed over as it opened. */
       ms_on_step: number;
     }
   | {
       event: "tour_ended";
       tour_id: string;
-      outcome: "completed" | "closed";
-      /** The step the tour ended on. */
+      tour_version: number;
+      /** "abandoned": stopped with no outcome (overlay gone, route changed). */
+      outcome: "completed" | "closed" | "abandoned";
+      /** The step the tour ended on; the last step when it ran to the end. */
       step_id: string;
       step_number: number;
       step_count: number;

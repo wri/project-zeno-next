@@ -11,26 +11,39 @@ import { findAnchor } from "./use-target-rect";
 
 const anchorShown = (id: TourAnchorId) => findAnchor(id) !== null;
 
+let subscribed = false;
+
 /**
- * Sends tour telemetry (`tour_*` events, see `tourTelemetryEvents`) while
- * `enabled`. It subscribes to the onboarding store in an effect, so it does
- * nothing during render (prerender) or with the feature flag off.
+ * Sends tour telemetry (`tour_*` events, see `tourTelemetryEvents`) once the
+ * feature flag is on. It subscribes in an effect, so nothing runs during
+ * render (prerender) or with the flag off.
  */
 export function useTourTelemetry(enabled: boolean): void {
   useEffect(() => {
-    if (!enabled) return;
-    let enteredAt = Date.now();
-    return useOnboardingStore.subscribe((next, prev) => {
-      if (next.tour === prev.tour && next.stepIndex === prev.stepIndex) return;
-      const now = Date.now();
-      // Runs inside the store update, before React re-renders, so the DOM
-      // still shows the step being left.
-      const events = tourTelemetryEvents(prev, next, {
-        anchorShown,
-        msOnStep: now - enteredAt,
-      });
-      enteredAt = now;
-      for (const event of events) trackEvent(event);
-    });
+    if (enabled) subscribeTourTelemetry();
   }, [enabled]);
+}
+
+/**
+ * Subscribes once per page and stays subscribed. `OnboardingTour` abandons a
+ * running tour as it unmounts (e.g. the window narrows to mobile), and React
+ * runs a parent's effect cleanups before its children's: a subscription owned
+ * by that component would already be gone and miss `tour_ended`.
+ */
+function subscribeTourTelemetry(): void {
+  if (subscribed) return;
+  subscribed = true;
+  let enteredAt = Date.now();
+  useOnboardingStore.subscribe((next, prev) => {
+    const now = Date.now();
+    // Runs inside the store update, before React re-renders, so the DOM
+    // still shows the step being left.
+    const events = tourTelemetryEvents(prev, next, {
+      anchorShown,
+      msOnStep: now - enteredAt,
+    });
+    if (next.tour !== prev.tour || next.stepIndex !== prev.stepIndex)
+      enteredAt = now;
+    for (const event of events) trackEvent(event);
+  });
 }
