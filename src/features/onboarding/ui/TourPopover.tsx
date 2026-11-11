@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Button, CloseButton, Flex, Text } from "@chakra-ui/react";
-import type { ReactNode, Ref } from "react";
+import { useEffect, useState, type ReactNode, type Ref } from "react";
 
 import type { PopoverPlacement } from "../lib/geometry";
 
@@ -14,7 +14,8 @@ export const SKIP_STEP_LABEL = "Skip step";
 
 /**
  * Where the user is in the tour: done steps tinted, the current one a pill,
- * the rest grey. Gives a sense of how much is left at a glance.
+ * the rest grey. Gives a sense of how much is left at a glance. Every dot has
+ * at least 3:1 contrast on the popover.
  */
 function ProgressDots({ current, total }: { current: number; total: number }) {
   return (
@@ -25,8 +26,13 @@ function ProgressDots({ current, total }: { current: number; total: number }) {
           h="6px"
           w={i === current ? "16px" : "6px"}
           rounded="full"
-          bg={i <= current ? "primary.solid" : "border"}
-          opacity={i < current ? 0.45 : 1}
+          bg={
+            i === current
+              ? "primary.solid"
+              : i < current
+                ? "primary.400"
+                : "neutral.500"
+          }
           transition="width 0.2s, background 0.2s"
         />
       ))}
@@ -34,8 +40,33 @@ function ProgressDots({ current, total }: { current: number; total: number }) {
   );
 }
 
+const FADE = "opacity 0.2s ease, visibility 0.2s";
+const GLIDE = "left 0.35s ease, top 0.35s ease";
+
+/**
+ * Follow a moving target smoothly, but only from the frame after the popover
+ * appears: it fades in at its place instead of sliding there.
+ */
+function useGlideOnceVisible(visible: boolean): boolean {
+  const [glide, setGlide] = useState(false);
+  useEffect(() => {
+    if (!visible) return;
+    const frame = window.requestAnimationFrame(() => setGlide(true));
+    return () => {
+      window.cancelAnimationFrame(frame);
+      setGlide(false);
+    };
+  }, [visible]);
+  return glide && visible;
+}
+
 export interface TourPopoverProps {
   ref?: Ref<HTMLDivElement>;
+  /**
+   * Shown: the step's target is measured (see `popoverReady`) and so is the
+   * popover. Hidden, it still lays out, so it can be measured.
+   */
+  visible: boolean;
   placement: PopoverPlacement;
   wide: boolean;
   eyebrow?: string;
@@ -88,6 +119,7 @@ function Arrow({ placement }: { placement: PopoverPlacement }) {
 export function TourPopover(props: TourPopoverProps) {
   const {
     ref,
+    visible,
     placement,
     wide,
     eyebrow,
@@ -108,6 +140,7 @@ export function TourPopover(props: TourPopoverProps) {
     onSecondary,
     onClose,
   } = props;
+  const glide = useGlideOnceVisible(visible);
 
   return (
     <Box
@@ -120,17 +153,23 @@ export function TourPopover(props: TourPopoverProps) {
       top={`${placement.y}px`}
       w={`${wide ? POPOVER_WIDE_WIDTH_PX : POPOVER_WIDTH_PX}px`}
       maxW="calc(100vw - 24px)"
+      // The footer stays on screen on short windows; the body scrolls.
+      maxH="calc(100dvh - 24px)"
+      display="flex"
+      flexDirection="column"
       bg="bg"
       rounded="lg"
-      boxShadow="0 16px 48px rgba(0,0,0,0.28)"
+      boxShadow="lg"
       pointerEvents="auto"
+      opacity={visible ? 1 : 0}
+      visibility={visible ? "visible" : "hidden"}
       css={{
-        transition: "left 0.35s ease, top 0.35s ease",
+        transition: glide ? `${FADE}, ${GLIDE}` : FADE,
         "@media (prefers-reduced-motion: reduce)": { transition: "none" },
       }}
     >
       <Arrow placement={placement} />
-      <Box position="relative" px="5" pt="4" pb="3">
+      <Box position="relative" flexShrink={0} px="5" pt="4">
         <CloseButton
           size="xs"
           position="absolute"
@@ -168,6 +207,8 @@ export function TourPopover(props: TourPopoverProps) {
         >
           {title}
         </Text>
+      </Box>
+      <Box px="5" pb="3" minH={0} overflowY="auto">
         <Box
           fontSize="sm"
           lineHeight="1.55"
@@ -181,7 +222,7 @@ export function TourPopover(props: TourPopoverProps) {
           {body}
         </Box>
       </Box>
-      <Flex align="center" gap="2" px="5" pb="4" pt="1">
+      <Flex align="center" gap="2" flexShrink={0} px="5" pb="4" pt="1">
         <Flex flex="1" direction="column" gap="1.5" minW={0}>
           {/* A one-step guide has no progress to show. */}
           {stepCount > 1 && (
@@ -201,8 +242,8 @@ export function TourPopover(props: TourPopoverProps) {
                 w="8px"
                 h="8px"
                 rounded="full"
-                bg="#C3D16F"
-                boxShadow="0 0 0 3px rgba(195,209,111,0.3)"
+                bg="secondary.400"
+                boxShadow="0 0 0 3px {colors.secondary.200}"
               />
               {hint ?? "Use the highlighted control"}
             </Flex>

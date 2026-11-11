@@ -11,6 +11,7 @@ import { clipToViewport } from "../lib/geometry";
 import {
   nextTargetState,
   targetStateForStep,
+  unmeasuredTargetState,
   type MeasuredTargetState,
   type TargetState,
 } from "../lib/target-state";
@@ -49,12 +50,9 @@ export function useTargetRect(
   target: TourTarget | undefined,
   stepKey: string
 ): TargetState {
-  const [stored, setStored] = useState<MeasuredTargetState>({
-    stepKey,
-    rect: null,
-    found: false,
-    missingSince: null,
-  });
+  const [stored, setStored] = useState<MeasuredTargetState>(() =>
+    unmeasuredTargetState(stepKey)
+  );
 
   useEffect(() => {
     const startedAt = Date.now();

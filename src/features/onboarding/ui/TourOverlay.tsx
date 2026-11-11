@@ -35,7 +35,7 @@ import {
   TourPopover,
 } from "./TourPopover";
 import type { UiTour, UiTourStep } from "./types";
-import type { TargetState } from "../lib/target-state";
+import { popoverReady, type TargetState } from "../lib/target-state";
 import { useTargetRect } from "./use-target-rect";
 
 /** Above the chat panel (1100) and Chakra overlays used inside the app. */
@@ -97,6 +97,17 @@ const RING_CSS = {
     animation: "none",
   },
 };
+/**
+ * In the css prop, not inline: an inline `animation` would beat the
+ * reduced-motion query above.
+ */
+const RING_PULSE_CSS = {
+  ...RING_CSS,
+  animation: "onboardingPulse 1.4s ease-out infinite",
+};
+
+/** Placement size until the popover has measured itself (it is hidden). */
+const UNMEASURED_POPOVER: Size = { width: POPOVER_WIDTH_PX, height: 0 };
 
 const rectStyle = (r: Rect) => ({
   left: `${r.x}px`,
@@ -167,6 +178,8 @@ function ActiveTour({ tour, stepIndex }: { tour: UiTour; stepIndex: number }) {
     width: 0,
     height: 0,
   };
+  // Only on this step's own target: not on the previous one, during the hold.
+  const pulse = target.found && awaitingAction && !reduceMotion;
 
   return (
     <Box
@@ -183,15 +196,8 @@ function ActiveTour({ tour, stepIndex }: { tour: UiTour; stepIndex: number }) {
         aria-hidden
       />
       <Box
-        css={RING_CSS}
-        style={{
-          ...rectStyle(ringRect),
-          opacity: hole ? 1 : 0,
-          animation:
-            hole && awaitingAction
-              ? "onboardingPulse 1.4s ease-out infinite"
-              : undefined,
-        }}
+        css={pulse ? RING_PULSE_CSS : RING_CSS}
+        style={{ ...rectStyle(ringRect), opacity: hole ? 1 : 0 }}
         aria-hidden
       />
       <StepView
@@ -238,10 +244,14 @@ function StepView({
   const [doneAtEntry] = useState(() => step.waitFor?.() ?? true);
   // Steps with `autoAdvance: false` unlock Next instead of moving on.
   const [unlocked, setUnlocked] = useState(false);
-  const [popoverSize, setPopoverSize] = useState<Size>({
-    width: POPOVER_WIDTH_PX,
-    height: 220,
-  });
+  // Null until the popover has measured itself; it stays hidden until then.
+  const [popoverSize, setPopoverSize] = useState<Size | null>(null);
+  const visible =
+    popoverSize !== null &&
+    popoverReady(target, {
+      hasTarget: !!step.target,
+      optional: !!step.optional,
+    });
 
   const advance = useOnboardingStore((s) => s.advance);
   const skipStepFrom = useOnboardingStore((s) => s.skipStep);
@@ -325,17 +335,18 @@ function StepView({
     return () => window.clearInterval(poll);
   }, [step, found, missingSince, skip]);
 
-  // Keyboard: Escape closes; arrows page through passive steps.
+  // Keyboard: Escape closes; arrows page through passive steps, once the
+  // step's popover shows (no paging past a step the user has not seen).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") close();
-      if (awaitingAction) return;
+      if (awaitingAction || !visible) return;
       if (e.key === "ArrowRight") next();
       if (e.key === "ArrowLeft" && canGoBack && !step.noBack) back();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [awaitingAction, close, next, back, canGoBack, step.noBack]);
+  }, [awaitingAction, visible, close, next, back, canGoBack, step.noBack]);
 
   // Track the popover's size (it changes with each step's copy) for placement.
   useEffect(() => {
@@ -344,7 +355,7 @@ function StepView({
     const observer = new ResizeObserver(() => {
       const { offsetWidth: width, offsetHeight: height } = el;
       setPopoverSize((prev) =>
-        prev.width === width && prev.height === height
+        prev?.width === width && prev.height === height
           ? prev
           : { width, height }
       );
@@ -355,7 +366,7 @@ function StepView({
 
   const placement: PopoverPlacement = placePopover(
     hole,
-    popoverSize,
+    popoverSize ?? UNMEASURED_POPOVER,
     viewport,
     step.placement
   );
@@ -374,6 +385,7 @@ function StepView({
       )}
       <TourPopover
         ref={popoverRef}
+        visible={visible}
         placement={placement}
         wide={!step.target}
         eyebrow={step.eyebrow}

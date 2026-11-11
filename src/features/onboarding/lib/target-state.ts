@@ -6,7 +6,7 @@ import { sameRect } from "./geometry";
  * appears (a panel sliding in, a card rendering), so the veil glides from one
  * target to the next instead of flashing to full cover in between.
  */
-const HOLD_PREVIOUS_MS = 600;
+export const HOLD_PREVIOUS_MS = 600;
 
 export interface TargetState {
   /** Where the spotlight should be: the target, or briefly the previous one. */
@@ -18,6 +18,13 @@ export interface TargetState {
    * the moment it last saw it. Null while found, or not measured yet.
    */
   readonly missingSince: number | null;
+  /**
+   * The target is not found yet and the step is still inside
+   * {@link HOLD_PREVIOUS_MS} (or not measured yet): the spotlight holds the
+   * previous one. A state of its own, because when the previous step had no
+   * target the rect is null either way, and the hold's end must re-render.
+   */
+  readonly holding: boolean;
 }
 
 /** The state as stored: which step it was measured for. */
@@ -37,7 +44,34 @@ export function targetStateForStep(
 ): TargetState {
   return stored.stepKey === stepKey
     ? stored
-    : { rect: stored.rect, found: false, missingSince: null };
+    : { rect: stored.rect, found: false, missingSince: null, holding: true };
+}
+
+/** A step's state before its first measurement. */
+export const unmeasuredTargetState = (
+  stepKey: string
+): MeasuredTargetState => ({
+  stepKey,
+  rect: null,
+  found: false,
+  missingSince: null,
+  holding: true,
+});
+
+/**
+ * Whether the step's popover may show. It waits for the target, so it never
+ * appears beside the previous one and slides across:
+ *  - a step without a target, or with its target found: ready;
+ *  - during the hold: not ready;
+ *  - after the hold, target still missing: a required step shows centred; an
+ *    optional one stays hidden until its target appears or it is skipped.
+ */
+export function popoverReady(
+  state: TargetState,
+  step: { readonly hasTarget: boolean; readonly optional: boolean }
+): boolean {
+  if (!step.hasTarget || state.found) return true;
+  return !state.holding && !step.optional;
 }
 
 export interface TargetMeasurement {
@@ -65,7 +99,13 @@ export function nextTargetState(
   if (m.rect)
     return sameStep && prev.found && sameRect(prev.rect, m.rect)
       ? stored
-      : { stepKey: m.stepKey, rect: m.rect, found: true, missingSince: null };
+      : {
+          stepKey: m.stepKey,
+          rect: m.rect,
+          found: true,
+          missingSince: null,
+          holding: false,
+        };
   const holding = m.hasTarget && m.now - m.startedAt < HOLD_PREVIOUS_MS;
   const missingSince = !m.hasTarget
     ? null
@@ -77,11 +117,13 @@ export function nextTargetState(
     rect: holding ? prev.rect : null,
     found: false,
     missingSince,
+    holding,
   };
   return sameStep &&
     !prev.found &&
     prev.rect === next.rect &&
-    prev.missingSince === next.missingSince
+    prev.missingSince === next.missingSince &&
+    prev.holding === next.holding
     ? stored
     : next;
 }
