@@ -14,11 +14,13 @@ import useZapStore from "../model/zap-store";
 export function ZapRunner() {
   const pending = useZapStore((s) => s.pendingAnalysis);
   const { status, run } = useAnalysis();
-  const running = useRef<number | null>(null);
+  const running = useRef<{ rowId: string; step: number } | null>(null);
 
   useEffect(() => {
     if (pending === null || running.current === pending) return;
-    const step = useZapStore.getState().plan?.steps[pending];
+    const step = useZapStore
+      .getState()
+      .rows.find((row) => row.id === pending.rowId)?.plan.steps[pending.step];
     if (step?.kind !== "analysis") return;
     running.current = pending;
     const { args } = step;
@@ -38,11 +40,11 @@ export function ZapRunner() {
   }, [pending, run]);
 
   useEffect(() => {
-    const index = running.current;
-    if (index === null || (status !== "done" && status !== "error")) return;
+    const task = running.current;
+    if (task === null || (status !== "done" && status !== "error")) return;
     running.current = null;
     const store = useZapStore.getState();
-    store.setStep(index, status === "done" ? "done" : "failed");
+    store.setStep(task.rowId, task.step, status === "done" ? "done" : "failed");
     store.finish();
   }, [status]);
 
