@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Box,
   Button,
@@ -15,8 +15,10 @@ import {
 } from "@phosphor-icons/react";
 
 import { toaster } from "@/app/components/ui/toaster";
+import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
 import type { Dashboard } from "../api/schemas";
 import { wasJustCreated } from "../lib/dates";
+import DashboardAlertsMenu from "./DashboardAlertsMenu";
 import { useRenameDashboard } from "./dashboardQueries";
 
 /** The 30px dashboard title, shared with the report page's document header. */
@@ -63,6 +65,18 @@ export default function DashboardHeader({
   const [draft, setDraft] = useState<string | null>(null);
   const renameDashboard = useRenameDashboard(dashboard.id);
   const editing = draft !== null;
+  // A subscription is the owner's own consent, so superusers, who also
+  // receive `subscriptions`, don't get the switch. The switch shows only
+  // while the dashboard is eligible for subscription.
+  const emailBeta = useFeatureFlag("email-subscriptions");
+  const subscriptions = dashboard.subscriptions;
+  const showAlerts =
+    emailBeta &&
+    isOwner &&
+    dashboard.eligible_for_subscription &&
+    !!subscriptions;
+  // The pinned copy of the header is mounted too; only this one tells.
+  useEmailTurnedOffNotice(dashboard, emailBeta && isOwner && !condensed);
 
   const commit = () => {
     const name = draft?.trim();
@@ -174,6 +188,13 @@ export default function DashboardHeader({
       </Box>
 
       <Flex gap="12px" align="center" flexShrink={0}>
+        {showAlerts && (
+          <DashboardAlertsMenu
+            dashboardId={dashboard.id}
+            areaName={dashboard.aois[0]?.name ?? dashboard.name}
+            emailEnabled={subscriptions.emailEnabled}
+          />
+        )}
         <Button {...DASHBOARD_ACTION_PROPS} onClick={openReport}>
           <FilePdfIcon size={16} />
           Export
@@ -188,4 +209,37 @@ export default function DashboardHeader({
       </Flex>
     </Flex>
   );
+}
+
+/**
+ * Tells the owner when the email subscription was deleted because the
+ * dashboard lost its last integrated alerts widget: the backend deletes it
+ * then, and the switch disappears with it.
+ */
+function useEmailTurnedOffNotice(dashboard: Dashboard, enabled: boolean) {
+  const emailOn =
+    dashboard.eligible_for_subscription &&
+    !!dashboard.subscriptions?.emailEnabled;
+  const previous = useRef<{ id: string; emailOn: boolean } | null>(null);
+
+  useEffect(() => {
+    const before = previous.current;
+    previous.current = { id: dashboard.id, emailOn };
+    if (
+      enabled &&
+      before?.id === dashboard.id &&
+      before.emailOn &&
+      !dashboard.eligible_for_subscription
+    ) {
+      // Placeholder copy until product and design settle the wording and
+      // whether to warn before the removal instead.
+      toaster.create({
+        title: "Email alerts turned off",
+        description:
+          "This dashboard no longer has an integrated alerts chart or map, so its email alerts are off. Add one back to turn them on again.",
+        type: "info",
+        duration: 6000,
+      });
+    }
+  }, [dashboard.id, dashboard.eligible_for_subscription, emailOn, enabled]);
 }

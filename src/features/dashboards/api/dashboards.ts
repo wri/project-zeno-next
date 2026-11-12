@@ -117,6 +117,25 @@ export async function renameDashboard(
   });
 }
 
+// Subscribes one dashboard to integrated alerts notification emails, or
+// unsubscribes it (owner only). The body is the desired state, so no
+// channels unsubscribes. The backend answers 409 when email is asked for on
+// an ineligible dashboard. The response (the updated dashboard) is ignored:
+// the shared optimistic mutation refetches on settle anyway.
+export async function setEmailSubscription(
+  dashboardId: string,
+  enabled: boolean
+): Promise<void> {
+  await readJson<unknown>(`/api/dashboards/${dashboardId}/subscriptions`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      datasets: ["integrated_alerts"],
+      channels: enabled ? ["email"] : [],
+    }),
+  });
+}
+
 export async function deleteDashboard(dashboardId: string): Promise<void> {
   // 204 No Content — bypass readJson, which would choke on the empty body.
   const res = await apiFetch(`/api/dashboards/${dashboardId}`, {
