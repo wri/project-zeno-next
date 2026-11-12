@@ -175,41 +175,56 @@ export async function updateSection(
   );
 }
 
+/** The body of `POST /api/dashboards/{id}/widgets`. */
+export interface WidgetCreate {
+  widget_type: "insight" | "map" | "text";
+  insight_id?: string | null;
+  config?: Record<string, unknown>;
+}
+
+// Adds one widget. The backend assigns the id and the position. The response
+// is the dashboard without insight expansion: use it to find the new widget,
+// but do not write it into the detail cache — invalidate and refetch instead.
+export async function addWidget(
+  dashboardId: string,
+  widget: WidgetCreate
+): Promise<Dashboard> {
+  const data = await readJson<unknown>(
+    `/api/dashboards/${dashboardId}/widgets`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(widget),
+    }
+  );
+  return DashboardResponseSchema.parse(data);
+}
+
 // Adds a persisted insight to a dashboard (the chat-side "Add to dashboard"
 // toggle). Adding an insight that is already on the dashboard fails with 409
-// (the error carries `status`), and the response is the dashboard without
-// insight expansion — callers invalidate and refetch.
+// (the error carries `status`) — callers invalidate and refetch.
 export async function addInsightWidget(
   dashboardId: string,
   insightId: string,
   config?: Record<string, unknown>
 ): Promise<void> {
-  await readJson<unknown>(`/api/dashboards/${dashboardId}/widgets`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      widget_type: "insight",
-      insight_id: insightId,
-      // A chart subset (config.chartIds) rides along when the pane adds a single
-      // chart; omitted for a whole-insight add so the widget shows all charts.
-      ...(config ? { config } : {}),
-    }),
+  await addWidget(dashboardId, {
+    widget_type: "insight",
+    insight_id: insightId,
+    // A chart subset (config.chartIds) rides along when the pane adds a single
+    // chart; omitted for a whole-insight add so the widget shows all charts.
+    ...(config ? { config } : {}),
   });
 }
 
 // Adds a blank note (the "Text block" suggested module) — an empty
 // `widget_type: "text"` widget the owner fills in afterwards via
-// DashboardTextWidgetCard's pencil. Mirrors addInsightWidget: the backend
-// assigns id/position, so callers refetch rather than read the response.
-// The backend's `validate_text_config` requires `config.text` to be a
-// string (any string, including empty) — an empty string still renders as
-// a blank note client-side (`widgetText` treats a blank string as "no text").
+// DashboardTextWidgetCard's pencil. The backend's `validate_text_config`
+// requires `config.text` to be a string (any string, including empty) — an
+// empty string still renders as a blank note client-side (`widgetText` treats
+// a blank string as "no text").
 export async function addTextWidget(dashboardId: string): Promise<void> {
-  await readJson<unknown>(`/api/dashboards/${dashboardId}/widgets`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ widget_type: "text", config: { text: "" } }),
-  });
+  await addWidget(dashboardId, { widget_type: "text", config: { text: "" } });
 }
 
 // Deletes a section. With `deleteWidgets` its widgets go too; without, they

@@ -167,7 +167,7 @@ describe("dashboard date helpers", () => {
 describe("addTextWidget", () => {
   it("sends config.text as a string, per the backend's validate_text_config", async () => {
     vi.mocked(apiFetch).mockResolvedValue(
-      new Response(JSON.stringify({}), { status: 200 })
+      new Response(JSON.stringify(DASHBOARD_BODY), { status: 201 })
     );
 
     await addTextWidget("d1");
