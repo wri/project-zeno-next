@@ -180,6 +180,10 @@ export interface WidgetCreate {
   widget_type: "insight" | "map" | "text";
   insight_id?: string | null;
   config?: Record<string, unknown>;
+  /** The order in the container of the widget. Default: the end. */
+  position?: number | null;
+  /** The section of the widget. Absent or null: the top level. */
+  section_id?: string | null;
 }
 
 // Adds one widget. The backend assigns the id and the position. The response
