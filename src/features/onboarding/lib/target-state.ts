@@ -8,11 +8,31 @@ import { sameRect } from "./geometry";
  */
 export const HOLD_PREVIOUS_MS = 600;
 
+/** Which of a step's anchors the spotlight is on. */
+export type LitAnchor = "target" | "fallback";
+
+/**
+ * The anchor a step lights: its target when it is on screen, else its
+ * fallback when that is (see `TourStep.fallback`), else none. Asked on every
+ * measurement, so the spotlight moves to the target as soon as it appears,
+ * and back to the fallback if it goes. `fallback`: the step has one and it
+ * is on screen.
+ */
+export function litAnchor(onScreen: {
+  readonly target: boolean;
+  readonly fallback: boolean;
+}): LitAnchor | null {
+  if (onScreen.target) return "target";
+  return onScreen.fallback ? "fallback" : null;
+}
+
 export interface TargetState {
   /** Where the spotlight should be: the target, or briefly the previous one. */
   readonly rect: Rect | null;
-  /** Whether `rect` is this step's own target. */
+  /** Whether `rect` is this step's own: its target, or its fallback. */
   readonly found: boolean;
+  /** `rect` is the step's fallback: its target is not on screen. */
+  readonly onFallback: boolean;
   /**
    * Since when this step has been without its target: the step's start, or
    * the moment it last saw it. Null while found, or not measured yet.
@@ -44,7 +64,13 @@ export function targetStateForStep(
 ): TargetState {
   return stored.stepKey === stepKey
     ? stored
-    : { rect: stored.rect, found: false, missingSince: null, holding: true };
+    : {
+        rect: stored.rect,
+        found: false,
+        onFallback: false,
+        missingSince: null,
+        holding: true,
+      };
 }
 
 /** A step's state before its first measurement. */
@@ -54,6 +80,7 @@ export const unmeasuredTargetState = (
   stepKey,
   rect: null,
   found: false,
+  onFallback: false,
   missingSince: null,
   holding: true,
 });
@@ -76,8 +103,10 @@ export function popoverReady(
 
 export interface TargetMeasurement {
   readonly stepKey: string;
-  /** The target's rect on screen, or null when it isn't there. */
+  /** The lit anchor's rect on screen, or null when none is there. */
   readonly rect: Rect | null;
+  /** `rect` is the step's fallback (see `litAnchor`). */
+  readonly onFallback: boolean;
   /** The step has a target at all. */
   readonly hasTarget: boolean;
   readonly startedAt: number;
@@ -97,12 +126,16 @@ export function nextTargetState(
     ? stored
     : { ...targetStateForStep(stored, m.stepKey), stepKey: m.stepKey };
   if (m.rect)
-    return sameStep && prev.found && sameRect(prev.rect, m.rect)
+    return sameStep &&
+      prev.found &&
+      prev.onFallback === m.onFallback &&
+      sameRect(prev.rect, m.rect)
       ? stored
       : {
           stepKey: m.stepKey,
           rect: m.rect,
           found: true,
+          onFallback: m.onFallback,
           missingSince: null,
           holding: false,
         };
@@ -116,6 +149,7 @@ export function nextTargetState(
     stepKey: m.stepKey,
     rect: holding ? prev.rect : null,
     found: false,
+    onFallback: false,
     missingSince,
     holding,
   };

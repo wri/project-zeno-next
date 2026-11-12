@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   HOLD_PREVIOUS_MS,
+  litAnchor,
   nextTargetState,
   popoverReady,
   targetStateForStep,
@@ -20,12 +21,14 @@ describe("targetStateForStep", () => {
       stepKey: "tour:analysis-card",
       rect,
       found: false,
+      onFallback: false,
       missingSince: 1_000,
       holding: false,
     };
     expect(targetStateForStep(stored, "tour:explanation")).toEqual({
       rect,
       found: false,
+      onFallback: false,
       missingSince: null,
       holding: true,
     });
@@ -36,6 +39,7 @@ describe("targetStateForStep", () => {
       stepKey: "tour:a",
       rect,
       found: true,
+      onFallback: false,
       missingSince: null,
       holding: false,
     };
@@ -48,6 +52,7 @@ describe("nextTargetState", () => {
     stepKey: "tour:a",
     rect,
     found: true,
+    onFallback: false,
     missingSince: null,
     holding: false,
   };
@@ -59,6 +64,7 @@ describe("nextTargetState", () => {
         stepKey: "tour:a",
         rect: null,
         hasTarget: true,
+        onFallback: false,
         startedAt: 900,
         now: 950,
       }
@@ -74,6 +80,7 @@ describe("nextTargetState", () => {
       stepKey: "tour:a",
       rect: null,
       hasTarget: true,
+      onFallback: false,
       startedAt: 0,
       now: 7_000,
     });
@@ -81,6 +88,7 @@ describe("nextTargetState", () => {
       stepKey: "tour:a",
       rect: null,
       found: false,
+      onFallback: false,
       missingSince: 7_000,
       holding: false,
     });
@@ -92,6 +100,7 @@ describe("nextTargetState", () => {
         stepKey: "tour:a",
         rect: { ...rect },
         hasTarget: true,
+        onFallback: false,
         startedAt: 0,
         now: 1,
       })
@@ -100,6 +109,7 @@ describe("nextTargetState", () => {
       stepKey: "tour:a",
       rect: null,
       hasTarget: true,
+      onFallback: false,
       startedAt: 0,
       now: 7_000,
     });
@@ -108,6 +118,7 @@ describe("nextTargetState", () => {
         stepKey: "tour:a",
         rect: null,
         hasTarget: true,
+        onFallback: false,
         startedAt: 0,
         now: 7_080,
       })
@@ -120,6 +131,7 @@ describe("nextTargetState", () => {
         stepKey: "tour:a",
         rect: other,
         hasTarget: true,
+        onFallback: false,
         startedAt: 0,
         now: 1,
       }).rect
@@ -131,6 +143,7 @@ describe("nextTargetState", () => {
       stepKey: "tour:done",
       rect: null,
       hasTarget: false,
+      onFallback: false,
       startedAt: 0,
       now: 1,
     });
@@ -138,6 +151,7 @@ describe("nextTargetState", () => {
       stepKey: "tour:done",
       rect: null,
       found: false,
+      onFallback: false,
       missingSince: null,
       holding: false,
     });
@@ -163,6 +177,7 @@ describe("popoverReady", () => {
           stepKey: STEP,
           rect: seen,
           hasTarget,
+          onFallback: false,
           startedAt: STARTED_AT,
           now: STARTED_AT + at,
         }),
@@ -184,6 +199,7 @@ describe("popoverReady", () => {
         stepKey: "tour:a",
         rect,
         found: true,
+        onFallback: false,
         missingSince: null,
         holding: false,
       },
@@ -207,6 +223,7 @@ describe("popoverReady", () => {
       stepKey: "tour:a",
       rect,
       found: true,
+      onFallback: false,
       missingSince: null,
       holding: false,
     };
@@ -251,5 +268,67 @@ describe("popoverReady", () => {
       false,
     ]);
     expect(popoverReady(states[3], optional)).toBe(true);
+  });
+});
+
+describe("litAnchor", () => {
+  it("lights the target whenever it is on screen", () => {
+    expect(litAnchor({ target: true, fallback: true })).toBe("target");
+    expect(litAnchor({ target: true, fallback: false })).toBe("target");
+  });
+
+  it("lights the fallback while the target is not on screen", () => {
+    expect(litAnchor({ target: false, fallback: true })).toBe("fallback");
+  });
+
+  it("lights nothing when neither is there", () => {
+    expect(litAnchor({ target: false, fallback: false })).toBeNull();
+  });
+});
+
+describe("a step with a fallback", () => {
+  const STEP = "guide:dashboard-create";
+  const panel = { x: 8, y: 220, width: 408, height: 656 };
+  const button = { x: 20, y: 700, width: 380, height: 40 };
+  const poll = (
+    prev: MeasuredTargetState,
+    seen: TargetMeasurement["rect"],
+    onFallback: boolean
+  ) =>
+    nextTargetState(prev, {
+      stepKey: STEP,
+      rect: seen,
+      onFallback,
+      hasTarget: true,
+      startedAt: 0,
+      now: 1,
+    });
+
+  it("counts as found on its fallback, so it shows and can be docked", () => {
+    const onPanel = poll(unmeasuredTargetState(STEP), panel, true);
+    expect(onPanel).toMatchObject({ found: true, onFallback: true });
+    expect(popoverReady(onPanel, { hasTarget: true, optional: false })).toBe(
+      true
+    );
+  });
+
+  it("moves to the target as soon as it appears, and back if it goes", () => {
+    const onPanel = poll(unmeasuredTargetState(STEP), panel, true);
+    const onButton = poll(onPanel, button, false);
+    expect(onButton).toMatchObject({
+      rect: button,
+      found: true,
+      onFallback: false,
+    });
+    expect(poll(onButton, panel, true)).toMatchObject({
+      rect: panel,
+      onFallback: true,
+    });
+  });
+
+  it("changes state when only the lit anchor changes, at the same place", () => {
+    const onPanel = poll(unmeasuredTargetState(STEP), panel, true);
+    expect(poll(onPanel, { ...panel }, false)).not.toBe(onPanel);
+    expect(poll(onPanel, { ...panel }, true)).toBe(onPanel);
   });
 });

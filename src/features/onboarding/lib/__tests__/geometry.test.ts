@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  clipToAll,
   clipToViewport,
   dockPlacement,
   intersectRect,
@@ -251,5 +252,29 @@ describe("sameRect", () => {
   it("handles nulls", () => {
     expect(sameRect(null, null)).toBe(true);
     expect(sameRect(null, { x: 0, y: 0, width: 1, height: 1 })).toBe(false);
+  });
+});
+
+describe("clipToAll", () => {
+  const card = { x: 20, y: 500, width: 360, height: 40 };
+
+  it("keeps what every clipping box shows", () => {
+    const list = { x: 10, y: 300, width: 400, height: 220 };
+    expect(clipToAll(card, [list])).toEqual({
+      x: 20,
+      y: 500,
+      width: 360,
+      height: 20,
+    });
+  });
+
+  it("shows nothing of a card scrolled out of its list", () => {
+    const list = { x: 10, y: 100, width: 400, height: 300 };
+    const panel = { x: 0, y: 0, width: 420, height: 900 };
+    expect(clipToAll(card, [list, panel])).toBeNull();
+  });
+
+  it("keeps the rect whole with nothing to clip it", () => {
+    expect(clipToAll(card, [])).toEqual(card);
   });
 });

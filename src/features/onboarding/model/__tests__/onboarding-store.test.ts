@@ -5,7 +5,7 @@ import useOnboardingStore, {
   selectChecklistShown,
   selectTourActive,
 } from "../onboarding-store";
-import type { Tour } from "../tour";
+import { anchorTarget, type Tour } from "../tour";
 
 const step = (id: string) => ({ id, title: id, body: null });
 const tour = (onEnd?: (c: boolean) => void): Tour<unknown> => ({
@@ -34,6 +34,33 @@ describe("onboarding store", () => {
     state().startTour(tour());
     expect(state().tour?.id).toBe("test");
     expect(state().stepIndex).toBe(0);
+  });
+
+  it("refuses a step whose fallback the overlay can't show", () => {
+    const anchors = {
+      target: anchorTarget("create-dashboard-nudge"),
+      fallback: anchorTarget("chat-panel"),
+    };
+    const bad = [
+      { fallback: anchors.fallback },
+      { ...anchors, focus: anchorTarget("chat-input") },
+      { ...anchors, optional: true },
+    ];
+    for (const extra of bad)
+      expect(() =>
+        state().startTour({
+          id: "test",
+          version: 1,
+          steps: [{ ...step("a"), ...extra }],
+        })
+      ).toThrow(/a fallback needs a target/);
+    expect(state().tour).toBeNull();
+    state().startTour({
+      id: "test",
+      version: 1,
+      steps: [{ ...step("a"), ...anchors }],
+    });
+    expect(state().tour?.id).toBe("test");
   });
 
   it("runs a step's onEnter before showing it", () => {

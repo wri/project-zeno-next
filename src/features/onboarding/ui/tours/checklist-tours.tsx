@@ -232,10 +232,15 @@ const ITEMS: Record<ChecklistItemId, Omit<ChecklistItem, "id">> = {
     steps: [
       {
         id: "dashboard-create",
-        // The chat, where the create button and then the dashboard card show.
-        target: anchorTarget(TOUR_ANCHORS.chatPanel),
+        // Only the button: a question typed in a lit chat input would use one
+        // of the user's daily prompts. The button shows only once an area
+        // with a dataset is on the map, so until then the whole chat is lit,
+        // and the user can open Datasets and Areas from the chat box. One
+        // padding and side suit both.
+        target: anchorTarget(TOUR_ANCHORS.createDashboardNudge),
+        fallback: anchorTarget(TOUR_ANCHORS.chatPanel),
         placement: "right",
-        padding: 4,
+        padding: 5,
         onEnter: closeExplorationPanels,
         title: "Create a dashboard",
         body: (

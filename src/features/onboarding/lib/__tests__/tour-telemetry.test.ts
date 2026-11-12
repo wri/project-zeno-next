@@ -189,6 +189,37 @@ describe("tourTelemetryEvents", () => {
     expect(names(list)).toEqual(["tour_step_viewed"]);
   });
 
+  describe("with a fallback", () => {
+    const WITH_FALLBACK: Tour<unknown> = {
+      ...TOUR,
+      steps: [
+        step("welcome"),
+        step("dashboard-create", {
+          target: anchorTarget("create-dashboard-nudge"),
+          fallback: anchorTarget("chat-panel"),
+        }),
+        step("next"),
+      ],
+    };
+    const leave = () =>
+      events(
+        state({ tour: WITH_FALLBACK, stepIndex: 1, history: [0] }),
+        state({ tour: WITH_FALLBACK, stepIndex: 2, history: [0, 1] })
+      ).filter((e) => e.event === "tour_target_missing");
+
+    it("misses nothing while the fallback stands in for the target", () => {
+      hidden = new Set(["create-dashboard-nudge"]);
+      expect(leave()).toEqual([]);
+    });
+
+    it("reports the fallback when neither shows", () => {
+      hidden = new Set(["create-dashboard-nudge", "chat-panel"]);
+      expect(leave().map((e) => "anchor_id" in e && e.anchor_id)).toEqual([
+        "chat-panel",
+      ]);
+    });
+  });
+
   describe("with an inner anchor (focus)", () => {
     const WITH_FOCUS: Tour<unknown> = {
       ...TOUR,

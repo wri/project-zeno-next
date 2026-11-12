@@ -9,6 +9,7 @@ import type { TourAnchorId } from "@/src/shared/lib/tour-anchors";
 
 import type { OnboardingState } from "../model/onboarding-store";
 import type { Tour, TourStep } from "../model/tour";
+import { litAnchor } from "./target-state";
 
 /** The store fields telemetry reads. */
 export type TourTelemetryState = Pick<
@@ -63,12 +64,22 @@ export function endOutcome(next: TourTelemetryState): TourEndOutcome {
 /**
  * The anchor a step left without: its target, or else the inner anchor it
  * points at (`focus`). One per step: with the target gone, its inside is too.
+ * A step with a fallback misses nothing while either shows (its target is
+ * often not there yet); with neither, the fallback is reported, as the one
+ * meant to be there all along.
  */
 function missingAnchor(
   step: TourStep<unknown>,
   probe: TourTelemetryProbe
 ): TourAnchorId | null {
-  const { target, focus } = step;
+  const { target, fallback, focus } = step;
+  if (fallback && target) {
+    const lit = litAnchor({
+      target: probe.anchorShown(target.id),
+      fallback: probe.anchorShown(fallback.id),
+    });
+    return lit ? null : fallback.id;
+  }
   if (target?.kind === "selector" && !probe.anchorShown(target.id))
     return target.id;
   if (focus?.kind === "selector" && !probe.anchorShown(focus.id))

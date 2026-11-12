@@ -38,6 +38,15 @@ export interface TourStep<Body> {
    * whole target stays lit and usable. Only shown with the target.
    */
   readonly focus?: TourTarget;
+  /**
+   * Lit while `target` is not on screen. For a target that shows only after
+   * the user acts (the Create Dashboard button, once an area and a dataset
+   * are on the map), on a step that must stay usable until then: the
+   * fallback is where the user does that first part. The spotlight moves to
+   * `target` as soon as it appears. Not with `focus` or `optional` (see
+   * `checkStepTargets`).
+   */
+  readonly fallback?: TourTarget;
   /** Preferred popover side; falls back to whichever side fits. */
   readonly placement?: Side;
   /** Spotlight padding around the target, px. Default 6. */
@@ -145,3 +154,16 @@ export const anchorTarget = (id: TourAnchorId): TourTarget => ({
   kind: "selector",
   id,
 });
+
+/**
+ * Fails loudly on a step whose anchors the overlay can't show. A fallback
+ * stands in for a target, so it needs one. It goes with neither an inner ring
+ * (`focus` would sit in whichever of the two is lit) nor `optional` (when to
+ * pass over a step with two anchors is not decided).
+ */
+export function checkStepTargets(step: TourStep<unknown>): void {
+  if (step.fallback && (!step.target || step.focus || step.optional))
+    throw new Error(
+      `Tour step "${step.id}": a fallback needs a target, and goes with neither focus nor optional.`
+    );
+}

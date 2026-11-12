@@ -200,7 +200,9 @@ function ActiveTour({ tour, stepIndex }: { tour: UiTour; stepIndex: number }) {
   const step = tour.steps[stepIndex];
   const stepKey = `${tour.id}:${step.id}`;
   const viewport = useViewport();
-  const target = useTargetRect(step.target, stepKey);
+  const target = useTargetRect(step.target, stepKey, {
+    fallback: step.fallback,
+  });
   // The control inside the target the copy names. Its target is scrolled
   // into view already.
   const focus = useTargetRect(step.focus, stepKey, { scroll: false });
@@ -330,7 +332,7 @@ function StepView({
   onTurnChange: (userTurn: boolean) => void;
   onAnnounce: (input: AnnouncementInput) => void;
 }) {
-  const { found, missingSince } = target;
+  const { found, onFallback, missingSince } = target;
   // Moved aside to a corner while the user works in the target.
   const docked = useOnboardingStore((s) => s.docked);
   const onDock = useOnboardingStore((s) => s.setDocked);
@@ -534,9 +536,10 @@ function StepView({
 
   // What the veil does for the pointer, for the keyboard: Tab reaches only
   // the lit target and the popover (and layers they open), until docked.
+  const lit = !found ? undefined : onFallback ? step.fallback : step.target;
   useKeyboardReach({
     active: holdsKeyboard({ docked }),
-    litTarget: found && step.target ? step.target.id : null,
+    litTarget: lit?.id ?? null,
     popoverRef,
   });
 

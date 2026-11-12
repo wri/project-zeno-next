@@ -892,6 +892,23 @@ describe("checklist tasks", () => {
         ]);
   });
 
+  it("light the chat panel only until the Create Dashboard button shows", () => {
+    // A question typed in a lit chat input uses a daily prompt: only the
+    // guides that ask a question light the input.
+    const chat = CHECKLIST_ITEMS.flatMap((item) =>
+      createChecklistTour(item).steps.flatMap((s) =>
+        [s.target, s.fallback].some((t) => t?.id.startsWith("chat-"))
+          ? [[s.id, s.target?.id, s.fallback?.id]]
+          : []
+      )
+    );
+    expect(chat).toEqual([
+      ["compare-ask", "chat-input", undefined],
+      ["dashboard-create", "create-dashboard-nudge", "chat-panel"],
+      ["imagery-ask", "chat-input", undefined],
+    ]);
+  });
+
   it("are guides: info steps that end with OK", () => {
     for (const item of CHECKLIST_ITEMS) {
       const steps = createChecklistTour(item).steps;

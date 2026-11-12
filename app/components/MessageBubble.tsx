@@ -317,7 +317,7 @@ function MessageBubble({
     message.createDashboardSuggestion
   ) {
     return (
-      <Box mt={2} mb={2}>
+      <Box mt={2} mb={2} {...tourAnchor(TOUR_ANCHORS.createDashboardNudge)}>
         <CreateDashboardNudge suggestion={message.createDashboardSuggestion} />
       </Box>
     );

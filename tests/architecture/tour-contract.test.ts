@@ -48,6 +48,8 @@ const ANCHOR_HOMES: Record<AnchorName, readonly string[]> = {
   areasPanel: ["app/components/AreasPanel.tsx"],
   areasSearch: ["app/components/AreasPanel.tsx"],
   viewAnalysisNudge: ["app/components/MessageBubble.tsx"],
+  // One button for "Create …", "Creating …" and "Open … Dashboard".
+  createDashboardNudge: ["app/components/MessageBubble.tsx"],
   // The loading skeleton and the chart card; only one renders at a time.
   insightWorkspace: [
     "app/components/InsightWorkspace.tsx",

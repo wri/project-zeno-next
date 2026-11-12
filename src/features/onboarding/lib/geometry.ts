@@ -20,6 +20,17 @@ export function intersectRect(a: Rect, b: Rect): Rect | null {
   return { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };
 }
 
+/**
+ * The part of `rect` every one of `clips` shows (e.g. the boxes of the
+ * scrolling panels around it); null when one hides it all.
+ */
+export function clipToAll(rect: Rect, clips: readonly Rect[]): Rect | null {
+  return clips.reduce<Rect | null>(
+    (shown, clip) => shown && intersectRect(shown, clip),
+    rect
+  );
+}
+
 /** Clip a rect to the viewport; returns null when nothing is left on screen. */
 export function clipToViewport(rect: Rect, viewport: Size): Rect | null {
   const x0 = Math.max(0, rect.x);

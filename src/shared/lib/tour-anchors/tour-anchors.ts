@@ -14,6 +14,7 @@ export const TOUR_ANCHORS = {
   areasPanel: "areas-panel",
   areasSearch: "areas-search",
   viewAnalysisNudge: "view-analysis-nudge",
+  createDashboardNudge: "create-dashboard-nudge",
   insightWorkspace: "insight-workspace",
   analysesButton: "analyses-button",
 } as const;

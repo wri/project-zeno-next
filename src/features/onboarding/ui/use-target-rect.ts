@@ -7,11 +7,13 @@ import {
   type TourAnchorId,
 } from "@/src/shared/lib/tour-anchors";
 
-import { clipToViewport } from "../lib/geometry";
+import { clipToAll, clipToViewport } from "../lib/geometry";
 import {
+  litAnchor,
   nextTargetState,
   targetStateForStep,
   unmeasuredTargetState,
+  type LitAnchor,
   type MeasuredTargetState,
   type TargetState,
 } from "../lib/target-state";
@@ -29,6 +31,17 @@ const isVisible = (el: HTMLElement) => {
   return r.width > 0 && r.height > 0;
 };
 
+/** The boxes of the elements around `el` that clip what overflows them. */
+function scrollClips(el: HTMLElement): Rect[] {
+  const clips: Rect[] = [];
+  for (let a = el.parentElement; a; a = a.parentElement) {
+    const { overflowX, overflowY } = getComputedStyle(a);
+    if (overflowX !== "visible" || overflowY !== "visible")
+      clips.push(a.getBoundingClientRect());
+  }
+  return clips;
+}
+
 /** The anchor's newest visible element, as the spotlight sees it; null if none. */
 export function findAnchor(id: TourAnchorId): HTMLElement | null {
   const all = document.querySelectorAll<HTMLElement>(tourAnchorSelector(id));
@@ -44,14 +57,15 @@ export function findAnchor(id: TourAnchorId): HTMLElement | null {
  * Polls (cheaply) instead of observing, because targets move for many reasons
  * we don't own: panels sliding, the chat streaming, the map flying. State only
  * changes when the spotlight should move, so a missing target costs no
- * re-renders. Scrolls a newly found DOM target into view once per step,
- * unless `scroll` is false (an inner anchor: the target around it is
- * scrolled already, and a second scroll would fight the first).
+ * re-renders. Scrolls each of the step's anchors into view the first time it
+ * is lit, unless `scroll` is false (an inner anchor: the target around it is
+ * scrolled already, and a second scroll would fight the first). With a
+ * `fallback`, lights whichever `litAnchor` picks.
  */
 export function useTargetRect(
   target: TourTarget | undefined,
   stepKey: string,
-  { scroll = true }: { scroll?: boolean } = {}
+  { scroll = true, fallback }: { scroll?: boolean; fallback?: TourTarget } = {}
 ): TargetState {
   const [stored, setStored] = useState<MeasuredTargetState>(() =>
     unmeasuredTargetState(stepKey)
@@ -59,30 +73,63 @@ export function useTargetRect(
 
   useEffect(() => {
     const startedAt = Date.now();
-    let el: HTMLElement | null = null;
-    let scrolled = !scroll;
+    const els: Record<LitAnchor, HTMLElement | null> = {
+      target: null,
+      fallback: null,
+    };
+    const scrolled = new Set<LitAnchor>(scroll ? [] : ["target", "fallback"]);
 
-    const locate = (): Rect | null => {
-      if (!target) return null;
+    const seek = (which: LitAnchor, anchor: TourTarget | undefined) => {
+      if (!anchor) return null;
       // Re-query only when the cached element is gone or hidden.
-      if (!el || !el.isConnected || !isVisible(el)) el = findAnchor(target.id);
+      const el = els[which];
+      if (!el || !el.isConnected || !isVisible(el))
+        els[which] = findAnchor(anchor.id);
+      return els[which];
+    };
+
+    // With a fallback, an anchor is on screen only where the panels around it
+    // show it: a chat card scrolled out of the message list keeps a box in
+    // the window, over whatever is above the chat. Then the fallback is lit.
+    const clipped = !!fallback;
+
+    /** Where the anchor shows, scrolled into view the first time; or null. */
+    const shownRect = (
+      which: LitAnchor,
+      anchor: TourTarget | undefined
+    ): Rect | null => {
+      const el = seek(which, anchor);
       if (!el) return null;
-      if (!scrolled) {
+      if (!scrolled.has(which)) {
         // Centre, not "nearest": the chat pins the previous prompt over the
         // top edge of its message list, which would hide the target.
         el.scrollIntoView({ block: "center", behavior: "smooth" });
-        scrolled = true;
+        scrolled.add(which);
       }
-      return clipToViewport(el.getBoundingClientRect(), viewport());
+      const box = el.getBoundingClientRect();
+      const shown = clipped ? clipToAll(box, scrollClips(el)) : box;
+      return shown && clipToViewport(shown, viewport());
+    };
+
+    const locate = (): { rect: Rect | null; onFallback: boolean } => {
+      // The target is looked for on every poll; the fallback only without it.
+      const targetRect = shownRect("target", target);
+      const fallbackRect = targetRect ? null : shownRect("fallback", fallback);
+      const lit = litAnchor({ target: !!targetRect, fallback: !!fallbackRect });
+      return {
+        rect: lit === "target" ? targetRect : fallbackRect,
+        onFallback: lit === "fallback",
+      };
     };
 
     const measure = () => {
-      const rect = locate();
+      const { rect, onFallback } = locate();
       const now = Date.now();
       setStored((prev) =>
         nextTargetState(prev, {
           stepKey,
           rect,
+          onFallback,
           hasTarget: !!target,
           startedAt,
           now,
@@ -95,7 +142,7 @@ export function useTargetRect(
     if (!target) return;
     const id = window.setInterval(measure, POLL_MS);
     return () => window.clearInterval(id);
-  }, [target, stepKey, scroll]);
+  }, [target, stepKey, scroll, fallback]);
 
   return targetStateForStep(stored, stepKey);
 }

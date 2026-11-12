@@ -8,7 +8,7 @@ import {
   type TourOutcome,
 } from "./onboarding-progress";
 import { passesOverAtEntry } from "./step-policy";
-import type { Tour, TourStep } from "./tour";
+import { checkStepTargets, type Tour, type TourStep } from "./tour";
 
 /** How a tour ended: finished, closed by the user, or stopped with no outcome. */
 export type TourEnd = "completed" | "closed" | "abandoned";
@@ -176,6 +176,7 @@ const useOnboardingStore = create<OnboardingState>((set, get) => ({
   // A step's `onEnter` runs here, before it renders, so the overlay's first
   // look at the step already sees the state the set-up produced.
   startTour: (tour) => {
+    tour.steps.forEach(checkStepTargets);
     const { index: stepIndex, passed } = enterFrom(tour.steps, 0);
     set({
       tour,
