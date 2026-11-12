@@ -3,15 +3,15 @@ import { Box, Flex, Stack, Text } from "@chakra-ui/react";
 import { CaretDownIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 
-import type { ZapDecision } from "../model/zap-plan";
+import type { ZapDecision, ZapDecisionOption } from "../model/zap-plan";
 
 const percent = (p: number) => `${Math.round(p * 100)}%`;
 
 /**
  * One decision of the plan: the question, the selected value, its source
  * and its probability. When the decision carries other options, a click
- * opens them; `onSelect` sends the selected one as a new request on the
- * current state, which adds a new row to the trail. `defaultOpen` shows the
+ * opens them; `onSelect` gets the selected one (the panel sends it as a new
+ * request, which adds a new row to the trail). `defaultOpen` shows the
  * options at once, e.g. for a decision that is not clear.
  */
 export function ZapDecisionChip({
@@ -22,7 +22,7 @@ export function ZapDecisionChip({
 }: {
   decision: ZapDecision;
   busy: boolean;
-  onSelect: (label: string) => void;
+  onSelect: (option: ZapDecisionOption) => void;
   defaultOpen?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -64,7 +64,7 @@ export function ZapDecisionChip({
               onClick={() => {
                 if (busy) return;
                 setOpen(false);
-                onSelect(option.label);
+                onSelect(option);
               }}
               px={2}
               rounded="full"

@@ -75,22 +75,99 @@ export interface ZapAddImageryArgs {
   widget: ZapWidgetBody;
 }
 
-/** A step of a dashboard plan. Each step adds to the dashboard. */
+/** `add_section`: add the empty section `section` (it has a `title`). */
+export interface ZapAddSectionArgs {
+  dashboard_id: string;
+  section: { title: string } & Record<string, unknown>;
+}
+
+/**
+ * `move`: send `patch` to the widget. `patch.section_id` is null for the top
+ * level, and the null must stay in the body.
+ */
+export interface ZapMoveArgs {
+  dashboard_id: string;
+  widget_id: string;
+  widget_label: string;
+  destination_label: string;
+  patch: { section_id: string | null } & Record<string, unknown>;
+}
+
+/** `resize`: send `patch` (the full config with the new `size`) to the widget. */
+export interface ZapResizeArgs {
+  dashboard_id: string;
+  widget_id: string;
+  widget_label: string;
+  size: "single" | "double";
+  patch: { config: Record<string, unknown> } & Record<string, unknown>;
+}
+
+/** `rename`: send `patch` to the dashboard or to the section `section_id`. */
+export interface ZapRenameArgs {
+  dashboard_id: string;
+  target_type: "dashboard" | "section";
+  section_id?: string | null;
+  old_title: string;
+  title: string;
+  patch: Record<string, unknown>;
+}
+
+/** The body of a new widget at the position and in the section of an old one. */
+export interface ZapPlacedWidgetBody extends ZapWidgetBody {
+  position?: number | null;
+  section_id?: string | null;
+}
+
+/**
+ * `change_period`: run `analyze` (a chart; null for a map), add `widget` at
+ * the place of the old widget, then remove the old widget if `replace`.
+ */
+export interface ZapChangePeriodArgs {
+  dashboard_id: string;
+  widget_id: string;
+  widget_label: string;
+  dataset_name: string;
+  old_start_date?: string | null;
+  old_end_date?: string | null;
+  replace?: boolean;
+  analyze?: ZapAddChartArgs["analyze"] | null;
+  widget: ZapPlacedWidgetBody;
+}
+
+/** `remove`: a widget, or a section with or without its widgets. */
+export interface ZapRemoveArgs {
+  dashboard_id: string;
+  target_type: "widget" | "section";
+  widget_id?: string | null;
+  section_id?: string | null;
+  label: string;
+  delete_widgets?: boolean;
+  widget_labels?: string[];
+}
+
+type Step<K extends string, A> = {
+  kind: K;
+  title: string;
+  detail: string;
+  args: A;
+};
+
+/** A step of a dashboard plan: an addition or an edit. */
 export type ZapDashboardStep =
-  | { kind: "add_chart"; title: string; detail: string; args: ZapAddChartArgs }
-  | { kind: "add_map"; title: string; detail: string; args: ZapAddMapArgs }
-  | {
-      kind: "add_template";
-      title: string;
-      detail: string;
-      args: ZapAddTemplateArgs;
-    }
-  | {
-      kind: "add_imagery";
-      title: string;
-      detail: string;
-      args: ZapAddImageryArgs;
-    };
+  | Step<"add_chart", ZapAddChartArgs>
+  | Step<"add_map", ZapAddMapArgs>
+  | Step<"add_template", ZapAddTemplateArgs>
+  | Step<"add_imagery", ZapAddImageryArgs>
+  | Step<"add_section", ZapAddSectionArgs>
+  | Step<"move", ZapMoveArgs>
+  | Step<"resize", ZapResizeArgs>
+  | Step<"rename", ZapRenameArgs>
+  | Step<"change_period", ZapChangePeriodArgs>
+  | Step<"remove", ZapRemoveArgs>;
+
+/** The step kinds that cannot be taken back, so they always wait for a confirmation. */
+export const isDestructiveStep = (step: ZapStep): boolean =>
+  step.kind === "remove" || step.kind === "change_period";
 
 /** One step of a plan. The client runs the steps in order. */
 export type ZapStep = ZapMapStep | ZapDashboardStep;
@@ -99,14 +176,18 @@ export const isMapStep = (step: ZapStep): step is ZapMapStep =>
   step.kind === "dataset" || step.kind === "area" || step.kind === "analysis";
 
 /** The path that gave the value of a decision. */
-export type ZapDecisionSource = "jev" | "clairic" | "code";
+export type ZapDecisionSource = "jev" | "clairic" | "code" | "user";
 
 /**
- * An other option of a decision. Selecting one sends `label` as a new request on the current state.
+ * An other option of a decision. With a `value` (a dashboard edit), selecting
+ * it sends the same prompt again with `choose: { [decision.key]: value }`.
+ * Without a `value`, selecting it sends `label` as a new request.
  */
 export interface ZapDecisionOption {
   label: string;
   probability: number;
+  /** The option id, e.g. "widget:<id>". Absent before phase 5. */
+  value?: string | null;
 }
 
 /** One answer of the planner, shown under the plan. */
@@ -120,7 +201,14 @@ export interface ZapDecision {
   options?: ZapDecisionOption[] | null;
   /** False when the planner is not sure of the value. Absent on older backends. */
   clear?: boolean | null;
+  /** The decision key for `choose`, e.g. "target". Absent before phase 5. */
+  key?: string | null;
+  /** The id of the selected option. Absent before phase 5. */
+  value?: string | null;
 }
+
+/** The options that the user selected, as `{ decision key: option value }`. */
+export type ZapChoose = Record<string, string>;
 
 /**
  * The state that the planner starts from. The older backend reads only
@@ -136,6 +224,10 @@ export interface ZapCurrent {
   canopy_cover?: number | null;
   page?: "map" | "dashboard" | null;
   dashboard_id?: string | null;
+  /** The widgets that the last edit on this dashboard added or changed. */
+  last_widget_ids?: string[] | null;
+  /** The sections that the last edit on this dashboard added or changed. */
+  last_section_ids?: string[] | null;
 }
 
 export interface ZapPlan {

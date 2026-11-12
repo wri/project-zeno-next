@@ -1,5 +1,6 @@
 import {
   isMapStep,
+  type ZapChoose,
   type ZapCurrent,
   type ZapDashboardStep,
   type ZapPlan,
@@ -24,7 +25,7 @@ export type ZapEditOutcome =
   | "failed"
   | "no-change";
 
-/** The ids of the widgets and the sections that a request added. */
+/** The ids of the widgets and the sections that a request added or changed. */
 export interface ZapEditIds {
   widget_ids: string[];
   section_ids: string[];
@@ -38,7 +39,14 @@ export interface ZapDashboardRow {
   id: string;
   prompt: string;
   plan: ZapPlan;
-  /** The state to send as `current` with the next request. */
+  /** The `current` that the request sent. A chip sends it again. */
+  before: ZapCurrent;
+  /** The options that the user selected for this plan, if any. */
+  choose?: ZapChoose | null;
+  /**
+   * The state to send as `current` with the next request. After the steps
+   * run, it holds the ids of the edit (`last_widget_ids`, `last_section_ids`).
+   */
   state: ZapCurrent;
   stepStatus: ZapStepStatus[];
   outcome: ZapEditOutcome;
@@ -46,7 +54,8 @@ export interface ZapDashboardRow {
   error: string | null;
   /** The warnings of the steps, e.g. a template widget that was left out. */
   warnings: string[];
-  added: ZapEditIds;
+  /** The ids that the steps added or changed. A removal gives no ids. */
+  edited: ZapEditIds;
 }
 
 /** The trail of one dashboard. `index` is the row that shows its plan. */
@@ -58,7 +67,9 @@ export interface ZapDashboardTrail {
 export const EMPTY_DASHBOARD_TRAIL: ZapDashboardTrail = { rows: [], index: -1 };
 
 const KEY_PREFIX = "gnw:zap-dashboard-trail:";
-const TRAIL_VERSION = 1;
+// Version 2 (phase 5) adds `before` and `choose`, and renames `added` to
+// `edited`. A version 1 trail is dropped.
+const TRAIL_VERSION = 2;
 
 const trailKey = (dashboardId: string) => `${KEY_PREFIX}${dashboardId}`;
 
@@ -121,53 +132,114 @@ export function addDashboardRow(
   return { rows, index: rows.length - 1 };
 }
 
-/** The name of what a step adds, e.g. "Tree cover loss chart". */
-function addedName(step: ZapDashboardStep): string {
+/** The part of a title after "Verb: ", e.g. the widget of "Move: Map "X"". */
+function subject(title: string, fallback: string): string {
+  return title.split(": ").slice(1).join(": ") || fallback;
+}
+
+/** A period in years, e.g. "2015–2020", or "2020" for one year. */
+export function periodText(
+  start: string | null | undefined,
+  end: string | null | undefined
+): string {
+  if (!start || !end) return "all years";
+  const [from, to] = [start.slice(0, 4), end.slice(0, 4)];
+  return from === to ? from : `${from}–${to}`;
+}
+
+const WIDTH = { single: "half width", double: "full width" } as const;
+
+/** The new period of a `change_period` step. */
+function newPeriod(step: Extract<ZapDashboardStep, { kind: "change_period" }>) {
+  const { analyze, widget } = step.args;
+  const dataset = widget.config.dataset as
+    | { start_date?: string | null; end_date?: string | null }
+    | undefined;
+  return analyze
+    ? periodText(analyze.start_date, analyze.end_date)
+    : periodText(dataset?.start_date, dataset?.end_date);
+}
+
+/** What a step did, in words, e.g. "Removed: Chart "Tree cover loss"". */
+export function doneText(step: ZapDashboardStep): string {
   switch (step.kind) {
     case "add_chart":
-      return `${step.args.dataset_name} chart`;
+      return `Added: ${step.args.dataset_name} chart`;
     case "add_map":
-      return `${step.args.dataset_name} map`;
+      return `Added: ${step.args.dataset_name} map`;
     case "add_imagery":
-      return `Sentinel-2 imagery around ${step.args.mosaic.target_date}`;
+      return `Added: Sentinel-2 imagery around ${step.args.mosaic.target_date}`;
     case "add_template":
-      // The title is "Add section: <name>".
-      return step.title.split(": ").slice(1).join(": ") || step.args.template;
+      return `Added: ${subject(step.title, step.args.template)}`;
+    case "add_section":
+      return `Added: section "${step.args.section.title}"`;
+    case "move":
+      return `Moved: ${subject(step.title, step.args.widget_label)} to ${step.args.destination_label}`;
+    case "resize":
+      return `Resized: ${subject(step.title, step.args.widget_label)} to ${WIDTH[step.args.size]}`;
+    case "rename":
+      return `Renamed: "${step.args.old_title}" to "${step.args.title}"`;
+    case "change_period":
+      return `Changed period: ${subject(step.title, step.args.widget_label)} to ${newPeriod(step)}`;
+    case "remove":
+      return `Removed: ${step.args.label}${
+        step.args.target_type === "section" && step.args.delete_widgets
+          ? " and its widgets"
+          : ""
+      }`;
   }
 }
 
-/** The names of the dashboard steps of a row, with a status or all. */
-function names(row: ZapDashboardRow, status?: ZapStepStatus): string {
-  return row.plan.steps
-    .filter(
-      (step, i) => !isMapStep(step) && (!status || row.stepStatus[i] === status)
-    )
-    .map((step) => addedName(step as ZapDashboardStep))
-    .join(", ");
+/** What a step will do, in words, for a preview, e.g. "Remove: ...". */
+export function previewText(step: ZapDashboardStep): string {
+  switch (step.kind) {
+    case "remove":
+      return `Remove: ${step.args.label}`;
+    case "change_period":
+      return `Change period: ${subject(step.title, step.args.widget_label)} to ${newPeriod(step)}`;
+    default:
+      return step.title;
+  }
 }
+
+/** The dashboard steps of a row, with their index. */
+function dashboardSteps(
+  row: ZapDashboardRow,
+  status?: ZapStepStatus
+): ZapDashboardStep[] {
+  return row.plan.steps.filter(
+    (step, i): step is ZapDashboardStep =>
+      !isMapStep(step) && (!status || row.stepStatus[i] === status)
+  );
+}
+
+const joined = (
+  steps: ZapDashboardStep[],
+  text: (s: ZapDashboardStep) => string
+) => steps.map(text).join("; ");
 
 /** The edit of a row in one line, for the trail. */
 export function editSummary(row: ZapDashboardRow): string {
-  const added = names(row, "done");
+  const done = joined(dashboardSteps(row, "done"), doneText);
   switch (row.outcome) {
     case "no-change":
       return row.plan.notes[0]
         ? `No change: ${row.plan.notes[0]}`
         : "No change";
     case "confirm":
-      return `Waiting for confirmation: ${names(row)}`;
+      return `Waiting for confirmation: ${joined(dashboardSteps(row), previewText)}`;
     case "cancelled":
       return "Cancelled. No change";
     case "running":
-      return `Adding: ${names(row)}`;
+      return `Running: ${joined(dashboardSteps(row), previewText)}`;
     case "failed": {
       const failed = row.plan.steps.find(
         (_, i) => row.stepStatus[i] === "failed"
       );
-      const kept = added ? ` Added: ${added}.` : "";
+      const kept = done ? ` ${done}.` : "";
       return `Failed: ${failed?.title ?? "a step"}.${kept}`;
     }
     case "done":
-      return added ? `Added: ${added}` : "No change";
+      return done || "No change";
   }
 }

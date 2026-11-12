@@ -2,7 +2,9 @@
  * Public API of the `zap` feature: one prompt to a plan, decided by the jev
  * model in `POST /api/zap` and run here without the agent. On the map, the
  * plan changes the dataset, the area and the charts. On a dashboard that the
- * user owns, the plan adds charts, maps, template sections and imagery.
+ * user owns, the plan adds charts, maps, template sections, imagery and
+ * empty sections, and moves, resizes, renames, removes or changes the period of
+ * an item. A removal and a new period wait for a confirmation.
  */
 export { ZapPanel } from "./ui/ZapPanel";
 export { ZapRunner } from "./ui/ZapRunner";

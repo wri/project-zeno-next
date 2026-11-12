@@ -168,7 +168,7 @@ export function ZapMapPanel() {
                 key={d.question}
                 decision={d}
                 busy={busy}
-                onSelect={(label) => void runZap(label)}
+                onSelect={(option) => void runZap(option.label)}
               />
             ))}
           </Stack>
