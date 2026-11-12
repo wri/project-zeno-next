@@ -419,14 +419,13 @@ export function createFirstRunTour(): UiTour {
       },
       {
         id: "view-analysis",
-        // The whole chat, so the chips the body names can be read; the arrow
-        // and the inner ring point at the nudge. The chat input is lit too:
-        // a question sent here is answered as usual, and does not do this
-        // step (only accepting the nudge does).
-        target: anchorTarget(TOUR_ANCHORS.chatPanel),
-        focus: anchorTarget(TOUR_ANCHORS.viewAnalysisNudge),
+        // Only the nudge, not the chat around it: a question typed in a lit
+        // chat input would use one of the user's daily prompts, and this
+        // step teaches the way that uses none. The chips the body names stay
+        // readable under the veil.
+        target: anchorTarget(TOUR_ANCHORS.viewAnalysisNudge),
         placement: "right",
-        padding: 4,
+        padding: 5,
         eyebrow: "Your chart",
         title: "View the chart",
         onEnter: closeExplorationPanels,

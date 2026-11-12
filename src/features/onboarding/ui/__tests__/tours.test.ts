@@ -242,13 +242,19 @@ describe("first-run tour steps", () => {
     const targets = createFirstRunTour().steps.flatMap((s) =>
       s.target?.kind === "selector" ? [s.target.id] : []
     );
-    // The View analysis step lights the whole chat, so its chips can be
-    // read; its nudge is an inner anchor, not the target.
     expect(targets.filter((id) => id.startsWith("chat-"))).toEqual([
-      "chat-panel",
       "chat-input",
       "chat-panel",
     ]);
+  });
+
+  it("lights only the nudge on the View analysis step, not the chat input", () => {
+    // A question typed in a lit chat would use one of the daily prompts.
+    const step = createFirstRunTour().steps.find(
+      (s) => s.id === "view-analysis"
+    )!;
+    expect(step.target?.id).toBe("view-analysis-nudge");
+    expect(step.focus).toBeUndefined();
   });
 
   it("rings the control the copy names inside a large target", () => {
@@ -259,7 +265,6 @@ describe("first-run tour steps", () => {
     );
     expect(focus).toEqual({
       "find-area": ["areas-panel", "areas-search"],
-      "view-analysis": ["chat-panel", "view-analysis-nudge"],
     });
   });
 });
@@ -357,7 +362,8 @@ describe("first-run tour flow", () => {
     const step = current()!;
     expect(step.id).toBe("view-analysis");
 
-    // The chat is lit: the user asks a question instead, and it is answered.
+    // The chat input is dimmed, but the keyboard still reaches it: the user
+    // asks a question instead, and it is answered.
     useChatStore.setState({
       messages: [nudge(false), msg("user"), msg("assistant")],
       completedAnswers: 1,
