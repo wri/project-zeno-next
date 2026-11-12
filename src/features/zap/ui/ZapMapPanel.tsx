@@ -11,18 +11,14 @@ import {
 import {
   ArrowArcLeftIcon,
   ArrowArcRightIcon,
-  CheckCircleIcon,
-  CircleIcon,
   LightningIcon,
-  MinusCircleIcon,
-  XCircleIcon,
 } from "@phosphor-icons/react";
 import { AnimatePresence, motion } from "framer-motion";
 
-import type { ZapStepStatus } from "../model/zap-plan";
 import useZapStore from "../model/zap-store";
 import { isZapBusy, redoZap, runZap, undoZap } from "./run-zap";
 import { ZapDecisionChip } from "./ZapDecisionChip";
+import { ZapStepIcon } from "./ZapStepIcon";
 import { ZapTrail } from "./ZapTrail";
 
 const EXAMPLES = [
@@ -34,35 +30,12 @@ const EXAMPLES = [
   "Grassland in Mongolia",
 ];
 
-function StepIcon({ status }: { status: ZapStepStatus }) {
-  switch (status) {
-    case "running":
-      return <Spinner size="xs" color="primary.solid" />;
-    case "done":
-      return (
-        <CheckCircleIcon
-          size={16}
-          weight="fill"
-          color="var(--chakra-colors-primary-solid)"
-        />
-      );
-    case "skipped":
-      return (
-        <MinusCircleIcon size={16} color="var(--chakra-colors-fg-subtle)" />
-      );
-    case "failed":
-      return <XCircleIcon size={16} color="var(--chakra-colors-fg-error)" />;
-    default:
-      return <CircleIcon size={16} color="var(--chakra-colors-fg-subtle)" />;
-  }
-}
-
 /**
- * The zap popup: examples when the trail is empty; then the trail of
+ * The zap popup of the map: examples when the trail is empty; then the trail of
  * requests with undo and redo, and the steps and decisions of the selected
  * row, each step marked done as it runs.
  */
-export function ZapPanel() {
+export function ZapMapPanel() {
   const { prompt, status, rows, index, error, reset } = useZapStore();
   const busy = isZapBusy(status);
   const row = index >= 0 ? rows[index] : undefined;
@@ -157,7 +130,7 @@ export function ZapPanel() {
               >
                 <Flex gap={2} align="flex-start">
                   <Box pt="1px">
-                    <StepIcon status={row.stepStatus[i] ?? "pending"} />
+                    <ZapStepIcon status={row.stepStatus[i] ?? "pending"} />
                   </Box>
                   <Box>
                     <Text
@@ -191,7 +164,12 @@ export function ZapPanel() {
           ))}
           <Stack gap={0.5} pt={1} borderTopWidth="1px" color="fg.subtle">
             {plan.decisions.map((d) => (
-              <ZapDecisionChip key={d.question} decision={d} />
+              <ZapDecisionChip
+                key={d.question}
+                decision={d}
+                busy={busy}
+                onSelect={(label) => void runZap(label)}
+              />
             ))}
           </Stack>
         </Stack>

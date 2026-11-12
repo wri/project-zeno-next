@@ -32,7 +32,12 @@ import useSpeechInput from "../hooks/useSpeechInput";
 import usePrefersReducedMotion from "../hooks/usePrefersReducedMotion";
 import { resolveSpeechLang } from "../utils/speechLang";
 import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
-import { runZap, useZapMode, useZapStore } from "@/src/features/zap";
+import {
+  submitZap,
+  useZapBusy,
+  useZapMode,
+  useZapStore,
+} from "@/src/features/zap";
 import { useRouter, usePathname } from "@/app/lib/router";
 import {
   firstMessageRedirectPath,
@@ -89,11 +94,14 @@ export default function ChatInput({
     toggleInsightsPanel,
   } = useSidebarStore();
 
-  // Zap mode: the prompt goes to the jev planner, not the agent. Map only.
-  const { available: zapAvailable, active: zapMode } = useZapMode();
-  const zapBusy = useZapStore(
-    (s) => s.status === "planning" || s.status === "running"
-  );
+  // Zap mode: the prompt goes to the jev planner, not the agent. On the map
+  // and on a dashboard that the user owns.
+  const {
+    available: zapAvailable,
+    active: zapMode,
+    dashboardId: zapDashboardId,
+  } = useZapMode();
+  const zapBusy = useZapBusy(zapDashboardId);
   const toggleZap = () => {
     useZapStore.getState().setMode(zapMode ? "chat" : "zap");
     // The zap panel lives in the compact chat panel.
@@ -175,7 +183,7 @@ export default function ChatInput({
       if (!inputValue.trim() || zapBusy) return;
       const prompt = inputValue.trim();
       setInputValue("");
-      await runZap(prompt);
+      await submitZap(prompt, zapDashboardId);
       return;
     }
     if (!inputValue.trim() || isLoading) return;
@@ -225,7 +233,9 @@ export default function ChatInput({
   );
   // The zap panel above shows example prompts, so no example here.
   const message = zapMode
-    ? "Ask for data on the map…"
+    ? zapDashboardId
+      ? "Ask for an addition to this dashboard…"
+      : "Ask for data on the map…"
     : isLoading
       ? "Sending..."
       : hasNudge
@@ -258,7 +268,9 @@ export default function ChatInput({
       title={
         zapMode
           ? "Back to the conversation"
-          : "Zap: straight to the map, no conversation"
+          : zapDashboardId
+            ? "Zap: straight to this dashboard, no conversation"
+            : "Zap: straight to the map, no conversation"
       }
     >
       <LightningIcon weight={zapMode ? "fill" : "regular"} />

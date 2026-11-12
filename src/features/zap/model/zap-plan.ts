@@ -19,18 +19,90 @@ export interface ZapAnalysisArgs {
   canopy_cover?: number | null;
 }
 
-/** One step of a plan. The client runs the steps in order. */
-export type ZapStep =
+/** A step of a map plan. */
+export type ZapMapStep =
   | { kind: "dataset"; title: string; detail: string; args: DatasetInfo }
   | { kind: "area"; title: string; detail: string; args: ZapArea }
   | { kind: "analysis"; title: string; detail: string; args: ZapAnalysisArgs };
+
+/** The body of `POST /api/dashboards/{id}/widgets`, as the planner gives it. */
+export interface ZapWidgetBody {
+  widget_type: "insight" | "map";
+  insight_id?: string | null;
+  config: Record<string, unknown>;
+}
+
+/** `add_chart`: run `analyze`, then add `widget` with the insight of the job. */
+export interface ZapAddChartArgs {
+  dashboard_id: string;
+  dataset_name: string;
+  analyze: {
+    aois: { source: string; src_id: string; subtype: string }[];
+    dataset_id: number;
+    start_date: string;
+    end_date: string;
+    context_layer?: string | null;
+    canopy_cover?: number | null;
+  };
+  widget: ZapWidgetBody;
+}
+
+/** `add_map`: add `widget`; its config holds the map layer snapshot. */
+export interface ZapAddMapArgs {
+  dashboard_id: string;
+  dataset_name: string;
+  widget: ZapWidgetBody;
+}
+
+/** `add_template`: add a section from the analysis template `template`. */
+export interface ZapAddTemplateArgs {
+  dashboard_id: string;
+  template: string;
+  args: Record<string, unknown>;
+}
+
+/** `add_imagery`: build the mosaic, then add `widget` with its statistics. */
+export interface ZapAddImageryArgs {
+  dashboard_id: string;
+  mosaic: {
+    source: string;
+    src_id: string;
+    target_date: string;
+    window_days: number;
+    max_cloud_cover: number;
+    max_items: number;
+  };
+  widget: ZapWidgetBody;
+}
+
+/** A step of a dashboard plan. Each step adds to the dashboard. */
+export type ZapDashboardStep =
+  | { kind: "add_chart"; title: string; detail: string; args: ZapAddChartArgs }
+  | { kind: "add_map"; title: string; detail: string; args: ZapAddMapArgs }
+  | {
+      kind: "add_template";
+      title: string;
+      detail: string;
+      args: ZapAddTemplateArgs;
+    }
+  | {
+      kind: "add_imagery";
+      title: string;
+      detail: string;
+      args: ZapAddImageryArgs;
+    };
+
+/** One step of a plan. The client runs the steps in order. */
+export type ZapStep = ZapMapStep | ZapDashboardStep;
+
+export const isMapStep = (step: ZapStep): step is ZapMapStep =>
+  step.kind === "dataset" || step.kind === "area" || step.kind === "analysis";
 
 /** The path that gave the value of a decision. */
 export type ZapDecisionSource = "jev" | "clairic" | "code";
 
 /**
- * An other option of a decision. The backend does not send options yet.
- * Selecting one sends `label` as a new request on the current state.
+ * An other option of a decision. Selecting one sends `label` as a new request on the current state.
  */
 export interface ZapDecisionOption {
   label: string;
@@ -44,13 +116,16 @@ export interface ZapDecision {
   probability: number;
   /** Sent by the phase 2 backend; absent on older backends. */
   source?: ZapDecisionSource | null;
-  /** The other top options, best first. Absent until the backend sends them. */
+  /** The other top options, best first. Absent on older backends. */
   options?: ZapDecisionOption[] | null;
+  /** False when the planner is not sure of the value. Absent on older backends. */
+  clear?: boolean | null;
 }
 
 /**
- * The map state that the planner starts from. The older backend reads only
- * `dataset_id` and `area` and ignores the other fields.
+ * The state that the planner starts from. The older backend reads only
+ * `dataset_id` and `area` and ignores the other fields. `page` selects the
+ * planner: absent or "map" for the map, "dashboard" for `dashboard_id`.
  */
 export interface ZapCurrent {
   dataset_id?: number | null;
@@ -59,14 +134,20 @@ export interface ZapCurrent {
   end_date?: string | null;
   context_layer?: string | null;
   canopy_cover?: number | null;
+  page?: "map" | "dashboard" | null;
+  dashboard_id?: string | null;
 }
 
 export interface ZapPlan {
   steps: ZapStep[];
   decisions: ZapDecision[];
   notes: string[];
-  /** The map state after the steps. Absent on older backends. */
+  /** The state after the steps. Absent on older backends. */
   state?: ZapCurrent | null;
+  /** 0: map, 1: dashboard addition, 2: needs a confirmation. Absent on older backends. */
+  tier?: number | null;
+  /** True when the steps must run only after the user confirms the plan. */
+  needs_confirmation?: boolean | null;
 }
 
 export type ZapStepStatus =
@@ -116,6 +197,7 @@ export function stateAfter(current: ZapCurrent, plan: ZapPlan): ZapCurrent {
   if (plan.state) return plan.state;
   let next: ZapCurrent = { ...current };
   for (const step of plan.steps) {
+    if (!isMapStep(step)) continue;
     if (step.kind === "area") {
       next = { ...next, area: step.args };
       continue;

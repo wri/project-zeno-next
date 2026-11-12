@@ -78,7 +78,7 @@ export async function runZap(prompt: string): Promise<void> {
           index,
           successfulAois.length > 0 ? "done" : "failed"
         );
-      } else {
+      } else if (step.kind === "analysis") {
         const { dataset_id, area } = step.args;
         if (
           isViewOnlyDataset(dataset_id) ||
@@ -90,6 +90,9 @@ export async function runZap(prompt: string): Promise<void> {
         store.setView(rowId, readMapView());
         store.requestAnalysis(rowId, index);
         return;
+      } else {
+        // A dashboard step has no meaning on the map.
+        store.setStep(rowId, index, "skipped");
       }
     }
     store.setView(rowId, readMapView());

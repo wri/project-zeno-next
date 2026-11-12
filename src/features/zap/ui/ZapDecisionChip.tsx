@@ -4,20 +4,28 @@ import { CaretDownIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 
 import type { ZapDecision } from "../model/zap-plan";
-import useZapStore from "../model/zap-store";
-import { isZapBusy, runZap } from "./run-zap";
 
 const percent = (p: number) => `${Math.round(p * 100)}%`;
 
 /**
  * One decision of the plan: the question, the selected value, its source
  * and its probability. When the decision carries other options, a click
- * opens them; selecting one sends it as a new request on the current state,
- * which adds a new row to the trail.
+ * opens them; `onSelect` sends the selected one as a new request on the
+ * current state, which adds a new row to the trail. `defaultOpen` shows the
+ * options at once, e.g. for a decision that is not clear.
  */
-export function ZapDecisionChip({ decision }: { decision: ZapDecision }) {
-  const [open, setOpen] = useState(false);
-  const busy = isZapBusy(useZapStore((s) => s.status));
+export function ZapDecisionChip({
+  decision,
+  busy,
+  onSelect,
+  defaultOpen = false,
+}: {
+  decision: ZapDecision;
+  busy: boolean;
+  onSelect: (label: string) => void;
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
   const options = decision.options ?? [];
   const hasOptions = options.length > 0;
 
@@ -56,7 +64,7 @@ export function ZapDecisionChip({ decision }: { decision: ZapDecision }) {
               onClick={() => {
                 if (busy) return;
                 setOpen(false);
-                void runZap(option.label);
+                onSelect(option.label);
               }}
               px={2}
               rounded="full"
