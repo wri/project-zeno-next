@@ -362,8 +362,8 @@ describe("first-run tour flow", () => {
     const step = current()!;
     expect(step.id).toBe("view-analysis");
 
-    // The chat input is dimmed, but the keyboard still reaches it: the user
-    // asks a question instead, and it is answered.
+    // The chat input is dimmed, and out of keyboard reach too. A question
+    // that comes all the same is answered as usual.
     useChatStore.setState({
       messages: [nudge(false), msg("user"), msg("assistant")],
       completedAnswers: 1,

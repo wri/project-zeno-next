@@ -37,6 +37,7 @@ import {
 import type { Rect, Size } from "../model/tour";
 import { NEXT_LABEL, POPOVER_WIDTH_PX, TourPopover } from "./TourPopover";
 import type { UiTour, UiTourStep } from "./types";
+import { holdsKeyboard } from "../lib/keyboard-reach";
 import { popoverReady, type TargetState } from "../lib/target-state";
 import {
   NO_ANNOUNCEMENT,
@@ -45,6 +46,7 @@ import {
 } from "../lib/tour-announcement";
 import { useAppValue } from "./app-actions";
 import { skippedNotice, stepStatus } from "./status-copy";
+import { useKeyboardReach } from "./use-keyboard-reach";
 import { useTargetRect } from "./use-target-rect";
 
 /** Above the chat panel (1100) and Chakra overlays used inside the app. */
@@ -529,6 +531,14 @@ function StepView({
     onDock(false);
     popoverRef.current?.focus({ preventScroll: true });
   }, [onDock, popoverRef]);
+
+  // What the veil does for the pointer, for the keyboard: Tab reaches only
+  // the lit target and the popover (and layers they open), until docked.
+  useKeyboardReach({
+    active: holdsKeyboard({ docked }),
+    litTarget: found && step.target ? step.target.id : null,
+    popoverRef,
+  });
 
   // Keyboard: Escape closes; arrows page through passive steps, once the
   // step's popover shows (no paging past a step the user has not seen).
