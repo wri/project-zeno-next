@@ -31,6 +31,11 @@ export interface AlertsAoi {
   name: string;
 }
 
+/** The area as the analytics API's points endpoints name it. */
+export type PointsArea =
+  | { kind: "gadm"; gadmId: string }
+  | { kind: "custom"; customAreaId: string };
+
 /** A `widget_type: "alerts"` config, parsed and settled. */
 export interface AlertsWidgetSpec {
   /** Card header: `config.title` override, else the default label. */
@@ -46,11 +51,11 @@ export interface AlertsWidgetSpec {
    */
   overlays: Partial<Record<AlertsLandFilter, MapWidgetLayer>>;
   /**
-   * The area as the analytics API's GADM ids name it (`BRA.16.137`), for the
-   * alert locations download. Absent for any other area: the download serves
-   * GADM countries, states and districts only.
+   * The area for the alert locations download. Absent for any other area:
+   * the download serves GADM countries, states and districts, and saved
+   * custom areas.
    */
-  gadmId?: string;
+  pointsArea?: PointsArea;
 }
 
 /** One alert day, as the list pane renders it. */
@@ -172,17 +177,19 @@ const ANALYTICS_GADM_SUBTYPES = new Set([
 ]);
 
 /**
- * The analytics API's id for a GADM area, whose ids carry no version suffix.
- * Undefined for any other area.
+ * Select the area the analytics API's points endpoints know: a GADM area by
+ * its id without the version suffix, or a custom area by the id it was saved
+ * under, which is its GNW id. Undefined for any other area.
  */
-function analyticsGadmId(
+function selectPointsArea(
   source: string,
   srcId: string,
   subtype: string
-): string | undefined {
-  if (source !== "gadm" || !ANALYTICS_GADM_SUBTYPES.has(subtype))
-    return undefined;
-  return normalizeGadmId(srcId);
+): PointsArea | undefined {
+  if (source === "custom") return { kind: "custom", customAreaId: srcId };
+  if (source === "gadm" && ANALYTICS_GADM_SUBTYPES.has(subtype))
+    return { kind: "gadm", gadmId: normalizeGadmId(srcId) };
+  return undefined;
 }
 
 /**
@@ -229,7 +236,7 @@ export function alertsWidgetSpec(
     aoi: { source, srcId, subtype, name },
     layer,
     overlays,
-    gadmId: analyticsGadmId(source, srcId, subtype),
+    pointsArea: selectPointsArea(source, srcId, subtype),
   };
 }
 

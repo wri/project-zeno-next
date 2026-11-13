@@ -18,7 +18,7 @@ const FILE_URL =
   "https://results.s3.amazonaws.com/integrated_alerts_points_export/v20261101/x.csv?X-Amz-Signature=abc";
 
 const request: AlertLocationsRequest = {
-  gadmId: "BRA.16.137",
+  area: { kind: "gadm", gadmId: "BRA.16.137" },
   range: { start: "2026-10-10", end: "2026-10-16" },
   confidence: "all",
   landFilter: "any",
@@ -139,6 +139,20 @@ describe("prepareAlertLocations", () => {
       JOB_URL,
       JOB_URL,
     ]);
+  });
+
+  it("asks for a custom area's alerts by its saved id", async () => {
+    fetchMock.mockResolvedValueOnce(created()).mockResolvedValueOnce(saved());
+    await run({
+      area: {
+        kind: "custom",
+        customAreaId: "0b6f1c2e-7d4a-4f1e-9c3b-2a5d8e9f0a1b",
+      },
+    });
+    expect(sentBody().aoi).toEqual({
+      type: "custom_aoi",
+      ids: ["0b6f1c2e-7d4a-4f1e-9c3b-2a5d8e9f0a1b"],
+    });
   });
 
   it.each([

@@ -8,15 +8,16 @@ import {
   type AlertLocationsFormat,
   type AlertsConfidence,
   type AlertsLandFilter,
+  type PointsArea,
 } from "../lib/alertsWidgets";
 import { landFilterBody } from "./alerts";
 
 /**
  * The alert locations download (project-zeno-data-infra #323, PZB-1603): one
- * row per alert pixel in a GADM area, as CSV or a zipped shapefile. It runs as
- * a job, like the analytics endpoints. The POST answers 202 with a link. The
- * link reports `pending` until the file is written, then a presigned S3 URL
- * that lasts an hour.
+ * row per alert pixel in a GADM area or saved custom area, as CSV or a zipped
+ * shapefile. It runs as a job, like the analytics endpoints. The POST answers
+ * 202 with a link. The link reports `pending` until the file is written, then
+ * a presigned S3 URL that lasts an hour.
  *
  * A plain `fetch`, as for `/latest`: the user's token is for the GNW backend
  * only, and this endpoint needs none.
@@ -41,8 +42,8 @@ const MAX_SERVER_ERRORS = 3;
 
 /** One download: the area and the view on show, in one format. */
 export interface AlertLocationsRequest {
-  /** `AlertsWidgetSpec.gadmId`. */
-  gadmId: string;
+  /** `AlertsWidgetSpec.pointsArea`. */
+  area: PointsArea;
   range: DateRange;
   confidence: AlertsConfidence;
   landFilter: AlertsLandFilter;
@@ -135,16 +136,23 @@ function exportJobUrl(link: string): string {
 /** The request body: the view's filters in the analytics API's names. */
 function exportBody(request: AlertLocationsRequest) {
   return {
-    aoi: {
-      type: "admin",
-      ids: [request.gadmId],
-      provider: "gadm",
-      version: "4.1",
-    },
+    aoi: aoiBody(request.area),
     start_date: request.range.start,
     end_date: request.range.end,
     alert_confidence: TIERS[request.confidence].levels,
     ...landFilterBody(request.landFilter),
     format: request.format,
+  };
+}
+
+/** The area in the analytics API's AOI names. */
+function aoiBody(area: PointsArea) {
+  if (area.kind === "custom")
+    return { type: "custom_aoi", ids: [area.customAreaId] };
+  return {
+    type: "admin",
+    ids: [area.gadmId],
+    provider: "gadm",
+    version: "4.1",
   };
 }
