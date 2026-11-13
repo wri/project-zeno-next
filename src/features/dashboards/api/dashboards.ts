@@ -1,5 +1,6 @@
 import {
   AnalysisTemplateListSchema,
+  BulkSubscriptionsResponseSchema,
   DashboardAlertsSummaryResponseSchema,
   DashboardCreateRequestSchema,
   DashboardListResponseSchema,
@@ -134,6 +135,32 @@ export async function setEmailSubscription(
       channels: enabled ? ["email"] : [],
     }),
   });
+}
+
+// Turns email off for every dashboard the user has it on, in one request.
+// Returns those dashboards, so `restoreEmailSubscriptions` can undo exactly
+// that set.
+export async function turnOffAllEmailSubscriptions(): Promise<string[]> {
+  const data = await readJson<unknown>("/api/subscriptions?channel=email", {
+    method: "DELETE",
+  });
+  return BulkSubscriptionsResponseSchema.parse(data).dashboard_ids;
+}
+
+// Turns email back on for the listed dashboards in one request. `skipped`
+// are the ones the backend would not subscribe, e.g. a dashboard that lost
+// its alerts widget since.
+export async function restoreEmailSubscriptions(
+  dashboardIds: string[]
+): Promise<{ subscribed: string[]; skipped: string[] }> {
+  const data = await readJson<unknown>("/api/subscriptions", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ channel: "email", dashboard_ids: dashboardIds }),
+  });
+  const { dashboard_ids, skipped } =
+    BulkSubscriptionsResponseSchema.parse(data);
+  return { subscribed: dashboard_ids, skipped };
 }
 
 export async function deleteDashboard(dashboardId: string): Promise<void> {

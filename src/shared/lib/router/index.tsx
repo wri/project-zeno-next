@@ -27,6 +27,9 @@ export function useRouter() {
       push(href: string, options?: NavigateOptions) {
         navigate(href, { preventScrollReset: options?.scroll === false });
       },
+      back() {
+        navigate(-1);
+      },
       replace(href: string, options?: NavigateOptions) {
         navigate(href, {
           replace: true,

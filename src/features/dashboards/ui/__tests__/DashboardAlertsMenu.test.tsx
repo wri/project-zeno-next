@@ -9,6 +9,12 @@ vi.mock("@/app/components/ui/toaster", () => ({
   Toaster: () => null,
 }));
 vi.mock("@/app/lib/api-client", () => ({ apiFetch: vi.fn() }));
+vi.mock("@/src/shared/lib/router", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  Link: ({ href, ...rest }: { href: string } & React.ComponentProps<"a">) => (
+    <a href={href} {...rest} />
+  ),
+}));
 let flagOn = true;
 vi.mock("@/src/shared/lib/feature-flags", () => ({
   useFeatureFlag: (flag: string) => flagOn && flag === "email-subscriptions",
@@ -172,6 +178,9 @@ describe("DashboardAlertsMenu", () => {
     expect(alertsButton()?.textContent).toContain("Off");
 
     const email = await openPopover();
+    expect(
+      screen.getByRole("link", { name: "Manage all subscriptions" })
+    ).toHaveProperty("pathname", "/subscriptions");
 
     expect(isOn(email)).toBe(false);
     expect(screen.getByText("Alerts for Paraná, Brazil")).toBeTruthy();
