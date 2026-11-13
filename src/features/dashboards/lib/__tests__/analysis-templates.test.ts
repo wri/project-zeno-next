@@ -28,6 +28,13 @@ describe("ANALYSIS_TEMPLATE_CARDS", () => {
         ?.label
     ).toBe("Post-2020 forest loss");
   });
+
+  it("offers the forest loss and drivers template", () => {
+    expect(
+      ANALYSIS_TEMPLATE_CARDS.find((c) => c.name === "forest-loss-drivers")
+        ?.label
+    ).toBe("Forest loss and its drivers");
+  });
 });
 
 describe("templateErrorMessage", () => {

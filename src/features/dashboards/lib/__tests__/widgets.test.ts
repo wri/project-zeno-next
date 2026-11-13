@@ -16,6 +16,7 @@ import {
   shownChartIds,
   topLevelWidgetSize,
   widgetText,
+  noteSource,
   withChartHidden,
   withChartShown,
   withChartTitle,
@@ -388,6 +389,7 @@ describe("withText", () => {
   it("stores the markdown body under config.text, preserving other keys", () => {
     expect(withText({ size: "double" }, "## Note\n\n- one")).toEqual({
       size: "double",
+      source: "user",
       text: "## Note\n\n- one",
     });
   });
@@ -395,7 +397,28 @@ describe("withText", () => {
   it("drops config.text when the body is blank so the placeholder shows", () => {
     expect(withText({ text: "old", size: "single" }, "   ")).toEqual({
       size: "single",
+      source: "user",
     });
+  });
+
+  it("makes an edited template or agent note the owner's", () => {
+    expect(withText({ text: "old", source: "template" }, "new").source).toBe(
+      "user"
+    );
+    expect(withText({ text: "old" }, "new").source).toBe("user");
+  });
+});
+
+describe("noteSource", () => {
+  it("reads a template's or the owner's note from config.source", () => {
+    expect(noteSource({ text: "x", source: "template" })).toBe("template");
+    expect(noteSource({ text: "x", source: "user" })).toBe("user");
+  });
+
+  it("reads a note with no or an unknown source as AI-written", () => {
+    expect(noteSource({ text: "x" })).toBe("ai");
+    expect(noteSource({ text: "x", source: "agent" })).toBe("ai");
+    expect(noteSource({ text: "x", source: 1 })).toBe("ai");
   });
 });
 
