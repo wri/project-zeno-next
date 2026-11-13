@@ -209,6 +209,7 @@ export interface StreamMessage {
   aoi?: object;
   aoi_selection?: AOISelection;
   imagery?: ImageryInfo;
+  boundary_layer?: BoundaryLayerInfo;
   insights?: object[];
   charts_data?: object[];
   codeact_parts?: CodeActPart[];
@@ -232,6 +233,14 @@ export interface StreamMessage {
   msg_type?: string;
   dashboard_id?: string;
   dashboard_name?: string;
+}
+
+// Boundary layer written to agent state by the show_boundary_layer tool.
+// `source` is the backend source key (e.g. "oil_palm"); the frontend shows
+// the boundary layer whose id upper-cases to it (see showBoundaryLayer.ts).
+export interface BoundaryLayerInfo {
+  source: string;
+  name: string;
 }
 
 export type ImageryProvider = "sentinel-2" | "planet";
@@ -490,6 +499,7 @@ export interface LangChainUpdate {
   aoi?: object;
   aoi_selection?: AOISelection;
   imagery?: ImageryInfo;
+  boundary_layer?: BoundaryLayerInfo;
   start_date?: string;
   end_date?: string;
   insights: object[];

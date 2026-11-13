@@ -35,6 +35,10 @@ const TOOL_DISPLAY: Record<string, { active: string; error: string }> = {
     active: "Loading satellite imagery",
     error: "Unable to load satellite imagery. Please try again.",
   },
+  show_boundary_layer: {
+    active: "Showing concessions layer",
+    error: "Unable to show the concessions layer. Please try again.",
+  },
 };
 
 const DEFAULT_TOOL_ERROR = "Unable to process this step. Please try again.";
