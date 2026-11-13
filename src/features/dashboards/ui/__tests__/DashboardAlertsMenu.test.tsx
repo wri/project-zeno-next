@@ -9,10 +9,6 @@ vi.mock("@/app/components/ui/toaster", () => ({
   Toaster: () => null,
 }));
 vi.mock("@/app/lib/api-client", () => ({ apiFetch: vi.fn() }));
-let flagOn = true;
-vi.mock("@/src/shared/lib/feature-flags", () => ({
-  useFeatureFlag: (flag: string) => flagOn && flag === "email-subscriptions",
-}));
 
 import { toaster } from "@/app/components/ui/toaster";
 import { apiFetch } from "@/app/lib/api-client";
@@ -129,7 +125,6 @@ const emailOffNotice = () =>
     .mock.calls.some(([toast]) => toast.title === "Email alerts turned off");
 
 beforeEach(() => {
-  flagOn = true;
   vi.mocked(toaster.create).mockClear();
   vi.mocked(apiFetch).mockReset();
   vi.mocked(apiFetch).mockImplementation(async (path, init) => {
@@ -144,12 +139,6 @@ beforeEach(() => {
 });
 
 describe("DashboardHeader alerts gate", () => {
-  it("shows no alerts control outside the beta", () => {
-    flagOn = false;
-    renderHeader();
-    expect(alertsButton()).toBeNull();
-  });
-
   it("shows no alerts control to a non-owner", () => {
     renderHeader({ isOwner: false });
     expect(alertsButton()).toBeNull();
