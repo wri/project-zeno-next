@@ -75,6 +75,13 @@ describe("mapLegendFor", () => {
     expect(legend?.params).toBe("YEARS 2001–25 · CANOPY > 30%");
   });
 
+  it("shows full dates for daily alerts, so two ranges in one year differ", () => {
+    const legend = mapLegendFor(
+      layer({ datasetId: 11, startDate: "2025-03-01", endDate: "2025-03-31" })
+    );
+    expect(legend?.params).toBe("DATES Mar 1 – Mar 31, 2025");
+  });
+
   it("has an empty settings line and no context when the layer has none", () => {
     const legend = mapLegendFor(layer({ datasetId: 1 }));
     expect(legend?.params).toBe("");

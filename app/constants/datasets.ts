@@ -125,6 +125,12 @@ export type DatasetCardConfig = {
   defaultStartYear?: number;
   defaultEndYear?: number;
   /**
+   * Set to "days" for daily data: legends then show a DATES chip with full
+   * dates, as two ranges in one year would look the same in the default
+   * YEAR(S) chip. A flag, not `cadence`, because `cadence` is display text.
+   */
+  legendPeriod?: "days";
+  /**
    * Thematic categories used by the Data Catalog panel filter chips.
    * A dataset may belong to multiple categories (e.g. fire-driven loss is
    * both `disturbance` and `wildfires`).
@@ -473,6 +479,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     context_layer: null as string | null,
     img: "/dataset_card_dist_alerts.webp",
     cadence: "daily",
+    legendPeriod: "days",
     resolution: "10 m",
     geographic_coverage: "global",
     provider: "GFW",

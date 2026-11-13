@@ -1,11 +1,7 @@
 import type { Nudge, SuggestedDataset } from "@/app/types/chat";
 import useMapStore from "@/app/store/mapStore";
 import { DATASET_BY_ID } from "@/app/constants/datasets";
-import {
-  getDatasetLayerContextProps,
-  buildDatasetLayers,
-  toLayerEntries,
-} from "@/app/utils/datasetLayerContext";
+import { datasetMapLayers } from "@/app/utils/datasetLayerContext";
 
 /**
  * Validates a dataset_choice nudge `data` entry. The backend contract says
@@ -72,18 +68,9 @@ export function addSuggestedDatasetToMap(selected: SuggestedDataset): void {
     ...(selected.parameters && { parameters: selected.parameters }),
   };
 
-  const layerContextProps = getDatasetLayerContextProps(merged);
   // The visible layer IS the scope. Replace any existing dataset layers
   // (single-dataset selection) and add this dataset's layers to the map.
-  const { addLayer, removeLayer, layers } = useMapStore.getState();
-  layers
-    .filter((l) => typeof l.datasetId === "number")
-    .forEach((l) => removeLayer(l.id));
-  buildDatasetLayers({
-    datasetId: merged.dataset_id,
-    layerName: merged.dataset_name,
-    tileUrl: merged.tile_url,
-    layers: toLayerEntries(merged.layers, merged.dataset_id),
-    ...layerContextProps,
-  }).forEach(addLayer);
+  const { addLayer, removeDatasetLayers } = useMapStore.getState();
+  removeDatasetLayers();
+  datasetMapLayers(merged).forEach(addLayer);
 }
