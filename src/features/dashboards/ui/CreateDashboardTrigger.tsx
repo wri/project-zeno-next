@@ -10,8 +10,9 @@ import { showCreateDashboardNudge } from "./show-create-dashboard-nudge";
  * analysis selection and an active dataset coexist — same gate as
  * AnalysisCtaTrigger. Mounted once in the (chat) layout.
  *
- * showCreateDashboardNudge is idempotent per area+dataset, so re-runs on
- * unrelated context changes are harmless.
+ * showCreateDashboardNudge is idempotent per area, name, dataset and date
+ * window, so re-runs on unrelated context changes are harmless. A rename
+ * changes the name and refreshes the button.
  */
 export function CreateDashboardTrigger() {
   const analysisSelection = useMapStore((state) => state.analysisSelection);

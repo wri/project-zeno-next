@@ -19,12 +19,8 @@ import { AreaCardMenu } from "./AreaCardMenu";
  * Acts on the persisted area (`area.id` / `area.name`), so it renders regardless
  * of whether the area is currently shown on the map. React Query invalidation of
  * `["customAreas"]` refreshes the card list, but it does NOT touch the Zustand
- * `mapStore`, so on delete we also mirror the map-removal done elsewhere in the
- * Areas panel.
- *
- * Known limitation: an on-map layer is keyed by the area's old name, so renaming
- * an area that is currently on the map does not relabel the live layer until it
- * is toggled off and on again. Tracked for follow-up.
+ * `mapStore`: a rename is carried onto the map by `useCustomAreasUpdate`, and on
+ * delete we mirror the map-removal done elsewhere in the Areas panel.
  */
 export default function CustomAreaActionsMenu({ area }: { area: CustomArea }) {
   const [renameOpen, setRenameOpen] = useState(false);

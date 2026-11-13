@@ -56,15 +56,16 @@ export function showCreateDashboardNudge(
   //
   // The key is every input a click would act on, not just the AOI: the dataset
   // and the date window both decide which insight gets seeded into the new
-  // dashboard. Leaving the window out would let a re-run short-circuit on a
-  // stale payload, so changing the pinned range would silently seed the
-  // analysis for the previous period.
+  // dashboard, and the area name is the dashboard's name. Leaving any of them
+  // out would let a re-run short-circuit on a stale payload — a renamed area
+  // would keep offering "Create Dashboard for <old name>".
   const pending = useChatStore
     .getState()
     .messages.find((m) => m.type === "create-dashboard-nudge");
   if (
     pending?.createDashboardSuggestion?.source === selection.source &&
     pending.createDashboardSuggestion.srcId === srcId &&
+    pending.createDashboardSuggestion.areaName === selection.name &&
     pending.createDashboardSuggestion.datasetId === datasetId &&
     pending.createDashboardSuggestion.startDate === startDate &&
     pending.createDashboardSuggestion.endDate === endDate
