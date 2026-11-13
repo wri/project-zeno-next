@@ -10,7 +10,9 @@ import {
   getDashboard,
   listAnalysisTemplates,
   renameDashboard,
+  restoreEmailSubscriptions,
   setEmailSubscription,
+  turnOffAllEmailSubscriptions,
   updateWidget,
   updateSection,
   type WidgetUpdate,
@@ -338,4 +340,82 @@ export function useSetEmailSubscription(
     }),
     callbacks
   );
+}
+
+// The subscriptions page's bulk writes. Not optimistic: when a request fails
+// no switch should have moved, so the page refetches only once it settles,
+// and that refetch also brings every open dashboard's header menu up to date.
+function useBulkEmailMutation<TData, TVars = void>(
+  mutationFn: (vars: TVars) => Promise<TData>,
+  callbacks: {
+    onSuccess?: (data: TData) => void;
+    onError?: (error: unknown) => void;
+  }
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn,
+    onSuccess: (data) => {
+      callbacks.onSuccess?.(data);
+    },
+    onError: callbacks.onError,
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
+    },
+  });
+}
+
+/** Turns email off for every dashboard; `onSuccess` gets the ones that were on. */
+export function useTurnOffAllEmails(callbacks: {
+  onSuccess?: (changedIds: string[]) => void;
+  onError?: (error: unknown) => void;
+}) {
+  return useBulkEmailMutation(turnOffAllEmailSubscriptions, callbacks);
+}
+
+/** Undoes `useTurnOffAllEmails` for the dashboards it returned. */
+export function useRestoreEmails(callbacks: {
+  onSuccess?: (result: { subscribed: string[]; skipped: string[] }) => void;
+  onError?: (error: unknown) => void;
+}) {
+  return useBulkEmailMutation(restoreEmailSubscriptions, callbacks);
+}
+
+/**
+ * One row's email switch on the subscriptions page. Optimistic on the list
+ * the page reads; the refetch on settle also refreshes that dashboard's own
+ * cached copy, so its header menu shows the same state.
+ */
+export function useSetEmailSubscriptionInList(
+  onError?: (error: unknown) => void
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
+      setEmailSubscription(id, enabled),
+    onMutate: async ({ id, enabled }) => {
+      await queryClient.cancelQueries({ queryKey: dashboardKeys.all });
+      const previous = queryClient.getQueryData<Dashboard[]>(dashboardKeys.all);
+      if (previous) {
+        queryClient.setQueryData<Dashboard[]>(
+          dashboardKeys.all,
+          previous.map((d) =>
+            d.id === id && d.subscriptions
+              ? { ...d, subscriptions: { emailEnabled: enabled } }
+              : d
+          )
+        );
+      }
+      return { previous };
+    },
+    onError: (error, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(dashboardKeys.all, context.previous);
+      }
+      onError?.(error);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
+    },
+  });
 }
