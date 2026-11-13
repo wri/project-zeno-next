@@ -99,6 +99,24 @@ describe("showCreateDashboardNudge", () => {
     expect(createDashboardNudges()[0].id).toBe(id);
   });
 
+  it("re-offers when the same area is renamed", () => {
+    seedLayers([datasetLayer()]);
+    showCreateDashboardNudge(selection);
+    const id = createDashboardNudges()[0].id;
+
+    showCreateDashboardNudge({ ...selection, name: "Blackbox Ridge" });
+
+    // A click names the dashboard after the area, so a stale label would
+    // create it under the old name.
+    const nudges = createDashboardNudges();
+    expect(nudges).toHaveLength(1);
+    expect(nudges[0].id).not.toBe(id);
+    expect(nudges[0].createDashboardSuggestion?.areaName).toBe(
+      "Blackbox Ridge"
+    );
+    expect(nudges[0].createDashboardSuggestion?.srcId).toBe(selection.srcId);
+  });
+
   it("re-offers when the dataset changes under the same area", () => {
     seedLayers([datasetLayer()]);
     showCreateDashboardNudge(selection);
