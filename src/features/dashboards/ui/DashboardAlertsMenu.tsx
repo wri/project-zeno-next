@@ -1,15 +1,24 @@
-import { Box, Button, Flex, Popover, Switch, Text } from "@chakra-ui/react";
+import {
+  Box,
+  Button,
+  Flex,
+  Link as ChakraLink,
+  Popover,
+  Switch,
+  Text,
+} from "@chakra-ui/react";
 import { BellIcon, CaretDownIcon, InfoIcon } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
 
 import { toaster } from "@/app/components/ui/toaster";
+import { Link } from "@/src/shared/lib/router";
 import { httpDetail } from "../api/http";
+import BetaTag from "./BetaTag";
 import { useSetEmailSubscription } from "./dashboardQueries";
 
 /**
  * The header's "Alerts" button and its popover with the email switch for
- * the dashboard's integrated alerts. "Manage all subscriptions" stays hidden
- * until that page exists.
+ * the dashboard's integrated alerts, and a link to all subscriptions.
  */
 export default function DashboardAlertsMenu({
   dashboardId,
@@ -97,6 +106,16 @@ export default function DashboardAlertsMenu({
                   about the same alerts.
                 </Text>
               </Flex>
+              <ChakraLink
+                asChild
+                fontSize="12px"
+                textDecoration="underline"
+                color="primary.600"
+              >
+                <Link href="/subscriptions?ff=email-subscriptions">
+                  Manage all subscriptions
+                </Link>
+              </ChakraLink>
             </Flex>
           </Popover.Body>
         </Popover.Content>
@@ -140,20 +159,7 @@ function AlertRow({
           <Text fontSize="14px" fontWeight="medium" color="neutral.900">
             {label}
           </Text>
-          {beta && (
-            <Box bg="lime.400" rounded="sm" px="6px" py="1px">
-              <Text
-                fontFamily="mono"
-                fontSize="10px"
-                fontWeight="medium"
-                letterSpacing="0.4px"
-                textTransform="uppercase"
-                color="neutral.900"
-              >
-                Beta
-              </Text>
-            </Box>
-          )}
+          {beta && <BetaTag />}
         </Flex>
         <Text fontSize="12px" lineHeight="17px" color="neutral.500">
           {children}
