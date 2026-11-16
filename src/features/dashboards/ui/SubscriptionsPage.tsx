@@ -214,9 +214,12 @@ export default function SubscriptionsPage() {
                   <Switch.Root
                     size="sm"
                     checked={row.emailOn}
-                    onCheckedChange={(e) =>
-                      setEmail.mutate({ id: row.id, enabled: e.checked })
-                    }
+                    onCheckedChange={(e) => {
+                      // The banner says every email is off, which a switch
+                      // just made untrue (or, turned off, made Undo stale).
+                      setUndoIds(null);
+                      setEmail.mutate({ id: row.id, enabled: e.checked });
+                    }}
                     disabled={!row.eligible || busy}
                     colorPalette="primary"
                   >

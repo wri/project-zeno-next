@@ -256,6 +256,22 @@ describe("SubscriptionsPage", () => {
     expect(screen.getByRole("button", { name: "Undo" })).toBeTruthy();
   });
 
+  it("drops the banner when a row switch changes after turning all off", async () => {
+    renderPage();
+    await screen.findByRole("link", { name: "Paraná" });
+    fireEvent.click(turnOffAll());
+    await screen.findByRole("button", { name: "Undo" });
+    await waitFor(() =>
+      expect(emailSwitch("Paraná")).toHaveProperty("disabled", false)
+    );
+
+    fireEvent.click(emailSwitch("Paraná"));
+
+    await waitFor(() =>
+      expect(screen.queryByText(/All alert emails are off/)).toBeNull()
+    );
+  });
+
   it("says how many dashboards could not be turned back on", async () => {
     renderPage();
     await screen.findByRole("link", { name: "Paraná" });
