@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildYearParam } from "../formatYearRange";
+import { buildYearParam, formatDateRange } from "../formatYearRange";
 
 describe("buildYearParam", () => {
   it("collapses equal bounds to a single YEAR", () => {
@@ -30,5 +30,23 @@ describe("buildYearParam", () => {
 
   it("returns undefined when a bound is unparseable", () => {
     expect(buildYearParam("not-a-date", "2023")).toBeUndefined();
+  });
+});
+
+describe("formatDateRange", () => {
+  it("leaves out the start year within one year", () => {
+    expect(formatDateRange("2025-03-01", "2025-10-31")).toBe(
+      "Mar 1 – Oct 31, 2025"
+    );
+  });
+
+  it("gives both years for a cross-year range", () => {
+    expect(formatDateRange("2023-12-01", "2026-11-06")).toBe(
+      "Dec 1, 2023 – Nov 6, 2026"
+    );
+  });
+
+  it("returns undefined when a bound is not an ISO date", () => {
+    expect(formatDateRange("not-a-date", "2025-10-31")).toBeUndefined();
   });
 });

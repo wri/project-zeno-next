@@ -1,4 +1,5 @@
 import { format, parseISO } from "date-fns";
+import { buildDatesParam, formatDateRange } from "@/app/utils/formatYearRange";
 
 import type { ImageryInfo, ImageryProvider } from "@/app/types/chat";
 import type {
@@ -160,21 +161,13 @@ function formatImageryDate(isoDate: string): string {
   }
 }
 
-// Compact acquired-date range, e.g. "May 28 – Jun 3, 2026": the start date's
-// year is elided within a single year so the chip survives the dashboard
-// legend's 300px width without truncating away the end date.
+// Compact acquired-date range, e.g. "May 28 – Jun 3, 2026", shared with the
+// dataset legend's DATES chip.
 function formatImageryDateRange(startIso: string, endIso: string): string {
-  try {
-    const start = parseISO(startIso);
-    const end = parseISO(endIso);
-    const startLabel =
-      format(start, "yyyy") === format(end, "yyyy")
-        ? format(start, "MMM d")
-        : format(start, "MMM d, yyyy");
-    return `${startLabel} – ${format(end, "MMM d, yyyy")}`;
-  } catch {
-    return `${formatImageryDate(startIso)} – ${formatImageryDate(endIso)}`;
-  }
+  return (
+    formatDateRange(startIso, endIso) ??
+    `${formatImageryDate(startIso)} – ${formatImageryDate(endIso)}`
+  );
 }
 
 /** Capture-row date per the Figma spec, e.g. "15 Jun 2026". */
@@ -199,13 +192,9 @@ export function imageryLayerTitle(targetDate?: string): string {
 export function imageryLegendParams(meta: ImageryMeta): LegendParam[] {
   const params: LegendParam[] = [];
   if (meta.startDate && meta.endDate) {
-    params.push({
-      label: "DATES",
-      value: formatImageryDateRange(meta.startDate, meta.endDate),
-      // Wide enough for a cross-year range ("Dec 28, 2025 – Jan 4, 2026");
-      // the default 15ch would hide the end date behind an ellipsis.
-      maxValueWidth: "26ch",
-    });
+    params.push(
+      buildDatesParam(formatImageryDateRange(meta.startDate, meta.endDate))
+    );
   }
   if (meta.windowDays !== undefined) {
     params.push({ label: "WINDOW", value: `±${meta.windowDays} days` });
