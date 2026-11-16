@@ -325,26 +325,52 @@ export function useMoveSections(dashboardId: string) {
   );
 }
 
-// The email switch. Optimistic, so the switch moves at once; the refetch on
-// settle shows whatever the backend saved.
-export function useSetEmailSubscription(
-  dashboardId: string,
-  callbacks?: OptimisticMutationCallbacks<boolean>
-) {
-  return useOptimisticDashboardMutation(
-    dashboardId,
-    (enabled: boolean) => setEmailSubscription(dashboardId, enabled),
-    (dashboard, enabled) => ({
-      ...dashboard,
-      subscriptions: dashboard.subscriptions && { emailEnabled: enabled },
-    }),
-    callbacks
-  );
+// The email switch, for the header menu and the subscriptions page. Optimistic
+// on the dashboard's own entry and on the list the page reads, so both
+// surfaces show the same state; the refetch on settle shows whatever the
+// backend saved.
+export function useSetEmailSubscription(onError?: (error: Error) => void) {
+  const queryClient = useQueryClient();
+  const detailKey = (id: string) => dashboardKeys.detail(id);
+  return useMutation({
+    mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
+      setEmailSubscription(id, enabled),
+    onMutate: async ({ id, enabled }) => {
+      await queryClient.cancelQueries({ queryKey: dashboardKeys.all });
+      const patch = (d: Dashboard): Dashboard => ({
+        ...d,
+        subscriptions: d.subscriptions && { emailEnabled: enabled },
+      });
+      const detail = queryClient.getQueryData<Dashboard>(detailKey(id));
+      const list = queryClient.getQueryData<Dashboard[]>(dashboardKeys.all);
+      if (detail) queryClient.setQueryData(detailKey(id), patch(detail));
+      if (list) {
+        queryClient.setQueryData(
+          dashboardKeys.all,
+          list.map((d) => (d.id === id ? patch(d) : d))
+        );
+      }
+      return { detail, list };
+    },
+    onError: (error, { id }, context) => {
+      if (context?.detail) {
+        queryClient.setQueryData(detailKey(id), context.detail);
+      }
+      if (context?.list) {
+        queryClient.setQueryData(dashboardKeys.all, context.list);
+      }
+      onError?.(error);
+    },
+    onSettled: () =>
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.all }),
+  });
 }
 
 // The subscriptions page's bulk writes. Not optimistic: when a request fails
 // no switch should have moved, so the page refetches only once it settles,
 // and that refetch also brings every open dashboard's header menu up to date.
+// The invalidation is returned so the mutation stays pending until the list
+// reflects the change; otherwise the stale rows would re-enable the controls.
 function useBulkEmailMutation<TData, TVars = void>(
   mutationFn: (vars: TVars) => Promise<TData>,
   callbacks: {
@@ -355,13 +381,10 @@ function useBulkEmailMutation<TData, TVars = void>(
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn,
-    onSuccess: (data) => {
-      callbacks.onSuccess?.(data);
-    },
+    onSuccess: callbacks.onSuccess,
     onError: callbacks.onError,
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
-    },
+    onSettled: () =>
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.all }),
   });
 }
 
@@ -379,43 +402,4 @@ export function useRestoreEmails(callbacks: {
   onError?: (error: unknown) => void;
 }) {
   return useBulkEmailMutation(restoreEmailSubscriptions, callbacks);
-}
-
-/**
- * One row's email switch on the subscriptions page. Optimistic on the list
- * the page reads; the refetch on settle also refreshes that dashboard's own
- * cached copy, so its header menu shows the same state.
- */
-export function useSetEmailSubscriptionInList(
-  onError?: (error: unknown) => void
-) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
-      setEmailSubscription(id, enabled),
-    onMutate: async ({ id, enabled }) => {
-      await queryClient.cancelQueries({ queryKey: dashboardKeys.all });
-      const previous = queryClient.getQueryData<Dashboard[]>(dashboardKeys.all);
-      if (previous) {
-        queryClient.setQueryData<Dashboard[]>(
-          dashboardKeys.all,
-          previous.map((d) =>
-            d.id === id && d.subscriptions
-              ? { ...d, subscriptions: { emailEnabled: enabled } }
-              : d
-          )
-        );
-      }
-      return { previous };
-    },
-    onError: (error, _vars, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(dashboardKeys.all, context.previous);
-      }
-      onError?.(error);
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
-    },
-  });
 }

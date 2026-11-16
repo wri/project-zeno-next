@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
   Box,
   Button,
@@ -13,22 +13,27 @@ import { ArrowLeftIcon, InfoIcon } from "@phosphor-icons/react";
 
 import { toaster } from "@/app/components/ui/toaster";
 import useAuthStore from "@/app/store/authStore";
+import { useWithFlags } from "@/src/shared/lib/feature-flags";
 import { Link, useRouter } from "@/src/shared/lib/router";
 import { httpDetail } from "../api/http";
-import {
-  hasEmailOn,
-  toSubscriptionRows,
-  type SubscriptionRow,
-} from "../model/subscription-rows";
+import { hasEmailOn, toSubscriptionRows } from "../model/subscription-rows";
 import BetaTag from "./BetaTag";
 import {
   useDashboards,
   useRestoreEmails,
-  useSetEmailSubscriptionInList,
+  useSetEmailSubscription,
   useTurnOffAllEmails,
 } from "./dashboardQueries";
 
 const INELIGIBLE_REASON = "Needs an integrated alerts chart or map";
+
+const toastError = (title: string, error: unknown) =>
+  toaster.create({
+    title,
+    description: httpDetail(error) ?? "Please try again.",
+    type: "error",
+    duration: 4000,
+  });
 
 /**
  * Every dashboard the user owns, with its email switch, and one button that
@@ -37,32 +42,22 @@ const INELIGIBLE_REASON = "Needs an integrated alerts chart or map";
  */
 export default function SubscriptionsPage() {
   const router = useRouter();
+  const withFlags = useWithFlags();
   const email = useAuthStore((s) => s.userEmail);
   const { data: dashboards, isLoading, isError } = useDashboards();
-  const rows = useMemo(
-    () => toSubscriptionRows(dashboards ?? []),
-    [dashboards]
-  );
+  const rows = toSubscriptionRows(dashboards ?? []);
   // The dashboards the last "turn off all" changed; set while the banner shows.
   const [undoIds, setUndoIds] = useState<string[] | null>(null);
 
-  const setEmail = useSetEmailSubscriptionInList((error) =>
-    toaster.create({
-      title: "Couldn't update alert emails",
-      description: httpDetail(error) ?? "Please try again.",
-      type: "error",
-      duration: 4000,
-    })
+  const setEmail = useSetEmailSubscription((error) =>
+    toastError("Couldn't update alert emails", error)
   );
   const turnOffAll = useTurnOffAllEmails({
-    onSuccess: (changed) => setUndoIds(changed.length > 0 ? changed : null),
-    onError: (error) =>
-      toaster.create({
-        title: "Couldn't turn off alert emails",
-        description: httpDetail(error) ?? "Please try again.",
-        type: "error",
-        duration: 4000,
-      }),
+    // A second click that changes nothing keeps the banner and its Undo.
+    onSuccess: (changed) => {
+      if (changed.length > 0) setUndoIds(changed);
+    },
+    onError: (error) => toastError("Couldn't turn off alert emails", error),
   });
   const restore = useRestoreEmails({
     onSuccess: ({ skipped }) => {
@@ -70,26 +65,15 @@ export default function SubscriptionsPage() {
       if (skipped.length > 0) {
         toaster.create({
           title: "Some alert emails stayed off",
-          description: `${skipped.length} dashboard${skipped.length === 1 ? " no longer has" : "s no longer have"} an integrated alerts chart or map.`,
+          description: `${skipped.length} dashboard${skipped.length === 1 ? "" : "s"} couldn't be turned back on.`,
           type: "info",
           duration: 6000,
         });
       }
     },
-    onError: (error) =>
-      toaster.create({
-        title: "Couldn't turn alert emails back on",
-        description: httpDetail(error) ?? "Please try again.",
-        type: "error",
-        duration: 4000,
-      }),
+    onError: (error) => toastError("Couldn't turn alert emails back on", error),
   });
   const busy = setEmail.isPending || turnOffAll.isPending || restore.isPending;
-
-  // Without history (a link from an email opens a fresh tab) back has
-  // nowhere to go, so it opens the dashboards instead.
-  const goBack = () =>
-    window.history.state?.idx > 0 ? router.back() : router.push("/dashboards");
 
   return (
     <Box bg="#F4F5F6" minH="calc(100vh - 40px)" py="40px">
@@ -104,7 +88,7 @@ export default function SubscriptionsPage() {
             fontSize="13px"
             fontWeight="normal"
             color="neutral.700"
-            onClick={goBack}
+            onClick={() => router.back(withFlags("/dashboards"))}
           >
             <ArrowLeftIcon size={12} />
             Back
@@ -193,7 +177,7 @@ export default function SubscriptionsPage() {
               <Text color="fg.muted">
                 You have no dashboards yet.{" "}
                 <ChakraLink asChild textDecoration="underline">
-                  <Link href="/dashboards">Go to Dashboards</Link>
+                  <Link href={withFlags("/dashboards")}>Go to Dashboards</Link>
                 </ChakraLink>{" "}
                 to create one.
               </Text>
@@ -216,7 +200,9 @@ export default function SubscriptionsPage() {
                       textDecoration="underline"
                       color="primary.600"
                     >
-                      <Link href={`/dashboards/${row.id}`}>{row.name}</Link>
+                      <Link href={withFlags(`/dashboards/${row.id}`)}>
+                        {row.name}
+                      </Link>
                     </ChakraLink>
                     {!row.eligible && (
                       <Text fontSize="12px" color="neutral.500">
@@ -225,13 +211,22 @@ export default function SubscriptionsPage() {
                     )}
                   </Box>
                   <Text color="neutral.600">{row.area}</Text>
-                  <EmailSwitch
-                    row={row}
-                    disabled={!row.eligible || busy}
-                    onChange={(enabled) =>
-                      setEmail.mutate({ id: row.id, enabled })
+                  <Switch.Root
+                    size="sm"
+                    checked={row.emailOn}
+                    onCheckedChange={(e) =>
+                      setEmail.mutate({ id: row.id, enabled: e.checked })
                     }
-                  />
+                    disabled={!row.eligible || busy}
+                    colorPalette="primary"
+                  >
+                    <Switch.HiddenInput
+                      aria-label={`Email alerts for ${row.name}`}
+                    />
+                    <Switch.Control>
+                      <Switch.Thumb bg="white" />
+                    </Switch.Control>
+                  </Switch.Root>
                 </Row>
               ))}
             </Box>
@@ -275,30 +270,5 @@ function Row({
     >
       {children}
     </Box>
-  );
-}
-
-function EmailSwitch({
-  row,
-  disabled,
-  onChange,
-}: {
-  row: SubscriptionRow;
-  disabled: boolean;
-  onChange: (enabled: boolean) => void;
-}) {
-  return (
-    <Switch.Root
-      size="sm"
-      checked={row.emailOn}
-      onCheckedChange={(e) => onChange(e.checked)}
-      disabled={disabled}
-      colorPalette="primary"
-    >
-      <Switch.HiddenInput aria-label={`Email alerts for ${row.name}`} />
-      <Switch.Control>
-        <Switch.Thumb bg="white" />
-      </Switch.Control>
-    </Switch.Root>
   );
 }

@@ -239,6 +239,49 @@ describe("SubscriptionsPage", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /back/i }));
 
-    expect(router.back).toHaveBeenCalled();
+    expect(router.back).toHaveBeenCalledWith("/dashboards");
+  });
+
+  it("keeps the banner and Undo when a second click changes nothing", async () => {
+    renderPage();
+    await screen.findByRole("link", { name: "Paraná" });
+    fireEvent.click(turnOffAll());
+    await screen.findByRole("button", { name: "Undo" });
+    await waitFor(() =>
+      expect((turnOffAll() as HTMLButtonElement).disabled).toBe(true)
+    );
+
+    fireEvent.click(turnOffAll());
+
+    expect(screen.getByRole("button", { name: "Undo" })).toBeTruthy();
+  });
+
+  it("says how many dashboards could not be turned back on", async () => {
+    renderPage();
+    await screen.findByRole("link", { name: "Paraná" });
+    fireEvent.click(turnOffAll());
+    server.d1.eligible = false;
+
+    fireEvent.click(await screen.findByRole("button", { name: "Undo" }));
+
+    await waitFor(() =>
+      expect(toaster.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          description: "1 dashboard couldn't be turned back on.",
+        })
+      )
+    );
+  });
+
+  it("keeps the page's flags on its links", async () => {
+    window.history.replaceState({}, "", "/?ff=email-subscriptions");
+    renderPage();
+
+    const link = await screen.findByRole("link", { name: "Paraná" });
+
+    expect(link.getAttribute("href")).toBe(
+      "/dashboards/d1?ff=email-subscriptions"
+    );
+    window.history.replaceState({}, "", "/");
   });
 });

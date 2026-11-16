@@ -27,8 +27,12 @@ export function useRouter() {
       push(href: string, options?: NavigateOptions) {
         navigate(href, { preventScrollReset: options?.scroll === false });
       },
-      back() {
-        navigate(-1);
+      // With no history to go back to (a link opened in a fresh tab) it
+      // replaces the page with `fallback`, so the browser's Back does not
+      // return here.
+      back(fallback: string) {
+        if (window.history.state?.idx > 0) navigate(-1);
+        else navigate(fallback, { replace: true });
       },
       replace(href: string, options?: NavigateOptions) {
         navigate(href, {

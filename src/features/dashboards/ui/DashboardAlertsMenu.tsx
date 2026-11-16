@@ -11,6 +11,7 @@ import { BellIcon, CaretDownIcon, InfoIcon } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
 
 import { toaster } from "@/app/components/ui/toaster";
+import { useWithFlags } from "@/src/shared/lib/feature-flags";
 import { Link } from "@/src/shared/lib/router";
 import { httpDetail } from "../api/http";
 import BetaTag from "./BetaTag";
@@ -29,15 +30,15 @@ export default function DashboardAlertsMenu({
   areaName: string;
   emailEnabled: boolean;
 }) {
-  const setEmail = useSetEmailSubscription(dashboardId, {
-    onError: (error) =>
-      toaster.create({
-        title: "Couldn't update alerts",
-        description: httpDetail(error) ?? "Please try again.",
-        type: "error",
-        duration: 4000,
-      }),
-  });
+  const withFlags = useWithFlags();
+  const setEmail = useSetEmailSubscription((error) =>
+    toaster.create({
+      title: "Couldn't update alerts",
+      description: httpDetail(error) ?? "Please try again.",
+      type: "error",
+      duration: 4000,
+    })
+  );
 
   return (
     <Popover.Root positioning={{ placement: "bottom-end" }} lazyMount>
@@ -91,7 +92,9 @@ export default function DashboardAlertsMenu({
                 beta
                 checked={emailEnabled}
                 disabled={setEmail.isPending}
-                onChange={(on) => setEmail.mutate(on)}
+                onChange={(on) =>
+                  setEmail.mutate({ id: dashboardId, enabled: on })
+                }
               >
                 One weekly email after each data update, only when there are new
                 alerts.
@@ -112,7 +115,7 @@ export default function DashboardAlertsMenu({
                 textDecoration="underline"
                 color="primary.600"
               >
-                <Link href="/subscriptions?ff=email-subscriptions">
+                <Link href={withFlags("/subscriptions")}>
                   Manage all subscriptions
                 </Link>
               </ChakraLink>
