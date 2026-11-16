@@ -16,6 +16,8 @@ import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
 import * as datasets from "@/app/constants/datasets";
+import type { MessageKey } from "@/src/shared/lib/i18n";
+import en from "@/src/shared/lib/i18n/messages/en.json";
 import { TOUR_ANCHORS } from "@/src/shared/lib/tour-anchors";
 
 import { options } from "./dependency-cruiser.config";
@@ -57,6 +59,20 @@ const ANCHOR_HOMES: Record<AnchorName, readonly string[]> = {
   ],
   analysesButton: ["app/components/ChatInput.tsx"],
   catalogCard: ["app/components/CatalogPanel.tsx"],
+};
+
+/** Where tour copy takes a label from an i18n key (`UiLabel`, `uiLabelText`). */
+const UI_LABEL_MODULE = `${ONBOARDING}ui/ui-label.tsx`;
+
+/**
+ * The component that renders each i18n key the tour names a control by. The
+ * tour shows the name in the user's locale, so it must use the key that
+ * component renders: if the component switches key, check the copy still
+ * names that control, then update this table.
+ */
+const I18N_LABEL_HOMES: Partial<Record<MessageKey, string>> = {
+  "chat.header.title": "app/ChatPanelHeader.tsx",
+  "chat.input.analyses": "app/components/ChatInput.tsx",
 };
 
 /** Verbs the copy puts before a label ("Click Datasets"). */
@@ -522,6 +538,70 @@ function namesLabel(text: string, label: string): boolean {
   return false;
 }
 
+/** The strings an expression can be: `"a"`, or both arms of `c ? "a" : "b"`. */
+function literalStrings(expr: ts.Expression | undefined): string[] {
+  if (!expr) return [];
+  if (ts.isStringLiteral(expr) || ts.isNoSubstitutionTemplateLiteral(expr))
+    return [expr.text];
+  if (ts.isParenthesizedExpression(expr))
+    return literalStrings(expr.expression);
+  if (ts.isConditionalExpression(expr))
+    return [
+      ...literalStrings(expr.whenTrue),
+      ...literalStrings(expr.whenFalse),
+    ];
+  return [];
+}
+
+/**
+ * The i18n keys the onboarding feature names controls by, and uses whose key
+ * the contract can't read (not a string literal).
+ */
+function tourLabelKeys() {
+  const keys: { key: string; at: string }[] = [];
+  const unreadable: string[] = [];
+  for (const file of onboardingFiles().filter((f) => f !== UI_LABEL_MODULE)) {
+    visit(parse(file), (node) => {
+      let arg: ts.Node | undefined;
+      if (
+        ts.isCallExpression(node) &&
+        ts.isIdentifier(node.expression) &&
+        node.expression.text === "uiLabelText"
+      )
+        arg = node.arguments[0];
+      else if (
+        (ts.isJsxSelfClosingElement(node) || ts.isJsxOpeningElement(node)) &&
+        node.tagName.getText() === "UiLabel"
+      ) {
+        const attr = node.attributes.properties.find(
+          (p): p is ts.JsxAttribute =>
+            ts.isJsxAttribute(p) && p.name.getText() === "i18nKey"
+        );
+        arg = attr?.initializer;
+        if (arg && ts.isJsxExpression(arg)) arg = arg.expression;
+      } else return;
+      if (arg && ts.isStringLiteral(arg))
+        keys.push({ key: arg.text, at: where(node) });
+      else unreadable.push(`${where(node)}: ${node.getText()}`);
+    });
+  }
+  return { keys, unreadable };
+}
+
+/** The keys a file passes to `t(...)` or `i18n.t(...)`. */
+function translatedKeys(file: string): Set<string> {
+  const keys = new Set<string>();
+  visit(parse(file), (node) => {
+    if (!ts.isCallExpression(node)) return;
+    const callee = node.expression;
+    const isT = ts.isIdentifier(callee)
+      ? callee.text === "t"
+      : ts.isPropertyAccessExpression(callee) && callee.name.text === "t";
+    if (isT) for (const key of literalStrings(node.arguments[0])) keys.add(key);
+  });
+  return keys;
+}
+
 /** Text in tour copy: JSX text, string literals and template parts (not imports). */
 function copyTexts(file: string): { value: string; node: ts.Node }[] {
   const found: { value: string; node: ts.Node }[] = [];
@@ -631,6 +711,7 @@ describe("tour contract: anchors", () => {
 
 describe("tour contract: labels", () => {
   const { labels, unresolved } = tourLabels();
+  const i18nLabels = tourLabelKeys();
 
   it("(g) every label the tour imports resolves to a declaration", () => {
     expect(labels.length).toBeGreaterThan(0);
@@ -661,9 +742,35 @@ describe("tour contract: labels", () => {
     ).toEqual([]);
   });
 
+  it("(g) every label the tour takes from i18n is rendered by its component with that key", () => {
+    expect(i18nLabels.keys.length).toBeGreaterThan(0);
+    expect(
+      i18nLabels.unreadable,
+      "Pass the i18n key to UiLabel / uiLabelText as a string literal"
+    ).toEqual([]);
+    const problems = i18nLabels.keys.flatMap(({ key, at }) => {
+      if (!(key in en)) return [`${at}: "${key}" is not in en.json`];
+      const home = I18N_LABEL_HOMES[key as MessageKey];
+      if (!home)
+        return [`${at}: "${key}" has no component in I18N_LABEL_HOMES`];
+      return translatedKeys(home).has(key)
+        ? []
+        : [`${at}: names "${key}", but ${home} no longer renders it`];
+    });
+    expect(
+      problems,
+      "The tour names a control by an i18n key its component does not render. Use the component's key, or update the tour copy"
+    ).toEqual([]);
+    const named = new Set(i18nLabels.keys.map(({ key }) => key));
+    expect(
+      Object.keys(I18N_LABEL_HOMES).filter((key) => !named.has(key)),
+      "The tour no longer names these keys: remove them from I18N_LABEL_HOMES"
+    ).toEqual([]);
+  });
+
   it("(g) tour copy never repeats a covered label as text", () => {
     // Labels whose text the contract can read (string constants, objects of
-    // strings), once each although several tour files import them.
+    // strings, i18n keys), once each although several tour files use them.
     const byValue = new Map<string, { use: string; file: string }>();
     for (const { local, decl, paths } of labels)
       for (const path of paths) {
@@ -674,6 +781,15 @@ describe("tour contract: labels", () => {
             file: decl.file,
           });
       }
+    // Labels taken from i18n, by their English text: the copy is English.
+    for (const { key } of i18nLabels.keys) {
+      const value = (en as Record<string, string>)[key];
+      if (value && !byValue.has(value))
+        byValue.set(value, {
+          use: `UiLabel / uiLabelText("${key}")`,
+          file: I18N_LABEL_HOMES[key as MessageKey] ?? "en.json",
+        });
+    }
     const covered = [...byValue].map(([value, at]) => ({ value, ...at }));
     expect(covered.length).toBeGreaterThan(0);
     const literals = onboardingFiles()

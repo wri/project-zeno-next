@@ -14,10 +14,8 @@ import {
   type ChecklistItemId,
   type ChecklistTickedBy,
 } from "../../model/onboarding-progress";
-import { AI_ASSISTANT_LABEL } from "@/app/ChatPanelHeader";
 import { AREA_ACTION_LABELS } from "@/app/components/AreaActionBar";
 import { BOUNDARIES_TAB_LABEL } from "@/app/components/AreasPanel";
-import { ANALYSES_LABEL } from "@/app/components/ChatInput";
 import {
   DATASET_CARD_BY_ID,
   INTEGRATED_ALERTS_DATASET_ID,
@@ -49,6 +47,7 @@ import {
   Tip,
 } from "../tour-content";
 import { CHECKLIST_NAME } from "../tour-entry";
+import { UiLabel } from "../ui-label";
 import { anchorTarget } from "../../model/tour";
 import type { UiTour, UiTourStep } from "../types";
 
@@ -212,8 +211,8 @@ const ITEMS: Record<ChecklistItemId, Omit<ChecklistItem, "id">> = {
             <Example>{COMPARE_PROMPT}</Example>
             <p>
               Change the places if you like. Click the × on any area chip, so
-              that the {AI_ASSISTANT_LABEL} uses only the places you type. Then
-              click {SEND_ICON} to send the question.
+              that the <UiLabel i18nKey="chat.header.title" /> uses only the
+              places you type. Then click {SEND_ICON} to send the question.
             </p>
             <DailyPromptsNote whenNoneLeft={NO_PROMPTS_TODAY} />
           </>
@@ -275,7 +274,10 @@ const ITEMS: Record<ChecklistItemId, Omit<ChecklistItem, "id">> = {
               <li>
                 To add more charts, click <b>{ADD_TO_DASHBOARD_LABEL}</b> on a
                 chart in the chat, or in <InlineIcon icon={ChartLineIcon} />{" "}
-                <b>{ANALYSES_LABEL}</b>.
+                <b>
+                  <UiLabel i18nKey="chat.input.analyses" />
+                </b>
+                .
               </li>
               <li>
                 Click <InlineIcon icon={FilePdfIcon} />{" "}

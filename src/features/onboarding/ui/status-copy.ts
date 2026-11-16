@@ -3,8 +3,6 @@
  * skipped a step. Pure: the overlay passes in what it knows, the tests call
  * the same functions.
  */
-import { AI_ASSISTANT_LABEL } from "@/app/ChatPanelHeader";
-
 import { sentence } from "../lib/tour-announcement";
 import type { PassedOverStep } from "../model/onboarding-store";
 import {
@@ -16,11 +14,15 @@ import {
 import type { TourStep } from "../model/tour";
 import type { StatusLine } from "./StepStatusBar";
 import { NEXT_LABEL, SKIP_STEP_LABEL } from "./TourPopover";
+import { uiLabelText } from "./ui-label";
 
 export const SLOW_WAIT_STATUS = `This is taking a long time. You can wait, or click ${SKIP_STEP_LABEL}.`;
 export const DONE_MOVING_ON_STATUS = "Done. The next step opens soon.";
-export const FAILED_STATUS = `The ${AI_ASSISTANT_LABEL} could not finish this answer. The chat shows what went wrong.`;
-export const ASKED_STATUS = `The ${AI_ASSISTANT_LABEL} has a question for you.`;
+// Functions, not constants: the assistant's name follows the UI locale.
+export const failedStatus = () =>
+  `The ${uiLabelText("chat.header.title")} could not finish this answer. The chat shows what went wrong.`;
+export const askedStatus = () =>
+  `The ${uiLabelText("chat.header.title")} has a question for you.`;
 
 interface StatusCopyInput {
   readonly tone: StepStatusTone;
@@ -45,9 +47,9 @@ function statusCopy(input: StatusCopyInput): string {
         ? DONE_MOVING_ON_STATUS
         : sentence(readyHint ?? `Done. Click ${NEXT_LABEL}`);
     case "failed":
-      return FAILED_STATUS;
+      return failedStatus();
     case "asked":
-      return ASKED_STATUS;
+      return askedStatus();
     case "blocked":
       if (blockedNote === undefined)
         throw new Error("A step with `blockedIf` needs a `blockedNote`.");

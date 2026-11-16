@@ -23,7 +23,6 @@ import {
 } from "@phosphor-icons/react";
 import { useEffect, useId, useRef, useState } from "react";
 
-import { AI_ASSISTANT_LABEL } from "@/app/ChatPanelHeader";
 import { Tooltip } from "@/app/components/ui/tooltip";
 import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
 
@@ -40,6 +39,7 @@ import useOnboardingStore, {
 } from "../model/onboarding-store";
 import { ONBOARDING_FEATURE_FLAG } from "../model/tour-entry";
 import { CHECKLIST_NAME, TAKE_THE_TOUR_LABEL } from "./tour-entry";
+import { UiLabel } from "./ui-label";
 import {
   CHECKLIST_ITEMS,
   MANUAL_TICK_LABEL,
@@ -416,7 +416,7 @@ function SuccessCard({
       </Text>
       <Text fontSize="sm" mt="1">
         You are ready to use Horizon on your own. You can ask the{" "}
-        {AI_ASSISTANT_LABEL} your own question now.
+        <UiLabel i18nKey="chat.header.title" /> your own question now.
       </Text>
       <Flex gap="2" mt="3">
         {/* Dismisses the checklist for good, as Hide checklist does. */}

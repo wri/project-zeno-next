@@ -13,9 +13,6 @@ import { Tooltip } from "./components/ui/tooltip";
 import { useStartNewConversation } from "./hooks/useStartNewConversation";
 import useSidebarStore from "./store/sidebarStore";
 
-/** The panel's title. The onboarding tour's copy imports it, so a rename reaches both. */
-export const AI_ASSISTANT_LABEL = "AI Assistant";
-
 interface ChatPanelHeaderProps {
   /** Whether the panel is in full-size mode (vs compact) */
   isFullSize?: boolean;

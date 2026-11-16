@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { i18n } from "@/src/shared/lib/i18n";
+
 import type { StepStatusFacts } from "../../model/step-policy";
 import type { TourStep } from "../../model/tour";
 import { skippedNotice, stepStatus } from "../status-copy";
@@ -78,6 +80,23 @@ describe("stepStatus", () => {
     ];
     for (const [step, over, text] of cases)
       expect(stepStatus(step, { ...waiting, ...over })?.text).toBe(text);
+  });
+
+  it("names the assistant as the panel shows it in the UI locale", async () => {
+    await i18n.changeLanguage("es");
+    try {
+      const failed = stepStatus(appWait, {
+        ...waiting,
+        awaitingAction: false,
+        completing: true,
+        failed: true,
+      });
+      expect(failed?.text).toBe(
+        `The ${i18n.getResource("es", "translation", "chat.header.title")} could not finish this answer. The chat shows what went wrong.`
+      );
+    } finally {
+      await i18n.changeLanguage("en");
+    }
   });
 
   it("falls back to plain words when a step gives no hint", () => {

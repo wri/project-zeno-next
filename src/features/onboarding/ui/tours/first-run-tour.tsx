@@ -22,7 +22,6 @@ import {
 } from "../../model/onboarding-progress";
 import useOnboardingStore from "../../model/onboarding-store";
 import { SHOW_RESULT_MS } from "../../model/step-policy";
-import { AI_ASSISTANT_LABEL } from "@/app/ChatPanelHeader";
 import { analyseNudgeLabel } from "@/app/components/AnalyseNudge";
 import { BOUNDARIES_TAB_LABEL } from "@/app/components/AreasPanel";
 import { DATA_CATALOG_LABEL } from "@/app/components/CatalogPanel";
@@ -81,6 +80,7 @@ import {
 import { FIRST_RUN_TOUR_ID } from "../../model/tour-entry";
 import { CHECKLIST_NAME, TAKE_THE_TOUR_LABEL } from "../tour-entry";
 import { NEXT_LABEL } from "../TourPopover";
+import { UiLabel, uiLabelText } from "../ui-label";
 import { anchorTarget } from "../../model/tour";
 import type { UiTour } from "../types";
 import { CHECKLIST_ITEMS } from "./checklist-tours";
@@ -213,8 +213,8 @@ function AnswerStepBody({
   return (
     <>
       <p>
-        The steps the {AI_ASSISTANT_LABEL} takes show here while it works. When
-        the answer is ready, scroll the chat and check it:
+        The steps the <UiLabel i18nKey="chat.header.title" /> takes show here
+        while it works. When the answer is ready, scroll the chat and check it:
       </p>
       <ul>
         <li>
@@ -250,8 +250,9 @@ function AiChartStepBody() {
       <p>Look at the label at the top of the chart:</p>
       <ul>
         <li>
-          <b>{INSIGHT_CAPTION_LABELS.aiAssisted}</b>: the {AI_ASSISTANT_LABEL}{" "}
-          made the chart from your question. AI can make mistakes.
+          <b>{INSIGHT_CAPTION_LABELS.aiAssisted}</b>: the{" "}
+          <UiLabel i18nKey="chat.header.title" /> made the chart from your
+          question. AI can make mistakes.
         </li>
         <li>
           <b>{INSIGHT_CAPTION_LABELS.curated}</b>: the chart comes directly from
@@ -331,13 +332,13 @@ export function createFirstRunTour(): UiTour {
           <>
             <p>
               Horizon shows data, charts and maps about nature. A good question
-              to the {AI_ASSISTANT_LABEL} has three parts:
+              to the <UiLabel i18nKey="chat.header.title" /> has three parts:
             </p>
             <Ingredients />
             <p>
               First, make a chart manually by choosing a dataset and an area to
-              analyze. Next, ask the {AI_ASSISTANT_LABEL} a question in the chat
-              to generate a chart on your behalf.
+              analyze. Next, ask the <UiLabel i18nKey="chat.header.title" /> a
+              question in the chat to generate a chart on your behalf.
             </p>
             <Tip>{TAKE_THE_TOUR_LATER}</Tip>
           </>
@@ -441,8 +442,9 @@ export function createFirstRunTour(): UiTour {
               you can ask each day.
             </p>
             <Tip>
-              <b>{GENERATE_NUDGE}</b> asks the {AI_ASSISTANT_LABEL} instead, and
-              uses 1 of your daily prompts.
+              <b>{GENERATE_NUDGE}</b> asks the{" "}
+              <UiLabel i18nKey="chat.header.title" /> instead, and uses 1 of
+              your daily prompts.
             </Tip>
           </>
         ),
@@ -540,7 +542,8 @@ export function createFirstRunTour(): UiTour {
         waitFor: () => chatSettledSince(chatBaseline),
         waitsOnApp: true,
         autoAdvance: false,
-        hint: `Waiting for the ${AI_ASSISTANT_LABEL}. ${ANSWER_WAIT_COPY}`,
+        // A string, so the name is read in the locale the tour starts in.
+        hint: `Waiting for the ${uiLabelText("chat.header.title")}. ${ANSWER_WAIT_COPY}`,
         readyHint: `The answer is ready. Click ${NEXT_LABEL}.`,
         failedIf: answerFailed,
         askedIf: askedBack,
@@ -590,7 +593,8 @@ export function createFirstRunTour(): UiTour {
                 {
                   title: (
                     <>
-                      <SparkleIcon /> With the {AI_ASSISTANT_LABEL}
+                      <SparkleIcon /> With the{" "}
+                      <UiLabel i18nKey="chat.header.title" />
                     </>
                   ),
                   text: "Ask with an area, a dataset and a time range",
@@ -599,8 +603,8 @@ export function createFirstRunTour(): UiTour {
             />
             <p>
               A chart you make manually uses no prompts and comes directly from
-              the source data. Use the {AI_ASSISTANT_LABEL} for other questions,
-              such as a comparison.
+              the source data. Use the <UiLabel i18nKey="chat.header.title" />{" "}
+              for other questions, such as a comparison.
             </p>
             <p>
               Your next question includes the chips at the top of the chat box.

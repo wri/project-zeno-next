@@ -42,9 +42,6 @@ import {
   isDashboardDetailRoute,
 } from "../utils/threadNavigation";
 
-/** The button text the onboarding tour names. */
-export const ANALYSES_LABEL = "Analyses";
-
 export default function ChatInput({
   isChatDisabled,
   bordered,
