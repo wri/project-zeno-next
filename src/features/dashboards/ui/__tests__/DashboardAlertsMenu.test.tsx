@@ -9,8 +9,15 @@ vi.mock("@/app/components/ui/toaster", () => ({
   Toaster: () => null,
 }));
 vi.mock("@/app/lib/api-client", () => ({ apiFetch: vi.fn() }));
+vi.mock("@/src/shared/lib/router", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  Link: ({ href, ...rest }: { href: string } & React.ComponentProps<"a">) => (
+    <a href={href} {...rest} />
+  ),
+}));
 let flagOn = true;
-vi.mock("@/src/shared/lib/feature-flags", () => ({
+vi.mock("@/src/shared/lib/feature-flags", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
   useFeatureFlag: (flag: string) => flagOn && flag === "email-subscriptions",
 }));
 
@@ -167,11 +174,42 @@ describe("DashboardHeader alerts gate", () => {
 });
 
 describe("DashboardAlertsMenu", () => {
+  it("carries the page's flags onto the subscriptions link", async () => {
+    window.history.replaceState({}, "", "/?ff=email-subscriptions,other");
+    renderHeader();
+    await openPopover();
+
+    expect(
+      screen.getByRole("link", { name: "Manage all subscriptions" })
+    ).toHaveProperty("search", "?ff=email-subscriptions%2Cother");
+    window.history.replaceState({}, "", "/");
+  });
+
+  it("updates the list the subscriptions page reads", async () => {
+    renderHeader();
+    queryClient.setQueryData(dashboardKeys.all, [
+      cached("d1", { emailEnabled: false }),
+    ]);
+    const email = await openPopover();
+
+    fireEvent.click(email);
+
+    await waitFor(() =>
+      expect(
+        queryClient.getQueryData<Dashboard[]>(dashboardKeys.all)?.[0]
+          .subscriptions
+      ).toEqual({ emailEnabled: true })
+    );
+  });
+
   it("starts off, names the area and shows the myGFW note", async () => {
     renderHeader();
     expect(alertsButton()?.textContent).toContain("Off");
 
     const email = await openPopover();
+    expect(
+      screen.getByRole("link", { name: "Manage all subscriptions" })
+    ).toHaveProperty("pathname", "/subscriptions");
 
     expect(isOn(email)).toBe(false);
     expect(screen.getByText("Alerts for Paraná, Brazil")).toBeTruthy();

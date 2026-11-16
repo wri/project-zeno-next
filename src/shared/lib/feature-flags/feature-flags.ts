@@ -29,3 +29,12 @@ export function isFeatureEnabled(
 ): boolean {
   return enabledFlags(params).has(flag);
 }
+
+/**
+ * `href` (a path with no query) carrying the URL's `?ff=…` flags, so a link
+ * inside a flagged feature does not close the gate on the next page.
+ */
+export function withFlags(href: string, params: URLSearchParams): string {
+  const ff = params.get(FLAGS_PARAM);
+  return ff ? `${href}?${new URLSearchParams({ ff })}` : href;
+}

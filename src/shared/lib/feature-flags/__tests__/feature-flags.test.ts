@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { enabledFlags, isFeatureEnabled } from "../feature-flags";
+import { enabledFlags, isFeatureEnabled, withFlags } from "../feature-flags";
 
 const params = (query: string) => new URLSearchParams(query);
 
@@ -38,5 +38,17 @@ describe("enabledFlags", () => {
     expect(enabledFlags(params("ff=foo, analysis ,bar"))).toEqual(
       new Set(["foo", "analysis", "bar"])
     );
+  });
+});
+
+describe("withFlags", () => {
+  it("carries every flag onto the href", () => {
+    expect(withFlags("/dashboards", params("ff=a,b&prompt=x"))).toBe(
+      "/dashboards?ff=a%2Cb"
+    );
+  });
+
+  it("leaves the href alone without flags", () => {
+    expect(withFlags("/dashboards", params("prompt=x"))).toBe("/dashboards");
   });
 });
