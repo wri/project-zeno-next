@@ -336,7 +336,7 @@ export function createFirstRunTour(): UiTour {
             <Ingredients />
             <p>
               First, make a chart manually by choosing a dataset and an area to
-              analyse. Next, ask the {AI_ASSISTANT_LABEL} a question in the chat
+              analyze. Next, ask the {AI_ASSISTANT_LABEL} a question in the chat
               to generate a chart on your behalf.
             </p>
             <Tip>{TAKE_THE_TOUR_LATER}</Tip>
@@ -373,7 +373,7 @@ export function createFirstRunTour(): UiTour {
         body: (
           <>
             <p>
-              Click the switch on the <b>{TCL_NAME}</b> row. The pink colour on
+              Click the switch on the <b>{TCL_NAME}</b> row. The pink color on
               the map shows where tree cover was lost each year since{" "}
               {TCL_CARD.defaultStartYear}. Tree cover includes plantations, not
               only natural forest.
