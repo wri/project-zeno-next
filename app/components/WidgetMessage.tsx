@@ -66,6 +66,21 @@ import {
   type NetFluxVariant,
 } from "@/src/features/net-flux";
 
+/**
+ * Card controls the onboarding tour's copy names. It imports these, so a
+ * rename reaches both.
+ */
+export const WIDGET_CONTROL_LABELS = {
+  chart: "Chart",
+  table: "Table",
+  fullScreen: "Full-screen",
+  showWorking: "Show working",
+} as const;
+
+/** Whether the card offers Show working: only a chart made with AI-written code has it. */
+export const showsWorking = (widget: Pick<InsightWidget, "generation">) =>
+  !!widget.generation;
+
 interface WidgetMessageProps {
   widget: InsightWidget;
   inWorkspace?: boolean;
@@ -329,7 +344,7 @@ export default function WidgetMessage({
                   aria-pressed={!showAsTable}
                 >
                   <ChartBarIcon size={14} />
-                  Chart
+                  {WIDGET_CONTROL_LABELS.chart}
                 </Button>
                 <Button
                   size="xs"
@@ -342,7 +357,7 @@ export default function WidgetMessage({
                   aria-pressed={showAsTable}
                 >
                   <TableIcon size={14} />
-                  Table
+                  {WIDGET_CONTROL_LABELS.table}
                 </Button>
               </Flex>
             )}
@@ -375,7 +390,7 @@ export default function WidgetMessage({
                 color="neutral.500"
               >
                 <ArrowsOutIcon size={14} />
-                Full-screen
+                {WIDGET_CONTROL_LABELS.fullScreen}
               </Button>
             )}
           </Flex>
@@ -442,7 +457,7 @@ export default function WidgetMessage({
             flexWrap={inWorkspace ? "nowrap" : "wrap"}
             align="center"
           >
-            {widget.generation && (
+            {showsWorking(widget) && (
               <Tooltip
                 content="View how this was generated"
                 variant="dark"
@@ -463,7 +478,7 @@ export default function WidgetMessage({
                   aria-label="View how this was generated"
                 >
                   <Microscope size={12} />
-                  Show working
+                  {WIDGET_CONTROL_LABELS.showWorking}
                 </Button>
               </Tooltip>
             )}

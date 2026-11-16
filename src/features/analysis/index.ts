@@ -4,9 +4,16 @@
  * Other slices import ONLY from this barrel — never reach into segment files
  * directly. Keeps the slice's internals free to move.
  */
-export { default as ViewAnalysisNudge } from "./ui/ViewAnalysisNudge";
+export {
+  default as ViewAnalysisNudge,
+  viewAnalysisNudgeLabel,
+} from "./ui/ViewAnalysisNudge";
 export { ViewAnalysisTrigger } from "./ui/ViewAnalysisTrigger";
-export { useAnalysis, type AnalysisStatus } from "./ui/use-analysis";
+export {
+  useAnalysis,
+  cancelRunningAnalyses,
+  type AnalysisStatus,
+} from "./ui/use-analysis";
 export { analysisService } from "./ui/analysis-service";
 export type { AnalysisService } from "./model/analysis-service";
 export { AnalysisJobFailedError } from "./model/analysis-error";

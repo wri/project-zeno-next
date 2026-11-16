@@ -39,11 +39,11 @@ vi.mock("../WhatsNewModal", () => ({ default: () => null }));
 
 import PageHeader from "../PageHeader";
 
-function renderHeader(pathname: string) {
+function renderHeader(pathname: string, actions?: React.ReactNode) {
   router.pathname = pathname;
   return render(
     <ChakraProvider value={system}>
-      <PageHeader />
+      <PageHeader actions={actions} />
     </ChakraProvider>
   );
 }
@@ -256,6 +256,18 @@ describe("PageHeader prompt meter", () => {
     expect(screen.getByTestId("whats-new-header-dot")).toBeTruthy();
     expect(precedes(meter, whatsNew)).toBe(true);
     expect(precedes(whatsNew, avatar)).toBe(true);
+  });
+
+  it("puts a page's actions first among the state items", () => {
+    useAuthStore.getState().setPromptUsage(15, 20);
+    renderHeader("/app", <button type="button">Page action</button>);
+
+    const action = screen.getByRole("button", { name: "Page action" });
+    const meter = screen.getByTestId("prompt-quota-meter");
+    const avatar = screen.getByRole("button", { name: "Account menu" });
+
+    expect(precedes(action, meter)).toBe(true);
+    expect(precedes(meter, avatar)).toBe(true);
   });
 });
 

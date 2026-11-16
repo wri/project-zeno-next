@@ -8,6 +8,12 @@ import { addCustomAreaToMap } from "@/app/utils/addCustomAreaToMap";
 import { formatAreaWithUnits } from "@/app/utils/formatArea";
 import { MAX_AREA_KM2 } from "@/src/entities/custom-area";
 
+/** The two buttons' text. The onboarding tour's copy imports it, so a rename reaches both. */
+export const AREA_ACTION_LABELS = {
+  draw: "Draw on map",
+  upload: "Upload file",
+} as const;
+
 /**
  * Draw and Upload for the `AreasPanel`, above the filter chips. While drawing,
  * the bar becomes a one-line status strip: how to draw, then — once the shape
@@ -59,11 +65,11 @@ export function AreaActionBar({
     <Flex gap="6px" flexShrink={0}>
       <Button {...actionButtonProps} onClick={handleDraw}>
         <SelectionPlusIcon size={16} />
-        Draw on map
+        {AREA_ACTION_LABELS.draw}
       </Button>
       <Button {...actionButtonProps} onClick={handleUpload}>
         <UploadSimpleIcon size={16} />
-        Upload file
+        {AREA_ACTION_LABELS.upload}
       </Button>
     </Flex>
   );

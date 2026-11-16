@@ -37,7 +37,80 @@ type FrontDoorEvent =
     }
   | { event: "profile_card_dismissed"; surface: "card" | "banner" };
 
-type TrackableEvent = NudgeClickEvent | FrontDoorEvent;
+/**
+ * Onboarding tours (behind ?ff=onboarding). Every value is a fixed id from the
+ * tour definitions ("first-run", "checklist-alerts", step, anchor and
+ * checklist item ids), never user text. `step_number` counts from 1, as the
+ * popover does.
+ */
+export type OnboardingTourEvent =
+  | {
+      event: "tour_started";
+      tour_id: string;
+      /** The tour's content version. */
+      tour_version: number;
+      step_count: number;
+      /** The user had not finished or skipped the first-run tour before. */
+      first_visit: boolean;
+    }
+  | {
+      event: "tour_step_viewed";
+      tour_id: string;
+      step_id: string;
+      step_number: number;
+      step_count: number;
+    }
+  | {
+      event: "tour_step_skipped";
+      tour_id: string;
+      step_id: string;
+      step_number: number;
+      /**
+       * "user": pressed Skip step. "tour": passed over without being done,
+       * including steps never shown (one event per step).
+       */
+      skipped_by: "user" | "tour";
+      /** 0 for a step passed over as it opened. */
+      ms_on_step: number;
+    }
+  | {
+      event: "tour_ended";
+      tour_id: string;
+      tour_version: number;
+      /** "abandoned": stopped with no outcome (overlay gone, route changed). */
+      outcome: "completed" | "closed" | "abandoned";
+      /** The step the tour ended on; the last step when it ran to the end. */
+      step_id: string;
+      step_number: number;
+      step_count: number;
+    }
+  | {
+      /** A step was left while no visible element carried its anchor. */
+      event: "tour_target_missing";
+      tour_id: string;
+      step_id: string;
+      anchor_id: string;
+      optional: boolean;
+      ms_on_step: number;
+    }
+  | {
+      /** A checklist task was ticked off. */
+      event: "checklist_item_done";
+      item_id: string;
+      /** "detected": the app saw it done. "manual": the user said so. */
+      ticked_by: "detected" | "manual";
+    }
+  | {
+      /** The Get started checklist panel opened. */
+      event: "checklist_opened";
+      /**
+       * "header": the user clicked Get started in the header. "tour_end":
+       * Open Get started on the first-run tour's last step.
+       */
+      source: "header" | "tour_end";
+    };
+
+type TrackableEvent = NudgeClickEvent | FrontDoorEvent | OnboardingTourEvent;
 
 declare global {
   interface Window {

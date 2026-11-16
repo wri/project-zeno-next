@@ -29,10 +29,14 @@ import { filterDatasetsByCategory } from "@/app/utils/filterDatasetsByCategory";
 import { filterDatasetsByFeatureFlag } from "@/app/utils/filterDatasetsByFeatureFlag";
 import { searchDatasets } from "@/app/utils/searchDatasets";
 import { useEnabledFlags } from "@/src/shared/lib/feature-flags";
+import { catalogCardAnchor } from "@/src/shared/lib/tour-anchors";
 
 import { DatasetRow } from "./DatasetRow";
 import { PanelEmpty, PanelList, PanelPills, PanelSection } from "./PanelList";
 import { PanelSearchInput } from "./PanelSearchInput";
+
+/** The panel's title. The onboarding tour's copy imports it, so a rename reaches both. */
+export const DATA_CATALOG_LABEL = "Data catalog";
 
 /** Matches ChatPanel compact/full-size enter & exit (slide from the left). */
 const catalogPanelSlideTransition = {
@@ -64,9 +68,13 @@ const catalogListScrollStyle = {
  * appears there with its visibility and opacity controls.
  */
 export default function DataCatalogPanel() {
-  const [category, setCategory] = useState<DatasetCategoryId>("all");
-  const { dataCatalogOpen, setDataCatalogOpen, isChatFullSize } =
-    useSidebarStore();
+  const {
+    dataCatalogOpen,
+    setDataCatalogOpen,
+    isChatFullSize,
+    catalogCategory: category,
+    setCatalogCategory: setCategory,
+  } = useSidebarStore();
   const leftPx = getCatalogLeftPx(isChatFullSize);
 
   const compactSlide = !isChatFullSize;
@@ -105,7 +113,7 @@ export default function DataCatalogPanel() {
                   color="#656E7B"
                   m={0}
                 >
-                  Data catalog
+                  {DATA_CATALOG_LABEL}
                 </Text>
               </Flex>
               <IconButton
@@ -422,6 +430,7 @@ function CatalogDatasetRow({
           onChange: handleToggle,
           dataPanel: "datasets",
         }}
+        tourAnchorId={catalogCardAnchor(card.dataset_id)}
       />
       {supportingLayers.length > 0 && (
         <Stack gap="6px" pl="16px">

@@ -81,6 +81,30 @@ describe("ProfileAskTrigger", () => {
     );
   });
 
+  it("holds the ask while paused, then asks at the next answer", async () => {
+    signIn(false);
+    const { rerender } = render(<ProfileAskTrigger paused />);
+    await answer();
+    expect(apiFetch).not.toHaveBeenCalled();
+    expect(localStorage.length).toBe(0);
+    expect(useChatStore.getState().messages.some((m) => m.transient)).toBe(
+      false
+    );
+
+    rerender(<ProfileAskTrigger paused={false} />);
+    await answer();
+    await vi.waitFor(() =>
+      expect(
+        useChatStore
+          .getState()
+          .messages.some((m) => m.type === "profile-prompt")
+      ).toBe(true)
+    );
+    expect(localStorage.getItem("gnw_profile_ask_v2:u-1")).toContain(
+      '"cardShown":true'
+    );
+  });
+
   it("stops watching once the profile is complete", async () => {
     signIn(false);
     render(<ProfileAskTrigger />);

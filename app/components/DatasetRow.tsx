@@ -2,6 +2,7 @@ import { Image, useDisclosure } from "@chakra-ui/react";
 
 import type { DatasetDetails } from "@/app/types/chat";
 import { datasetMeta } from "@/app/utils/datasetMeta";
+import type { TourAnchorId } from "@/src/shared/lib/tour-anchors";
 import { EntityCard, type CardInteraction } from "@/src/shared/ui/entity-card";
 
 import { DatasetInfoModal } from "./DatasetInfoModal";
@@ -17,6 +18,8 @@ export interface DatasetRowProps {
   showKind?: boolean;
   /** Static (chat) when omitted; a show-on-map switch in the panels and picker. */
   interaction?: CardInteraction;
+  /** Marks the row as a guided-tour target (see `EntityCard`). */
+  tourAnchorId?: TourAnchorId;
 }
 
 /**
@@ -30,6 +33,7 @@ export function DatasetRow({
   viewOnly = false,
   showKind,
   interaction,
+  tourAnchorId,
 }: DatasetRowProps) {
   const { open, onOpen, onClose } = useDisclosure();
 
@@ -47,6 +51,7 @@ export function DatasetRow({
         showKind={showKind}
         interaction={interaction}
         onInfo={onOpen}
+        tourAnchorId={tourAnchorId}
       />
     </>
   );

@@ -1552,3 +1552,28 @@ describe("chatStore transient messages and the profile card", () => {
     );
   });
 });
+
+describe("draft prompt", () => {
+  beforeEach(() => {
+    useChatStore.getState().reset();
+  });
+
+  it("hands the draft over exactly once", () => {
+    useChatStore.getState().setDraftPrompt("hello");
+    expect(useChatStore.getState().takeDraftPrompt()).toBe("hello");
+    expect(useChatStore.getState().draftPrompt).toBeNull();
+    expect(useChatStore.getState().takeDraftPrompt()).toBeNull();
+  });
+
+  it("replaces an earlier draft that was not taken", () => {
+    useChatStore.getState().setDraftPrompt("first");
+    useChatStore.getState().setDraftPrompt("second");
+    expect(useChatStore.getState().takeDraftPrompt()).toBe("second");
+  });
+
+  it("is cleared by reset()", () => {
+    useChatStore.getState().setDraftPrompt("hello");
+    useChatStore.getState().reset();
+    expect(useChatStore.getState().draftPrompt).toBeNull();
+  });
+});

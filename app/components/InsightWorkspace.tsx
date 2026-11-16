@@ -42,6 +42,10 @@ import {
   isFluxTreeWidget,
 } from "@/src/features/ghg-flux-tree";
 import InsightChartPills, { hasChartPills } from "./InsightChartPills";
+import { TOUR_ANCHORS, tourAnchor } from "@/src/shared/lib/tour-anchors";
+
+/** The card's header label. The onboarding tour's copy names it. */
+export const ANALYSIS_CARD_LABEL = "ANALYSIS";
 
 /**
  * Placeholder shown while the very first analysis is generating (no chart in
@@ -52,6 +56,8 @@ import InsightChartPills, { hasChartPills } from "./InsightChartPills";
 function WorkspaceSkeleton() {
   return (
     <Box
+      // The onboarding tour spotlights the chart's place while it loads.
+      {...tourAnchor(TOUR_ANCHORS.insightWorkspace)}
       flex="0 1 auto"
       minH="0"
       overflowY="auto"
@@ -188,6 +194,7 @@ export default function InsightWorkspace() {
   return (
     /* Card is the scroll container: grows to content, scrolls when flex-shrunk */
     <Box
+      {...tourAnchor(TOUR_ANCHORS.insightWorkspace)}
       flex="0 1 auto"
       minH="0"
       overflowY="auto"
@@ -248,7 +255,7 @@ export default function InsightWorkspace() {
             color="fg.muted"
             whiteSpace="nowrap"
           >
-            ANALYSIS
+            {ANALYSIS_CARD_LABEL}
           </Text>
         </Flex>
         <Flex align="center" gap="8px" flexShrink={0}>

@@ -9,12 +9,20 @@ export const PROMPT_METER_THRESHOLD = 0.75;
  */
 export const UNLIMITED_PROMPTS_THRESHOLD = 5000;
 
+/** Whether the daily quota is a real limit: not unset, not effectively unlimited. */
+export const hasLimitedQuota = (total: number): boolean =>
+  total > 0 && total <= UNLIMITED_PROMPTS_THRESHOLD;
+
+/** Whether today's prompts are used up. The chat input is disabled then. */
+export const isQuotaExhausted = (used: number, total: number): boolean =>
+  used >= total;
+
 /**
  * Whether the header's "X / Y daily prompts" meter should show: the user has
  * used at least 75% of a real (non-unlimited) daily quota.
  */
 export function shouldShowPromptMeter(used: number, total: number): boolean {
-  if (total <= 0 || total > UNLIMITED_PROMPTS_THRESHOLD) return false;
+  if (!hasLimitedQuota(total)) return false;
   return used / total >= PROMPT_METER_THRESHOLD;
 }
 
@@ -29,7 +37,7 @@ export function usePromptQuota() {
   return {
     usedPrompts,
     totalPrompts,
-    promptsExhausted: usedPrompts >= totalPrompts,
+    promptsExhausted: isQuotaExhausted(usedPrompts, totalPrompts),
     showPromptMeter: shouldShowPromptMeter(usedPrompts, totalPrompts),
   };
 }

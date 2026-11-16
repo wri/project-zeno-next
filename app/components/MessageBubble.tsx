@@ -48,6 +48,7 @@ import {
   isBlogCitation,
   resolveCitedArticle,
 } from "@/app/lib/blog-citations";
+import { TOUR_ANCHORS, tourAnchor } from "@/src/shared/lib/tour-anchors";
 
 function nodeToText(children: ReactNode): string {
   if (typeof children === "string" || typeof children === "number") {
@@ -298,7 +299,11 @@ function MessageBubble({
     message.viewAnalysisSuggestion
   ) {
     return (
-      <Box mt={2} mb={message.viewAnalysisSuggestion.accepted ? 6 : 2}>
+      <Box
+        mt={2}
+        mb={message.viewAnalysisSuggestion.accepted ? 6 : 2}
+        {...tourAnchor(TOUR_ANCHORS.viewAnalysisNudge)}
+      >
         <ViewAnalysisNudge
           messageId={message.id}
           suggestion={message.viewAnalysisSuggestion}
@@ -312,7 +317,7 @@ function MessageBubble({
     message.createDashboardSuggestion
   ) {
     return (
-      <Box mt={2} mb={2}>
+      <Box mt={2} mb={2} {...tourAnchor(TOUR_ANCHORS.createDashboardNudge)}>
         <CreateDashboardNudge suggestion={message.createDashboardSuggestion} />
       </Box>
     );

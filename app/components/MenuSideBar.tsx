@@ -11,6 +11,7 @@ import {
 } from "@chakra-ui/react";
 import {
   ChartLineIcon,
+  CompassIcon,
   GearSixIcon,
   LifebuoyIcon,
   ListIcon,
@@ -33,6 +34,12 @@ import useAuthStore from "@/app/store/authStore";
 import useChatStore from "@/app/store/chatStore";
 import useSidebarStore from "@/app/store/sidebarStore";
 import { isAppRoute, mapTabHref } from "@/app/utils/threadNavigation";
+import {
+  ONBOARDING_FEATURE_FLAG,
+  TAKE_THE_TOUR_LABEL,
+  startTourHref,
+} from "@/src/features/onboarding";
+import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
 
 const ACTIVE_COLOR = "#0049AA";
 
@@ -152,6 +159,7 @@ export default function MenuSideBar() {
   const whatsNewUnread = useWhatsNewUnread();
   const router = useRouter();
   const pathname = usePathname() ?? "";
+  const onboardingEnabled = useFeatureFlag(ONBOARDING_FEATURE_FLAG);
 
   const onMap = isAppRoute(pathname);
   const myAreasActive = onMap && areasPanelOpen && areasPanelFilter === "mine";
@@ -258,6 +266,15 @@ export default function MenuSideBar() {
                       : undefined
                   }
                 />
+                {onboardingEnabled && (
+                  <MenuItem
+                    label={TAKE_THE_TOUR_LABEL}
+                    icon={CompassIcon}
+                    onClick={() =>
+                      router.push(startTourHref(window.location.search))
+                    }
+                  />
+                )}
                 <MenuItem
                   label="User settings"
                   icon={GearSixIcon}

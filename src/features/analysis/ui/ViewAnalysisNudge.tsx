@@ -8,6 +8,13 @@ import type { ViewAnalysisSuggestion } from "@/app/types/chat";
 import { useAnalysis } from "./use-analysis";
 
 /**
+ * The nudge's button text. The onboarding tour's copy builds its label with
+ * this, so a rename reaches both.
+ */
+export const viewAnalysisNudgeLabel = (datasetName: string, areaName: string) =>
+  `View ${datasetName} Analysis for ${areaName}`;
+
+/**
  * Direct-analysis "View Analysis" nudge — the in-chat replacement for the old
  * map popup (AnalysisCTA). Accepting it runs the analysis straight against the
  * analytics API (useAnalysis) and renders the result in the insight workspace,
@@ -46,7 +53,10 @@ export default function ViewAnalysisNudge({
     });
   };
 
-  const label = `View ${suggestion.datasetName} Analysis for ${suggestion.area.name}`;
+  const label = viewAnalysisNudgeLabel(
+    suggestion.datasetName,
+    suggestion.area.name
+  );
 
   return (
     <>

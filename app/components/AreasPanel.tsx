@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useState } from "react";
-import { Flex, IconButton, Stack, Text } from "@chakra-ui/react";
+import { Box, Flex, IconButton, Stack, Text } from "@chakra-ui/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { PolygonIcon, XIcon } from "@phosphor-icons/react";
 
@@ -13,6 +13,7 @@ import useMapStore from "@/app/store/mapStore";
 import useSidebarStore, {
   type AreasPanelFilter,
 } from "@/app/store/sidebarStore";
+import { TOUR_ANCHORS, tourAnchor } from "@/src/shared/lib/tour-anchors";
 import { ENTITY_KINDS } from "@/src/shared/ui/entity-card";
 
 import { AreaActionBar } from "./AreaActionBar";
@@ -36,8 +37,11 @@ const areasListScrollStyle = {
   "&::-webkit-scrollbar": { display: "none" },
 } as const;
 
+/** The boundary layers' tab. The onboarding tour's copy names it. */
+export const BOUNDARIES_TAB_LABEL = "Boundaries";
+
 const AREA_FILTERS: { id: AreasPanelFilter; label: string }[] = [
-  { id: "boundaries", label: "Boundaries" },
+  { id: "boundaries", label: BOUNDARIES_TAB_LABEL },
   { id: "conversation", label: "In this conversation" },
   { id: "mine", label: "My areas" },
 ];
@@ -91,7 +95,10 @@ export default function AreasPanel() {
           transition={areasPanelSlideTransition}
           style={getCatalogColumnMotionStyle(leftPx)}
         >
-          <Flex {...getCatalogColumnPanelFlexProps(isChatFullSize)}>
+          <Flex
+            {...getCatalogColumnPanelFlexProps(isChatFullSize)}
+            {...tourAnchor(TOUR_ANCHORS.areasPanel)}
+          >
             <AreasPanelHeader onClose={() => setAreasPanelOpen(false)} />
             <AreasPanelBody
               filter={filter}
@@ -141,13 +148,15 @@ function AreasPanelBody({
         gap="6px"
         flexShrink={0}
       >
-        <PanelSearchInput
-          label="Search areas"
-          placeholder="Search places, e.g. Pará or Serengeti"
-          value={query}
-          onChange={setQuery}
-          onEscapeEmpty={onClose}
-        />
+        <Box {...tourAnchor(TOUR_ANCHORS.areasSearch)}>
+          <PanelSearchInput
+            label="Search areas"
+            placeholder="Search places, e.g. Pará or Serengeti"
+            value={query}
+            onChange={setQuery}
+            onEscapeEmpty={onClose}
+          />
+        </Box>
         <AreaActionBar hideIdle={searching} />
       </Stack>
       {searching ? (

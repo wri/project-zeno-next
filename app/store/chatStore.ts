@@ -92,10 +92,16 @@ interface ChatState {
   // signal for UI that reacts to a finished answer (the front door's profile
   // ask); reset() zeroes it, so watch for increases.
   completedAnswers: number;
+  // Text another feature (the onboarding tour) wants in the chat input: the
+  // input adopts it once via takeDraftPrompt. Client-only; never sent to the
+  // backend. reset() clears it, so a new conversation starts without it.
+  draftPrompt: string | null;
 }
 
 interface ChatActions {
   reset: () => void;
+  setDraftPrompt: (text: string) => void;
+  takeDraftPrompt: () => string | null;
   addMessage: (
     message: Omit<ChatMessage, "id" | "timestamp"> & { timestamp?: string }
   ) => void;
@@ -160,6 +166,7 @@ You can ask me about land cover change, forest loss, or biodiversity risks in pl
   lastSentContext: emptyContextKeys(),
   excludedContextLayerIds: [],
   completedAnswers: 0,
+  draftPrompt: null,
 };
 
 /**
@@ -268,15 +275,24 @@ function withProfileAsk(
   ];
 }
 
-// Whether the messages a turn added amount to an answer. A turn that ends by
-// asking the user to choose (a nudge) is a clarification and doesn't count.
-// Error messages aren't judged here: tool handlers add client-side ones (a
-// geometry fetch that failed, say) to turns whose answer still arrived. Only
-// a stream-level failure stops a turn counting; sendMessage tracks that.
+/**
+ * Whether the messages a turn added end by asking the user to choose (a
+ * nudge): a clarifying question, not an answer. Exported for the onboarding
+ * tour, which tells the user the assistant has a question for them.
+ */
+export function isClarifyingTurn(turnMessages: ChatMessage[]): boolean {
+  return turnMessages.some((m) => m.type === "nudge");
+}
+
+// Whether the messages a turn added amount to an answer. A clarification
+// doesn't count. Error messages aren't judged here: tool handlers add
+// client-side ones (a geometry fetch that failed, say) to turns whose answer
+// still arrived. Only a stream-level failure stops a turn counting;
+// sendMessage tracks that.
 function isAnsweredTurn(turnMessages: ChatMessage[]): boolean {
   return (
     turnMessages.some((m) => m.type === "assistant") &&
-    !turnMessages.some((m) => m.type === "nudge")
+    !isClarifyingTurn(turnMessages)
   );
 }
 
@@ -574,6 +590,14 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
   reset: () => {
     set(initialState);
     useInsightStore.getState().clearInsights();
+  },
+
+  setDraftPrompt: (text) => set({ draftPrompt: text }),
+
+  takeDraftPrompt: () => {
+    const { draftPrompt } = get();
+    if (draftPrompt !== null) set({ draftPrompt: null });
+    return draftPrompt;
   },
 
   setDateRange: (range) => set({ dateRange: range }),

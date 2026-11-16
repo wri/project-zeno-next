@@ -18,6 +18,7 @@ import useSidebarStore from "./store/sidebarStore";
 import { isAppRoute, isDashboardDetailRoute } from "./utils/threadNavigation";
 import { usePathname } from "@/src/shared/lib/router";
 import { useState, useEffect, useRef, useCallback } from "react";
+import { TOUR_ANCHORS, tourAnchor } from "@/src/shared/lib/tour-anchors";
 
 // Intentionally narrower than the full-size panel (see FULLSIZE_CHAT_PANEL_WIDTH_PX).
 
@@ -125,6 +126,7 @@ function ChatPanelCompact({ onToggleSize }: ChatPanelCompactProps) {
         w={{ base: "full", md: `${COMPACT_CHAT_PANEL_WIDTH_PX}px` }}
         minH={0}
         pointerEvents="auto"
+        {...tourAnchor(TOUR_ANCHORS.chatPanel)}
       >
         {/* Top card: header + content. Base (bottom sheet): shrinkable so the
             message list scrolls within the sheet instead of clipping past its

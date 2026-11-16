@@ -17,6 +17,9 @@ FSD **shared** layer — reusable, business-agnostic building blocks usable by e
 - `lib/flux-tooltip/` — the hover-tooltip model (`FluxTooltipRow`/`Total`/`Model`, `NET_FLUX_TOTAL_LABEL`)
   the net-flux and flux-tree chart models build for `ui/FluxTooltip`. Import from
   `@/src/shared/lib/flux-tooltip`.
+- `lib/tour-anchors/` — `TOUR_ANCHORS`, `tourAnchor(id)` and the `TourAnchorId` type, the `data-tour` ids
+  components put on elements a guided tour can spotlight. `tests/architecture/tour-contract.test.ts` pins
+  where each one is set. Import from `@/src/shared/lib/tour-anchors`.
 - `lib/paint/` — `isPaintReference`, true for an SVG `url(#…)` paint reference as opposed to a CSS colour.
   Import from `@/src/shared/lib/paint`.
 - `lib/iso-date/` — `shiftIsoDate`, `todayIso`: timezone-free day arithmetic on ISO `YYYY-MM-DD` strings,

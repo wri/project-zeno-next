@@ -2,6 +2,9 @@ import { Flex, Text } from "@chakra-ui/react";
 import { ParamChip } from "@/app/components/ui/ParamChip";
 import { ParamChipData } from "./analysis-params-utils";
 
+/** The collapsed toggle's text. The onboarding tour's copy imports it, so a rename reaches both. */
+export const SHOW_PARAMS_LABEL = "Show params";
+
 interface AnalysisParametersToggleProps {
   expanded: boolean;
   onToggle: () => void;
@@ -27,7 +30,7 @@ export default function AnalysisParametersToggle({
       flexShrink={0}
       cursor="pointer"
     >
-      {expanded ? "Hide params" : "Show params"}
+      {expanded ? "Hide params" : SHOW_PARAMS_LABEL}
     </Text>
   );
 }

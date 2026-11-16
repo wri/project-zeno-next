@@ -13,6 +13,7 @@ import { ArrowLeftIcon, PrinterIcon } from "@phosphor-icons/react";
 import { useDocumentTitle } from "@/app/hooks/useDocumentTitle";
 import { Link, useParams } from "@/src/shared/lib/router";
 import { updatedOnLabel } from "../lib/dates";
+import { SAVE_AS_PDF_LABEL } from "./dashboard-labels";
 import { useDashboard } from "./dashboardQueries";
 import {
   DASHBOARD_ACTION_PROPS,
@@ -140,7 +141,7 @@ function SaveAsPdfButton({ disabled }: { disabled: boolean }) {
       onClick={saveAsPdf}
     >
       <PrinterIcon size={16} />
-      Save as PDF
+      {SAVE_AS_PDF_LABEL}
     </Button>
   );
 }

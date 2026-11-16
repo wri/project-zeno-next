@@ -21,6 +21,7 @@ import ContextButton, {
   ChatContextType,
   PanelToggleButton,
 } from "./ContextButton";
+import { TOUR_ANCHORS, tourAnchor } from "@/src/shared/lib/tour-anchors";
 import ContextTag from "./ContextTag";
 import ContextMenu from "./ContextMenu";
 import VoiceListeningPanel from "./voice/VoiceListeningPanel";
@@ -29,6 +30,7 @@ import useMapStore from "../store/mapStore";
 import { isAreaLayer } from "../store/layerManagerSlice";
 import useSidebarStore from "../store/sidebarStore";
 import useSpeechInput from "../hooks/useSpeechInput";
+import { useDraftPrompt } from "../hooks/useDraftPrompt";
 import usePrefersReducedMotion from "../hooks/usePrefersReducedMotion";
 import { speechLangForLocale } from "../utils/speechLang";
 import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
@@ -52,6 +54,8 @@ export default function ChatInput({
   onAfterSend?: () => void;
 }) {
   const [inputValue, setInputValue] = useState("");
+  // Another feature (the onboarding tour) can hand us a ready-made question.
+  useDraftPrompt(setInputValue);
   const [contextModalOpen, setContextModalOpen] = useState(false);
   const [selectedContextType, setSelectedContextType] =
     useState<ChatContextType | null>(null);
@@ -230,6 +234,7 @@ export default function ChatInput({
       borderColor={bordered ? "#E0E2E5" : undefined}
       borderRadius={bordered ? "sm" : undefined}
       className="group"
+      {...tourAnchor(TOUR_ANCHORS.chatInput)}
       transition="all 0.32s ease-in-out"
       _focusWithin={
         bordered
@@ -319,6 +324,7 @@ export default function ChatInput({
                 <>
                   <ContextButton
                     contextType="layer"
+                    {...tourAnchor(TOUR_ANCHORS.datasetsButton)}
                     onClick={openLayerPicker}
                     disabled={disabled}
                     active={dataCatalogOpen}
@@ -339,6 +345,7 @@ export default function ChatInput({
                   <PanelToggleButton
                     icon={<ChartLineIcon />}
                     label={t("chat.input.analyses")}
+                    {...tourAnchor(TOUR_ANCHORS.analysesButton)}
                     onClick={openInsightsPanel}
                     disabled={disabled}
                     active={insightsPanelOpen}

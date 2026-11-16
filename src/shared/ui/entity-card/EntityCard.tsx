@@ -2,6 +2,8 @@ import { Box, Flex, Switch, Text, chakra } from "@chakra-ui/react";
 import { ArrowRightIcon } from "@phosphor-icons/react";
 import { useRef, type MouseEvent, type ReactNode } from "react";
 
+import { tourAnchor, type TourAnchorId } from "@/src/shared/lib/tour-anchors";
+
 import {
   ENTITY_KINDS,
   KIND_INFO_LABEL,
@@ -61,6 +63,12 @@ export interface EntityCardProps {
   infoLabel?: string;
   /** Buttons before the (i) and the switch (locate, kebab, Try again). */
   actions?: ReactNode;
+  /**
+   * Marks the whole card as a guided-tour target (see `tour-anchors`). On the
+   * root because the lists often wrap cards in `display: contents` boxes,
+   * which have no size for a spotlight to measure.
+   */
+  tourAnchorId?: TourAnchorId;
 }
 
 /**
@@ -94,6 +102,7 @@ export function EntityCard({
   onInfo,
   infoLabel,
   actions,
+  tourAnchorId,
 }: EntityCardProps) {
   const switchRef = useRef<HTMLLabelElement>(null);
   const trailingRef = useRef<HTMLDivElement>(null);
@@ -154,6 +163,7 @@ export function EntityCard({
       css={link ? { [`&:hover .${ARROW_CLASS}`]: { opacity: 1 } } : undefined}
       position={link ? "relative" : undefined}
       onClick={toggleable ? handleClick : undefined}
+      {...(tourAnchorId ? tourAnchor(tourAnchorId) : undefined)}
     >
       {link && (
         // Over the border too (-1px), so its focus ring sits where the card's
