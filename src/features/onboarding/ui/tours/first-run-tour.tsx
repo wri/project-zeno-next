@@ -335,9 +335,9 @@ export function createFirstRunTour(): UiTour {
             </p>
             <Ingredients />
             <p>
-              First, you make a chart manually: you choose a dataset and an
-              area. Then you ask the {AI_ASSISTANT_LABEL} a question in the
-              chat.
+              First, make a chart manually by choosing a dataset and an area to
+              analyse. Next, ask the {AI_ASSISTANT_LABEL} a question in the chat
+              to generate a chart on your behalf.
             </p>
             <Tip>{TAKE_THE_TOUR_LATER}</Tip>
           </>
