@@ -183,6 +183,22 @@ export function buildDatasetLayers(spec: DatasetLayerSpec): Layer[] {
   return layers;
 }
 
+/**
+ * The map layers for a dataset. pick_dataset and the dataset-choice nudge
+ * add them; pull_data rebuilds them when it analysed another date range, and
+ * patches the ones already on the map.
+ */
+export function datasetMapLayers(dataset: DatasetInfo): Layer[] {
+  return buildDatasetLayers({
+    datasetId: dataset.dataset_id,
+    layerName: dataset.dataset_name,
+    tileUrl: dataset.tile_url,
+    layers: toLayerEntries(dataset.layers, dataset.dataset_id),
+    selectedLayerName: dataset.selected_layer,
+    ...getDatasetLayerContextProps(dataset), // contextLayer / parameters / start+end dates
+  });
+}
+
 // Whether a context layer's analysis ignores the canopy cover threshold. The
 // natural forest filter is a 2020 map independent of canopy density, so the
 // analytics API rejects a threshold alongside it — a CANOPY chip would

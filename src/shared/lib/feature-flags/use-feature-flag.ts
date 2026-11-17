@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { enabledFlags, isFeatureEnabled } from "./feature-flags";
+import { enabledFlags, isFeatureEnabled, withFlags } from "./feature-flags";
 
 // Flags are read from the URL once, on mount, so they only work in the
 // browser: don't use them on pages that are rendered at build time.
@@ -21,4 +21,10 @@ export function useFeatureFlag(flag: string): boolean {
 export function useEnabledFlags(): ReadonlySet<string> {
   const [flags] = useState(() => enabledFlags(searchParams()));
   return flags;
+}
+
+/** `href` with the flags this page was opened with; see {@link withFlags}. */
+export function useWithFlags(): (href: string) => string {
+  const [params] = useState(searchParams);
+  return (href) => withFlags(href, params);
 }

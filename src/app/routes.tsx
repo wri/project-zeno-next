@@ -104,6 +104,10 @@ export const routes: RouteObject[] = [
           },
           { path: "evals", ...page(() => import("@/app/evals/page")) },
           {
+            path: "subscriptions",
+            ...page(() => import("@/app/subscriptions/page")),
+          },
+          {
             path: "maintenance",
             ...page(() => import("@/app/maintenance/page")),
           },

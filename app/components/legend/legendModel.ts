@@ -1,8 +1,15 @@
 import type { LegendParam } from "@/app/components/legend/types";
 import { CONTEXT_LAYER_METADATA } from "@/app/constants/datasets";
 import { formatCanopyThreshold } from "@/app/utils/formatCanopyThreshold";
-import type { YearParam } from "@/app/utils/formatYearRange";
-import type { DatasetLegendConfig } from "@/app/constants/datasets";
+import {
+  buildDatesParam,
+  buildYearParam,
+  formatDateRange,
+} from "@/app/utils/formatYearRange";
+import type {
+  DatasetCardConfig,
+  DatasetLegendConfig,
+} from "@/app/constants/datasets";
 
 export interface LegendClass {
   label: string;
@@ -74,22 +81,43 @@ const PARAMETER_FORMATTERS: Record<string, (v: unknown) => string> = {
 };
 
 /**
+ * The date chip for a dataset layer: YEAR(S) by default, or DATES with full
+ * dates for a card whose `legendPeriod` is "days". Undefined when the layer
+ * has no complete date range.
+ */
+function buildPeriodParam(
+  card: Pick<DatasetCardConfig, "legendPeriod">,
+  startDate: string | undefined,
+  endDate: string | undefined
+): LegendParam | undefined {
+  if (card.legendPeriod !== "days") return buildYearParam(startDate, endDate);
+  const value = startDate && endDate && formatDateRange(startDate, endDate);
+  return value ? buildDatesParam(value) : undefined;
+}
+
+/**
  * Converts a layer's raw parameters object into structured LegendParam chips.
  * Each entry becomes a { label, value } pair rendered as a badge in the card.
+ * The date chip comes first, from the layer's date range per the card.
  * Shared by the explorer legend and `mapLegendFor`, the dashboard map legend,
  * which reads widget layers instead of mapStore layers.
  */
 export function buildParams(
-  params: Record<string, unknown>,
-  yearParam?: YearParam
+  card: Pick<DatasetCardConfig, "legendPeriod">,
+  layer: {
+    parameters?: Record<string, unknown>;
+    startDate?: string;
+    endDate?: string;
+  }
 ): LegendParam[] {
   const result: LegendParam[] = [];
+  const periodParam = buildPeriodParam(card, layer.startDate, layer.endDate);
 
-  if (yearParam) {
-    result.push(yearParam);
+  if (periodParam) {
+    result.push(periodParam);
   }
 
-  for (const [k, v] of Object.entries(params)) {
+  for (const [k, v] of Object.entries(layer.parameters ?? {})) {
     if (v === null || v === undefined || v === "") continue;
     const label = PARAMETER_LABELS[k] ?? k.toUpperCase();
     const format = PARAMETER_FORMATTERS[k];

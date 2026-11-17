@@ -110,6 +110,13 @@ const DashboardSubscriptionsSchema = z
     emailEnabled: channels.includes("email"),
   }));
 
+// DELETE and PUT /api/subscriptions: the dashboards whose email changed, and
+// (PUT only) the requested ones the backend left alone.
+export const BulkSubscriptionsResponseSchema = z.object({
+  dashboard_ids: z.array(z.string()),
+  skipped: z.array(z.string()).default([]),
+});
+
 export const DashboardResponseSchema = z.object({
   id: z.string(),
   user_id: z.string(),

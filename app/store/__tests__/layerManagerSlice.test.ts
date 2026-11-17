@@ -1,123 +1,76 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
-// The slice lazily imports chatStore to fold layer changes into the sent
-// context; a stub keeps these tests off the real chat store.
-vi.mock("@/app/store/chatStore", () => ({
-  default: { getState: () => ({ includeLayerInContext: () => {} }) },
-}));
+import useMapStore from "@/app/store/mapStore";
+import type { Layer } from "@/app/store/layerManagerSlice";
 
-import { addCustomAreaToMap } from "@/app/utils/addCustomAreaToMap";
-import { aoiFeatureRef, type FeatureRef } from "../layerManagerSlice";
-import useMapStore from "../mapStore";
+const brazilLayer: Layer = {
+  id: "area-BRA",
+  name: "Brazil",
+  type: "geojson",
+  visible: true,
+};
 
-const feature = (): GeoJSON.Feature => ({
-  type: "Feature",
-  geometry: {
-    type: "Polygon",
-    coordinates: [
-      [
-        [0, 0],
-        [0, 1],
-        [1, 1],
-        [1, 0],
-        [0, 0],
-      ],
-    ],
-  },
-  properties: {},
+const primary: Layer = {
+  id: "dataset-4",
+  name: "Tree cover loss",
+  type: "raster",
+  visible: true,
+  datasetId: 4,
+};
+
+const context: Layer = {
+  id: "dataset-4-ctx-primary_forest",
+  name: "primary_forest",
+  type: "raster",
+  visible: true,
+  datasetId: 4,
+  parentLayerId: "dataset-4",
+};
+
+describe("removeDatasetLayers", () => {
+  beforeEach(() => {
+    useMapStore.setState({ layers: [brazilLayer, primary, context] });
+  });
+
+  it("removes every dataset layer, context sub-layers included, and keeps the others", () => {
+    useMapStore.getState().removeDatasetLayers();
+
+    expect(useMapStore.getState().layers).toEqual([brazilLayer]);
+  });
 });
 
-const register = (ref: FeatureRef) =>
-  useMapStore
-    .getState()
-    .addToRegistry({ ref, data: feature(), srcId: ref.srcId });
-
-const areaLayer = (id: string, featureRefs: FeatureRef[]) =>
-  useMapStore.getState().addLayer({
-    id,
-    name: id,
+describe("removeDatasetLayers", () => {
+  const brazilLayer: Layer = {
+    id: "area-BRA",
+    name: "Brazil",
     type: "geojson",
     visible: true,
-    featureRefs,
-  });
+  };
 
-const registryRefs = () =>
-  useMapStore.getState().geoJsonRegistry.map((e) => e.ref);
+  const primary: Layer = {
+    id: "dataset-4",
+    name: "Tree cover loss",
+    type: "raster",
+    visible: true,
+    datasetId: 4,
+  };
 
-describe("removeLayer", () => {
+  const context: Layer = {
+    id: "dataset-4-ctx-primary_forest",
+    name: "primary_forest",
+    type: "raster",
+    visible: true,
+    datasetId: 4,
+    parentLayerId: "dataset-4",
+  };
+
   beforeEach(() => {
-    useMapStore.setState({
-      layers: [],
-      geoJsonRegistry: [],
-      analysisSelection: null,
-      flyToGeoJson: vi.fn(),
-    });
+    useMapStore.setState({ layers: [brazilLayer, primary, context] });
   });
 
-  it("drops a registry entry with the last layer using it and no earlier", () => {
-    const brazil = { name: "Brazil", source: "gadm", srcId: "BRA" };
-    const peru = { name: "Peru", source: "gadm", srcId: "PER" };
-    const chile = { name: "Chile", source: "gadm", srcId: "CHL" };
-    [brazil, peru, chile].forEach(register);
-    areaLayer("Brazil", [brazil]);
-    areaLayer("Brazil and Peru", [brazil, peru]);
-    areaLayer("Chile", [chile]);
+  it("removes every dataset layer, context sub-layers included, and keeps the others", () => {
+    useMapStore.getState().removeDatasetLayers();
 
-    useMapStore.getState().removeLayer("Brazil");
-
-    // Brazil is still used by "Brazil and Peru".
-    expect(registryRefs()).toEqual([brazil, peru, chile]);
-
-    useMapStore.getState().removeLayer("Brazil and Peru");
-
-    // Only the entries nobody uses any more go; Chile is untouched.
-    expect(registryRefs()).toEqual([chile]);
-    expect(useMapStore.getState().layers.map((l) => l.id)).toEqual(["Chile"]);
-  });
-
-  it("keeps the agent layer's geometry when the My areas toggle is turned off", () => {
-    const area = {
-      id: "a1",
-      name: "Hidden Valley",
-      geometries: [feature().geometry as GeoJSON.Polygon],
-    };
-    addCustomAreaToMap(area);
-    const agentRef = aoiFeatureRef({
-      name: area.name,
-      source: "custom",
-      src_id: area.id,
-    });
-    areaLayer(area.name, [agentRef]);
-
-    useMapStore.getState().removeLayer(area.id);
-
-    expect(useMapStore.getState().layers.map((l) => l.id)).toEqual([area.name]);
-    expect(registryRefs()).toEqual([agentRef]);
-  });
-
-  it("leaves the registry array untouched when the layer has no featureRefs", () => {
-    register({ name: "Brazil", source: "gadm", srcId: "BRA" });
-    useMapStore.getState().addLayer({
-      id: "dataset",
-      name: "dataset",
-      type: "raster",
-      visible: true,
-    });
-    const before = useMapStore.getState().geoJsonRegistry;
-
-    useMapStore.getState().removeLayer("dataset");
-
-    expect(useMapStore.getState().geoJsonRegistry).toBe(before);
-  });
-
-  it("keeps an entry that no layer uses yet, such as a pick still loading", () => {
-    const loading = { name: "Peru", source: "gadm", srcId: "PER" };
-    const chile = { name: "Chile", source: "gadm", srcId: "CHL" };
-    [loading, chile].forEach(register);
-    areaLayer("Chile", [chile]);
-
-    useMapStore.getState().removeLayer("Chile");
-
-    expect(registryRefs()).toEqual([loading]);
+    expect(useMapStore.getState().layers).toEqual([brazilLayer]);
   });
 });

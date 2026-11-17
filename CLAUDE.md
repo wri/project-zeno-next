@@ -109,7 +109,7 @@ Each NDJSON line is a `LangChainResponse` with shape `{ node, timestamp, update 
 | `generate_insights`              | `generateInsightsTool` | Pushes `InsightWidget[]` into `insightStore`; adds static assistant message to chat                               |
 | `pick_aoi`                       | `pickAoiTool`          | Fetches geometry via `/api/geometry/:source/:srcId`, registers in `mapStore.geoJsonRegistry`, flies map to bounds |
 | `pick_dataset`                   | `pickDatasetTool`      | Creates a `dataset-card` widget; adds the dataset's layer(s) to `mapStore` (replacing any prior dataset layer)    |
-| `pull_data`                      | `pullDataTool`         | No-op — reasoning component in the UI handles display                                                             |
+| `pull_data`                      | `pullDataTool`         | When it analysed another date range, moves the dataset layer's tiles and dates on the map to it, in place         |
 
 Adding a new tool requires: (1) a handler in `app/store/chat-tools/`, (2) a `dispatch` branch in `processStreamMessage` in `chatStore.ts`, and (3) an entry in `app/lib/tool-display.ts` (active label + error message).
 

@@ -120,13 +120,14 @@ export function withWidgetTitle(
  * The full config to PATCH for a text-widget edit (config is replaced whole).
  * Stores the markdown body under `config.text` — the key `widgetText` reads.
  * A blank body drops the key so the card falls back to the empty-note
- * placeholder rather than persisting an empty string.
+ * placeholder rather than persisting an empty string. An edited note is the
+ * owner's words, whoever wrote it first, so its source becomes "user".
  */
 export function withText(
   config: Record<string, unknown>,
   text: string
 ): Record<string, unknown> {
-  const out = { ...config };
+  const out: Record<string, unknown> = { ...config, source: "user" };
   if (text.trim()) out.text = text;
   else delete out.text;
   return out;
@@ -508,4 +509,18 @@ export function widgetText(config: Record<string, unknown>): string | null {
   return typeof config.text === "string" && config.text.trim()
     ? config.text
     : null;
+}
+
+/** Who wrote a note: an analysis template's fixed copy, the owner, or AI. */
+export type NoteSource = "template" | "user" | "ai";
+
+/**
+ * A text widget's `config.source` per the widgets API. The agent writes none,
+ * and notes from before the key existed have none, so absent (or unknown)
+ * reads as "ai", the caption every note carried before.
+ */
+export function noteSource(config: Record<string, unknown>): NoteSource {
+  return config.source === "template" || config.source === "user"
+    ? config.source
+    : "ai";
 }
