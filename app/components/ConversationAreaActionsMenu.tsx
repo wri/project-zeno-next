@@ -74,9 +74,7 @@ export default function ConversationAreaActionsMenu({
   };
 
   const handleRemove = () => {
-    const { removeLayer, removeFromRegistry } = useMapStore.getState();
-    (layer.featureRefs ?? []).forEach((ref) => removeFromRegistry(ref));
-    removeLayer(layer.id);
+    useMapStore.getState().removeLayer(layer.id);
   };
 
   return (

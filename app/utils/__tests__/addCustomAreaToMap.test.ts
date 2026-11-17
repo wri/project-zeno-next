@@ -48,12 +48,16 @@ describe("addCustomAreaToMap", () => {
         id: "a1",
         name: "Hidden Valley",
         visible: true,
-        featureRefs: [{ name: "Hidden Valley", source: "custom" }],
+        featureRefs: [{ name: "Hidden Valley", source: "custom", srcId: "a1" }],
       }),
     ]);
     expect(geoJsonRegistry).toEqual([
       expect.objectContaining({
-        ref: { name: "Hidden Valley", source: "custom" },
+        ref: {
+          name: "Hidden Valley",
+          source: "custom",
+          srcId: "a1",
+        },
         srcId: "a1",
         subtype: "custom-area",
       }),
