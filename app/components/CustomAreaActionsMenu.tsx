@@ -60,12 +60,8 @@ export default function CustomAreaActionsMenu({ area }: { area: CustomArea }) {
       setDeleteOpen(false);
       // Map isn't auto-synced by the query invalidation — mirror the removal
       // done by the card's show-on-map toggle when the area is on the map.
-      const { layers, removeLayer, removeFromRegistry } =
-        useMapStore.getState();
-      if (layers.some((l) => l.id === area.id)) {
-        removeFromRegistry({ name: area.name, source: "custom" });
-        removeLayer(area.id);
-      }
+      const { layers, removeLayer } = useMapStore.getState();
+      if (layers.some((l) => l.id === area.id)) removeLayer(area.id);
       toaster.create({
         title: "Area deleted",
         description: `“${area.name}” was removed.`,

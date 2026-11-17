@@ -1,7 +1,7 @@
 import type { CustomArea } from "@/app/schemas/api/custom_areas/get";
 import useChatStore from "@/app/store/chatStore";
 import {
-  sameFeatureRef,
+  aoiFeatureRef,
   type FeatureRef,
   type GeoJsonEntry,
   type Layer,
@@ -10,12 +10,10 @@ import useMapStore from "@/app/store/mapStore";
 import type { AOISelection } from "@/app/types/chat";
 import { useSelectionStore } from "@/src/features/analysis";
 
-const isCustomSource = (source: string) => source.toLowerCase() === "custom";
-
 const isRenamedArea = (
   areaId: string,
   a: { source: string; srcId?: string }
-): boolean => a.srcId === areaId && isCustomSource(a.source);
+): boolean => a.srcId === areaId && a.source === "custom";
 
 /**
  * Renames the AOIs in a selection that are the renamed area. A selection that
@@ -28,7 +26,7 @@ function renameInSelection(
   name: string
 ): AOISelection {
   const renamed = selection.aois.filter((aoi) =>
-    isRenamedArea(areaId, { source: aoi.source, srcId: aoi.src_id })
+    isRenamedArea(areaId, aoiFeatureRef(aoi))
   );
   if (renamed.length === 0) return selection;
   return {
@@ -55,14 +53,8 @@ export function renameCustomArea(area: Pick<CustomArea, "id" | "name">): void {
   const { id: areaId, name } = area;
   const { geoJsonRegistry, layers, analysisSelection } = useMapStore.getState();
 
-  const renamedRefs = geoJsonRegistry
-    .filter((e) =>
-      isRenamedArea(areaId, { source: e.ref.source, srcId: e.srcId })
-    )
-    .map((e) => e.ref);
-  const oldNames = new Set(renamedRefs.map((r) => r.name));
   const renameRef = (ref: FeatureRef): FeatureRef =>
-    renamedRefs.some((r) => sameFeatureRef(r, ref)) ? { ...ref, name } : ref;
+    isRenamedArea(areaId, ref) ? { ...ref, name } : ref;
 
   const renameLayer = (layer: Layer): Layer => {
     const featureRefs = layer.featureRefs?.map(renameRef);
@@ -79,7 +71,7 @@ export function renameCustomArea(area: Pick<CustomArea, "id" | "name">): void {
       if (aoiSelection && label === layer.aoiSelection?.name) {
         return aoiSelection.name;
       }
-      return layer.id === areaId || oldNames.has(label) ? name : label;
+      return layer.id === areaId ? name : label;
     };
     return {
       ...layer,
@@ -93,7 +85,7 @@ export function renameCustomArea(area: Pick<CustomArea, "id" | "name">): void {
   useMapStore.setState({
     geoJsonRegistry: geoJsonRegistry.map(
       (e): GeoJsonEntry =>
-        renamedRefs.includes(e.ref) ? { ...e, ref: renameRef(e.ref) } : e
+        isRenamedArea(areaId, e.ref) ? { ...e, ref: renameRef(e.ref) } : e
     ),
     layers: layers.map(renameLayer),
     analysisSelection:

@@ -64,12 +64,12 @@ describe("renameCustomArea", () => {
       expect.objectContaining({
         id: "a1",
         name: "New",
-        featureRefs: [{ name: "New", source: "custom" }],
+        featureRefs: [{ name: "New", source: "custom", srcId: "a1" }],
       }),
     ]);
     expect(geoJsonRegistry).toEqual([
       expect.objectContaining({
-        ref: { name: "New", source: "custom" },
+        ref: { name: "New", source: "custom", srcId: "a1" },
         srcId: "a1",
       }),
     ]);
@@ -91,6 +91,62 @@ describe("renameCustomArea", () => {
 
     expect(useMapStore.getState().layers[0].name).toBe("Old");
     expect(useMapStore.getState().analysisSelection?.name).toBe("Old");
+  });
+
+  it("renames only its own area when two on the map share the old name", () => {
+    addCustomAreaToMap({ id: "a1", name: "Old", geometries: [square] });
+    addCustomAreaToMap({ id: "a2", name: "Old", geometries: [square] });
+
+    renameCustomArea({ id: "a1", name: "New" });
+
+    const { layers, geoJsonRegistry } = useMapStore.getState();
+    expect(layers).toEqual([
+      expect.objectContaining({
+        id: "a1",
+        name: "New",
+        featureRefs: [{ name: "New", source: "custom", srcId: "a1" }],
+      }),
+      expect.objectContaining({
+        id: "a2",
+        name: "Old",
+        featureRefs: [{ name: "Old", source: "custom", srcId: "a2" }],
+      }),
+    ]);
+    expect(geoJsonRegistry.map((e) => e.ref)).toEqual([
+      { name: "New", source: "custom", srcId: "a1" },
+      { name: "Old", source: "custom", srcId: "a2" },
+    ]);
+  });
+
+  it("leaves a non-custom area whose src id equals the area id alone", () => {
+    const ref = { name: "Old", source: "gadm", srcId: "a1" };
+    const aoi = { ...customAoi("a1", "Old"), source: "gadm", subtype: "state" };
+    const layer = {
+      id: "Old",
+      name: "Old",
+      type: "geojson" as const,
+      visible: true,
+      featureRefs: [ref],
+      selectionName: "Old",
+      aoiSelection: { name: "Old", aois: [aoi] },
+    };
+    useMapStore.setState({
+      layers: [layer],
+      geoJsonRegistry: [
+        {
+          ref,
+          data: { type: "Feature", geometry: square, properties: {} },
+          srcId: "a1",
+          subtype: "state",
+        },
+      ],
+    });
+
+    renameCustomArea({ id: "a1", name: "New" });
+
+    const { layers, geoJsonRegistry } = useMapStore.getState();
+    expect(layers).toEqual([layer]);
+    expect(geoJsonRegistry[0].ref).toEqual(ref);
   });
 
   it("relabels an agent-picked selection of the area, by its src id", () => {

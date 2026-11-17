@@ -132,14 +132,10 @@ export function useAoiActions(
     isAnalysableForSource(activeDataset.id, source);
 
   /**
-   * The registry entry for this area, matched case-insensitively on source.
-   *
-   * The two sides disagree on casing: `VectorAreasLayer` registers the entry
-   * with `ref.source` set to the map layer id ("GADM"), while the selection it
-   * derives alongside it lowercases that into `source` ("gadm"). Callers must
-   * therefore look the entry up loosely and reuse its own `ref` for anything
-   * that matches strictly (`removeFromRegistry` does). The src id must
-   * match too: same-name parcels each keep their own entry.
+   * The registry entry for this area, for `saveArea`. Source matches
+   * case-insensitively because `VectorAreasLayer` registers `ref.source` as
+   * the map layer id ("GADM") while the selection lowercases it ("gadm"). The
+   * src id must match too: same-name parcels each keep their own entry.
    */
   const registryEntry = () =>
     useMapStore
@@ -152,16 +148,10 @@ export function useAoiActions(
       );
 
   const removeFromMap = () => {
-    const {
-      clearAnalysis,
-      removeLayer,
-      removeFromRegistry,
-      analysisSelection,
-    } = useMapStore.getState();
-    const entry = registryEntry();
+    const { clearAnalysis, removeLayer, analysisSelection } =
+      useMapStore.getState();
+    // removeLayer also drops the geometry only this layer used.
     removeLayer(layerId);
-    // Dropped by its own ref, since removeFromRegistry compares source exactly.
-    if (entry) removeFromRegistry(entry.ref);
     // Only clear the ephemeral selection when it is *this* area, so removing
     // one label doesn't silently retract the nudges for another.
     if (analysisSelection?.name === areaName) {
