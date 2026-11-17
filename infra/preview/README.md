@@ -235,3 +235,43 @@ These let the preview talk to the backends and log in:
 | Certificate or SSL error                                  | The alternate domain or certificate isn't set (step 6), or it's still deploying   |
 | Distribution missing from the Route 53 alias list         | The alternate domain isn't saved yet (step 6)                                     |
 | Page loads but API calls or login fail                    | CORS or the login callback allowlist (see "Outside AWS")                          |
+
+## Teardown
+
+Use this to retire previews, or to move them to another AWS account. When moving, set up the new account first (steps 1–10), point the repo variables at it, check that a PR deploys, and only then tear down the old one.
+
+The order matters: several resources can't be deleted while something still uses them.
+
+1. **Stop the workflow.** Delete the `PREVIEW_BUCKET` repo variable. Both jobs then skip, so nothing writes to the bucket while you work. To remove previews entirely, also delete `.github/workflows/preview.yml`, the other preview variables and the `PREVIEW_MAPBOX_ACCESS_TOKEN` secret.
+2. **Remove the DNS records.** In Route 53, delete the `*.<preview subdomain>` A record, and the AAAA record if there is one. Leave the ACM validation CNAME for step 7.
+3. **Disable the distribution.** In **CloudFront → Distributions**, select it and click **Disable**. Wait until **Last modified** shows a date instead of "Deploying".
+4. **Delete the distribution.**
+5. **Delete the function.** In **CloudFront → Functions**, delete `gnw-preview-router`. This only works once no distribution uses it.
+6. **Delete the origin access control.** In **CloudFront → Origin access**, delete the OAC the wizard created. It's named after the bucket.
+7. **Delete the certificate.** In **Certificate Manager (us-east-1)**, delete the `*.<preview-domain>` certificate. This only works once no distribution uses it. Then delete its `_….<preview-domain>` validation CNAME from Route 53.
+8. **Empty and delete the bucket.** In **S3**, select the bucket, click **Empty**, then **Delete**.
+9. **Delete the IAM role.** In **IAM → Roles**, delete `gh-project-zeno-next-preview`. Its inline policy goes with it.
+10. **Leave the GitHub OIDC provider, unless you're sure.** `token.actions.githubusercontent.com` is shared by every GitHub repo that logs in to this account. Only delete it if no other role's trust relationship mentions it.
+
+Outside AWS:
+
+- **GitHub environments.** Each PR leaves an inactive `pr-<N>-preview` environment. A repo admin can delete them under **Settings → Environments**, or with:
+  ```bash
+  gh api repos/wri/project-zeno-next/environments --paginate \
+    --jq '.environments[].name | select(test("^pr-[0-9]+-preview$"))' |
+    xargs -I{} gh api -X DELETE repos/wri/project-zeno-next/environments/{}
+  ```
+- **Allowlists.** Ask for `*.<preview-domain>` to be removed from the backend CORS settings, the RW API login callback allowlist and the Mapbox token's URL restrictions.
+
+### Inventory
+
+Everything this setup creates, for an account handover:
+
+| Where           | Resource                                                                                                                 |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| S3              | bucket `gnw-pr-previews`, with its lifecycle rule and the bucket policy CloudFront wrote                                 |
+| CloudFront      | the distribution, function `gnw-preview-router`, the origin access control                                               |
+| ACM (us-east-1) | certificate `*.<preview-domain>`                                                                                         |
+| Route 53        | the `*.<preview subdomain>` A (and AAAA) record, the certificate's validation CNAME                                      |
+| IAM             | role `gh-project-zeno-next-preview` with inline policy `gnw-pr-previews-write`; the GitHub OIDC provider (may be shared) |
+| GitHub          | the preview repo variables, the Mapbox secret, the `pr-<N>-preview` environments                                         |
