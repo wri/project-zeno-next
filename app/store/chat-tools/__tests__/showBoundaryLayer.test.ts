@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
 const mapState = {
-  selectAreaLayer: "GADM" as string | null,
-  setSelectAreaLayer: vi.fn((id: string | null) => {
+  selectAreaLayer: "GADM" as LayerId | null,
+  setSelectAreaLayer: vi.fn((id: LayerId | null) => {
     mapState.selectAreaLayer = id;
   }),
 };
@@ -13,6 +13,7 @@ vi.mock("@/app/store/mapStore", () => ({
 
 import { showBoundaryLayerTool } from "../showBoundaryLayer";
 import type { StreamMessage } from "@/app/types/chat";
+import type { LayerId } from "@/app/types/map";
 
 function message(source?: string): StreamMessage {
   return {
@@ -20,7 +21,7 @@ function message(source?: string): StreamMessage {
     name: "show_boundary_layer",
     boundary_layer: source ? { source, name: "Layer" } : undefined,
     timestamp: new Date().toISOString(),
-  } as StreamMessage;
+  };
 }
 
 describe("showBoundaryLayerTool", () => {
