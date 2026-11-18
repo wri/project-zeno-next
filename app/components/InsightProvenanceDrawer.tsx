@@ -119,8 +119,18 @@ function extractDataUrls(code: string): string[] {
 
 // --- Components ---
 
+function CopyButton({ value, label }: { value: string; label: string }) {
+  const { copy, copied } = useClipboard({ value });
+  return (
+    <Tooltip content="Copy">
+      <IconButton size="xs" variant="outline" onClick={copy} aria-label={label}>
+        {copied ? <Check /> : <Copy />}
+      </IconButton>
+    </Tooltip>
+  );
+}
+
 function CodeBlockViewer({ code, step }: { code: string; step?: number }) {
-  const { copy, copied } = useClipboard({ value: code });
   const [downloading, setDownloading] = useState(false);
 
   const dataUrls = useMemo(() => extractDataUrls(code), [code]);
@@ -197,16 +207,7 @@ function CodeBlockViewer({ code, step }: { code: string; step?: number }) {
               </IconButton>
             </Tooltip>
           )}
-          <Tooltip content="Copy">
-            <IconButton
-              size="xs"
-              variant="outline"
-              onClick={copy}
-              aria-label="Copy code"
-            >
-              {copied ? <Check /> : <Copy />}
-            </IconButton>
-          </Tooltip>
+          <CopyButton value={code} label="Copy code" />
         </Flex>
       </Flex>
       <Box m={0} p={0} bg="white" overflowX="auto">
@@ -428,18 +429,10 @@ export default function InsightProvenanceDrawer({
                                   </Text>
                                 </Flex>
                                 <Flex gap={2}>
-                                  <Tooltip content="Copy">
-                                    <IconButton
-                                      size="xs"
-                                      variant="outline"
-                                      onClick={() =>
-                                        navigator.clipboard.writeText(content)
-                                      }
-                                      aria-label="Copy output"
-                                    >
-                                      <Copy />
-                                    </IconButton>
-                                  </Tooltip>
+                                  <CopyButton
+                                    value={content}
+                                    label="Copy output"
+                                  />
                                 </Flex>
                               </Flex>
                               <Box
