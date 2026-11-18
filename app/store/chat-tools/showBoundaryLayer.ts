@@ -1,15 +1,6 @@
 import { StreamMessage } from "@/app/types/chat";
-import { LayerId, selectLayerOptions } from "@/app/types/map";
+import { boundaryLayerId } from "@/app/utils/areaHelpers";
 import useMapStore from "../mapStore";
-
-/**
- * The boundary layer id for a backend source key (`oil_palm` -> `OIL_PALM`),
- * or `undefined` when the map has no such layer.
- */
-export function boundaryLayerId(source: string): LayerId | undefined {
-  const key = source.toUpperCase();
-  return selectLayerOptions.find((o) => o.id.toUpperCase() === key)?.id;
-}
 
 /**
  * Handles the show_boundary_layer tool: shows the boundary layer from the

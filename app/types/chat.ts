@@ -236,8 +236,8 @@ export interface StreamMessage {
 }
 
 // Boundary layer written to agent state by the show_boundary_layer tool.
-// `source` is the backend source key (e.g. "oil_palm"); the frontend shows
-// the boundary layer whose id upper-cases to it (see showBoundaryLayer.ts).
+// `source` is the backend source key (e.g. "oil_palm"); boundaryLayerId in
+// app/utils/areaHelpers.ts resolves it to the map's boundary layer id.
 export interface BoundaryLayerInfo {
   source: string;
   name: string;
