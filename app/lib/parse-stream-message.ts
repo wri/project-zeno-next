@@ -119,6 +119,7 @@ export function parseStreamMessage(
       aoi: langChainMessage.aoi || undefined,
       aoi_selection: langChainMessage.aoi_selection || undefined,
       imagery: langChainMessage.imagery || undefined,
+      boundary_layer: langChainMessage.boundary_layer || undefined,
       timestamp: timestamp.toISOString(),
       trace_id: traceId,
       // Write signals (e.g. dashboard_updated) ride along so the client can
