@@ -89,8 +89,9 @@ export type ExportMethod = "url" | "clipboard";
 // (non-HTTPS origins). Components use Chakra's useClipboard instead; this runs
 // outside React, and the prompt depends on map state at click time.
 function copyText(text: string) {
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(text).catch(() => {});
+  const clipboard = navigator.clipboard; // eslint-disable-line no-restricted-properties
+  if (clipboard) {
+    clipboard.writeText(text).catch(() => {});
     return;
   }
   const el = document.createElement("textarea");

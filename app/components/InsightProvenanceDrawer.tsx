@@ -119,8 +119,6 @@ function extractDataUrls(code: string): string[] {
 
 // --- Components ---
 
-// useClipboard falls back to execCommand where navigator.clipboard is missing
-// (non-HTTPS origins), so prefer it over calling the Clipboard API directly.
 function CopyButton({ value, label }: { value: string; label: string }) {
   const { copy, copied } = useClipboard({ value });
   return (

@@ -33,8 +33,6 @@ export default function CopySelectionTooltip({
   const tooltipRef = useRef<HTMLDivElement | null>(null);
   const [visible, setVisible] = useState(false);
   const [selectedText, setSelectedText] = useState("");
-  // useClipboard falls back to execCommand where navigator.clipboard is
-  // missing (non-HTTPS origins).
   const clipboard = useClipboard({ value: selectedText });
   const [position, setPosition] = useState<{ top: number; left: number }>({
     top: 0,
@@ -155,7 +153,6 @@ export default function CopySelectionTooltip({
   }, [updateFromSelection, isSelectionInside, visible]);
 
   const handleCopy = () => {
-    if (!selectedText) return;
     clipboard.copy();
     setVisible(false);
   };
