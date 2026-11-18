@@ -191,7 +191,8 @@ describe("PageHeader account menu", () => {
     // GTM click triggers read aria-label; personal data must not reach GA4.
     renderHeader("/app");
     fireEvent.pointerMove(avatar(), { pointerType: "mouse" });
-    await act(() => new Promise((r) => setTimeout(r, 50)));
+    // Past the tooltip open delay (400ms), so an enabled email tooltip would show.
+    await act(() => new Promise((r) => setTimeout(r, 500)));
     expect(screen.queryByRole("tooltip")).toBeNull();
 
     await openMenu();
