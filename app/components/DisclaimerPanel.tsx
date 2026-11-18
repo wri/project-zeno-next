@@ -1,12 +1,9 @@
 import { useState, useEffect } from "react";
 import { Box, CloseButton, Flex, Icon, Link, Text } from "@chakra-ui/react";
 import { InfoIcon } from "@phosphor-icons/react";
-import {
-  PREVIEW_BODY,
-  PREVIEW_FEEDBACK_FORM,
-  PREVIEW_HELP_CENTER_URL,
-  PREVIEW_LINKS,
-} from "@/app/constants/preview-content";
+import { PREVIEW_LINKS } from "@/app/constants/preview-content";
+import { useTranslation } from "@/src/shared/lib/i18n";
+import PreviewSupportLinks from "./PreviewSupportLinks";
 import {
   SYSTEM_BANNER_DISMISSED_EVENT,
   SYSTEM_BANNER_STORAGE_KEY,
@@ -15,6 +12,7 @@ import {
 const STORAGE_KEY = "gnw_disclaimer_dismissed_v2";
 
 export default function DisclaimerPanel() {
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -75,31 +73,9 @@ export default function DisclaimerPanel() {
           <InfoIcon weight="fill" size={16} />
         </Icon>
         <Box flex="1" pr={5}>
-          <Text mb={1}>{PREVIEW_BODY}</Text>
+          <Text mb={1}>{t("header.preview.body")}</Text>
           <Text>
-            Feedback and queries for support can be submitted{" "}
-            <Link
-              color="fg.link"
-              textDecoration="underline"
-              href={PREVIEW_FEEDBACK_FORM}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              here
-            </Link>
-            {". "}
-            <br />
-            Visit the{" "}
-            <Link
-              color="fg.link"
-              textDecoration="underline"
-              href={PREVIEW_HELP_CENTER_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Help Center
-            </Link>{" "}
-            to learn more about the preview.
+            <PreviewSupportLinks linkColor="fg.link" />
           </Text>
 
           <Flex
@@ -111,14 +87,14 @@ export default function DisclaimerPanel() {
           >
             {PREVIEW_LINKS.map((link) => (
               <Link
-                key={link.label}
+                key={link.id}
                 color="fg.link"
                 textDecoration="underline"
                 href={link.href}
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                {link.label}
+                {t(`header.preview.${link.id}`)}
               </Link>
             ))}
           </Flex>
@@ -129,7 +105,7 @@ export default function DisclaimerPanel() {
           top={2}
           right={2}
           onClick={dismiss}
-          aria-label="Dismiss disclaimer"
+          aria-label={t("header.preview.dismiss")}
         />
       </Flex>
     </Box>

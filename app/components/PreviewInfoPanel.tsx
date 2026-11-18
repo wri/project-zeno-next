@@ -1,18 +1,16 @@
-import { Box, Flex, Link, Text } from "@chakra-ui/react";
+import { Box, Flex, Text } from "@chakra-ui/react";
 import { ArrowSquareOutIcon, InfoIcon, XIcon } from "@phosphor-icons/react";
-import {
-  PREVIEW_BODY,
-  PREVIEW_FEEDBACK_FORM,
-  PREVIEW_HELP_CENTER_URL,
-  PREVIEW_LINKS,
-  PREVIEW_TITLE,
-} from "@/app/constants/preview-content";
+import { PREVIEW_LINKS } from "@/app/constants/preview-content";
+import { useTranslation } from "@/src/shared/lib/i18n";
+import PreviewSupportLinks from "./PreviewSupportLinks";
 
 interface PreviewInfoPanelProps {
   onClose: () => void;
 }
 
 export default function PreviewInfoPanel({ onClose }: PreviewInfoPanelProps) {
+  const { t } = useTranslation();
+
   return (
     <Box
       position="absolute"
@@ -46,7 +44,7 @@ export default function PreviewInfoPanel({ onClose }: PreviewInfoPanelProps) {
         color="#B2B6BD"
         _hover={{ color: "#656E7B" }}
         onClick={onClose}
-        aria-label="Close preview info"
+        aria-label={t("header.preview.close")}
       >
         <XIcon size={16} />
       </Box>
@@ -73,7 +71,7 @@ export default function PreviewInfoPanel({ onClose }: PreviewInfoPanelProps) {
           color="#131619"
           lineHeight="1.4"
         >
-          {PREVIEW_TITLE}
+          {t("header.preview.title")}
         </Text>
         <Text
           fontFamily="sans-serif"
@@ -83,7 +81,7 @@ export default function PreviewInfoPanel({ onClose }: PreviewInfoPanelProps) {
           lineHeight="150%"
           mt={1}
         >
-          {PREVIEW_BODY}
+          {t("header.preview.body")}
         </Text>
         <Text
           fontFamily="sans-serif"
@@ -93,29 +91,7 @@ export default function PreviewInfoPanel({ onClose }: PreviewInfoPanelProps) {
           lineHeight="150%"
           mt={4}
         >
-          Feedback and queries for support can be submitted{" "}
-          <Link
-            color="#0049AA"
-            textDecoration="underline"
-            href={PREVIEW_FEEDBACK_FORM}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            here
-          </Link>
-          .
-          <br />
-          Visit the{" "}
-          <Link
-            color="#0049AA"
-            textDecoration="underline"
-            href={PREVIEW_HELP_CENTER_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Help Center
-          </Link>{" "}
-          to learn more about the preview.
+          <PreviewSupportLinks linkColor="#0049AA" />
         </Text>
       </Box>
 
@@ -124,7 +100,7 @@ export default function PreviewInfoPanel({ onClose }: PreviewInfoPanelProps) {
         <Flex gap={3} flexWrap="wrap">
           {PREVIEW_LINKS.map((link) => (
             <a
-              key={link.label}
+              key={link.id}
               href={link.href}
               target="_blank"
               rel="noopener noreferrer"
@@ -141,7 +117,7 @@ export default function PreviewInfoPanel({ onClose }: PreviewInfoPanelProps) {
               }}
             >
               <ArrowSquareOutIcon size={16} />
-              {link.label}
+              {t(`header.preview.${link.id}`)}
             </a>
           ))}
         </Flex>

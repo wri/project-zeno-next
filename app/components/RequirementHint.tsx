@@ -3,6 +3,7 @@ import {
   isProfileFieldRequired,
   type ProfileFieldKey,
 } from "@/app/config/profile-fields";
+import { useTranslation } from "@/src/shared/lib/i18n";
 
 /**
  * The requirement marker shown beside a field's label: a red asterisk when the
@@ -27,9 +28,10 @@ export default function RequirementHint({ field }: { field: ProfileFieldKey }) {
 
 /** The "(Optional)" after a field's label, for fields outside REQUIRED_PROFILE_FIELDS. */
 export function OptionalMarker() {
+  const { t } = useTranslation();
   return (
     <Text as="span" color="fg.muted" fontSize="xs" fontStyle="italic" ml={1}>
-      (Optional)
+      {t("profile.optional")}
     </Text>
   );
 }

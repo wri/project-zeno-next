@@ -33,6 +33,7 @@ import useSidebarStore from "../store/sidebarStore";
 import { useFeatureFlag, useWithFlags } from "@/src/shared/lib/feature-flags";
 import { Link } from "@/src/shared/lib/router";
 import { usePathname } from "@/src/shared/lib/router";
+import { useTranslation } from "@/src/shared/lib/i18n";
 import { useLogout } from "@/app/hooks/useLogout";
 import { openWhatsNew, useWhatsNewUnread } from "@/app/hooks/useWhatsNew";
 import { mapTabHref } from "@/app/utils/threadNavigation";
@@ -41,7 +42,6 @@ import {
   ProfileReminderMenuItem,
 } from "@/src/features/front-door";
 
-const isPrototype = import.meta.env.NEXT_PUBLIC_PROTOTYPE_MODE === "true";
 const DISCLAIMER_STORAGE_KEY = "gnw_disclaimer_dismissed_v2";
 
 /**
@@ -50,6 +50,8 @@ const DISCLAIMER_STORAGE_KEY = "gnw_disclaimer_dismissed_v2";
  * items (quota meter, What's new) and the avatar on the right.
  */
 function PageHeader() {
+  const { t } = useTranslation();
+  const isPrototype = import.meta.env.NEXT_PUBLIC_PROTOTYPE_MODE === "true";
   const { userEmail, isAuthenticated } = useAuthStore();
   const setMenuOpen = useSidebarStore((s) => s.setMenuOpen);
   const { currentThreadId } = useChatStore();
@@ -100,13 +102,13 @@ function PageHeader() {
       // Thread-aware: with a live conversation, land on its thread URL
       // (which preserves state) instead of the resetting /app.
       href: mapTabHref(currentThreadId),
-      label: "Map",
+      label: t("header.nav.map"),
       icon: MapTrifoldIcon,
       active: onMap,
     },
     {
       href: "/dashboards",
-      label: "Dashboards",
+      label: t("header.nav.dashboards"),
       icon: ChartLineIcon,
       active: onDashboards,
     },
@@ -134,7 +136,7 @@ function PageHeader() {
       <MenuSideBar />
       <Flex gap="10" alignItems="center" alignSelf="stretch" minW={0}>
         <Flex gap="3" alignItems="center">
-          <Tooltip content="Menu" showArrow>
+          <Tooltip content={t("header.menu")} showArrow>
             <IconButton
               hideBelow="md"
               w="32px"
@@ -146,7 +148,7 @@ function PageHeader() {
               _hover={{ bg: "#E0E2E5" }}
               _focusVisible={focusRing}
               onClick={() => setMenuOpen(true)}
-              aria-label="Open menu"
+              aria-label={t("header.menu.open")}
             >
               <ListIcon size={16} />
             </IconButton>
@@ -183,7 +185,7 @@ function PageHeader() {
                 variant="solid"
                 size="xs"
               >
-                PROTOTYPE
+                {t("header.badge.prototype")}
               </Badge>
             ) : (
               <Box position="relative" ref={badgeRef}>
@@ -204,7 +206,7 @@ function PageHeader() {
                       : undefined
                   }
                   aria-label={
-                    disclaimerDismissed ? "Open preview info" : undefined
+                    disclaimerDismissed ? t("header.preview.open") : undefined
                   }
                 >
                   <Text
@@ -216,7 +218,7 @@ function PageHeader() {
                     color="#3A4048"
                     flexShrink={0}
                   >
-                    PREVIEW
+                    {t("header.badge.preview")}
                   </Text>
                   {disclaimerDismissed && (
                     <InfoIcon size={13} color="#3A4048" weight="fill" />
@@ -231,14 +233,14 @@ function PageHeader() {
         </Flex>
         <Flex
           as="nav"
-          aria-label="Main"
+          aria-label={t("header.nav.label")}
           gap="1"
           alignSelf="stretch"
           hideBelow="md"
         >
           {tabs.map(({ href, label, icon: TabIcon, active }) => (
             <ChakraLink
-              key={label}
+              key={href}
               as={Link}
               href={href}
               aria-current={active ? "page" : undefined}
@@ -274,7 +276,7 @@ function PageHeader() {
         {/* State items (quota meter, What's new) sit left of the avatar. */}
         <PromptQuotaMeter />
         {whatsNewUnread && (
-          <Tooltip content="What's new" showArrow>
+          <Tooltip content={t("header.whatsNew")} showArrow>
             <IconButton
               position="relative"
               overflow="visible"
@@ -287,7 +289,7 @@ function PageHeader() {
               _hover={{ bg: "#E0E2E5" }}
               _focusVisible={focusRing}
               onClick={openWhatsNew}
-              aria-label="What's new (unread updates)"
+              aria-label={t("header.whatsNew.unread")}
             >
               <ShootingStarIcon size={16} />
               <Box
@@ -328,7 +330,7 @@ function PageHeader() {
                   _focusVisible={focusRing}
                   // No email in the label: GTM click triggers read aria-label,
                   // and personal data must not reach GA4. The tooltip shows it.
-                  aria-label="Account menu"
+                  aria-label={t("header.account.menu")}
                 >
                   <UserIcon size={16} />
                   {/* Front door: renders only while the profile is incomplete. */}
@@ -348,7 +350,7 @@ function PageHeader() {
                     <>
                       <Box px="14px" py="2" minW={0}>
                         <Text fontSize="xs" color="neutral.600">
-                          Signed in as
+                          {t("header.account.signedIn")}
                         </Text>
                         <Text fontSize="sm" color="neutral.900" truncate>
                           {userEmail}
@@ -358,7 +360,7 @@ function PageHeader() {
                       <Menu.Item value="subscriptions" asChild>
                         <Link href={withFlags("/subscriptions")}>
                           <BellIcon />
-                          Alert subscriptions
+                          {t("header.account.subscriptions")}
                         </Link>
                       </Menu.Item>
                     </>
@@ -368,7 +370,9 @@ function PageHeader() {
                       <Menu.Item value="dashboard" asChild>
                         <Link href="/dashboard">
                           <GearSixIcon />
-                          {emailBeta ? "User settings" : "User Profile"}
+                          {emailBeta
+                            ? t("header.account.settings")
+                            : t("header.account.profile")}
                         </Link>
                       </Menu.Item>
                     }
@@ -380,10 +384,16 @@ function PageHeader() {
                     color="fg.error"
                     _hover={{ bg: "bg.error", color: "fg.error" }}
                     onClick={logout}
-                    title="Log Out"
+                    title={
+                      emailBeta
+                        ? t("header.account.logOut")
+                        : t("header.account.logout")
+                    }
                   >
                     <SignOutIcon />
-                    {emailBeta ? "Log out" : "Logout"}
+                    {emailBeta
+                      ? t("header.account.logOut")
+                      : t("header.account.logout")}
                   </Menu.Item>
                 </Menu.Content>
               </Menu.Positioner>
@@ -404,7 +414,7 @@ function PageHeader() {
             _focusVisible={focusRing}
           >
             <UserIcon size={16} />
-            Log in / Sign Up
+            {t("header.account.login")}
           </ChakraLink>
         )}
       </Flex>

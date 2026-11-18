@@ -12,6 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import system from "@/app/theme";
 import useAuthStore from "@/app/store/authStore";
 import useSidebarStore from "@/app/store/sidebarStore";
+import { i18n } from "@/src/shared/lib/i18n";
 import {
   WHATS_NEW_OPEN_EVENT,
   WHATS_NEW_STORAGE_KEY,
@@ -400,5 +401,73 @@ describe("PageHeader profile reminder (front door)", () => {
     renderHeader("/app");
     expect(dot()).toBeNull();
     expect(await openAccountMenu()).toEqual(["User Profile", "Logout"]);
+  });
+});
+
+describe("PageHeader locale", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    useSidebarStore.setState({ menuOpen: false });
+    useAuthStore.getState().setAuthStatus({
+      email: "user@example.com",
+      id: "u1",
+      hasProfile: true,
+      userType: null,
+    });
+    useAuthStore.getState().setPromptUsage(15, 20);
+  });
+
+  it("renders the header, preview info and prompt meter in the active locale", async () => {
+    localStorage.setItem("gnw_disclaimer_dismissed_v2", "true");
+    await act(() => i18n.changeLanguage("es"));
+    try {
+      renderHeader("/app");
+
+      expect(screen.getByRole("button", { name: "Abrir menú" })).toBeTruthy();
+      expect(screen.getByRole("link", { name: "Mapa" })).toBeTruthy();
+      expect(screen.getByRole("link", { name: "Tableros" })).toBeTruthy();
+      expect(screen.getByText("VISTA PREVIA")).toBeTruthy();
+      expect(screen.getByText("15 / 20 consultas diarias")).toBeTruthy();
+      expect(
+        screen.getByRole("button", {
+          name: "Novedades (actualizaciones sin leer)",
+        })
+      ).toBeTruthy();
+
+      await act(async () => {
+        fireEvent.click(
+          screen.getByRole("button", {
+            name: "Abrir información de la vista previa",
+          })
+        );
+      });
+      expect(screen.getByText("Versión preliminar")).toBeTruthy();
+      expect(screen.getByRole("link", { name: "aquí" })).toBeTruthy();
+      expect(
+        screen.getByRole("link", { name: "Centro de ayuda" })
+      ).toBeTruthy();
+      expect(
+        screen.getByRole("link", { name: "Preguntas frecuentes" })
+      ).toBeTruthy();
+      expect(screen.getByRole("link", { name: "Capacidades" })).toBeTruthy();
+      expect(screen.getByRole("link", { name: "Precisión" })).toBeTruthy();
+      expect(
+        screen.getByRole("link", { name: "Problemas conocidos" })
+      ).toBeTruthy();
+
+      await act(async () => {
+        fireEvent.click(
+          screen.getByRole("button", { name: "Menú de la cuenta" })
+        );
+      });
+      expect(
+        screen.getByRole("menuitem", { name: "Perfil de usuario" })
+      ).toBeTruthy();
+      expect(
+        screen.getByRole("menuitem", { name: "Cerrar sesión" })
+      ).toBeTruthy();
+    } finally {
+      await act(() => i18n.changeLanguage("en"));
+    }
   });
 });

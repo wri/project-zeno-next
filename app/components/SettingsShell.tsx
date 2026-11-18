@@ -19,6 +19,7 @@ import {
   UsersThreeIcon,
 } from "@phosphor-icons/react";
 import { Link } from "@/src/shared/lib/router";
+import { useTranslation } from "@/src/shared/lib/i18n";
 import useAuthStore from "@/app/store/authStore";
 import { useLogout } from "@/app/hooks/useLogout";
 import BackToMapLink from "./BackToMapLink";
@@ -38,6 +39,7 @@ export default function SettingsShell({
   activePath,
   children,
 }: SettingsShellProps) {
+  const { t } = useTranslation();
   const { userEmail, userType, usedPrompts, totalPrompts } = useAuthStore();
   const { logout } = useLogout();
 
@@ -83,7 +85,7 @@ export default function SettingsShell({
           >
             <Link href="/dashboard">
               <UserCircleIcon />
-              User Profile
+              {t("settings.profile")}
             </Link>
           </Button>
           {userType === "superuser" && (
@@ -125,13 +127,13 @@ export default function SettingsShell({
               target="_blank"
             >
               <LifebuoyIcon />
-              Help
+              {t("settings.help")}
             </Link>
           </Button>
         </ButtonGroup>
         <Box p={4} mt="auto" bg="bg" rounded="lg">
           <Heading size="xs" as="p" color="fg.muted">
-            Available Prompts
+            {t("settings.prompts")}
           </Heading>
           <Progress.Root
             size="xs"
@@ -162,11 +164,11 @@ export default function SettingsShell({
           variant="outline"
           justifyContent="flex-start"
           onClick={logout}
-          title="Sign Out"
+          title={t("settings.signOut")}
         >
           <UserIcon />
           <Text mr="auto" truncate maxW="180px">
-            {userEmail || "User"}
+            {userEmail || t("settings.user")}
           </Text>
           <SignOutIcon />
         </Button>

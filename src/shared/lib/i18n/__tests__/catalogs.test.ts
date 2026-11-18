@@ -73,6 +73,19 @@ describe("createI18n", () => {
     expect(i18n.t("test.count", { count: 3 })).toBe("3 áreas");
   });
 
+  it("formats the prompt count and the unread-items badge, including a plural branch", () => {
+    const en = createI18n("en");
+    expect(en.t("header.prompts.count", { used: 15, total: 20 })).toBe(
+      "15 / 20 daily prompts"
+    );
+    expect(en.t("sidebar.whatsNew.badge", { count: 1 })).toBe("1 item");
+    expect(en.t("sidebar.whatsNew.badge", { count: 3 })).toBe("3 items");
+
+    const es = createI18n("es");
+    expect(es.t("sidebar.whatsNew.badge", { count: 1 })).toBe("1 elemento");
+    expect(es.t("sidebar.whatsNew.badge", { count: 3 })).toBe("3 elementos");
+  });
+
   it("interpolates placeholders without escaping them", () => {
     const i18n = createI18n("en");
     i18n.addResource("en", "translation", "test.name", "Hello {name}");
