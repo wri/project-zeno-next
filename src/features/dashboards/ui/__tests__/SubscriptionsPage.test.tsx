@@ -290,14 +290,12 @@ describe("SubscriptionsPage", () => {
   });
 
   it("keeps the page's flags on its links", async () => {
-    window.history.replaceState({}, "", "/?ff=email-subscriptions");
+    window.history.replaceState({}, "", "/?ff=net-flux");
     renderPage();
 
     const link = await screen.findByRole("link", { name: "Paraná" });
 
-    expect(link.getAttribute("href")).toBe(
-      "/dashboards/d1?ff=email-subscriptions"
-    );
+    expect(link.getAttribute("href")).toBe("/dashboards/d1?ff=net-flux");
     window.history.replaceState({}, "", "/");
   });
 });

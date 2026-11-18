@@ -26,7 +26,7 @@ import {
 import { Tooltip } from "./ui/tooltip";
 import AvailablePromptsCard from "./AvailablePromptsCard";
 import { WHATS_NEW_FEATURES } from "./whatsNewFeatures";
-import { useFeatureFlag, useWithFlags } from "@/src/shared/lib/feature-flags";
+import { useWithFlags } from "@/src/shared/lib/feature-flags";
 import { Link, usePathname, useRouter } from "@/src/shared/lib/router";
 import { PREVIEW_HELP_CENTER_URL } from "@/app/constants/preview-content";
 import { useLogout } from "@/app/hooks/useLogout";
@@ -139,9 +139,9 @@ function MenuItem({
 /**
  * The menu side bar the header's menu button opens: every destination and
  * account tool that isn't a main tab. Map, Dashboards and My areas at the
- * top; Help, What's new and User settings at the bottom; then the prompt
- * allowance and the signed-in email with sign out. Picking an item closes it,
- * as do a click outside and Esc.
+ * top; Help, What's new, Alert subscriptions and User settings at the
+ * bottom; then the prompt allowance and the signed-in email with sign out.
+ * Picking an item closes it, as do a click outside and Esc.
  */
 export default function MenuSideBar() {
   const menuOpen = useSidebarStore((s) => s.menuOpen);
@@ -153,7 +153,6 @@ export default function MenuSideBar() {
   const { logout, isLoggingOut } = useLogout();
   const whatsNewUnread = useWhatsNewUnread();
   const router = useRouter();
-  const emailBeta = useFeatureFlag("email-subscriptions");
   const withFlags = useWithFlags();
   const pathname = usePathname() ?? "";
 
@@ -262,14 +261,12 @@ export default function MenuSideBar() {
                       : undefined
                   }
                 />
-                {emailBeta && (
-                  <MenuItem
-                    label="Alert subscriptions"
-                    icon={BellIcon}
-                    href={withFlags("/subscriptions")}
-                    active={pathname.startsWith("/subscriptions")}
-                  />
-                )}
+                <MenuItem
+                  label="Alert subscriptions"
+                  icon={BellIcon}
+                  href={withFlags("/subscriptions")}
+                  active={pathname.startsWith("/subscriptions")}
+                />
                 <MenuItem
                   label="User settings"
                   icon={GearSixIcon}

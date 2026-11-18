@@ -21,7 +21,7 @@ import {
   InfoIcon,
 } from "@phosphor-icons/react";
 import { Tooltip } from "./ui/tooltip";
-import { useState, useEffect, useId, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import PreviewInfoPanel from "./PreviewInfoPanel";
 import PromptQuotaMeter from "./PromptQuotaMeter";
 import WhatsNewModal from "./WhatsNewModal";
@@ -30,7 +30,7 @@ import MenuSideBar from "./MenuSideBar";
 import useAuthStore from "../store/authStore";
 import useChatStore from "../store/chatStore";
 import useSidebarStore from "../store/sidebarStore";
-import { useFeatureFlag, useWithFlags } from "@/src/shared/lib/feature-flags";
+import { useWithFlags } from "@/src/shared/lib/feature-flags";
 import { Link } from "@/src/shared/lib/router";
 import { usePathname } from "@/src/shared/lib/router";
 import { useLogout } from "@/app/hooks/useLogout";
@@ -56,10 +56,7 @@ function PageHeader() {
   const { logout } = useLogout();
   const whatsNewUnread = useWhatsNewUnread();
   const pathname = usePathname() ?? "";
-  const emailBeta = useFeatureFlag("email-subscriptions");
   const withFlags = useWithFlags();
-  // Shared by the avatar's tooltip and menu so both attach to one button.
-  const accountTriggerId = useId();
   const onMap = pathname.startsWith("/app");
   const onDashboards = pathname.startsWith("/dashboards");
 
@@ -305,70 +302,56 @@ function PageHeader() {
           </Tooltip>
         )}
         {isAuthenticated ? (
-          <Menu.Root
-            ids={{ trigger: accountTriggerId }}
-            positioning={{ placement: "bottom-end" }}
-          >
-            <Tooltip
-              ids={{ trigger: accountTriggerId }}
-              content={userEmail}
-              // With the beta menu the email is shown inside it.
-              disabled={!userEmail || emailBeta}
-              showArrow
-            >
-              <Menu.Trigger asChild>
-                <IconButton
-                  w="32px"
-                  h="32px"
-                  minW="32px"
-                  borderRadius="full"
-                  bg="#F4F5F6"
-                  color="#394048"
-                  _hover={{ bg: "#E0E2E5" }}
-                  _focusVisible={focusRing}
-                  // No email in the label: GTM click triggers read aria-label,
-                  // and personal data must not reach GA4. The tooltip shows it.
-                  aria-label="Account menu"
-                >
-                  <UserIcon size={16} />
-                  {/* Front door: renders only while the profile is incomplete. */}
-                  <Box position="absolute" top="0" right="0" display="flex">
-                    <ProfileReminderDot />
-                  </Box>
-                </IconButton>
-              </Menu.Trigger>
-            </Tooltip>
+          <Menu.Root positioning={{ placement: "bottom-end" }}>
+            <Menu.Trigger asChild>
+              <IconButton
+                w="32px"
+                h="32px"
+                minW="32px"
+                borderRadius="full"
+                bg="#F4F5F6"
+                color="#394048"
+                _hover={{ bg: "#E0E2E5" }}
+                _focusVisible={focusRing}
+                // No email in the label: GTM click triggers read aria-label,
+                // and personal data must not reach GA4. The email is shown
+                // inside the menu.
+                aria-label="Account menu"
+              >
+                <UserIcon size={16} />
+                {/* Front door: renders only while the profile is incomplete. */}
+                <Box position="absolute" top="0" right="0" display="flex">
+                  <ProfileReminderDot />
+                </Box>
+              </IconButton>
+            </Menu.Trigger>
             <Portal>
               <Menu.Positioner>
                 <Menu.Content
                   minW="220px"
                   css={{ "& a": { cursor: "pointer" } }}
                 >
-                  {emailBeta && (
-                    <>
-                      <Box px="14px" py="2" minW={0}>
-                        <Text fontSize="xs" color="neutral.600">
-                          Signed in as
-                        </Text>
-                        <Text fontSize="sm" color="neutral.900" truncate>
-                          {userEmail}
-                        </Text>
-                      </Box>
-                      <Menu.Separator />
-                      <Menu.Item value="subscriptions" asChild>
-                        <Link href={withFlags("/subscriptions")}>
-                          <BellIcon />
-                          Alert subscriptions
-                        </Link>
-                      </Menu.Item>
-                    </>
-                  )}
+                  <Box px="14px" py="2" minW={0}>
+                    <Text fontSize="xs" color="neutral.600">
+                      Signed in as
+                    </Text>
+                    <Text fontSize="sm" color="neutral.900" truncate>
+                      {userEmail}
+                    </Text>
+                  </Box>
+                  <Menu.Separator />
+                  <Menu.Item value="subscriptions" asChild>
+                    <Link href={withFlags("/subscriptions")}>
+                      <BellIcon />
+                      Alert subscriptions
+                    </Link>
+                  </Menu.Item>
                   <ProfileReminderMenuItem
                     fallback={
                       <Menu.Item value="dashboard" asChild>
                         <Link href="/dashboard">
                           <GearSixIcon />
-                          {emailBeta ? "User settings" : "User Profile"}
+                          User settings
                         </Link>
                       </Menu.Item>
                     }
@@ -383,7 +366,7 @@ function PageHeader() {
                     title="Log Out"
                   >
                     <SignOutIcon />
-                    {emailBeta ? "Log out" : "Logout"}
+                    Log out
                   </Menu.Item>
                 </Menu.Content>
               </Menu.Positioner>

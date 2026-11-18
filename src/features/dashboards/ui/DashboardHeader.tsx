@@ -15,7 +15,6 @@ import {
 } from "@phosphor-icons/react";
 
 import { toaster } from "@/app/components/ui/toaster";
-import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
 import type { Dashboard } from "../api/schemas";
 import { wasJustCreated } from "../lib/dates";
 import DashboardAlertsMenu from "./DashboardAlertsMenu";
@@ -68,15 +67,11 @@ export default function DashboardHeader({
   // A subscription is the owner's own consent, so superusers, who also
   // receive `subscriptions`, don't get the switch. The switch shows only
   // while the dashboard is eligible for subscription.
-  const emailBeta = useFeatureFlag("email-subscriptions");
   const subscriptions = dashboard.subscriptions;
   const showAlerts =
-    emailBeta &&
-    isOwner &&
-    dashboard.eligible_for_subscription &&
-    !!subscriptions;
+    isOwner && dashboard.eligible_for_subscription && !!subscriptions;
   // The pinned copy of the header is mounted too; only this one tells.
-  useEmailTurnedOffNotice(dashboard, emailBeta && isOwner && !condensed);
+  useEmailTurnedOffNotice(dashboard, isOwner && !condensed);
 
   const commit = () => {
     const name = draft?.trim();
