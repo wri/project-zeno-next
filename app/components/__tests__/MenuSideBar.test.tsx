@@ -1,9 +1,10 @@
 // @vitest-environment happy-dom
 /**
  * The menu side bar: every destination that isn't a main tab (Map,
- * Dashboards, My areas; Help, What's new, User settings), the prompt
- * allowance and the email with sign out. Picking an item, Esc and a click
- * outside close it; the current destination shows as active.
+ * Dashboards, My areas; Help, What's new, Alert subscriptions, User
+ * settings), the prompt allowance and the email with sign out. Picking an
+ * item, Esc and a click outside close it; the current destination shows as
+ * active.
  */
 import { ChakraProvider } from "@chakra-ui/react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
@@ -99,6 +100,7 @@ describe("MenuSideBar", () => {
       "My areas",
       "Help",
       expect.stringMatching(/^What's new/),
+      "Alert subscriptions",
       "User settings",
     ]);
     expect(screen.getByText("10 / 20 daily prompts")).toBeTruthy();
@@ -112,6 +114,9 @@ describe("MenuSideBar", () => {
 
     expect(item("Map").getAttribute("href")).toBe("/app/threads/t1");
     expect(item("Dashboards").getAttribute("href")).toBe("/dashboards");
+    expect(item("Alert subscriptions").getAttribute("href")).toBe(
+      "/subscriptions"
+    );
     expect(item("User settings").getAttribute("href")).toBe("/dashboard");
     const help = item("Help");
     expect(help.getAttribute("href")).toBe(
@@ -150,52 +155,18 @@ describe("MenuSideBar", () => {
     ["/app/threads/t1", "Map"],
     ["/dashboards/d1", "Dashboards"],
     ["/dashboard", "User settings"],
+    ["/subscriptions", "Alert subscriptions"],
   ])("marks the item for %s as active", (pathname, label) => {
     renderMenu(pathname);
     expect(activeItem()?.textContent).toBe(label);
   });
 
-  describe("Alert subscriptions (email-subscriptions flag)", () => {
-    const labels = () =>
-      Array.from(
-        screen
-          .getByRole("navigation", { name: "Destinations" })
-          .querySelectorAll("a, button")
-      ).map((el) => el.textContent);
-
-    it("is hidden without the flag", () => {
-      renderMenu();
-      expect(labels()).not.toContain("Alert subscriptions");
-    });
-
-    it("shows between What's new and User settings and keeps the flags in its link", () => {
-      window.history.replaceState({}, "", "/?ff=email-subscriptions");
-      renderMenu();
-
-      const list = labels();
-      expect(list.indexOf("Alert subscriptions")).toBe(
-        list.indexOf("User settings") - 1
-      );
-      expect(list[list.indexOf("Alert subscriptions") - 1]).toMatch(
-        /^What's new/
-      );
-      expect(item("Alert subscriptions").getAttribute("href")).toBe(
-        "/subscriptions?ff=email-subscriptions"
-      );
-    });
-
-    it("is active on /subscriptions", () => {
-      window.history.replaceState({}, "", "/?ff=email-subscriptions");
-      renderMenu("/subscriptions");
-      expect(activeItem()?.textContent).toBe("Alert subscriptions");
-    });
-
-    it("closes the menu when picked", async () => {
-      window.history.replaceState({}, "", "/?ff=email-subscriptions");
-      renderMenu();
-      await click(item("Alert subscriptions"));
-      expect(useSidebarStore.getState().menuOpen).toBe(false);
-    });
+  it("keeps other hidden-feature flags on the Alert subscriptions link", () => {
+    window.history.replaceState({}, "", "/?ff=net-flux");
+    renderMenu();
+    expect(item("Alert subscriptions").getAttribute("href")).toBe(
+      "/subscriptions?ff=net-flux"
+    );
   });
 
   it("marks My areas active while its tab is open on the map", () => {

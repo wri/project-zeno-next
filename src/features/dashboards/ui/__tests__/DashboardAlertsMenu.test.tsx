@@ -15,12 +15,6 @@ vi.mock("@/src/shared/lib/router", async (importOriginal) => ({
     <a href={href} {...rest} />
   ),
 }));
-let flagOn = true;
-vi.mock("@/src/shared/lib/feature-flags", async (importOriginal) => ({
-  ...(await importOriginal<object>()),
-  useFeatureFlag: (flag: string) => flagOn && flag === "email-subscriptions",
-}));
-
 import { toaster } from "@/app/components/ui/toaster";
 import { apiFetch } from "@/app/lib/api-client";
 import DashboardHeader from "../DashboardHeader";
@@ -136,7 +130,6 @@ const emailOffNotice = () =>
     .mock.calls.some(([toast]) => toast.title === "Email alerts turned off");
 
 beforeEach(() => {
-  flagOn = true;
   vi.mocked(toaster.create).mockClear();
   vi.mocked(apiFetch).mockReset();
   vi.mocked(apiFetch).mockImplementation(async (path, init) => {
@@ -151,12 +144,6 @@ beforeEach(() => {
 });
 
 describe("DashboardHeader alerts gate", () => {
-  it("shows no alerts control outside the beta", () => {
-    flagOn = false;
-    renderHeader();
-    expect(alertsButton()).toBeNull();
-  });
-
   it("shows no alerts control to a non-owner", () => {
     renderHeader({ isOwner: false });
     expect(alertsButton()).toBeNull();
@@ -175,13 +162,13 @@ describe("DashboardHeader alerts gate", () => {
 
 describe("DashboardAlertsMenu", () => {
   it("carries the page's flags onto the subscriptions link", async () => {
-    window.history.replaceState({}, "", "/?ff=email-subscriptions,other");
+    window.history.replaceState({}, "", "/?ff=net-flux,other");
     renderHeader();
     await openPopover();
 
     expect(
       screen.getByRole("link", { name: "Manage all subscriptions" })
-    ).toHaveProperty("search", "?ff=email-subscriptions%2Cother");
+    ).toHaveProperty("search", "?ff=net-flux%2Cother");
     window.history.replaceState({}, "", "/");
   });
 
