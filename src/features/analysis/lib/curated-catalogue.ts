@@ -92,6 +92,10 @@ export const CURATED_ANALYSES: readonly CuratedAnalysisEntry[] = [
     datasetId: 7,
     description: "Tree cover extent for the area",
     chartCountHint: 1,
+    // Upstream takes tree cover areas by id only (data-infra `tree_cover.py`);
+    // custom areas and concessions go as geometry. Allowlisted so a new
+    // geometry-backed source stays out until upstream supports it.
+    aoiSources: ["gadm", "kba", "wdpa", "landmark"],
   },
   {
     datasetId: 8,

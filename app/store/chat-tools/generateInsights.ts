@@ -11,6 +11,7 @@ import useInsightStore from "../insightStore";
 import useChatStore from "../chatStore";
 import type { ChartColorFields } from "@/app/types/chartColors";
 import { pickChartColors } from "@/app/utils/pickChartColors";
+import { contextLayerIgnoresCanopy } from "@/app/utils/datasetLayerContext";
 import {
   isCuratedInsight,
   codeActParts,
@@ -78,10 +79,13 @@ export function generateInsightsTool(
         analysisParams.dataset = datasetLayer.name;
       }
 
-      if (typeof dataset?.threshold === "number") {
-        analysisParams.canopyThreshold = dataset.threshold;
-      } else if (typeof datasetLayer?.parameters?.canopy_cover === "number") {
-        analysisParams.canopyThreshold = datasetLayer.parameters.canopy_cover;
+      // No CANOPY chip when the analysis ignored the threshold (natural forest).
+      if (!contextLayerIgnoresCanopy(dataset?.context_layer)) {
+        if (typeof dataset?.threshold === "number") {
+          analysisParams.canopyThreshold = dataset.threshold;
+        } else if (typeof datasetLayer?.parameters?.canopy_cover === "number") {
+          analysisParams.canopyThreshold = datasetLayer.parameters.canopy_cover;
+        }
       }
 
       const startStr = streamMessage.start_date ?? datasetLayer?.startDate;
@@ -107,7 +111,7 @@ export function generateInsightsTool(
 
       const widgets: InsightWidget[] = (
         streamMessage.charts_data as ChartData[]
-      ).map((chart: ChartData) => {
+      ).map((chart: ChartData, position) => {
         const seriesFields = getSeriesFields(chart);
         const curated = isCuratedInsight(streamMessage.codeact_parts);
         const parts = codeActParts(streamMessage.codeact_parts);
@@ -137,6 +141,8 @@ export function generateInsightsTool(
           ...(streamMessage.insight_id
             ? { insightId: streamMessage.insight_id }
             : {}),
+          // The backend streams charts_data in position order.
+          chartPosition: position,
         };
       });
 

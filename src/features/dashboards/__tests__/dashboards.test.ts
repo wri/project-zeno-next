@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/app/lib/api-client", () => ({
   apiFetch: vi.fn(),
@@ -6,22 +6,25 @@ vi.mock("@/app/lib/api-client", () => ({
 
 import { apiFetch } from "@/app/lib/api-client";
 import {
+  ALERTS_SUMMARY_MAX_IDS,
   addSection,
   addTextWidget,
   applyAnalysisTemplate,
+  fetchDashboardAlertsSummary,
+  setEmailSubscription,
 } from "../api/dashboards";
 import {
-  AoiSearchResponseSchema,
   DashboardListResponseSchema,
+  DashboardResponseSchema,
   DashboardSectionResponseSchema,
-  type AoiSearchResult,
 } from "../api/schemas";
 import {
-  aoiToDashboardCreateRequest,
-  sourceLabel,
+  AoiSearchResponseSchema,
   subtypeLabel,
-} from "../lib/aoi";
-import { updatedLabel, wasJustCreated } from "../lib/dates";
+  type AoiSearchResult,
+} from "@/src/entities/aoi";
+import { aoiToDashboardCreateRequest, sourceLabel } from "../lib/aoi";
+import { updatedLabel, updatedOnLabel, wasJustCreated } from "../lib/dates";
 
 describe("dashboard schemas", () => {
   it("settles a section's template to null whether the BE sends null or omits it", () => {
@@ -146,6 +149,12 @@ describe("dashboard date helpers", () => {
     expect(updatedLabel("2999-01-01T00:00:00Z")).toBe("Updated recently");
   });
 
+  it("dates the export with a calendar date", () => {
+    // Midday UTC, so the calendar day is the same in any test runner's zone.
+    expect(updatedOnLabel("2026-07-01T12:00:00Z")).toBe("Updated 1 July 2026");
+    expect(updatedOnLabel("not-a-date")).toBe("Updated recently");
+  });
+
   it("treats a dashboard as just created within the 10-minute window", () => {
     const now = new Date("2026-08-13T12:00:00Z").getTime();
     expect(wasJustCreated("2026-08-13T11:59:00Z", now)).toBe(true);
@@ -164,8 +173,85 @@ describe("dashboard date helpers", () => {
   });
 });
 
+describe("dashboard subscriptions", () => {
+  const body = {
+    id: "d1",
+    user_id: "u1",
+    name: "Paraná",
+    is_public: false,
+    created_at: "2026-09-01T00:00:00Z",
+    updated_at: "2026-09-01T00:00:00Z",
+  };
+  const parse = (extra: object) =>
+    DashboardResponseSchema.parse({ ...body, ...extra });
+
+  const channels = (...on: string[]) => ({
+    subscriptions: { integrated_alerts: { channels: on } },
+  });
+
+  it("reads whether email is on", () => {
+    expect(parse(channels()).subscriptions).toEqual({ emailEnabled: false });
+    expect(parse(channels("email")).subscriptions).toEqual({
+      emailEnabled: true,
+    });
+  });
+
+  it("leaves subscriptions undefined when absent or malformed, and still parses the dashboard", () => {
+    expect(parse({}).subscriptions).toBeUndefined();
+    for (const bad of [{}, { integrated_alerts: { channels: "email" } }]) {
+      const malformed = parse({ subscriptions: bad });
+      expect(malformed.subscriptions).toBeUndefined();
+      expect(malformed.name).toBe("Paraná");
+    }
+  });
+
+  it("reads eligibility, and treats a missing or malformed value as not eligible", () => {
+    expect(
+      parse({ eligible_for_subscription: true }).eligible_for_subscription
+    ).toBe(true);
+    expect(parse({}).eligible_for_subscription).toBe(false);
+    expect(
+      parse({ eligible_for_subscription: "yes" }).eligible_for_subscription
+    ).toBe(false);
+  });
+});
+
+describe("setEmailSubscription", () => {
+  beforeEach(() => vi.mocked(apiFetch).mockReset());
+
+  it.each([
+    [true, ["email"]],
+    [false, []],
+  ] as const)("PUTs the channels for email %s", async (enabled, sent) => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      new Response(JSON.stringify({}), { status: 200 })
+    );
+
+    await setEmailSubscription("d1", enabled);
+
+    expect(apiFetch).toHaveBeenCalledWith("/api/dashboards/d1/subscriptions", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ datasets: ["integrated_alerts"], channels: sent }),
+    });
+  });
+
+  it("rejects with the status and detail of a 409", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      new Response(JSON.stringify({ detail: "Dashboard is not eligible" }), {
+        status: 409,
+      })
+    );
+
+    await expect(setEmailSubscription("d1", true)).rejects.toMatchObject({
+      status: 409,
+      detail: "Dashboard is not eligible",
+    });
+  });
+});
+
 describe("addTextWidget", () => {
-  it("sends config.text as a string, per the backend's validate_text_config", async () => {
+  it("sends config.text as a string and the owner as its source", async () => {
     vi.mocked(apiFetch).mockResolvedValue(
       new Response(JSON.stringify({}), { status: 200 })
     );
@@ -175,7 +261,10 @@ describe("addTextWidget", () => {
     expect(apiFetch).toHaveBeenCalledWith("/api/dashboards/d1/widgets", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ widget_type: "text", config: { text: "" } }),
+      body: JSON.stringify({
+        widget_type: "text",
+        config: { text: "", source: "user" },
+      }),
     });
   });
 });
@@ -260,5 +349,124 @@ describe("applyAnalysisTemplate", () => {
     );
 
     expect((error as { status?: number }).status).toBe(502);
+  });
+});
+
+describe("fetchDashboardAlertsSummary", () => {
+  const week = { start_date: "2026-10-05", end_date: "2026-10-11" };
+
+  // The mock is shared by the whole file and never reset, so call counts
+  // would otherwise carry over from the earlier describes.
+  beforeEach(() => vi.mocked(apiFetch).mockReset());
+
+  it("posts the ids and settles the response: only areas with alerts survive", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          ...week,
+          dashboards: {
+            d1: { integrated_alerts: 1457.83, errors: {} },
+            d2: {
+              integrated_alerts: null,
+              errors: { integrated_alerts: "unavailable" },
+            },
+          },
+        }),
+        { status: 200 }
+      )
+    );
+
+    const summary = await fetchDashboardAlertsSummary(["d1", "d2", "d3"]);
+
+    expect(apiFetch).toHaveBeenCalledWith("/api/dashboards/alerts-summary", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dashboard_ids: ["d1", "d2", "d3"] }),
+    });
+    expect(summary).toEqual({
+      startDate: "2026-10-05",
+      endDate: "2026-10-11",
+      assessedCount: 1,
+      newAlertAreaHa: { d1: 1457.83 },
+    });
+  });
+
+  it("splits a list past the backend's 50-id cap and merges the responses", async () => {
+    const ids = Array.from(
+      { length: ALERTS_SUMMARY_MAX_IDS + 1 },
+      (_, i) => `d${i}`
+    );
+    const respond = (chunk: string[]) =>
+      new Response(
+        JSON.stringify({
+          ...week,
+          dashboards: Object.fromEntries(
+            chunk.map((id) => [id, { integrated_alerts: 1, errors: {} }])
+          ),
+        }),
+        { status: 200 }
+      );
+    vi.mocked(apiFetch)
+      .mockResolvedValueOnce(respond(ids.slice(0, ALERTS_SUMMARY_MAX_IDS)))
+      .mockResolvedValueOnce(respond(ids.slice(ALERTS_SUMMARY_MAX_IDS)));
+
+    const summary = await fetchDashboardAlertsSummary(ids);
+
+    const sentIds = vi
+      .mocked(apiFetch)
+      .mock.calls.map(
+        ([, init]) =>
+          (JSON.parse(String(init?.body)) as { dashboard_ids: string[] })
+            .dashboard_ids
+      );
+    expect(sentIds.map((chunk) => chunk.length)).toEqual([
+      ALERTS_SUMMARY_MAX_IDS,
+      1,
+    ]);
+    expect(sentIds.flat()).toEqual(ids);
+    expect(summary.assessedCount).toBe(ids.length);
+    expect(summary.endDate).toBe("2026-10-11");
+  });
+
+  it("asks for the first response's week in every later request", async () => {
+    const ids = Array.from(
+      { length: ALERTS_SUMMARY_MAX_IDS * 2 + 1 },
+      (_, i) => `d${i}`
+    );
+    // The later responses claim another week, as a request that fell back to
+    // the calendar week would; the summary must still carry the first one.
+    const respond = (dates: typeof week) =>
+      new Response(JSON.stringify({ ...dates, dashboards: {} }), {
+        status: 200,
+      });
+    // A fresh Response per call: a body can only be read once.
+    vi.mocked(apiFetch)
+      .mockResolvedValueOnce(respond(week))
+      .mockImplementation(async () =>
+        respond({ start_date: "2026-10-04", end_date: "2026-10-10" })
+      );
+
+    const summary = await fetchDashboardAlertsSummary(ids);
+
+    const bodies = vi
+      .mocked(apiFetch)
+      .mock.calls.map(
+        ([, init]) => JSON.parse(String(init?.body)) as Record<string, unknown>
+      );
+    expect(bodies).toHaveLength(3);
+    expect(bodies[0]).not.toHaveProperty("start_date");
+    expect(bodies[0]).not.toHaveProperty("end_date");
+    for (const body of bodies.slice(1)) {
+      expect(body).toMatchObject(week);
+    }
+    expect(summary.startDate).toBe(week.start_date);
+    expect(summary.endDate).toBe(week.end_date);
+  });
+
+  it("refuses an empty list rather than sending a request the backend rejects", async () => {
+    await expect(fetchDashboardAlertsSummary([])).rejects.toThrow(
+      /at least one id/
+    );
+    expect(apiFetch).not.toHaveBeenCalled();
   });
 });

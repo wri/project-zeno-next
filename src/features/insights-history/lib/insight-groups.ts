@@ -35,7 +35,7 @@ export interface InsightGroupItem {
 /** One stored insight → one group with all of its charts. */
 export function recordToGroup(record: InsightRecord): InsightGroupItem {
   const curated = record.verification === "verified";
-  const widgets = chartsToWidgets(record.charts).map((widget) => ({
+  const widgets = chartsToWidgets(record.charts, record.id).map((widget) => ({
     ...widget,
     curated,
   }));
@@ -63,13 +63,12 @@ export function analysisResultToGroup(
   result: AnalysisResult,
   { datasetName, areaName }: { datasetName: string; areaName: string }
 ): InsightGroupItem {
-  const widgets = chartsToWidgets(result.charts, {
+  const widgets = chartsToWidgets(result.charts, result.id, {
     areas: [areaName],
     dataset: datasetName,
   }).map((widget) => ({
     ...widget,
     curated: true,
-    insightId: result.id,
     datasetName,
   }));
   return {

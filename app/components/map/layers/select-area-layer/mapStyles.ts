@@ -3,6 +3,8 @@ import {
   LineLayerSpecification,
 } from "react-map-gl/maplibre";
 
+import { CONCESSION_FILL_OPACITY, type ConcessionStyle } from "@/app/types/map";
+
 export const selectAreaFillPaint: FillLayerSpecification["paint"] = {
   "fill-color": "#172B7A",
   "fill-opacity": [
@@ -19,3 +21,27 @@ export const selectAreaLinePaint: LineLayerSpecification["paint"] = {
   "line-color": "#BBC5EB",
   "line-width": 2,
 };
+
+/** A concession layer's fill in its commodity colour (see CONCESSION_STYLES). */
+export function concessionFillPaint(
+  style: ConcessionStyle,
+  opacity: number
+): FillLayerSpecification["paint"] {
+  return {
+    "fill-color": style.fillColor,
+    // The legend's opacity scales the GNW fill opacity.
+    "fill-opacity": CONCESSION_FILL_OPACITY * opacity,
+  };
+}
+
+/** A concession layer's outline, for the layers GNW draws one for. */
+export function concessionLinePaint(
+  line: NonNullable<ConcessionStyle["line"]>,
+  opacity: number
+): LineLayerSpecification["paint"] {
+  return {
+    "line-color": line.color,
+    "line-width": line.width,
+    "line-opacity": opacity,
+  };
+}

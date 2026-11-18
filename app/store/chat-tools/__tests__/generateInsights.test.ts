@@ -84,6 +84,7 @@ describe("generateInsightsTool", () => {
     );
     const { insights } = useInsightStore.getState();
     expect(insights.map((w) => w.insightId)).toEqual(["ins-1", "ins-1"]);
+    expect(insights.map((w) => w.chartPosition)).toEqual([0, 1]);
   });
 
   it("leaves insightId unset when the stream carries no insight_id", () => {
@@ -92,6 +93,41 @@ describe("generateInsightsTool", () => {
       addMessage
     );
     expect(useInsightStore.getState().insights[0].insightId).toBeUndefined();
+  });
+
+  it("sets the CANOPY threshold from the streamed dataset", () => {
+    generateInsightsTool(
+      baseMessage({
+        charts_data: [chartData()],
+        dataset: {
+          dataset_id: 4,
+          dataset_name: "Tree cover loss",
+          threshold: 30,
+        },
+      }),
+      addMessage
+    );
+    expect(
+      useInsightStore.getState().insights[0].analysisParams?.canopyThreshold
+    ).toBe(30);
+  });
+
+  it("omits the CANOPY threshold under the natural_forest context layer", () => {
+    generateInsightsTool(
+      baseMessage({
+        charts_data: [chartData()],
+        dataset: {
+          dataset_id: 4,
+          dataset_name: "Tree cover loss",
+          threshold: 30,
+          context_layer: "natural_forest",
+        },
+      }),
+      addMessage
+    );
+    const params = useInsightStore.getState().insights[0].analysisParams;
+    expect(params?.dataset).toBe("Tree cover loss");
+    expect(params?.canopyThreshold).toBeUndefined();
   });
 
   it("does nothing when charts_data is absent", () => {

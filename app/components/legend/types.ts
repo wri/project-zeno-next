@@ -45,7 +45,6 @@ export interface LegendLayer {
   children?: ReactNode;
   info?: string;
   hideOpacityControl?: boolean;
-  hideRemoveControl?: boolean;
 }
 
 /**

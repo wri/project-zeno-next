@@ -94,6 +94,28 @@ const TOAST_TRIGGERS = [
   { label: "Info", type: "info" },
 ] as const;
 
+/** As a download does: the same toast turns into "Saved" in place. */
+function showLoadingToast() {
+  const id = toaster.create({
+    title: "Preparing a file",
+    description: "The file saves when it is ready.",
+    type: "loading",
+    // The action trigger closes the toast after its onClick.
+    action: { label: "Cancel", onClick: () => {} },
+  });
+  setTimeout(() => {
+    // update() creates the toast again if Cancel or Escape closed it.
+    if (!toaster.isVisible(id)) return;
+    toaster.update(id, {
+      type: "success",
+      title: "Saved the file",
+      description: undefined,
+      action: undefined,
+      duration: 3000,
+    });
+  }, 2000);
+}
+
 function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
   const params = useSearchParams();
   const active =
@@ -269,6 +291,9 @@ function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
                 {label}
               </Button>
             ))}
+            <Button size="2xs" onClick={showLoadingToast}>
+              Loading
+            </Button>
           </Stack>
         </Box>
 
@@ -300,7 +325,7 @@ function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
         mt="2"
         pt="2"
       >
-        {/* Offline mirror: real form with mock config, no API/auth. */}
+        {/* Offline gallery of the front door's components, no API/auth. */}
         <Link
           as={NextLink}
           href="/onboarding-debug"
@@ -312,7 +337,7 @@ function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
           gap="1"
         >
           <UserPlusIcon size={10} />
-          Go to Onboarding debugger →
+          User onboarding and profile →
         </Link>
         <Link
           as={NextLink}

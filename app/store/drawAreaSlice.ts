@@ -6,7 +6,7 @@ import { generateRandomName } from "../utils/generateRandomName";
 import bbox from "@turf/bbox";
 import type { MapState } from "./mapStore";
 import { calculateAreaKm2 } from "../utils/calculateAreaKm2";
-import { MIN_AREA_KM2, MAX_AREA_KM2 } from "@/src/entities/custom-area";
+import { MAX_AREA_KM2 } from "@/src/entities/custom-area";
 import type {
   CreateCustomAreaRequest,
   CreateCustomAreaResponse,
@@ -41,7 +41,7 @@ export interface DrawAreaSlice {
   isDrawingMode: boolean;
   pendingDrawnArea: PendingDrawnArea | null;
   validationError: {
-    code: "too-small" | "too-large";
+    code: "too-large";
     area: number;
   } | null;
   createAreaFn:
@@ -211,13 +211,8 @@ export const createDrawAreaSlice: StateCreator<
 
     const areaSizeKm2 = calculateAreaKm2(featureCollection);
 
-    if (areaSizeKm2 < MIN_AREA_KM2 || areaSizeKm2 > MAX_AREA_KM2) {
-      set({
-        validationError: {
-          code: areaSizeKm2 < MIN_AREA_KM2 ? "too-small" : "too-large",
-          area: areaSizeKm2,
-        },
-      });
+    if (areaSizeKm2 > MAX_AREA_KM2) {
+      set({ validationError: { code: "too-large", area: areaSizeKm2 } });
       get().endDrawing();
       return;
     }
@@ -272,7 +267,9 @@ export const createDrawAreaSlice: StateCreator<
       result = await createAreaFn(requestData);
     }
 
-    get().endDrawing();
+    // Only end the session this save belongs to: a Redraw or Cancel while the
+    // request was in flight has already moved on.
+    if (get().pendingDrawnArea === pending) get().endDrawing();
     return result;
   },
 

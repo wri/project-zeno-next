@@ -28,32 +28,33 @@ export type DatasetLegendConfig = {
 
 /**
  * Thematic groupings used to filter the Data Catalog panel.
- * `all` and `in-conversation` are virtual (not assigned per card).
+ * `all` is virtual (not assigned per card). Datasets on the map are pinned in
+ * the panel's own "On map" section rather than a category.
  */
 export type DatasetCategoryId =
   | "all"
-  | "in-conversation"
   | "land-use"
   | "disturbance"
   | "wildfires"
   | "ghg-fluxes"
   | "forests";
 
-export const DATASET_CATEGORIES: { id: DatasetCategoryId; label: string }[] = [
-  { id: "all", label: "All datasets" },
-  { id: "in-conversation", label: "In this conversation" },
-  { id: "forests", label: "Forests" },
-  { id: "land-use", label: "Land use" },
-  { id: "disturbance", label: "Disturbance" },
-  { id: "wildfires", label: "Wildfires" },
-  { id: "ghg-fluxes", label: "GHG fluxes" },
-];
+/** Chip labels, in display order. Exhaustive, so a label lookup is total. */
+export const DATASET_CATEGORY_LABELS: Record<DatasetCategoryId, string> = {
+  all: "All datasets",
+  forests: "Forests",
+  "land-use": "Land use",
+  disturbance: "Disturbance",
+  wildfires: "Wildfires",
+  "ghg-fluxes": "GHG fluxes",
+};
+
+export const DATASET_CATEGORIES = (
+  Object.keys(DATASET_CATEGORY_LABELS) as DatasetCategoryId[]
+).map((id) => ({ id, label: DATASET_CATEGORY_LABELS[id] }));
 
 /** Categories assigned to dataset cards (excludes virtual ones above). */
-export type AssignableDatasetCategoryId = Exclude<
-  DatasetCategoryId,
-  "all" | "in-conversation"
->;
+export type AssignableDatasetCategoryId = Exclude<DatasetCategoryId, "all">;
 
 /**
  * One of a dataset card's primary data layers — only one is on the map at a
@@ -124,6 +125,12 @@ export type DatasetCardConfig = {
   defaultStartYear?: number;
   defaultEndYear?: number;
   /**
+   * Set to "days" for daily data: legends then show a DATES chip with full
+   * dates, as two ranges in one year would look the same in the default
+   * YEAR(S) chip. A flag, not `cadence`, because `cadence` is display text.
+   */
+  legendPeriod?: "days";
+  /**
    * Thematic categories used by the Data Catalog panel filter chips.
    * A dataset may belong to multiple categories (e.g. fire-driven loss is
    * both `disturbance` and `wildfires`).
@@ -143,7 +150,6 @@ export type ContextLayerMetadata = {
   dataset_name: string;
   context_layer: string | null;
   description: string;
-  tile_url?: string;
   legend: DatasetLegendConfig;
   vectorStyle?: VectorStyleSpec;
 };
@@ -189,6 +195,84 @@ const IFL_LEGEND: DatasetLegendConfig = {
   note: "Extent of Intact Forest Landscapes (IFL) in 2000-2025. Global coverage, IFL Mapping Team.",
 };
 
+const SBTN_NATURAL_LANDS_TITLE = "SBTN Natural lands (2020)";
+
+const SBTN_NATURAL_LANDS_DESCRIPTION =
+  "The SBTN Natural Lands Map v1.1 is a 2020 baseline map of natural and non-natural land covers intended for use by companies setting science-based targets for nature, specifically the SBTN Land target #1: no conversion of natural ecosystems. This map is global with 30m resolution and was made by compiling existing global and regional data including the GLAD Global Land Cover and Change data, ESA WorldCover, and many other land cover and use datasets.";
+
+/**
+ * The natural classes (raster values 2-11) of the SBTN Natural Lands Map, as
+ * the standalone card's legend lists them (it adds a non-natural row).
+ */
+const SBTN_NATURAL_CLASSES = [
+  { label: "natural forests", color: "#246E24" },
+  { label: "natural peat forests", color: "#093D09" },
+  { label: "mangroves", color: "#06A285" },
+  { label: "wet natural forests", color: "#589558" },
+  { label: "natural peat short vegetation", color: "#99991A" },
+  { label: "natural short vegetation", color: "#B9B91E" },
+  { label: "wet natural short vegetation", color: "#DBDB7B" },
+  { label: "natural water", color: "#6BAED6" },
+  { label: "snow", color: "#ACD1E8" },
+  { label: "bare", color: "#FEFECC" },
+];
+
+/**
+ * A one-swatch legend for an SBTN context sub-layer. The backend's tile URL
+ * paints that filter's classes in this same single `color` (PZB-1515), so the
+ * two must change together.
+ */
+function sbtnSingleClassLayer({
+  title,
+  label,
+  color,
+  info,
+}: {
+  title: string;
+  label: string;
+  color: string;
+  info: string;
+}): ContextLayerMetadata {
+  return {
+    dataset_id: 3,
+    dataset_name: "SBTN Natural Lands Map",
+    context_layer: null,
+    description: SBTN_NATURAL_LANDS_DESCRIPTION,
+    legend: {
+      title,
+      color,
+      items: [{ label, color }],
+      type: "symbol",
+      note: "From the SBTN Natural Lands Map (2020 baseline). This map may overestimate the extent of natural lands.",
+      info,
+    },
+  };
+}
+
+/**
+ * The SBTN natural-forest classes (natural forests 2, mangroves 5, wet
+ * natural forests 8, natural peat forests 9) as one swatch, under whichever
+ * name and explanation a dataset restricts itself by.
+ */
+function naturalForestLayer({
+  label,
+  info,
+}: {
+  label: string;
+  info: string;
+}): ContextLayerMetadata {
+  return sbtnSingleClassLayer({
+    title: "SBTN Natural forest (2020)",
+    label,
+    color: SBTN_NATURAL_CLASSES[0].color,
+    info,
+  });
+}
+
+// The colour the UMD tiles actually paint (sampled from the published v201901
+// PNGs), so the legend matches the map.
+const PRIMARY_FOREST_COLOR = "#668636";
+
 export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
   primary_forest: {
     dataset_id: 100,
@@ -198,8 +282,8 @@ export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
       "Primary forests are among the most biodiverse forests, providing a multitude of ecosystem services, making them crucial to monitor for national land use planning and carbon accounting. This dataset defines primary forests as mature natural humid tropical forest cover that has not been completely cleared and regrown in recent history. Researchers classified Landsat images into primary forest data using a separate algorithm for each region. The dataset maps the extent of primary forests in the global pan-tropical regions in 2001 at 30-meter resolution.",
     legend: {
       title: "Primary Forests (2001)",
-      color: "#054A29",
-      items: [{ label: "Primary forest", color: "#054A29" }],
+      color: PRIMARY_FOREST_COLOR,
+      items: [{ label: "Primary forest", color: PRIMARY_FOREST_COLOR }],
       type: "symbol",
       info: "Primary forests are defined as mature natural humid tropical forest cover that has not been completely cleared and regrown in recent history. This layer maps their pan-tropical extent in 2001 and is useful as a baseline for assessing forest integrity and biodiversity value.",
       note: "Extent of primary humid tropical forests in 2001. Pan-tropical coverage at 30m resolution (UMD/GLAD).",
@@ -242,19 +326,44 @@ export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
       fallbackColor: "transparent", // every other year stays unstyled
     },
   },
+  // Sub-layer rendered beneath Integrated alerts when the agent restricts
+  // them to natural lands (project-zeno#853): every natural class (raster
+  // values 2-11) as one swatch, since the analysis doesn't break them down.
+  natural_lands: sbtnSingleClassLayer({
+    title: SBTN_NATURAL_LANDS_TITLE,
+    label: "Natural lands",
+    color: "#A8DDB5",
+    info: 'Alerts are restricted to natural lands in the SBTN Natural Lands Map (2020 baseline). "Natural" means an ecosystem that substantially resembles what would be found without major human impact, including regenerated and secondary ones; plantations, cropland and built areas are excluded.',
+  }),
+  // Sub-layer rendered beneath Tree cover loss when the agent restricts it to
+  // natural forest (project-zeno#853): only the four classes the analysis
+  // counts (natural forests 2, mangroves 5, wet natural forests 8, natural peat
+  // forests 9), as one swatch in the card's natural-forests colour.
+  natural_forest: naturalForestLayer({
+    label: "Natural forest",
+    info: "Tree cover loss is restricted to natural forest in the SBTN Natural Lands Map (2020 baseline): natural forests, natural peat forests, mangroves and wet natural forests. Covers loss from 2021 onward; no canopy cover threshold applies.",
+  }),
+  // The same four classes under the analytics API's own name for its
+  // `land_filter`, which the alerts widget's Intersects dropdown sends and
+  // the alerts layer snapshot carries as a context layer (PZB-1468).
+  natural_forests: naturalForestLayer({
+    label: "Natural forests",
+    info: "Alerts are restricted to natural forest in the SBTN Natural Lands Map (2020 baseline): natural forests, natural peat forests, mangroves and wet natural forests.",
+  }),
 };
-
-/**
- * Feature flag gating the standalone Intact Forest Landscapes card while
- * researchers review it (PZB-1231). Opt in with `?ff=ifl`.
- */
-export const IFL_FEATURE_FLAG = "ifl";
 
 /**
  * Feature flag gating the curated LGMS net-flux insights while they are
  * reviewed (PZB-1247/1248). Opt in with `?ff=net-flux`.
  */
 export const NET_FLUX_FEATURE_FLAG = "net-flux";
+
+/** The Tree cover loss card, the map's default dataset. */
+export const TREE_COVER_LOSS_DATASET_ID = 4;
+
+/** Same URL the backend hands back as the `primary_forest` context layer. */
+const PRIMARY_FOREST_TILE_URL =
+  "https://tiles.globalforestwatch.org/umd_regional_primary_forest_2001/v201901/uint16/{z}/{x}/{y}.png";
 
 /**
  * Standalone IFL raster tiles. Same endpoint the backend hands back as the
@@ -370,6 +479,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     context_layer: null as string | null,
     img: "/dataset_card_dist_alerts.webp",
     cadence: "daily",
+    legendPeriod: "days",
     resolution: "10 m",
     geographic_coverage: "global",
     provider: "GFW",
@@ -382,7 +492,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     tile_url:
       "https://tiles.globalforestwatch.org/gfw_integrated_dist_alerts/latest/dynamic/{z}/{x}/{y}.png?render_type=true_color",
     legend: {
-      title: "Integrated Deforestation Alerts",
+      title: "Integrated Disturbance Alerts",
       color: "#C92A6D",
       items: [
         { label: "Low confidence", color: "#EDA4C2" },
@@ -462,23 +572,13 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     geographic_coverage: "global",
     provider: "SBTN, WRI",
     categories: ["land-use"],
-    description:
-      "The SBTN Natural Lands Map v1.1 is a 2020 baseline map of natural and non-natural land covers intended for use by companies setting science-based targets for nature, specifically the SBTN Land target #1: no conversion of natural ecosystems. This map is global with 30m resolution and was made by compiling existing global and regional data including the GLAD Global Land Cover and Change data, ESA WorldCover, and many other land cover and use datasets.",
+    description: SBTN_NATURAL_LANDS_DESCRIPTION,
     tile_url: `${EOAPI_HOST}/raster/collections/natural-lands-v-1-1/tiles/WebMercatorQuad/{z}/{x}/{y}.png?colormap=%7B%222%22%3A%20%5B36%2C%20110%2C%2036%2C%20255%5D%2C%20%223%22%3A%20%5B185%2C%20185%2C%2030%2C%20255%5D%2C%20%224%22%3A%20%5B107%2C%20174%2C%20214%2C%20255%5D%2C%20%225%22%3A%20%5B6%2C%20162%2C%20133%2C%20255%5D%2C%20%226%22%3A%20%5B254%2C%20254%2C%20204%2C%20255%5D%2C%20%227%22%3A%20%5B172%2C%20209%2C%20232%2C%20255%5D%2C%20%228%22%3A%20%5B88%2C%20149%2C%2088%2C%20255%5D%2C%20%229%22%3A%20%5B9%2C%2061%2C%209%2C%20255%5D%2C%20%2210%22%3A%20%5B219%2C%20219%2C%20123%2C%20255%5D%2C%20%2211%22%3A%20%5B153%2C%20153%2C%2026%2C%20255%5D%2C%20%2212%22%3A%20%5B211%2C%20211%2C%20211%2C%20255%5D%2C%20%2213%22%3A%20%5B211%2C%20211%2C%20211%2C%20255%5D%2C%20%2214%22%3A%20%5B211%2C%20211%2C%20211%2C%20255%5D%2C%20%2215%22%3A%20%5B211%2C%20211%2C%20211%2C%20255%5D%2C%20%2216%22%3A%20%5B211%2C%20211%2C%20211%2C%20255%5D%2C%20%2217%22%3A%20%5B211%2C%20211%2C%20211%2C%20255%5D%2C%20%2218%22%3A%20%5B211%2C%20211%2C%20211%2C%20255%5D%2C%20%2219%22%3A%20%5B211%2C%20211%2C%20211%2C%20255%5D%2C%20%2220%22%3A%20%5B211%2C%20211%2C%20211%2C%20255%5D%2C%20%2221%22%3A%20%5B211%2C%20211%2C%20211%2C%20255%5D%7D&assets=asset&expression=asset%2A%28asset%3C22%29%2A%28asset%3E1%29&asset_as_band=True`,
     legend: {
-      title: "SBTN Natural lands (2020)",
+      title: SBTN_NATURAL_LANDS_TITLE,
       color: "#A8DCB5",
       items: [
-        { label: "natural forests", color: "#246E24" },
-        { label: "natural peat forests", color: "#093D09" },
-        { label: "mangroves", color: "#06A285" },
-        { label: "wet natural forests", color: "#589558" },
-        { label: "natural peat short vegetation", color: "#99991A" },
-        { label: "natural short vegetation", color: "#B9B91E" },
-        { label: "wet natural short vegetation", color: "#DBDB7B" },
-        { label: "natural water", color: "#6BAED6" },
-        { label: "snow", color: "#ACD1E8" },
-        { label: "bare", color: "#FEFECC" },
+        ...SBTN_NATURAL_CLASSES,
         { label: "non-natural", color: "#D3D3D3" },
       ],
       type: "symbol",
@@ -495,19 +595,36 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     dataset_name: CONTEXT_LAYER_METADATA.intact_forest.dataset_name,
     shortName: "Intact forests",
     context_layer: null,
+    img: "/dataset_card_intact_forest.webp",
     cadence: "2000-2025",
     resolution: "30 m",
     geographic_coverage: "global",
     provider: "IFL Mapping Team",
-    categories: ["land-use"],
+    categories: ["forests"],
     viewOnly: true,
-    featureFlag: IFL_FEATURE_FLAG,
     description: IFL_DESCRIPTION,
     tile_url: INTACT_FOREST_TILE_URL,
     legend: IFL_LEGEND,
   },
   {
-    dataset_id: 4,
+    // View-only context layer, same pattern as IFL above.
+    dataset_id: CONTEXT_LAYER_METADATA.primary_forest.dataset_id,
+    dataset_name: CONTEXT_LAYER_METADATA.primary_forest.dataset_name,
+    shortName: "Primary forests",
+    context_layer: null,
+    img: "/dataset_card_primary_forest.webp",
+    cadence: "2001",
+    resolution: "30 m",
+    geographic_coverage: "pan-tropical",
+    provider: "UMD/GLAD",
+    categories: ["forests"],
+    viewOnly: true,
+    description: CONTEXT_LAYER_METADATA.primary_forest.description,
+    tile_url: PRIMARY_FOREST_TILE_URL,
+    legend: CONTEXT_LAYER_METADATA.primary_forest.legend,
+  },
+  {
+    dataset_id: TREE_COVER_LOSS_DATASET_ID,
     dataset_name: "Tree cover loss",
     data_layer: "Tree cover loss",
     context_layer: null,
@@ -519,7 +636,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     provider: "UMD",
     defaultStartYear: 2001,
     defaultEndYear: 2025,
-    categories: ["disturbance"],
+    categories: ["forests", "disturbance"],
     description:
       "Tree Cover Loss (Hansen/UMD/GLAD) maps annual global forest loss from 2001 to 2025 at 30-meter resolution using Landsat satellite imagery. It detects stand-replacement disturbances in vegetation over 5 meters tall, including natural forests and plantations. The dataset supports monitoring annual tree cover loss and deforestation trends, fire impacts, and forestry practices, and is widely used for conservation, land-use planning, and environmental policy analysis.",
     tile_url:
@@ -546,7 +663,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     resolution: "1 km",
     geographic_coverage: "global",
     provider: "WRI / Google",
-    categories: ["disturbance"],
+    categories: ["forests", "disturbance"],
     description:
       "Shows the primary driver or cause of tree cover loss over the entire range 2001-2025. Driver classes are permanent agriculture, hard commodities, shifting cultivation, logging, wildfire, settlements & infrastructure, and other natural disturbances.",
     tile_url:
@@ -579,7 +696,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     resolution: "30 m",
     geographic_coverage: "global",
     provider: "UMD",
-    categories: ["land-use"],
+    categories: ["forests"],
     description:
       "Tree Cover Gain (Hansen/UMD/GLAD) identifies areas where new tree canopy was established between 2000 and 2012 at 30-meter resolution, using Landsat 7 imagery. It captures both  natural forest regrowth and tree plantation cycles, and is useful for tracking large-scale forest recovery trends. Users should note that it is a cumulative layer and should not be combined directly with loss or tree cover data to calculate net change.",
     tile_url:
@@ -605,7 +722,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     resolution: "30 m",
     geographic_coverage: "global",
     provider: "UMD",
-    categories: ["land-use"],
+    categories: ["forests"],
     description:
       "Tree Cover provides global percent tree canopy cover at 30-meter resolution for the year 2000 based on Landsat 7 imagery. It represents the density of vegetation over 5 meters tall, including both natural forests and plantations. This dataset is useful for establishing historical baselines and comparing tree cover density across different landscapes.",
     tile_url:
@@ -634,7 +751,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     provider: "UMD",
     defaultStartYear: 2001,
     defaultEndYear: 2025,
-    categories: ["disturbance", "wildfires"],
+    categories: ["forests", "disturbance", "wildfires"],
     description:
       "Tree Cover Loss due to Fires (Hansen/UMD/GLAD) maps annual global tree cover loss attributed to fire from 2001 to 2025 at 30-meter resolution. This subset of the broader Tree Cover Loss dataset isolates fire-driven stand-replacement disturbances in vegetation over 5 meters tall, helping users understand where fire is a dominant driver of forest loss.",
     tile_url:
@@ -884,15 +1001,16 @@ export const DATASET_CARD_BY_ID: Record<number, DatasetCardConfig> =
 
 const DATASET_CARD_DISPLAY_ORDER: number[] = [
   11, // Integrated alerts
+  4, // Tree cover loss
+  10, // TCL from fires
+  8, // TCL by driver
   1, // Global land cover
   2, // Grasslands
   3, // SBTN Natural lands
-  101, // Intact Forest Landscapes
-  4, // Tree cover loss
-  8, // TCL by driver
   5, // Tree cover gain
   7, // Tree cover
-  10, // TCL from fires
+  101, // Intact Forest Landscapes
+  100, // Primary Forests
   12, // LGMS
   6, // Forest GHG net flux
 ];

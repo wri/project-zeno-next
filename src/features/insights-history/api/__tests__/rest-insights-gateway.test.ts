@@ -44,7 +44,7 @@ describe("RestInsightsGateway.list", () => {
     // The real payload has no insight-level title/source.
     expect(records[0].source).toBeUndefined();
     expect(records[0].charts[0]).toMatchObject({
-      id: "ch-1",
+      id: "ins-1-chart-0",
       type: "bar",
       title: "Annual tree cover loss",
       xAxis: "year",
@@ -102,12 +102,23 @@ describe("RestInsightsGateway.list", () => {
     warn.mockRestore();
   });
 
-  it("synthesises a chart id when the payload omits one", async () => {
+  it("ids charts by insight and position, not by the API's chart uuid", async () => {
+    // Matches the ids generate_insights streams and the direct analysis
+    // builds, so a stored insight and its live copy are the same card.
     const fetch = mockFetch([
-      { id: "ins-2", charts: [{ chart_type: "line" }] },
+      {
+        id: "ins-2",
+        charts: [
+          { id: "cb5498e0-5842-4344-8080-e68ccfa331ab", chart_type: "line" },
+          { chart_type: "bar" },
+        ],
+      },
     ]);
     const records = await new RestInsightsGateway(fetch).list();
-    expect(records[0].charts[0].id).toBe("ins-2-chart-0");
+    expect(records[0].charts.map((c) => c.id)).toEqual([
+      "ins-2-chart-0",
+      "ins-2-chart-1",
+    ]);
   });
 
   it("classifies an insight with empty provenance as verified (curated)", async () => {
@@ -148,5 +159,50 @@ describe("RestInsightsGateway.list", () => {
     const records = await new RestInsightsGateway(fetch).list();
     expect(records[0].charts[0].datasetId).toBeUndefined();
     expect(records[0].charts[1].datasetId).toBeUndefined();
+  });
+
+  it("carries the backend's chart colours through", async () => {
+    const colorMap = { "Low confidence": "#EDA4C2" };
+    const divergentColors = { positive: "#00A651", negative: "#B91C1C" };
+    const fetch = mockFetch([
+      {
+        ...rawInsight,
+        charts: [
+          {
+            ...rawInsight.charts[0],
+            color_map: colorMap,
+            series_color: "#C92A6D",
+            divergent_colors: divergentColors,
+          },
+        ],
+      },
+    ]);
+    const records = await new RestInsightsGateway(fetch).list();
+    expect(records[0].charts[0]).toMatchObject({
+      colorMap,
+      seriesColor: "#C92A6D",
+      divergentColors,
+    });
+  });
+
+  it("leaves the colours out when the backend sends none", async () => {
+    const fetch = mockFetch([
+      {
+        ...rawInsight,
+        charts: [
+          {
+            ...rawInsight.charts[0],
+            color_map: {},
+            series_color: null,
+            divergent_colors: null,
+          },
+        ],
+      },
+    ]);
+    const records = await new RestInsightsGateway(fetch).list();
+    const chart = records[0].charts[0];
+    expect(chart.colorMap).toBeUndefined();
+    expect(chart.seriesColor).toBeUndefined();
+    expect(chart.divergentColors).toBeUndefined();
   });
 });

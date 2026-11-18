@@ -1,7 +1,9 @@
 import { describe, it, expect } from "vitest";
 
 import {
+  INTEGRATED_ALERTS_DATASET_ID,
   chartTitleOverride,
+  countIntegratedAlertsCharts,
   dashboardWidgetToInsightWidgets,
   findCuratedWidgetForDataset,
   hasDashboardContent,
@@ -10,11 +12,11 @@ import {
   insightModule,
   isChartShown,
   isSummaryShown,
-  mapWidgetSize,
   moduleTitle,
   shownChartIds,
-  widgetSize,
+  topLevelWidgetSize,
   widgetText,
+  noteSource,
   withChartHidden,
   withChartShown,
   withChartTitle,
@@ -23,7 +25,11 @@ import {
   withText,
   withWidgetTitle,
 } from "../widgets";
-import type { Dashboard, DashboardWidget } from "../../api/schemas";
+import {
+  DashboardWidgetResponseSchema,
+  type Dashboard,
+  type DashboardWidget,
+} from "../../api/schemas";
 
 function chart(overrides: Record<string, unknown> = {}) {
   return {
@@ -57,13 +63,7 @@ function widget(overrides: Partial<DashboardWidget> = {}): DashboardWidget {
   };
 }
 
-describe("widgetSize / withSize", () => {
-  it("defaults to single and honours double", () => {
-    expect(widgetSize({})).toBe("single");
-    expect(widgetSize({ size: "double" })).toBe("double");
-    expect(widgetSize({ size: "garbage" })).toBe("single");
-  });
-
+describe("withSize", () => {
   it("withSize preserves the other config keys (config is replaced whole)", () => {
     expect(withSize({ default_view: "chart", title: "T" }, "double")).toEqual({
       default_view: "chart",
@@ -73,12 +73,25 @@ describe("widgetSize / withSize", () => {
   });
 });
 
-describe("mapWidgetSize", () => {
-  it("defaults to double and honours an explicit single", () => {
-    expect(mapWidgetSize({})).toBe("double");
-    expect(mapWidgetSize({ size: "double" })).toBe("double");
-    expect(mapWidgetSize({ size: "garbage" })).toBe("double");
-    expect(mapWidgetSize({ size: "single" })).toBe("single");
+describe("topLevelWidgetSize", () => {
+  const size = (widget_type: string, config: Record<string, unknown> = {}) =>
+    topLevelWidgetSize({ widget_type, config });
+
+  it("spans both columns by default for insight, map and alerts widgets", () => {
+    for (const type of ["insight", "map", "alerts"]) {
+      expect(size(type)).toBe("double");
+      expect(size(type, { size: "garbage" })).toBe("double");
+    }
+  });
+
+  it("is a single column by default for every other kind", () => {
+    expect(size("text")).toBe("single");
+    expect(size("future")).toBe("single");
+  });
+
+  it("honours an explicit size either way", () => {
+    expect(size("map", { size: "single" })).toBe("single");
+    expect(size("text", { size: "double" })).toBe("double");
   });
 });
 
@@ -191,6 +204,75 @@ describe("dashboardWidgetToInsightWidgets", () => {
       yAxis: "loss_ha",
     });
     expect(card.seriesFields).toBeUndefined();
+  });
+
+  describe("registry colours, from the wire", () => {
+    // What GET /api/dashboards/:id sends, parsed the way the page parses it.
+    const parsed = (chartOverrides: Record<string, unknown>) =>
+      DashboardWidgetResponseSchema.parse({
+        ...widget(),
+        insight: { ...widget().insight, charts: [chart(chartOverrides)] },
+      });
+
+    it("carries a curated chart's colours onto its card", () => {
+      const colorMap = {
+        "Natural forest": "#246E24",
+        "Other tree cover": "#DC6C9A",
+      };
+      const divergentColors = { positive: "#8c510a", negative: "#01665e" };
+      const [card] = dashboardWidgetToInsightWidgets(
+        parsed({
+          chart_type: "stacked-bar",
+          color_map: colorMap,
+          series_color: "#DC6C9A",
+          divergent_colors: divergentColors,
+        })
+      );
+      expect(card).toMatchObject({
+        colorMap,
+        seriesColor: "#DC6C9A",
+        divergentColors,
+      });
+    });
+
+    it("keeps the colours on a chart the user renamed", () => {
+      // A manual rename is a title override in the widget config; the
+      // insight, and so its colours, is untouched.
+      const colorMap = {
+        "Natural forest": "#246E24",
+        "Other tree cover": "#DC6C9A",
+      };
+      const wire = parsed({ chart_type: "stacked-bar", color_map: colorMap });
+      const [card] = dashboardWidgetToInsightWidgets({
+        ...wire,
+        config: withChartTitle(wire.config, "c-1", "Loss since 2021"),
+      });
+      expect(card).toMatchObject({ title: "Loss since 2021", colorMap });
+    });
+
+    it("leaves the colours off when the registry has none, so the local palette applies", () => {
+      for (const wire of [
+        { color_map: {}, series_color: null, divergent_colors: null },
+        {},
+      ]) {
+        const [card] = dashboardWidgetToInsightWidgets(parsed(wire));
+        expect(card).not.toHaveProperty("colorMap");
+        expect(card).not.toHaveProperty("seriesColor");
+        expect(card).not.toHaveProperty("divergentColors");
+      }
+    });
+
+    it("drops a malformed colour rather than the whole insight", () => {
+      const result = parsed({
+        color_map: { "Natural forest": 5 },
+        divergent_colors: { positive: "#8c510a" },
+      });
+      expect(result.insight).not.toBeNull();
+      const [card] = dashboardWidgetToInsightWidgets(result);
+      expect(card.data).toEqual([{ year: 2020, loss_ha: 5 }]);
+      expect(card).not.toHaveProperty("colorMap");
+      expect(card).not.toHaveProperty("divergentColors");
+    });
   });
 
   it("sorts charts by position and applies narrative/title only to the first", () => {
@@ -307,6 +389,7 @@ describe("withText", () => {
   it("stores the markdown body under config.text, preserving other keys", () => {
     expect(withText({ size: "double" }, "## Note\n\n- one")).toEqual({
       size: "double",
+      source: "user",
       text: "## Note\n\n- one",
     });
   });
@@ -314,7 +397,28 @@ describe("withText", () => {
   it("drops config.text when the body is blank so the placeholder shows", () => {
     expect(withText({ text: "old", size: "single" }, "   ")).toEqual({
       size: "single",
+      source: "user",
     });
+  });
+
+  it("makes an edited template or agent note the owner's", () => {
+    expect(withText({ text: "old", source: "template" }, "new").source).toBe(
+      "user"
+    );
+    expect(withText({ text: "old" }, "new").source).toBe("user");
+  });
+});
+
+describe("noteSource", () => {
+  it("reads a template's or the owner's note from config.source", () => {
+    expect(noteSource({ text: "x", source: "template" })).toBe("template");
+    expect(noteSource({ text: "x", source: "user" })).toBe("user");
+  });
+
+  it("reads a note with no or an unknown source as AI-written", () => {
+    expect(noteSource({ text: "x" })).toBe("ai");
+    expect(noteSource({ text: "x", source: "agent" })).toBe("ai");
+    expect(noteSource({ text: "x", source: 1 })).toBe("ai");
   });
 });
 
@@ -613,6 +717,7 @@ describe("hasDashboardContent", () => {
     name: "Pará",
     description: null,
     is_public: false,
+    eligible_for_subscription: false,
     created_at: "2026-07-01T00:00:00Z",
     updated_at: "2026-07-01T00:00:00Z",
     aois: [],
@@ -774,5 +879,38 @@ describe("hasWidgetCustomization", () => {
     expect(hasWidgetCustomization(withSummaryShown({}, true))).toBe(false);
     expect(hasWidgetCustomization(withWidgetTitle({}, "   "))).toBe(false);
     expect(hasWidgetCustomization({ sizes: {}, titles: {} })).toBe(false);
+  });
+});
+
+describe("countIntegratedAlertsCharts", () => {
+  const alerts = (id: string) =>
+    chart({ id, dataset_id: INTEGRATED_ALERTS_DATASET_ID });
+
+  it("counts integrated alerts charts across widgets, like the backend's rule", () => {
+    const widgets = [
+      widget({
+        id: "w-1",
+        insight: { id: "ins-1", charts: [alerts("c-1"), alerts("c-2")] },
+      }),
+      widget({
+        id: "w-2",
+        insight: { id: "ins-2", charts: [chart({ id: "c-3", dataset_id: 2 })] },
+      }),
+      widget({ id: "w-3", insight: { id: "ins-3", charts: [alerts("c-4")] } }),
+    ];
+    expect(countIntegratedAlertsCharts(widgets)).toBe(3);
+  });
+
+  it("ignores charts without a dataset id and widgets without an insight", () => {
+    const widgets = [
+      widget({
+        insight: {
+          id: "ins-1",
+          charts: [chart({ dataset_id: null }), chart({ id: "c-2" })],
+        },
+      }),
+      widget({ id: "w-2", widget_type: "text", insight: null }),
+    ];
+    expect(countIntegratedAlertsCharts(widgets)).toBe(0);
   });
 });

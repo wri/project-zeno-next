@@ -12,7 +12,8 @@ vi.mock("@/app/utils/geometryClient", () => ({
   fetchGeometry: vi.fn(),
 }));
 
-import { isGlobalQuery } from "../pickAoi";
+import { isGlobalQuery, selectionLabel } from "../pickAoi";
+import type { AOI } from "@/app/types/chat";
 
 describe("isGlobalQuery", () => {
   it("matches the backend's canonical global selection name", () => {
@@ -36,5 +37,40 @@ describe("isGlobalQuery", () => {
     expect(isGlobalQuery("Brazil")).toBe(false);
     expect(isGlobalQuery("Pará, Brazil")).toBe(false);
     expect(isGlobalQuery("")).toBe(false);
+  });
+});
+
+describe("selectionLabel", () => {
+  const stored = "Mining concession (300437), BRA";
+  const aoi = (extra: Partial<AOI> = {}): AOI => ({
+    name: stored,
+    src_id: "42",
+    source: "mining",
+    subtype: "mining-concession",
+    ...extra,
+  });
+
+  it("labels a replayed map pick by the name it was picked by", () => {
+    const picked = aoi({ display_name: "DADO NÃO CADASTRADO" });
+    expect(selectionLabel({ name: stored, aois: [picked] }, [picked])).toBe(
+      "DADO NÃO CADASTRADO"
+    );
+  });
+
+  it("keeps an agent selection's own name", () => {
+    const picked = aoi({ display_name: "DADO NÃO CADASTRADO" });
+    const group = { name: "20 Mining Concessions in Pará", aois: [picked] };
+    expect(selectionLabel(group, [picked])).toBe(group.name);
+  });
+
+  it("uses the selection name when no display_name came back", () => {
+    expect(selectionLabel({ name: stored, aois: [aoi()] }, [aoi()])).toBe(
+      stored
+    );
+  });
+
+  it("falls back to the first area, then to Unknown", () => {
+    expect(selectionLabel(undefined, [aoi()])).toBe(stored);
+    expect(selectionLabel(undefined, [])).toBe("Unknown");
   });
 });

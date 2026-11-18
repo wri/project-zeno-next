@@ -15,6 +15,7 @@ const dashboard = (aois: Dashboard["aois"]): Dashboard => ({
   name: "Test",
   description: null,
   is_public: false,
+  eligible_for_subscription: false,
   created_at: "2026-01-01",
   updated_at: "2026-01-01",
   aois,

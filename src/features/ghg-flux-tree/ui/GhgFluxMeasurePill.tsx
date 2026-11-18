@@ -42,12 +42,12 @@ export function GhgFluxMeasurePill({
       <Flex>
         <Pill
           label="MEASURE"
-          value={MEASURE_LABEL[measure]}
+          value={measure}
           options={MEASURE_OPTIONS.map((value) => ({
             value,
             label: MEASURE_LABEL[value],
           }))}
-          onSelect={(value) => setMeasure(value as FluxMeasure)}
+          onSelect={setMeasure}
           info={<MeasureInfo />}
         />
       </Flex>

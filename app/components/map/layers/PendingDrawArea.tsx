@@ -11,8 +11,8 @@ interface PendingDrawAreaProps {
  * Renders the standard selection treatment — casing + outline + bbox — for a
  * just-completed (not yet confirmed) drawn polygon. Matches the paint of a
  * selected AOI in GeoJsonLayers so a drawn shape looks identical to a picked
- * one. The confirm/cancel controls live in the AreasPanel toolbar
- * (AreaToolbarButtons).
+ * one. The confirm/cancel controls live in the Areas panel's draw status
+ * strip (AreaActionBar).
  */
 function PendingDrawArea({ basemapTheme }: PendingDrawAreaProps) {
   const pendingDrawnArea = useMapStore((s) => s.pendingDrawnArea);

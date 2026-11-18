@@ -1,10 +1,10 @@
-import type { DatasetInfo } from "@/app/types/chat";
+import type { DatasetInfo, DatasetParameter } from "@/app/types/chat";
 import {
   DATASET_CARDS,
   CONTEXT_LAYER_METADATA,
 } from "@/app/constants/datasets";
 import type { Layer } from "@/app/store/layerManagerSlice";
-import { wrapPrimaryForestTileUrl } from "./primaryForestTileProtocol";
+import { patchPrimaryForestTileUrl } from "./primaryForestTileProtocol";
 
 // One of a dataset's primary, mutually exclusive data layers (see
 // DatasetLayer in app/types/chat.ts).
@@ -152,7 +152,9 @@ export function buildDatasetLayers(spec: DatasetLayerSpec): Layer[] {
       name: selected.name,
       type: "raster",
       visible: true,
-      tileUrl: selected.tileUrl,
+      // Standalone Primary Forests card: same black-background PNGs as the
+      // context sub-layer, so it needs the same pf:// patch.
+      tileUrl: patchPrimaryForestTileUrl(selected.tileUrl),
       datasetId: spec.datasetId,
       parameters: spec.parameters,
       startDate: selected.startDate ?? spec.startDate,
@@ -181,11 +183,53 @@ export function buildDatasetLayers(spec: DatasetLayerSpec): Layer[] {
   return layers;
 }
 
-// Route primary forest tiles through the `pf://` protocol so the
-// black-background PNGs render with alpha — see primaryForestTileProtocol.
-function patchPrimaryForestTileUrl(url: string): string {
-  if (!url.includes("umd_regional_primary_forest")) return url;
-  return wrapPrimaryForestTileUrl(url);
+/**
+ * The map layers for a dataset. pick_dataset and the dataset-choice nudge
+ * add them; pull_data rebuilds them when it analysed another date range, and
+ * patches the ones already on the map.
+ */
+export function datasetMapLayers(dataset: DatasetInfo): Layer[] {
+  return buildDatasetLayers({
+    datasetId: dataset.dataset_id,
+    layerName: dataset.dataset_name,
+    tileUrl: dataset.tile_url,
+    layers: toLayerEntries(dataset.layers, dataset.dataset_id),
+    selectedLayerName: dataset.selected_layer,
+    ...getDatasetLayerContextProps(dataset), // contextLayer / parameters / start+end dates
+  });
+}
+
+// Whether a context layer's analysis ignores the canopy cover threshold. The
+// natural forest filter is a 2020 map independent of canopy density, so the
+// analytics API rejects a threshold alongside it — a CANOPY chip would
+// describe a filter the numbers never had.
+export function contextLayerIgnoresCanopy(
+  contextLayer: string | null | undefined
+): boolean {
+  return contextLayer === "natural_forest";
+}
+
+/**
+ * The legend's parameter chips as a `{ name: firstValue }` record, e.g.
+ * `{ canopy_cover: 30 }`. Explicit parameters are authoritative; with none,
+ * the default canopy threshold, so the legend can still describe the
+ * rendered tile. Neither applies `canopy_cover` under a context layer whose
+ * analysis ignores it. Undefined when there is nothing to show.
+ */
+export function legendParameters(
+  parameters: readonly DatasetParameter[],
+  contextLayer: string | null | undefined,
+  defaultCanopyCover: number | null | undefined
+): Record<string, unknown> | undefined {
+  const ignoresCanopy = contextLayerIgnoresCanopy(contextLayer);
+  const entries = parameters
+    .filter((p) => Array.isArray(p.values) && p.values.length > 0)
+    .filter((p) => !(ignoresCanopy && p.name === "canopy_cover"))
+    .map((p) => [p.name, p.values[0]] as const);
+  if (entries.length > 0) return Object.fromEntries(entries);
+  return !ignoresCanopy && typeof defaultCanopyCover === "number"
+    ? { canopy_cover: defaultCanopyCover }
+    : undefined;
 }
 
 /**
@@ -199,6 +243,8 @@ function patchPrimaryForestTileUrl(url: string): string {
  *    chips (e.g. `{ canopy_cover: 30 }`). Backend-supplied values take
  *    priority; falls back to `dataset.threshold` then the card default in
  *    `DATASET_CARDS`. Will be `undefined` if the dataset has no threshold.
+ *    Never carries `canopy_cover` under a context layer that ignores it
+ *    (see contextLayerIgnoresCanopy).
  *  - `startDate` / `endDate` — ISO date strings forwarded from the backend,
  *    shown as the YEAR/YEARS chip in the legend.
  */
@@ -210,25 +256,16 @@ export function getDatasetLayerContextProps(dataset: DatasetInfo) {
     ? dataset.context_layers?.find((c) => c.name === ctxName)
     : undefined;
 
-  // Parameters from the backend are authoritative; otherwise use the dataset's
-  // default canopy threshold so the legend can still describe the rendered tile.
-  const explicitParameters = Object.fromEntries(
-    (dataset.parameters ?? [])
-      .filter((p) => Array.isArray(p.values) && p.values.length > 0)
-      .map((p) => [p.name, p.values[0]])
-  );
   const datasetDefaults = DATASET_CARDS.find(
     (d) =>
       d.dataset_id === dataset.dataset_id ||
       d.dataset_name === dataset.dataset_name
   );
-  const defaultCanopyCover = dataset.threshold ?? datasetDefaults?.threshold;
-  const parameters =
-    Object.keys(explicitParameters).length > 0
-      ? explicitParameters
-      : typeof defaultCanopyCover === "number"
-        ? { canopy_cover: defaultCanopyCover }
-        : undefined;
+  const parameters = legendParameters(
+    dataset.parameters ?? [],
+    ctxName,
+    dataset.threshold ?? datasetDefaults?.threshold
+  );
 
   const isVector =
     ctxMeta?.type === "vector" ||

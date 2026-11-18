@@ -2,6 +2,7 @@ import type { ComponentType } from "react";
 import {
   isRouteErrorResponse,
   Outlet,
+  redirect,
   ScrollRestoration,
   useRouteError,
   type RouteObject,
@@ -52,6 +53,10 @@ export const routes: RouteObject[] = [
         errorElement: <RouteError />,
         children: [
           { index: true, ...page(() => import("@/app/(home)/page")) },
+          {
+            path: "ai-accuracy-scorecards",
+            ...page(() => import("@/app/ai-accuracy-scorecards/page")),
+          },
           { path: "amazonia", ...page(() => import("@/app/amazonia/page")) },
           {
             // The chat layout owns the map; child pages render nothing, so the
@@ -93,7 +98,15 @@ export const routes: RouteObject[] = [
             path: "dashboards/:id",
             ...page(() => import("@/app/dashboards/[id]/page")),
           },
+          {
+            path: "dashboards/:id/report",
+            ...page(() => import("@/app/dashboards/[id]/report/page")),
+          },
           { path: "evals", ...page(() => import("@/app/evals/page")) },
+          {
+            path: "subscriptions",
+            ...page(() => import("@/app/subscriptions/page")),
+          },
           {
             path: "maintenance",
             ...page(() => import("@/app/maintenance/page")),
@@ -103,8 +116,11 @@ export const routes: RouteObject[] = [
             ...page(() => import("@/app/manage-users/page")),
           },
           {
+            // The old sign-up form; /app sends anyone without accepted terms
+            // to /welcome, keeping the query string.
             path: "onboarding",
-            ...page(() => import("@/app/onboarding/page")),
+            loader: ({ request }) =>
+              redirect(`/app${new URL(request.url).search}`),
           },
           {
             path: "trace-analytics",
@@ -114,6 +130,7 @@ export const routes: RouteObject[] = [
             path: "unauthorized",
             ...page(() => import("@/app/unauthorized/page")),
           },
+          { path: "welcome", ...page(() => import("@/app/welcome/page")) },
           ...(import.meta.env.NEXT_PUBLIC_ENABLE_DEBUG_TOOLS === "true"
             ? [
                 {

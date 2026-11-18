@@ -2,13 +2,16 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "@/src/shared/lib/router";
 import useChatStore from "@/app/store/chatStore";
 import useMapStore from "@/app/store/mapStore";
-import { DATASET_CARDS, NET_FLUX_FEATURE_FLAG } from "@/app/constants/datasets";
+import {
+  DATASET_CARDS,
+  NET_FLUX_FEATURE_FLAG,
+  TREE_COVER_LOSS_DATASET_ID,
+} from "@/app/constants/datasets";
 import { getLayerContextFromDatasetCard } from "@/app/utils/datasetCardLayerContext";
 import { buildDatasetLayers } from "@/app/utils/datasetLayerContext";
 import { firstMessageRedirectPath } from "@/app/utils/threadNavigation";
 import { useFeatureFlag } from "@/src/shared/lib/feature-flags/use-feature-flag";
 
-const TCL_DATASET_ID = 4;
 const LGMS_NET_FLUX_DATASET_ID = 12;
 
 export default function NewThread() {
@@ -26,7 +29,7 @@ export default function NewThread() {
   // NOTE: This is super custom code for ff=net-flux. We should remove asap.
   const defaultDatasetId = isNetFlux
     ? LGMS_NET_FLUX_DATASET_ID
-    : TCL_DATASET_ID;
+    : TREE_COVER_LOSS_DATASET_ID;
 
   useEffect(() => {
     resetChatStore();

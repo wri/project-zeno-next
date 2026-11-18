@@ -17,10 +17,10 @@ import {
   DotsThreeVerticalIcon,
 } from "@phosphor-icons/react";
 
-import { AreaCatalogThumbnail } from "@/app/components/AreaCatalogThumbnail";
+import { AreaThumbnail } from "@/app/components/AreaThumbnail";
 import type { AOISelection } from "@/app/types/chat";
 
-import { subtypeLabel } from "../lib/aoi";
+import { subtypeLabel } from "@/src/entities/aoi";
 import type { AreaPickerRow } from "../model/area-picker-rows";
 import {
   areaRowKey,
@@ -237,9 +237,10 @@ function AreaNameCell(props: RowProps) {
           borderWidth="1px"
           borderColor="border"
         >
-          <AreaCatalogThumbnail
+          <AreaThumbnail
             aoiSelection={toAoiSelection(row)}
             alt={`Map of ${row.name}`}
+            size={THUMBNAIL_PX}
           />
         </Box>
         {isRenamingThisRow ? (

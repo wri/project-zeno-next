@@ -5,6 +5,7 @@ import {
   pivotByColorField,
 } from "@/src/entities/insight";
 import type { InsightWidget } from "@/app/types/chat";
+import { pickChartColors } from "@/app/utils/pickChartColors";
 import type { Dashboard, DashboardWidget } from "../api/schemas";
 import { widgetContainers } from "../model/dashboard-sections";
 import type { PendingInsightWidget } from "../model/pending-insight-widgets-store";
@@ -27,16 +28,22 @@ const CHART_TYPES = new Set([
 
 export type WidgetSize = "single" | "double";
 
-/** The widget's persisted column span; anything but "double" is single. */
-export function widgetSize(config: Record<string, unknown>): WidgetSize {
-  return config.size === "double" ? "double" : "single";
-}
+/**
+ * The widget kinds that span both columns until the owner shrinks them: a
+ * map, an analysis card with its pager, the alerts list beside its map.
+ */
+const FULL_WIDTH_TYPES = new Set(["insight", "map", "alerts"]);
 
 /**
- * Map widgets default to full width: a map spans both columns.
+ * A top-level item's column span: its persisted `size` when it has one,
+ * else double for the kinds that need the width and single for the rest.
  */
-export function mapWidgetSize(config: Record<string, unknown>): WidgetSize {
-  return config.size === "single" ? "single" : "double";
+export function topLevelWidgetSize(
+  widget: Pick<DashboardWidget, "widget_type" | "config">
+): WidgetSize {
+  const { size } = widget.config;
+  if (size === "single" || size === "double") return size;
+  return FULL_WIDTH_TYPES.has(widget.widget_type) ? "double" : "single";
 }
 
 /**
@@ -49,14 +56,6 @@ export function withSize(
   size: WidgetSize
 ): Record<string, unknown> {
   return { ...config, size };
-}
-
-/**
- * Insight widgets default to full width: the analysis card holds a chart and
- * its pager, so it spans both columns until the owner shrinks it.
- */
-export function insightWidgetSize(config: Record<string, unknown>): WidgetSize {
-  return config.size === "single" ? "single" : "double";
 }
 
 /**
@@ -121,13 +120,14 @@ export function withWidgetTitle(
  * The full config to PATCH for a text-widget edit (config is replaced whole).
  * Stores the markdown body under `config.text` — the key `widgetText` reads.
  * A blank body drops the key so the card falls back to the empty-note
- * placeholder rather than persisting an empty string.
+ * placeholder rather than persisting an empty string. An edited note is the
+ * owner's words, whoever wrote it first, so its source becomes "user".
  */
 export function withText(
   config: Record<string, unknown>,
   text: string
 ): Record<string, unknown> {
-  const out = { ...config };
+  const out: Record<string, unknown> = { ...config, source: "user" };
   if (text.trim()) out.text = text;
   else delete out.text;
   return out;
@@ -351,6 +351,33 @@ export function findCuratedWidgetForDataset(
 }
 
 /**
+ * Integrated alerts in the dataset catalogue (`app/constants/datasets.ts`);
+ * the backend's alerts summary keys its "has an integrated alerts chart"
+ * rule on the same id.
+ */
+export const INTEGRATED_ALERTS_DATASET_ID = 11;
+
+/**
+ * How many charts across the widgets were computed from integrated alerts
+ * and so can be brought up to date: the chart-level rule the backend applies
+ * when deciding which dashboards its alerts summary covers. Same caveat as
+ * `findCuratedWidgetForDataset`: charts persisted before `dataset_id`
+ * existed are not counted.
+ */
+export function countIntegratedAlertsCharts(
+  widgets: readonly DashboardWidget[]
+): number {
+  return widgets.reduce(
+    (count, widget) =>
+      count +
+      (widget.insight?.charts ?? []).filter(
+        (chart) => chart.dataset_id === INTEGRATED_ALERTS_DATASET_ID
+      ).length,
+    0
+  );
+}
+
+/**
  * Whether the dashboard page shows the widget grid rather than the empty-state
  * hero: whether the grid has anything to render. That is asked of the grid's
  * own grouping, so the two cannot disagree — an owner's empty section counts
@@ -406,6 +433,9 @@ export function unresolvedPendingInsightWidgets(
  * "view how this was generated" drawer. The API insight carries no analysis
  * parameters, but a dashboard is scoped to exactly one area — pass its name
  * as `areaName` so every card gets an AREA param chip.
+ *
+ * The chart's registry colours go through `pickChartColors`, as on the chat
+ * and Analyses paths, so a chart looks the same on all three.
  */
 export function dashboardWidgetToInsightWidgets(
   widget: DashboardWidget,
@@ -459,6 +489,11 @@ export function dashboardWidgetToInsightWidgets(
         xAxis: chart.x_axis,
         yAxis: chart.y_axis,
         ...(seriesFields?.length ? { seriesFields } : {}),
+        ...pickChartColors({
+          colorMap: chart.color_map,
+          seriesColor: chart.series_color,
+          divergentColors: chart.divergent_colors,
+        }),
         ...(generation ? { generation } : {}),
         ...(analysisParams ? { analysisParams } : {}),
       };
@@ -474,4 +509,18 @@ export function widgetText(config: Record<string, unknown>): string | null {
   return typeof config.text === "string" && config.text.trim()
     ? config.text
     : null;
+}
+
+/** Who wrote a note: an analysis template's fixed copy, the owner, or AI. */
+export type NoteSource = "template" | "user" | "ai";
+
+/**
+ * A text widget's `config.source` per the widgets API. The agent writes none,
+ * and notes from before the key existed have none, so absent (or unknown)
+ * reads as "ai", the caption every note carried before.
+ */
+export function noteSource(config: Record<string, unknown>): NoteSource {
+  return config.source === "template" || config.source === "user"
+    ? config.source
+    : "ai";
 }

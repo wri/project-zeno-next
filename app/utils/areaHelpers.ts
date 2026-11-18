@@ -1,4 +1,9 @@
-import { LayerId, LayerName, selectLayerOptions } from "@/app/types/map";
+import {
+  CONCESSION_STYLES,
+  LayerId,
+  LayerName,
+  selectLayerOptions,
+} from "@/app/types/map";
 import type { AnalysisSelection } from "@/app/store/selectAnalysisSlice";
 
 interface FeatureProperties {
@@ -13,15 +18,35 @@ interface Metadata {
   subregion_to_subtype_mapping?: Record<string, string>;
 }
 
-export function getAoiName(
+function getAoiName(
   nameKeys: readonly string[],
-  properties: { [key: string]: string }
+  properties: Record<string, unknown>
 ): string {
+  // Later keys come first ("Lisboa, Portugal"). The separator goes in only
+  // between two values, so a missing earlier key leaves no trailing comma.
   return nameKeys.reduce(
-    (acc: string, key: string, idx: number) =>
-      properties[key] ? `${properties[key]}${idx > 0 ? ", " : ""}${acc}` : acc,
+    (acc: string, key: string) =>
+      properties[key] ? `${properties[key]}${acc ? ", " : ""}${acc}` : acc,
     ""
   );
+}
+
+/**
+ * The name of a clicked or hovered feature on a boundary layer. A concession
+ * without a name or company falls back to its company group, then to its
+ * type and country, as the backend names it ("Logging concession, CAN"):
+ * the name keys the picked area's map layer, so it must never be empty.
+ */
+export function getFeatureName(
+  layerId: LayerId,
+  properties: Record<string, unknown>
+): string {
+  const config = selectLayerOptions.find((option) => option.id === layerId);
+  const name = getAoiName(config?.nameKeys ?? [], properties);
+  const unnamed = CONCESSION_STYLES[layerId]?.unnamed;
+  if (name || !unnamed) return name;
+  if (properties.comp_group) return String(properties.comp_group);
+  return properties.iso3 ? `${unnamed}, ${properties.iso3}` : unnamed;
 }
 
 export function singularizeDatasetName(name: LayerName): string {
@@ -94,11 +119,8 @@ export function toAreaSelection(
   properties: Record<string, unknown>,
   metadata: SelectionMetadata
 ): AnalysisSelection {
-  const config = selectLayerOptions.find((option) => option.id === layerId);
-  const nameKeys = config?.nameKeys ?? [];
-
   return {
-    name: getAoiName(nameKeys, properties as Record<string, string>),
+    name: getFeatureName(layerId, properties),
     source: layerId.toLowerCase(),
     srcId: getSrcId(layerId, properties, metadata),
     subtype: getSubtype(layerId, properties, metadata),

@@ -1,4 +1,12 @@
-import { wrapPrimaryForestTileUrl } from "@/app/utils/primaryForestTileProtocol";
+import { DATASET_CARDS } from "@/app/constants/datasets";
+import type { DatasetParameter } from "@/app/types/chat";
+import { legendParameters } from "@/app/utils/datasetLayerContext";
+import { patchPrimaryForestTileUrl } from "@/app/utils/primaryForestTileProtocol";
+import type { DateRange } from "@/src/shared/lib/iso-date";
+import type { DashboardAoi } from "../api/schemas";
+
+/** The dashboard's area as a map body needs it: outline, label and viewport fit. */
+export type MapAreaAoi = Pick<DashboardAoi, "source" | "src_id" | "name">;
 
 /**
  * A renderable map-widget layer parsed from a `widget_type: "map"` config
@@ -11,47 +19,29 @@ export interface MapWidgetLayer {
   /** Card header: `config.title` override, else a kind-specific fallback. */
   title: string;
   tileUrl: string;
-  /** The active context sub-layer's tiles, rendered beneath the main layer. */
-  contextTileUrl?: string;
-  /** The active context sub-layer's name — set only with `contextTileUrl`. */
-  contextLayerName?: string;
+  /** The active context sub-layer: its tiles render beneath the main layer. */
+  context?: { tileUrl: string; name: string };
   // Dataset-kind fields that drive the widget's legend (DashboardMapLegend).
   datasetId?: number;
-  /** Display parameters as a record, e.g. `{ canopy_cover: 30 }`. */
+  /** The legend's parameter chips, settled by `legendParameters`. */
   parameters?: Record<string, unknown>;
   startDate?: string;
   endDate?: string;
 }
 
-const str = (value: unknown): string | undefined =>
+/** A non-blank string from an unchecked config value, else undefined. */
+export const str = (value: unknown): string | undefined =>
   typeof value === "string" && value.trim() ? value : undefined;
 
-// Config parameters are `[{ name, values }]` (per the handoff); the legend
-// wants a `{ name: firstValue }` record — same reduction the explorer's
-// getDatasetLayerContextProps applies to DatasetInfo.parameters.
-function parametersRecord(
-  parameters: unknown
-): Record<string, unknown> | undefined {
-  if (!Array.isArray(parameters)) return undefined;
-  const entries = parameters
-    .filter(
-      (p): p is { name: string; values: unknown[] } =>
-        !!p &&
-        typeof p === "object" &&
-        typeof (p as { name?: unknown }).name === "string" &&
-        Array.isArray((p as { values?: unknown }).values) &&
-        (p as { values: unknown[] }).values.length > 0
-    )
-    .map((p) => [p.name, p.values[0]] as const);
-  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
-}
-
-// Primary forest tiles ship black-background PNGs; the pf:// protocol
-// rewrites black to alpha (same patch the explorer applies).
-function patchPrimaryForest(url: string): string {
-  return url.includes("umd_regional_primary_forest")
-    ? wrapPrimaryForestTileUrl(url)
-    : url;
+// Config parameters are `[{ name, values }]` (per the handoff), unchecked.
+function configParameters(parameters: unknown): DatasetParameter[] {
+  return (Array.isArray(parameters) ? parameters : []).filter(
+    (p): p is DatasetParameter =>
+      !!p &&
+      typeof p === "object" &&
+      typeof (p as { name?: unknown }).name === "string" &&
+      Array.isArray((p as { values?: unknown }).values)
+  );
 }
 
 /**
@@ -73,8 +63,7 @@ export function mapWidgetLayer(
 
     // Resolve the active context layer by name. Raster-only: vector (MVT)
     // context layers need a source_layer the persisted config doesn't carry.
-    let contextTileUrl: string | undefined;
-    let contextLayerName: string | undefined;
+    let context: MapWidgetLayer["context"];
     const activeName = str(d.context_layer);
     if (activeName && Array.isArray(d.context_layers)) {
       const entry = d.context_layers.find(
@@ -85,20 +74,29 @@ export function mapWidgetLayer(
       );
       const entryUrl = str(entry?.tile_url);
       if (entryUrl) {
-        contextTileUrl = patchPrimaryForest(entryUrl);
-        contextLayerName = activeName;
+        context = {
+          tileUrl: patchPrimaryForestTileUrl(entryUrl),
+          name: activeName,
+        };
       }
     }
 
-    const parameters = parametersRecord(d.parameters);
+    // Settled as the explorer settles them, keyed off the snapshot's context
+    // layer, not whether its tiles resolved: the main tile ignores canopy
+    // either way.
+    const parameters = legendParameters(
+      configParameters(d.parameters),
+      activeName,
+      DATASET_CARDS.find((card) => card.dataset_id === d.dataset_id)?.threshold
+    );
     const startDate = str(d.start_date);
     const endDate = str(d.end_date);
 
     return {
       kind: "dataset",
       title: titleOverride ?? str(d.dataset_name) ?? "Map layer",
-      tileUrl: patchPrimaryForest(tileUrl),
-      ...(contextTileUrl ? { contextTileUrl, contextLayerName } : {}),
+      tileUrl: patchPrimaryForestTileUrl(tileUrl),
+      ...(context ? { context } : {}),
       ...(typeof d.dataset_id === "number" ? { datasetId: d.dataset_id } : {}),
       ...(parameters ? { parameters } : {}),
       ...(startDate ? { startDate } : {}),
@@ -133,9 +131,9 @@ export function mapWidgetLayer(
  */
 export function mapWidgetViewportBbox(
   config: Record<string, unknown>
-): [number, number, number, number] | null {
+): [number, number, number, number] | undefined {
   const viewport = config.viewport;
-  if (!viewport || typeof viewport !== "object") return null;
+  if (!viewport || typeof viewport !== "object") return undefined;
   const bbox = (viewport as { bbox?: unknown }).bbox;
   if (
     Array.isArray(bbox) &&
@@ -144,5 +142,40 @@ export function mapWidgetViewportBbox(
   ) {
     return bbox as [number, number, number, number];
   }
-  return null;
+  return undefined;
+}
+
+/**
+ * Sets one query parameter on a tile URL template, in place when present and
+ * appended otherwise. A string edit on purpose: `new URL()` would percent-
+ * encode the `{z}/{x}/{y}` placeholders in the path.
+ */
+function withQueryParam(url: string, key: string, value: string): string {
+  const present = new RegExp(`([?&])${key}=[^&#]*`);
+  if (present.test(url)) return url.replace(present, `$1${key}=${value}`);
+  return `${url}${url.includes("?") ? "&" : "?"}${key}=${value}`;
+}
+
+/**
+ * A dated layer for a period: the snapshot's tile URL with its
+ * `start_date`/`end_date` rewritten (the integrated alerts tile service reads
+ * them as query parameters, and the snapshot already carries the build-time
+ * pair), and the legend's dates to match. A snapshot whose URL lacks the
+ * parameters gets them appended rather than drawing every alert since the
+ * dataset began. The context sub-layer carries no dates and is left alone.
+ */
+export function withTileDates(
+  layer: MapWidgetLayer,
+  range: DateRange
+): MapWidgetLayer {
+  return {
+    ...layer,
+    tileUrl: withQueryParam(
+      withQueryParam(layer.tileUrl, "start_date", range.start),
+      "end_date",
+      range.end
+    ),
+    startDate: range.start,
+    endDate: range.end,
+  };
 }

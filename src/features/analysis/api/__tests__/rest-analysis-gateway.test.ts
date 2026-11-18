@@ -64,6 +64,16 @@ describe("RestAnalysisGateway.submit", () => {
     });
   });
 
+  it("sends the thread id when the selection carries one", async () => {
+    const fetch = mockFetch({ id: JOB_ID, status: "pending", resources: [] });
+    const gateway = new RestAnalysisGateway(fetch);
+
+    await gateway.submit({ ...SELECTION, threadId: "thread-1" });
+
+    const [, init] = fetch.mock.calls[0] as [string, RequestInit];
+    expect(JSON.parse(init.body as string).thread_id).toBe("thread-1");
+  });
+
   it("throws when the backend returns a non-2xx status", async () => {
     const fetch = mockFetch({ detail: "Bad request" }, { status: 422 });
     const gateway = new RestAnalysisGateway(fetch);

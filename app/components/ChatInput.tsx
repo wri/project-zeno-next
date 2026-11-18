@@ -17,7 +17,10 @@ import {
 } from "@phosphor-icons/react";
 import { format } from "date-fns";
 import useChatStore from "@/app/store/chatStore";
-import ContextButton, { ChatContextType } from "./ContextButton";
+import ContextButton, {
+  ChatContextType,
+  PanelToggleButton,
+} from "./ContextButton";
 import ContextTag from "./ContextTag";
 import ContextMenu from "./ContextMenu";
 import VoiceListeningPanel from "./voice/VoiceListeningPanel";
@@ -25,11 +28,11 @@ import VoiceErrorPanel from "./voice/VoiceErrorPanel";
 import useMapStore from "../store/mapStore";
 import { isAreaLayer } from "../store/layerManagerSlice";
 import useSidebarStore from "../store/sidebarStore";
-import useAuthStore from "../store/authStore";
 import useSpeechInput from "../hooks/useSpeechInput";
 import usePrefersReducedMotion from "../hooks/usePrefersReducedMotion";
-import { resolveSpeechLang } from "../utils/speechLang";
+import { speechLangForLocale } from "../utils/speechLang";
 import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
+import { useLocale, useTranslation } from "@/src/shared/lib/i18n";
 import { useRouter, usePathname } from "@/src/shared/lib/router";
 import {
   firstMessageRedirectPath,
@@ -94,14 +97,15 @@ export default function ChatInput({
   // Speech API, in which case the mic control is not rendered. The committed
   // transcript is appended to whatever is already typed, so we snapshot that
   // text when a session starts. The Web Speech API can't detect the spoken
-  // language, so we default it from the user's onboarding preference, then the
-  // browser language, then en-US — with an in-listening override menu.
+  // language, so it follows the resolved UI locale, with an in-listening
+  // override menu.
   const voiceInputEnabled = useFeatureFlag("voice");
-  const preferredLanguageCode = useAuthStore((s) => s.preferredLanguageCode);
+  const { t } = useTranslation();
+  const locale = useLocale();
   const prefersReducedMotion = usePrefersReducedMotion();
   const dictationBaseRef = useRef("");
   const speech = useSpeechInput({
-    initialLang: resolveSpeechLang(preferredLanguageCode, navigator.language),
+    initialLang: speechLangForLocale(locale, navigator.languages ?? []),
     onStart: () => {
       dictationBaseRef.current = inputValue.trim()
         ? `${inputValue.trim()} `
@@ -199,13 +203,15 @@ export default function ChatInput({
   const hasConversation = messages.some(
     (m) => m.type === "user" || m.type === "assistant"
   );
-  const message = isLoading
-    ? "Sending..."
-    : hasNudge
-      ? "Or ask a different question..."
-      : hasConversation
-        ? "Ask a follow-up question…"
-        : "Or describe what you want to explore…";
+  const message = t(
+    isLoading
+      ? "chat.input.sending"
+      : hasNudge
+        ? "chat.input.placeholder.nudge"
+        : hasConversation
+          ? "chat.input.placeholder.followUp"
+          : "chat.input.placeholder.start"
+  );
 
   const isButtonDisabled = disabled || !inputValue?.trim();
   const hasPills =
@@ -288,7 +294,7 @@ export default function ChatInput({
         <>
           <Textarea
             ref={setFocusEl}
-            aria-label="Ask a question..."
+            aria-label={t("chat.input.label")}
             placeholder={message}
             // 16px on mobile — iOS Safari auto-zooms focused inputs below 16px.
             fontSize={{ base: "md", md: "sm" }}
@@ -315,17 +321,13 @@ export default function ChatInput({
                     contextType="layer"
                     onClick={openLayerPicker}
                     disabled={disabled}
-                    borderColor={dataCatalogOpen ? "primary.solid" : "#E0E2E5"}
-                    color={dataCatalogOpen ? "primary.solid" : undefined}
-                    aria-expanded={dataCatalogOpen}
+                    active={dataCatalogOpen}
                   />
                   <ContextButton
                     contextType="area"
                     onClick={openAreaPicker}
                     disabled={disabled}
-                    borderColor={areasPanelOpen ? "primary.solid" : "#E0E2E5"}
-                    color={areasPanelOpen ? "primary.solid" : undefined}
-                    aria-expanded={areasPanelOpen}
+                    active={areasPanelOpen}
                   />
                 </>
               )}
@@ -334,28 +336,13 @@ export default function ChatInput({
                   pickers above). */}
               {(isAppRoute(pathname) || isDashboardDetailRoute(pathname)) &&
                 !isMobile && (
-                  <Button
-                    size="xs"
-                    variant="outline"
-                    borderRadius="sm"
-                    borderWidth="1px"
-                    px="2"
-                    h="8"
-                    gap="1"
-                    fontSize="xs"
-                    fontWeight="normal"
+                  <PanelToggleButton
+                    icon={<ChartLineIcon />}
+                    label={t("chat.input.analyses")}
                     onClick={openInsightsPanel}
                     disabled={disabled}
-                    borderColor={
-                      insightsPanelOpen ? "primary.solid" : "#E0E2E5"
-                    }
-                    color={insightsPanelOpen ? "primary.solid" : undefined}
-                    aria-expanded={insightsPanelOpen}
-                    aria-label="Analyses"
-                  >
-                    <ChartLineIcon />
-                    Analyses
-                  </Button>
+                    active={insightsPanelOpen}
+                  />
                 )}
             </Flex>
             <Flex gap="2" ml="auto" alignItems="center">
@@ -369,8 +356,8 @@ export default function ChatInput({
                   color="gray.700"
                   type="button"
                   size="xs"
-                  aria-label="Start voice input"
-                  title="Start voice input"
+                  aria-label={t("chat.input.startVoice")}
+                  title={t("chat.input.startVoice")}
                   onClick={speech.start}
                   disabled={disabled}
                 >
@@ -385,9 +372,9 @@ export default function ChatInput({
                   colorPalette="primary"
                   type="button"
                   size="xs"
-                  aria-label="Cancel request"
+                  aria-label={t("chat.input.cancel")}
                   onClick={cancelRequest}
-                  title="Cancel request"
+                  title={t("chat.input.cancel")}
                 >
                   <StopIcon weight="fill" />
                 </Button>
@@ -402,7 +389,7 @@ export default function ChatInput({
                   }}
                   type="button"
                   size="xs"
-                  aria-label="Send prompt"
+                  aria-label={t("chat.input.send")}
                   onClick={submitPrompt}
                   disabled={isButtonDisabled}
                 >
@@ -481,7 +468,7 @@ export default function ChatInput({
                 openLayerPicker();
               }}
               disabled={disabled}
-              aria-expanded={
+              active={
                 isMobile
                   ? contextModalOpen && selectedContextType === "layer"
                   : dataCatalogOpen
@@ -494,7 +481,7 @@ export default function ChatInput({
                 openAreaPicker();
               }}
               disabled={disabled}
-              aria-expanded={
+              active={
                 isMobile
                   ? contextModalOpen && selectedContextType === "area"
                   : areasPanelOpen
@@ -506,8 +493,8 @@ export default function ChatInput({
               p={0}
               flexShrink={0}
               colorPalette="primary"
-              title="Cancel request"
-              aria-label="Cancel request"
+              title={t("chat.input.cancel")}
+              aria-label={t("chat.input.cancel")}
               ml="auto"
               borderRadius="full"
               variant="solid"
@@ -525,8 +512,8 @@ export default function ChatInput({
               p={0}
               flexShrink={0}
               colorPalette="primary"
-              title="Send message"
-              aria-label="Send prompt"
+              title={t("chat.input.send")}
+              aria-label={t("chat.input.send")}
               aria-hidden
               ml="auto"
               borderRadius="full"

@@ -12,16 +12,16 @@ import {
 import {
   ChartBarIcon,
   ExamIcon,
-  GearIcon,
   LifebuoyIcon,
-  MapTrifoldIcon,
   SignOutIcon,
+  UserCircleIcon,
   UserIcon,
   UsersThreeIcon,
 } from "@phosphor-icons/react";
 import { Link } from "@/src/shared/lib/router";
 import useAuthStore from "@/app/store/authStore";
 import { useLogout } from "@/app/hooks/useLogout";
+import BackToMapLink from "./BackToMapLink";
 
 type SettingsPath =
   | "/dashboard"
@@ -49,6 +49,7 @@ export default function SettingsShell({
       maxH="100vh"
     >
       <Flex flexDir="column" bg="bg.subtle" px={6} py={8} maxH="100%" gap={6}>
+        <BackToMapLink />
         <ChakraLink
           as={Link}
           href="/"
@@ -81,8 +82,8 @@ export default function SettingsShell({
             bg={activePath === "/dashboard" ? "bg.muted" : undefined}
           >
             <Link href="/dashboard">
-              <GearIcon />
-              User Settings
+              <UserCircleIcon />
+              User Profile
             </Link>
           </Button>
           {userType === "superuser" && (
@@ -125,12 +126,6 @@ export default function SettingsShell({
             >
               <LifebuoyIcon />
               Help
-            </Link>
-          </Button>
-          <Button asChild>
-            <Link href="/app">
-              <MapTrifoldIcon />
-              Back to Application
             </Link>
           </Button>
         </ButtonGroup>

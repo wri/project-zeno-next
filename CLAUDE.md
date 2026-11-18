@@ -109,7 +109,7 @@ Each NDJSON line is a `LangChainResponse` with shape `{ node, timestamp, update 
 | `generate_insights`              | `generateInsightsTool` | Pushes `InsightWidget[]` into `insightStore`; adds static assistant message to chat                               |
 | `pick_aoi`                       | `pickAoiTool`          | Fetches geometry via `/api/geometry/:source/:srcId`, registers in `mapStore.geoJsonRegistry`, flies map to bounds |
 | `pick_dataset`                   | `pickDatasetTool`      | Creates a `dataset-card` widget; adds the dataset's layer(s) to `mapStore` (replacing any prior dataset layer)    |
-| `pull_data`                      | `pullDataTool`         | No-op — reasoning component in the UI handles display                                                             |
+| `pull_data`                      | `pullDataTool`         | When it analysed another date range, moves the dataset layer's tiles and dates on the map to it, in place         |
 
 Adding a new tool requires: (1) a handler in `app/store/chat-tools/`, (2) a `dispatch` branch in `processStreamMessage` in `chatStore.ts`, and (3) an entry in `app/lib/tool-display.ts` (active label + error message).
 
@@ -160,6 +160,15 @@ The client aborts the fetch after 310 seconds (5 min 10 sec) — slightly longer
 - Environment is `node` (no DOM/jsdom). Zustand stores are fully testable via `.getState()` directly — no React needed.
 - Zustand stores are module-level singletons. When testing stores, call their reset/clear action in `beforeEach` to prevent state bleeding between tests.
 - The `@/` path alias is configured in `vitest.config.ts` to match `tsconfig.json`.
+
+### PR Titles
+
+A PR title links the work to Jira; it is not a commit message. Start it with the ticket key:
+`PZB-1234: <summary>`. For several tickets use `PZB-1234, PZB-1240: <summary>`;
+for work with no ticket use `NO-TICKET: <summary>`. A CI check fails the PR otherwise.
+The Commit Convention below applies to commits only. When squash-merging a PR with several
+commits, replace the pre-filled commit message in the squash-merge dialog (not the PR title)
+with a Conventional Commits message.
 
 ### Commit Convention
 

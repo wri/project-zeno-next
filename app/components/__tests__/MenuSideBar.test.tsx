@@ -70,6 +70,7 @@ describe("MenuSideBar", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    window.history.replaceState({}, "", "/");
     useChatStore.setState({ currentThreadId: null });
     useSidebarStore.setState({
       menuOpen: true,
@@ -152,6 +153,49 @@ describe("MenuSideBar", () => {
   ])("marks the item for %s as active", (pathname, label) => {
     renderMenu(pathname);
     expect(activeItem()?.textContent).toBe(label);
+  });
+
+  describe("Alert subscriptions (email-subscriptions flag)", () => {
+    const labels = () =>
+      Array.from(
+        screen
+          .getByRole("navigation", { name: "Destinations" })
+          .querySelectorAll("a, button")
+      ).map((el) => el.textContent);
+
+    it("is hidden without the flag", () => {
+      renderMenu();
+      expect(labels()).not.toContain("Alert subscriptions");
+    });
+
+    it("shows between What's new and User settings and keeps the flags in its link", () => {
+      window.history.replaceState({}, "", "/?ff=email-subscriptions");
+      renderMenu();
+
+      const list = labels();
+      expect(list.indexOf("Alert subscriptions")).toBe(
+        list.indexOf("User settings") - 1
+      );
+      expect(list[list.indexOf("Alert subscriptions") - 1]).toMatch(
+        /^What's new/
+      );
+      expect(item("Alert subscriptions").getAttribute("href")).toBe(
+        "/subscriptions?ff=email-subscriptions"
+      );
+    });
+
+    it("is active on /subscriptions", () => {
+      window.history.replaceState({}, "", "/?ff=email-subscriptions");
+      renderMenu("/subscriptions");
+      expect(activeItem()?.textContent).toBe("Alert subscriptions");
+    });
+
+    it("closes the menu when picked", async () => {
+      window.history.replaceState({}, "", "/?ff=email-subscriptions");
+      renderMenu();
+      await click(item("Alert subscriptions"));
+      expect(useSidebarStore.getState().menuOpen).toBe(false);
+    });
   });
 
   it("marks My areas active while its tab is open on the map", () => {

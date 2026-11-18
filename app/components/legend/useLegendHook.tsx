@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
-import { Text } from "@chakra-ui/react";
+import { Box, Text } from "@chakra-ui/react";
 
 import {
   isImageryGroup,
   LayerActionHandler,
   LegendContextLayer,
   LegendEntry,
-  LegendParam,
+  LegendLayer,
 } from "@/app/components/legend/types";
 import { LegendSequential } from "@/app/components/legend/LegendSequential";
 import { LegendSymbolList } from "@/app/components/legend/LegendSymbolList";
@@ -18,88 +18,111 @@ import {
   CONTEXT_LAYER_METADATA,
   DATASET_CARDS,
 } from "@/app/constants/datasets";
-import { buildYearParam, YearParam } from "@/app/utils/formatYearRange";
-import { formatCanopyThreshold } from "@/app/utils/formatCanopyThreshold";
 import type { DatasetLegendConfig } from "@/app/constants/datasets";
-import { selectLayerOptions } from "@/app/types/map";
+import {
+  CONCESSION_STYLES,
+  type ConcessionStyle,
+  selectLayerOptions,
+} from "@/app/types/map";
+import { Tooltip } from "@/app/components/ui/tooltip";
 import { isAreaLayer } from "@/app/store/layerManagerSlice";
 import {
   buildImageryGroup,
   IMAGERY_LEGEND_GROUP_ID,
 } from "@/app/utils/imagery";
 import { useDatasetsCatalog } from "@/app/hooks/useDatasetsCatalog";
+import {
+  buildParams,
+  contextLegendFor,
+  legendSymbology,
+} from "@/app/components/legend/legendModel";
 import { applyPaletteOverride } from "@/app/components/legend/applyPaletteOverride";
 
-// Maps internal parameter keys to the badge label shown in the legend.
-const PARAMETER_LABELS: Record<string, string> = {
-  canopy_cover: "CANOPY",
-};
+function renderLegendSymbology(legend: DatasetLegendConfig) {
+  const s = legendSymbology(legend);
 
-// Maps internal parameter keys to a formatting function that produces the value
-// string. Shares the canopy formatter with the insights CANOPY chip.
-const PARAMETER_FORMATTERS: Record<string, (v: unknown) => string> = {
-  canopy_cover: (v) => formatCanopyThreshold(v as number),
-};
-
-/**
- * Converts a layer's raw parameters object into structured LegendParam chips.
- * Each entry becomes a { label, value } pair rendered as a badge in the card.
- * Exported for the dashboard map-widget legend, which builds its entries from
- * widget configs instead of mapStore layers.
- */
-export function buildParams(
-  params: Record<string, unknown>,
-  yearParam?: YearParam
-): LegendParam[] {
-  const result: LegendParam[] = [];
-
-  if (yearParam) {
-    result.push(yearParam);
+  switch (s.kind) {
+    case "categorical":
+      return (
+        <LegendCategorical
+          items={s.classes.map((c) => ({ value: c.label, color: c.color }))}
+        />
+      );
+    case "symbol":
+      return <LegendSymbolList unit={s.unit} items={s.classes} />;
+    case "sequential":
+      return (
+        <LegendSequential
+          unit={s.unit}
+          minLabel={s.minLabel}
+          maxLabel={s.maxLabel}
+          color={s.colors}
+        />
+      );
+    case "divergent":
+      return (
+        <LegendDivergent
+          unit={s.unit}
+          minLabel={s.minLabel}
+          maxLabel={s.maxLabel}
+          color={s.colors}
+        />
+      );
   }
-
-  for (const [k, v] of Object.entries(params)) {
-    if (v === null || v === undefined || v === "") continue;
-    const label = PARAMETER_LABELS[k] ?? k.toUpperCase();
-    const format = PARAMETER_FORMATTERS[k];
-    result.push({ label, value: format ? format(v) : String(v) });
-  }
-
-  return result;
 }
 
-export function renderLegendSymbology(legend: DatasetLegendConfig) {
-  const { type, items, color, unit } = legend;
+/**
+ * Id of the legend entry for a concession boundary layer. It is no map-manager
+ * layer: its actions act on `selectAreaLayer` and `boundaryOpacity`.
+ */
+export const BOUNDARY_LEGEND_ID = "boundary-layer";
 
-  return type === "categorical" && items ? (
-    <LegendCategorical
-      items={items.map((i) => ({ value: i.label ?? "", color: i.color }))}
-    />
-  ) : type === "sequential" ? (
-    <LegendSequential
-      unit={unit ?? undefined}
-      minLabel={items?.[0]?.label ?? ""}
-      maxLabel={items?.[items.length - 1]?.label ?? ""}
-      color={
-        items?.map((item) => item.color) ??
-        (Array.isArray(color) ? color : [color])
-      }
-    />
-  ) : type === "divergent" ? (
-    <LegendDivergent
-      unit={unit ?? ""}
-      minLabel={items?.[0]?.label ?? ""}
-      maxLabel={items?.[items.length - 1]?.label ?? ""}
-      color={
-        items?.map((item) => item.color) ??
-        (Array.isArray(color) ? color : [color])
-      }
-    />
-  ) : items ? (
-    <LegendSymbolList
-      unit={unit ?? ""}
-      items={items.map((i) => ({ label: i.label ?? "", color: i.color }))}
-    />
-  ) : null;
+/**
+ * A concession boundary layer as a legend layer, as on the GNW concessions
+ * map: a swatch row, and a note naming the countries the source covers.
+ */
+export function concessionLegendEntry(
+  style: ConcessionStyle,
+  opacity: number
+): LegendLayer {
+  return {
+    id: BOUNDARY_LEGEND_ID,
+    title: style.title,
+    opacity: opacity * 100,
+    info: style.info,
+    // Drawn like a dataset layer's symbol legend (Grasslands), so the entry
+    // matches the other layers in the legend.
+    symbology: (
+      <LegendSymbolList
+        items={[{ label: style.title, color: style.fillColor }]}
+      />
+    ),
+    children: (
+      <Text fontSize="xs">
+        This layer is only available{" "}
+        <Tooltip
+          content={style.countries.join(", ")}
+          positioning={{ placement: "top" }}
+          showArrow
+        >
+          {/* The dotted underline of the GNW map's country note. */}
+          <Box
+            as="u"
+            tabIndex={0}
+            cursor="help"
+            textDecorationLine="underline"
+            textDecorationStyle="dotted"
+            textDecorationColor="#b2b6bd"
+            textDecorationThickness="0.125em"
+            css={{ textDecorationSkipInk: "none" }}
+          >
+            for certain countries
+          </Box>
+        </Tooltip>
+        .
+      </Text>
+    ),
+  };
 }
 
 export interface LegendAoi {
@@ -125,7 +148,12 @@ export function useLegendHook() {
     reorderLayers,
     selectAreaLayer,
     setSelectAreaLayer,
+    boundaryOpacity,
+    setBoundaryOpacity,
   } = useMapStore();
+  const concessionStyle = selectAreaLayer
+    ? CONCESSION_STYLES[selectAreaLayer]
+    : undefined;
   const isImageryUpdating = useChatStore((s) => s.isImageryUpdating);
 
   useEffect(() => {
@@ -135,17 +163,11 @@ export function useLegendHook() {
       const contextLayerByParentId = new Map<string, LegendContextLayer>();
       for (const layer of managedLayers) {
         if (!layer.parentLayerId) continue;
-        const metadata = CONTEXT_LAYER_METADATA[layer.name];
-        const legend = metadata?.legend;
-        // Use the first item's colour as the swatch, falling back to the
-        // legend's top-level color field.
-        const color = legend?.items?.[0]?.color ?? legend?.color ?? "#888";
+        const legend = CONTEXT_LAYER_METADATA[layer.name]?.legend;
         contextLayerByParentId.set(layer.parentLayerId, {
           id: layer.id,
-          title: legend?.title ?? layer.name,
-          color,
+          ...contextLegendFor(layer.name),
           opacity: (layer.opacity ?? 1) * 100,
-          info: legend?.info,
           // The swatch beside the title already stands for a single-class
           // layer. Multi-class ones (IFL's reduction epochs) need the full
           // symbol list, or every class but the first goes unexplained.
@@ -167,7 +189,10 @@ export function useLegendHook() {
       );
       let imageryGroupPushed = false;
 
-      const entries: LegendEntry[] = [];
+      // A concession boundary layer is a legend layer, not an AREA pill.
+      const entries: LegendEntry[] = concessionStyle
+        ? [concessionLegendEntry(concessionStyle, boundaryOpacity)]
+        : [];
       for (const layer of managedLayers) {
         if (layer.parentLayerId) continue;
         if (isAreaLayer(layer)) continue;
@@ -198,8 +223,7 @@ export function useLegendHook() {
         );
         const { title, info, note } = legend;
 
-        const yearParam = buildYearParam(layer.startDate, layer.endDate);
-        const params = buildParams(layer.parameters ?? {}, yearParam);
+        const params = buildParams(relatedDataset, layer);
 
         entries.push({
           id: layer.id,
@@ -223,7 +247,13 @@ export function useLegendHook() {
     };
 
     setLayers(buildEntries());
-  }, [managedLayers, isImageryUpdating, palettesByDatasetId]);
+  }, [
+    managedLayers,
+    isImageryUpdating,
+    palettesByDatasetId,
+    concessionStyle,
+    boundaryOpacity,
+  ]);
 
   // One chip per visible area layer, using the selection name as the label.
   // The visible layer IS the scope — removing the chip removes the layer.
@@ -232,9 +262,10 @@ export function useLegendHook() {
     name: l.selectionName ?? l.name,
   }));
 
-  const boundaryName = selectLayerOptions.find(
-    (o) => o.id === selectAreaLayer
-  )?.name;
+  // The concession layers are legend layers (above), so they get no pill.
+  const boundaryName = concessionStyle
+    ? undefined
+    : selectLayerOptions.find((o) => o.id === selectAreaLayer)?.name;
   const boundary: LegendBoundary | null = boundaryName
     ? { name: boundaryName }
     : null;
@@ -258,6 +289,8 @@ export function useLegendHook() {
         // sub-layers along. Layers with no legend entry (AOI layers) keep
         // their position at the end — reorderLayers drops any id not listed.
         const orderedIds = payload.layers.flatMap((entry) => {
+          // The boundary layer is no map-manager layer.
+          if (entry.id === BOUNDARY_LEGEND_ID) return [];
           if (isImageryGroup(entry)) {
             return entry.captures.map((c) => c.layerId);
           }
@@ -270,6 +303,14 @@ export function useLegendHook() {
           .map((l) => l.id)
           .filter((id) => !orderedIds.includes(id));
         reorderLayers([...orderedIds, ...rest]);
+        return;
+      }
+
+      // The boundary entry's controls act on the boundary layer: removing
+      // it turns the layer off (and its Boundaries card).
+      if (payload.id === BOUNDARY_LEGEND_ID) {
+        if (action === "remove") setSelectAreaLayer(null);
+        if (action === "opacity") setBoundaryOpacity(payload.opacity / 100);
         return;
       }
 
@@ -312,6 +353,8 @@ export function useLegendHook() {
       setLayerOpacity,
       setLayerVisibility,
       reorderLayers,
+      setSelectAreaLayer,
+      setBoundaryOpacity,
     ]
   );
 

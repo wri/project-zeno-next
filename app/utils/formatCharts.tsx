@@ -86,6 +86,23 @@ function tintBarsBySign(
   });
 }
 
+/** One series per stack segment, for the "stacked-bar" and
+ *  "stacked-bar-with-line" branches. Colors come from the backend registry
+ *  (`colorMap`, keyed by series name — the same mechanism the pie branch
+ *  uses), so a chart's segments keep their designed colors; a segment with
+ *  no entry falls back to the default rotation. */
+function stackSeries(
+  seriesKeys: string[],
+  colorMap: Record<string, string> | undefined,
+  defaultColors: string[]
+): ChartSeries[] {
+  return seriesKeys.map((key, index) => ({
+    name: key,
+    color: colorMap?.[key] ?? defaultColors[index % defaultColors.length],
+    stackId: "a", // All items in a stacked chart share a stackId
+  }));
+}
+
 function resolveValueKeys(
   keys: string[],
   xAxisKey: string,
@@ -396,11 +413,11 @@ export default function formatChartData(
       yAxis,
       seriesFields
     );
-    const series: ChartSeries[] = seriesKeys.map((key, index) => ({
-      name: key,
-      color: defaultColors[index % defaultColors.length],
-      stackId: "a", // All items in a stacked chart share a stackId
-    }));
+    const series = stackSeries(
+      seriesKeys,
+      colorOverrides?.colorMap,
+      defaultColors
+    );
     // The data format is already correct for stacked charts.
     return { data: chartRows as ChartData[], series };
   }
@@ -413,17 +430,11 @@ export default function formatChartData(
       yAxis,
       seriesFields
     ).filter((key) => key !== lineField);
-    // Per-series colors come from the backend color registry (`colorMap`),
-    // keyed by series name — the same mechanism the pie branch uses — so a
-    // caller can pin each stack segment to its designed color. Segments with
-    // no registry entry fall back to the default rotation.
-    const stackColorMap = colorOverrides?.colorMap;
-    const series: ChartSeries[] = seriesKeys.map((key, index) => ({
-      name: key,
-      color:
-        stackColorMap?.[key] ?? defaultColors[index % defaultColors.length],
-      stackId: "a",
-    }));
+    const series = stackSeries(
+      seriesKeys,
+      colorOverrides?.colorMap,
+      defaultColors
+    );
 
     // A single bar series with divergent colors (e.g. "Net flux" alone, no
     // detail breakdown) is tinted per-row by sign, mirroring the plain "bar"
@@ -519,6 +530,25 @@ export default function formatChartData(
   return { data: [], series: [] };
 }
 
+// Common unit suffixes of a field name and the unit they read as.
+// Ordered most-specific first: "_tco2e_per_tonne" must win over "_tonnes",
+// and the CO₂e family over the bare "_t" / "_mt" patterns.
+const UNIT_PATTERNS: [RegExp, string][] = [
+  [/(_tco2e_per_tonne)$/i, "tCO₂e/t"],
+  [/(_mgco2e)$/i, "MgCO₂e"],
+  [/(_tco2e)$/i, "tCO₂e"],
+  [/(_co2e)$/i, "CO₂e"],
+  [/(_km2|_km²)$/i, "km²"],
+  [/(_ha)$/i, "ha"],
+  [/(_mt)$/i, "Mt"],
+  [/(_tonnes|_t)$/i, "t"],
+  [/(_pct|_percent|_%|_percentage)$/i, "%"],
+];
+
+/** The unit a field name ends in: "area_ha" → "ha"; "" when it has none. */
+export const axisUnit = (key: string): string =>
+  UNIT_PATTERNS.find(([pattern]) => pattern.test(key))?.[1] ?? "";
+
 /**
  * Convert a snake_case or camelCase field name into a readable axis label.
  * e.g. "area_km2" → "Area (km²)", "tree_cover_loss_ha" → "Tree cover loss (ha)"
@@ -527,24 +557,10 @@ export const toAxisLabel = (key: string): string => {
   if (!key) return "";
 
   // Extract common unit suffixes and format them as parenthetical.
-  // Ordered most-specific first: "_tco2e_per_tonne" must win over "_tonnes",
-  // and the CO₂e family over the bare "_t" / "_mt" patterns.
-  const unitPatterns: [RegExp, string][] = [
-    [/(_tco2e_per_tonne)$/i, "tCO₂e/t"],
-    [/(_mgco2e)$/i, "MgCO₂e"],
-    [/(_tco2e)$/i, "tCO₂e"],
-    [/(_co2e)$/i, "CO₂e"],
-    [/(_km2|_km²)$/i, "km²"],
-    [/(_ha)$/i, "ha"],
-    [/(_mt)$/i, "Mt"],
-    [/(_tonnes|_t)$/i, "t"],
-    [/(_pct|_percent|_%|_percentage)$/i, "%"],
-  ];
-
   let label = key;
   let unit = "";
 
-  for (const [pattern, unitStr] of unitPatterns) {
+  for (const [pattern, unitStr] of UNIT_PATTERNS) {
     if (pattern.test(label)) {
       label = label.replace(pattern, "");
       unit = unitStr;

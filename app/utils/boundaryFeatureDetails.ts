@@ -134,11 +134,54 @@ function landmarkDetails(p: Props): BoundaryFeatureDetails {
   };
 }
 
+/** Hover details for a GFW concession layer; the five share one schema. */
+function concessionDetails(
+  fallbackKind: string,
+  fallbackSource: string
+): (p: Props) => BoundaryFeatureDetails {
+  return (p) => {
+    const company = clean(p.company);
+    const group = clean(p.comp_group);
+    return {
+      kind: clean(p.conc_type) ?? fallbackKind,
+      title: clean(p.conc_name) ?? company ?? group ?? "Unnamed concession",
+      status: clean(p.conc_stat),
+      rows: rows([
+        ["Company", company],
+        [
+          "Group",
+          group === "No group" || group === company ? undefined : group,
+        ],
+        // Mining has a mineral in place of a group.
+        ["Mineral", clean(p.mineral)],
+        ["Contract", clean(p.cont_id)],
+        ["Country", clean(p.iso3)],
+        ["Area", formatHectares(p.gfw_area__ha)],
+      ]),
+      source: clean(p.source) ?? fallbackSource,
+    };
+  };
+}
+
 const BUILDERS: Record<LayerId, (p: Props) => BoundaryFeatureDetails> = {
   GADM: gadmDetails,
   KBA: kbaDetails,
   WDPA: wdpaDetails,
   LandMark: landmarkDetails,
+  LOGGING: concessionDetails("Logging concession", "GFW logging concessions"),
+  MINING: concessionDetails("Mining concession", "GFW mining concessions"),
+  OIL_PALM: concessionDetails(
+    "Oil palm concession",
+    "GFW oil palm concessions"
+  ),
+  RSPO_OIL_PALM: concessionDetails(
+    "Oil palm concession (RSPO)",
+    "RSPO certified oil palm concessions"
+  ),
+  WOOD_FIBER: concessionDetails(
+    "Wood fiber concession",
+    "GFW wood fiber concessions"
+  ),
 };
 
 /** Tooltip details for a feature hovered on the given boundary layer. */

@@ -13,7 +13,6 @@ import { BasemapSelector } from "./map/BasemapSelector";
 import { ScaleBar } from "./map/ScaleBar";
 import useSidebarStore from "../store/sidebarStore";
 import { getMapControlsLeftPx } from "../explorationLayout";
-import { MapAreaFeedbackMobile } from "./MapAreaFeedback";
 
 function Wrapper({
   children,
@@ -145,7 +144,6 @@ function MapAreaControls({
       </Flex>
       {/* Mobile map tools: basemap selector only (area tools live in AreasPanel). */}
       <Flex hideFrom="md" gap={2} align="flex-end" flexDirection="column">
-        <MapAreaFeedbackMobile />
         <Flex gap={2} align="flex-end">
           <Button
             position="relative"

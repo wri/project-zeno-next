@@ -36,6 +36,7 @@ const dashboard: Dashboard = {
   name: "Pará forest watch",
   description: null,
   is_public: false,
+  eligible_for_subscription: false,
   created_at: "2026-07-01T00:00:00Z",
   updated_at: "2026-07-01T00:00:00Z",
   aois: [],
@@ -53,10 +54,12 @@ const dashboard: Dashboard = {
   ],
 };
 
-function makeWrapper(seed: Dashboard | null) {
-  const queryClient = new QueryClient({
+function makeWrapper(
+  seed: Dashboard | null,
+  queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
-  });
+  })
+) {
   if (seed) {
     queryClient.setQueryData(dashboardKeys.detail(seed.id), seed);
   }
@@ -132,6 +135,33 @@ describe("useAddInsightToDashboard", () => {
     );
     expect(addInsightWidget).not.toHaveBeenCalled();
   });
+
+  // Adding or removing an analysis can add or remove the dashboard's
+  // integrated alerts chart, which decides whether the alerts summary
+  // reports it at all.
+  it.each([
+    ["adding", "ins-new", addInsightWidget],
+    ["removing", "already-added", deleteWidget],
+  ] as const)(
+    "marks cached alerts summaries stale after %s an analysis",
+    async (_label, insightId, write) => {
+      const queryClient = new QueryClient({
+        defaultOptions: { queries: { retry: false } },
+      });
+      const summaryKey = dashboardKeys.alertsSummary(["d1"]);
+      queryClient.setQueryData(summaryKey, {});
+      const { result } = renderHook(() => useAddInsightToDashboard(insightId), {
+        wrapper: makeWrapper(dashboard, queryClient),
+      });
+
+      act(() => result.current.toggle());
+
+      await waitFor(() => expect(write).toHaveBeenCalled());
+      await waitFor(() =>
+        expect(queryClient.getQueryState(summaryKey)?.isInvalidated).toBe(true)
+      );
+    }
+  );
 
   it("is not addable without a real insight id", () => {
     const { result } = renderHook(() => useAddInsightToDashboard(undefined), {

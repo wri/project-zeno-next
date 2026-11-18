@@ -12,9 +12,9 @@ import {
 import {
   REFERENCE_AOI_SOURCE_LABELS,
   REFERENCE_AOI_SOURCES,
-  type AreaPickerSectionId,
   type ReferenceAoiSource,
-} from "../model/dashboard-area";
+} from "@/src/entities/aoi";
+import type { AreaPickerSectionId } from "../model/dashboard-area";
 
 function isReferenceSourceEnabled(
   activeCategory: AreaPickerSectionId | "all",

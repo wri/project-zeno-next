@@ -35,7 +35,7 @@ export function AnalysisCard({
       <InfoCard
         thumbnail={<Icon size={32} color="#0049AA" />}
         thumbnailBg="#F7F9FF"
-        typeLabel="AI-INSIGHT ANALYSIS"
+        typeLabel="AI-ASSISTED ANALYSIS"
         typeLabelColor={TYPE_LABEL_COLOR}
         typeLabelIcon={
           <SparkleIcon size={12} weight="thin" color={TYPE_LABEL_COLOR} />

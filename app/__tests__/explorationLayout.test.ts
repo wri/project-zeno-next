@@ -7,7 +7,6 @@ import {
   getMapAreaToolsLeftPx,
   getMapControlsLeftPx,
   getMapCoveredLeftPx,
-  getMapFeedbackLeftPx,
   getMapFitPadding,
 } from "@/app/explorationLayout";
 
@@ -56,24 +55,12 @@ describe("explorationLayout", () => {
     expect(getMapControlsLeftPx(true, true)).toBe(836);
   });
 
-  it("places map feedback past the catalog column when compact chat and catalog are open", () => {
-    expect(getMapFeedbackLeftPx(false, true)).toBe(408);
-  });
-
-  it("places map feedback past chat and catalog in full-size mode", () => {
-    expect(getMapFeedbackLeftPx(true, true)).toBe(836);
-  });
-
-  it("places map feedback past the full-size chat when the catalog is closed", () => {
-    expect(getMapFeedbackLeftPx(true, false)).toBe(436);
-  });
-
   it("shifts dashboard content past the full-size chat panel", () => {
     expect(getDashboardContentLeftPx(true)).toBe(436);
   });
 
-  it("keeps dashboard content unshifted when the chat is compact", () => {
-    expect(getDashboardContentLeftPx(false)).toBe(0);
+  it("shifts dashboard content past the compact chat panel and its inset", () => {
+    expect(getDashboardContentLeftPx(false)).toBe(420);
   });
 
   it("covers the map up to the map controls while the chat is open", () => {

@@ -1,14 +1,6 @@
 import { z } from "zod";
 
-export const AoiSearchResultSchema = z.object({
-  source: z.string(),
-  src_id: z.string(),
-  name: z.string(),
-  subtype: z.string(),
-  bbox: z.array(z.number()).optional(),
-});
-
-export const AoiSearchResponseSchema = z.array(AoiSearchResultSchema);
+import { DatasetDivergentColorsSchema } from "@/app/schemas/api/datasets/get";
 
 export const DashboardAoiSchema = z.object({
   source: z.string(),
@@ -39,6 +31,15 @@ export const DashboardInsightChartSchema = z.object({
   // The catalogue dataset a curated chart was computed from; absent on older
   // rows and on AI-generated charts.
   dataset_id: z.number().nullable().optional(),
+  // The backend colour registry's colours for this chart: `{}` and null when
+  // it has none, absent from an older backend. Colours are cosmetic, so a
+  // malformed one drops to the default palette instead of failing the
+  // insight (and blanking the card) below.
+  color_map: z.record(z.string(), z.string()).optional().catch(undefined),
+  series_color: z.string().nullable().optional().catch(undefined),
+  divergent_colors: DatasetDivergentColorsSchema.nullable()
+    .optional()
+    .catch(undefined),
 });
 
 export const DashboardInsightSchema = z.object({
@@ -96,6 +97,26 @@ export const AnalysisTemplateSchema = z.object({
 
 export const AnalysisTemplateListSchema = z.array(AnalysisTemplateSchema);
 
+// Sent only to the owner and to superusers. The wire lists the subscribed
+// channels per dataset (empty when none is); it settles into a flag here so
+// that shape never leaves api/.
+const DashboardSubscriptionsSchema = z
+  .object({
+    integrated_alerts: z.object({
+      channels: z.array(z.string()).default([]),
+    }),
+  })
+  .transform(({ integrated_alerts: { channels } }) => ({
+    emailEnabled: channels.includes("email"),
+  }));
+
+// DELETE and PUT /api/subscriptions: the dashboards whose email changed, and
+// (PUT only) the requested ones the backend left alone.
+export const BulkSubscriptionsResponseSchema = z.object({
+  dashboard_ids: z.array(z.string()),
+  skipped: z.array(z.string()).default([]),
+});
+
 export const DashboardResponseSchema = z.object({
   id: z.string(),
   user_id: z.string(),
@@ -110,6 +131,13 @@ export const DashboardResponseSchema = z.object({
   // Flat across every container, so `position` alone does NOT give render
   // order — group with `widgetContainers` (model/dashboard-sections).
   widgets: z.array(DashboardWidgetResponseSchema).default([]),
+  // Absent for other viewers and from a pre-subscriptions backend. A
+  // malformed value hides the email control rather than failing the page.
+  subscriptions: DashboardSubscriptionsSchema.optional().catch(undefined),
+  // Whether the owner can subscribe to notification emails: the dashboard
+  // has an integrated alerts widget. The backend keeps it current as
+  // widgets change.
+  eligible_for_subscription: z.boolean().catch(false),
 });
 
 export const DashboardListResponseSchema = z.array(DashboardResponseSchema);
@@ -131,7 +159,31 @@ export const DashboardCreateRequestSchema = z.object({
   aois: z.array(DashboardAoiSchema).min(1).max(1),
 });
 
-export type AoiSearchResult = z.infer<typeof AoiSearchResultSchema>;
+// POST /api/dashboards/alerts-summary. One entry per dashboard the backend
+// could assess (an integrated alerts chart and a GADM area). The wire keeps
+// the BE's `null` for "could not be fetched" (with the reason in `errors`);
+// `lib/alerts-summary` settles it into an explicit state.
+export const DashboardAlertsResponseSchema = z.object({
+  // Alert area in hectares over the period.
+  integrated_alerts: z.number().nullable(),
+  errors: z.record(z.string(), z.string()).default({}),
+});
+
+export const DashboardAlertsSummaryResponseSchema = z.object({
+  // Inclusive ISO dates of the period counted: by default the 7 days ending
+  // on the latest alert date, or the latest full Sunday-to-Saturday week when
+  // that date is unavailable.
+  start_date: z.string(),
+  end_date: z.string(),
+  dashboards: z.record(z.string(), DashboardAlertsResponseSchema),
+});
+
+// GET /v0/land_change/integrated_alerts/latest on the analytics API, not the
+// GNW backend; `lib/alerts-summary` reads the release date from `version`.
+export const IntegratedAlertsLatestResponseSchema = z.object({
+  data: z.object({ alert_date: z.iso.date(), version: z.string() }),
+});
+
 export type DashboardAoi = z.infer<typeof DashboardAoiSchema>;
 export type Dashboard = z.infer<typeof DashboardResponseSchema>;
 export type DashboardWidget = z.infer<typeof DashboardWidgetResponseSchema>;
@@ -146,4 +198,10 @@ export type SectionFromTemplateResponse = z.infer<
 export type DashboardInsight = z.infer<typeof DashboardInsightSchema>;
 export type DashboardCreateRequest = z.infer<
   typeof DashboardCreateRequestSchema
+>;
+export type DashboardAlertsSummaryResponse = z.infer<
+  typeof DashboardAlertsSummaryResponseSchema
+>;
+export type IntegratedAlertsLatestResponse = z.infer<
+  typeof IntegratedAlertsLatestResponseSchema
 >;

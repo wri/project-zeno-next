@@ -18,3 +18,18 @@ export const PatchProfileRequestSchema = z.object({
 });
 
 export type PatchProfileRequest = z.infer<typeof PatchProfileRequestSchema>;
+
+/**
+ * A partial update, for the front door: the /welcome consent sends only
+ * `terms_version`, and the in-chat profile card only the fields it asks for.
+ * The backend's `UserProfileUpdateRequest` accepts any subset
+ * (`exclude_unset`). The full-form schema above stays strict.
+ */
+export const PatchProfilePartialRequestSchema =
+  PatchProfileRequestSchema.partial().extend({
+    terms_version: z.string().min(1).optional(),
+  });
+
+export type PatchProfilePartialRequest = z.infer<
+  typeof PatchProfilePartialRequestSchema
+>;

@@ -1,0 +1,216 @@
+import { describe, it, expect } from "vitest";
+import type { MapRef } from "react-map-gl/maplibre";
+
+import {
+  enrichMapViewContext,
+  type InsightWorkspaceState,
+} from "../viewContext";
+import type { InsightWidget } from "@/app/types/chat";
+
+function fakeMapRef(bounds: {
+  west: number;
+  south: number;
+  east: number;
+  north: number;
+  zoom: number;
+}): MapRef {
+  const map = {
+    getBounds: () => ({
+      getWest: () => bounds.west,
+      getSouth: () => bounds.south,
+      getEast: () => bounds.east,
+      getNorth: () => bounds.north,
+    }),
+    getZoom: () => bounds.zoom,
+  };
+  return { getMap: () => map } as unknown as MapRef;
+}
+
+function insight(
+  insightId?: string,
+  extra: Partial<InsightWidget> = {}
+): InsightWidget {
+  return {
+    type: "bar",
+    title: "t",
+    description: "d",
+    data: [],
+    xAxis: "x",
+    yAxis: "y",
+    ...(insightId ? { insightId } : {}),
+    ...extra,
+  };
+}
+
+function workspace(
+  insights: InsightWidget[],
+  focus: Partial<Omit<InsightWorkspaceState, "insights">> = {}
+): InsightWorkspaceState {
+  return {
+    insights,
+    focusedWidgetId: null,
+    isWorkspaceCollapsed: false,
+    ...focus,
+  };
+}
+
+describe("enrichMapViewContext", () => {
+  it("passes through null unchanged", () => {
+    expect(enrichMapViewContext(null, null, workspace([]))).toBeNull();
+  });
+
+  it("passes through non-map pages unchanged", () => {
+    const base = {
+      page: "dashboard" as const,
+      dashboard_id: "d1",
+      dashboard_name: "Paraná",
+    };
+    expect(
+      enrichMapViewContext(base, null, workspace([insight("i1")]))
+    ).toEqual(base);
+  });
+
+  it("adds no viewport/visible_insights when mapRef is absent and no insights are shown", () => {
+    expect(enrichMapViewContext({ page: "map" }, null, workspace([]))).toEqual({
+      page: "map",
+    });
+  });
+
+  it.each([
+    [
+      "adds a rounded viewport bbox + zoom from the live map",
+      {
+        west: -73.98764321,
+        south: 40.76614321,
+        east: -73.93974321,
+        north: 40.80024321,
+        zoom: 5.678,
+      },
+      { bbox: [-73.9876, 40.7661, -73.9397, 40.8002], zoom: 5.68 },
+    ],
+    // Crossing boxes keep west > east (RFC 7946 §5.2).
+    [
+      "wraps longitudes past the antimeridian into [-180, 180]",
+      { west: 170, south: -20, east: 190, north: -10, zoom: 4 },
+      { bbox: [170, -20, -170, -10], zoom: 4 },
+    ],
+    [
+      "wraps a box panned a whole world away",
+      { west: -400, south: 0, east: -380, north: 10, zoom: 4 },
+      { bbox: [-40, 0, -20, 10], zoom: 4 },
+    ],
+    [
+      "keeps a box ending on the antimeridian at 180",
+      { west: 160, south: 0, east: 180, north: 10, zoom: 4 },
+      { bbox: [160, 0, 180, 10], zoom: 4 },
+    ],
+    [
+      "sends the whole world when the view spans 360° or more",
+      { west: -337.5, south: -85, east: 337.5, north: 85, zoom: 0.5 },
+      { bbox: [-180, -85, 180, 85], zoom: 0.5 },
+    ],
+  ])("%s", (_, bounds, viewport) => {
+    expect(
+      enrichMapViewContext({ page: "map" }, fakeMapRef(bounds), workspace([]))
+    ).toEqual({ page: "map", viewport });
+  });
+
+  it("omits the viewport when reading the map throws", () => {
+    const mapRef = {
+      getMap: () => ({
+        getBounds: () => {
+          throw new Error("map removed");
+        },
+      }),
+    } as unknown as MapRef;
+
+    expect(
+      enrichMapViewContext({ page: "map" }, mapRef, workspace([insight("i1")]))
+    ).toEqual({ page: "map", visible_insights: ["i1"] });
+  });
+
+  it("never forwards stale fields from the stored context", () => {
+    const stored = {
+      page: "map" as const,
+      visible_insights: ["old"],
+    };
+
+    expect(enrichMapViewContext(stored, null, workspace([]))).toEqual({
+      page: "map",
+    });
+  });
+
+  it("adds deduplicated visible_insights from on-map insight widgets", () => {
+    const result = enrichMapViewContext(
+      { page: "map" },
+      null,
+      workspace([
+        insight("i1"),
+        insight("i2"),
+        insight("i1"),
+        insight(undefined),
+      ])
+    );
+
+    expect(result).toEqual({
+      page: "map",
+      visible_insights: ["i1", "i2"],
+    });
+  });
+
+  it("omits visible_insights when no shown insight has a persisted insightId", () => {
+    const result = enrichMapViewContext(
+      { page: "map" },
+      null,
+      workspace([insight(undefined), insight(undefined)])
+    );
+
+    expect(result).toEqual({ page: "map" });
+  });
+
+  // Two charts of one analysis, then a second analysis.
+  const stack = [
+    insight("i1", { id: "i1-chart-0", chartPosition: 0 }),
+    insight("i1", { id: "i1-chart-1", chartPosition: 1 }),
+    insight("i2", { id: "i2-chart-0", chartPosition: 0 }),
+  ];
+
+  it("adds focused_insight for the chart the workspace card shows", () => {
+    const result = enrichMapViewContext(
+      { page: "map" },
+      null,
+      workspace(stack, { focusedWidgetId: "i1-chart-1" })
+    );
+
+    expect(result).toEqual({
+      page: "map",
+      visible_insights: ["i1", "i2"],
+      focused_insight: { id: "i1", chart_position: 1 },
+    });
+  });
+
+  it.each([
+    [
+      "the card is collapsed",
+      workspace(stack, {
+        focusedWidgetId: "i1-chart-1",
+        isWorkspaceCollapsed: true,
+      }),
+    ],
+    ["the card shows nothing", workspace(stack)],
+    [
+      "the focused widget has left the workspace",
+      workspace(stack, { focusedWidgetId: "gone" }),
+    ],
+    [
+      "the chart on show has no persisted insight",
+      workspace([insight(undefined, { id: "chart_0" })], {
+        focusedWidgetId: "chart_0",
+      }),
+    ],
+  ])("omits focused_insight when %s", (_, state) => {
+    expect(
+      enrichMapViewContext({ page: "map" }, null, state)
+    ).not.toHaveProperty("focused_insight");
+  });
+});

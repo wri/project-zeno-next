@@ -14,7 +14,6 @@ export {
   MAX_AREA_KM2,
   MAX_FILE_SIZE,
   MAX_FILE_SIZE_MB,
-  MIN_AREA_KM2,
   UPLOAD_FILE_TYPES,
 } from "./model/upload-limits";
 export { validateAreaFile } from "./lib/validate-area-file";

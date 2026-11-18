@@ -1,42 +1,38 @@
 import { describe, it, expect } from "vitest";
 import {
-  resolveSpeechLang,
+  speechLangForLocale,
   labelForLang,
   VOICE_LANGUAGES,
 } from "../speechLang";
 
-describe("resolveSpeechLang", () => {
-  it("region-qualifies a bare profile language code", () => {
-    expect(resolveSpeechLang("pt", "en-US")).toBe("pt-BR");
-    expect(resolveSpeechLang("es", null)).toBe("es-ES");
-    expect(resolveSpeechLang("en", null)).toBe("en-US");
-    expect(resolveSpeechLang("id", null)).toBe("id-ID");
+describe("speechLangForLocale", () => {
+  it.each([
+    ["en", "en-US"],
+    ["es", "es-ES"],
+    ["fr", "fr-FR"],
+    ["pt", "pt-BR"],
+    ["id", "id-ID"],
+    ["zh", "zh-CN"],
+  ] as const)("region-qualifies %s as %s", (locale, expected) => {
+    expect(speechLangForLocale(locale, [])).toBe(expected);
   });
 
-  it("prefers the profile code over the browser language", () => {
-    expect(resolveSpeechLang("pt", "en-GB")).toBe("pt-BR");
+  it("keeps the browser's region when it is the same language", () => {
+    expect(speechLangForLocale("pt", ["pt-PT"])).toBe("pt-PT");
+    expect(speechLangForLocale("en", ["de-DE", "en-GB"])).toBe("en-GB");
+    expect(speechLangForLocale("fr", ["fr-CA"])).toBe("fr-CA");
   });
 
-  it("falls back to the browser language when no profile code", () => {
-    expect(resolveSpeechLang(null, "fr-CA")).toBe("fr-CA");
-    expect(resolveSpeechLang("", "pt-PT")).toBe("pt-PT");
+  it("ignores browser languages that differ from the UI locale", () => {
+    expect(speechLangForLocale("es", ["pt-PT", "en-GB"])).toBe("es-ES");
   });
 
-  it("region-qualifies a bare browser language when used as fallback", () => {
-    expect(resolveSpeechLang(null, "es")).toBe("es-ES");
+  it("ignores a bare browser tag with no region", () => {
+    expect(speechLangForLocale("pt", ["pt"])).toBe("pt-BR");
   });
 
-  it("trusts an already-qualified tag rather than overriding the region", () => {
-    expect(resolveSpeechLang("en-GB", null)).toBe("en-GB");
-  });
-
-  it("passes through an unknown bare code unchanged", () => {
-    expect(resolveSpeechLang("de", null)).toBe("de");
-  });
-
-  it("defaults to en-US when nothing is provided", () => {
-    expect(resolveSpeechLang(null, null)).toBe("en-US");
-    expect(resolveSpeechLang(undefined, undefined)).toBe("en-US");
+  it("uses zh-CN for Chinese whatever the browser's script tag", () => {
+    expect(speechLangForLocale("zh", ["zh-Hans-CN"])).toBe("zh-CN");
   });
 });
 

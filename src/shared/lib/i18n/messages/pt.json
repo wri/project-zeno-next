@@ -1,0 +1,19 @@
+{
+  "chat.header.title": "Assistente de IA",
+  "chat.header.newConversation": "Nova conversa",
+  "chat.header.history": "Histórico de conversas",
+  "chat.header.compactView": "Mudar para visualização compacta",
+  "chat.header.fullSizeView": "Mudar para visualização ampliada",
+  "chat.header.expand": "Expandir painel",
+  "chat.header.collapse": "Recolher painel",
+  "chat.header.language": "Idioma da interface",
+  "chat.input.label": "Faça uma pergunta",
+  "chat.input.sending": "Enviando…",
+  "chat.input.placeholder.start": "Ou descreva o que você quer explorar…",
+  "chat.input.placeholder.followUp": "Faça uma pergunta complementar…",
+  "chat.input.placeholder.nudge": "Ou faça uma pergunta diferente…",
+  "chat.input.analyses": "Análises",
+  "chat.input.startVoice": "Iniciar entrada por voz",
+  "chat.input.cancel": "Cancelar solicitação",
+  "chat.input.send": "Enviar pergunta"
+}

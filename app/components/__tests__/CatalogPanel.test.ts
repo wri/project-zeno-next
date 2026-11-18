@@ -18,12 +18,12 @@ import { buildDatasetLayers } from "@/app/utils/datasetLayerContext";
 
 describe("filterDatasetsByCategory", () => {
   it('returns every card when the category is "all"', () => {
-    const result = filterDatasetsByCategory(DATASET_CARDS, "all", []);
+    const result = filterDatasetsByCategory(DATASET_CARDS, "all");
     expect(result).toHaveLength(DATASET_CARDS.length);
   });
 
   it("filters by a thematic category via the card's `categories` array", () => {
-    const result = filterDatasetsByCategory(DATASET_CARDS, "land-use", []);
+    const result = filterDatasetsByCategory(DATASET_CARDS, "land-use");
     expect(result.length).toBeGreaterThan(0);
     for (const card of result) {
       expect(card.categories).toContain("land-use");
@@ -32,32 +32,11 @@ describe("filterDatasetsByCategory", () => {
 
   it("returns datasets matching multiple thematic categories", () => {
     // TCL due to fires is tagged with both `disturbance` and `wildfires`.
-    const fires = filterDatasetsByCategory(DATASET_CARDS, "wildfires", []);
+    const fires = filterDatasetsByCategory(DATASET_CARDS, "wildfires");
     expect(fires.some((c) => c.dataset_id === 10)).toBe(true);
-    const disturbance = filterDatasetsByCategory(
-      DATASET_CARDS,
-      "disturbance",
-      []
-    );
+    const disturbance = filterDatasetsByCategory(DATASET_CARDS, "disturbance");
     expect(disturbance.some((c) => c.dataset_id === 10)).toBe(true);
     expect(DATASET_CARDS.some((c) => c.dataset_id === 0)).toBe(false);
-  });
-
-  it('returns only cards whose ids appear in `activeDatasetIds` for "in-conversation"', () => {
-    const sample: DatasetCardConfig[] = [
-      { dataset_id: 1, dataset_name: "A", description: "" },
-      { dataset_id: 2, dataset_name: "B", description: "" },
-      { dataset_id: 3, dataset_name: "C", description: "" },
-    ];
-    const result = filterDatasetsByCategory(sample, "in-conversation", [2]);
-    expect(result.map((c) => c.dataset_id)).toEqual([2]);
-  });
-
-  it('returns an empty list for "in-conversation" with no active layers', () => {
-    const sample: DatasetCardConfig[] = [
-      { dataset_id: 1, dataset_name: "A", description: "" },
-    ];
-    expect(filterDatasetsByCategory(sample, "in-conversation", [])).toEqual([]);
   });
 });
 

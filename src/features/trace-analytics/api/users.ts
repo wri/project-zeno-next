@@ -22,7 +22,9 @@ const UserSchema = z.looseObject({
   name: z.string().nullish(),
   email: z.string().default(""),
   userType: z.string().default("regular"),
-  createdAt: z.string().nullish(),
+  // The first GNW sign-in. Not createdAt: that is the Resource Watch account's
+  // date, which GFW shares, so it can be years earlier.
+  firstSeenAt: z.iso.datetime({ offset: true }).nullish(),
   updatedAt: z.string().nullish(),
 });
 
@@ -32,7 +34,9 @@ function toGnwUser(parsed: z.infer<typeof UserSchema>): GnwUser {
     name: parsed.name ?? null,
     email: parsed.email,
     userType: parsed.userType,
-    createdAt: parsed.createdAt ?? null,
+    firstSeenDate: parsed.firstSeenAt
+      ? new Date(parsed.firstSeenAt).toISOString().slice(0, 10)
+      : null,
     updatedAt: parsed.updatedAt ?? null,
   };
 }
@@ -73,19 +77,16 @@ export async function fetchAllUsers(
 }
 
 /**
- * Build the {userId → first-seen ISO date} map used for New vs Returning
- * segmentation. `createdAt` is when the user record was first created (their
- * first authenticated visit).
+ * Build the {userId → first-seen day} map used for New vs Returning
+ * segmentation. Users with no first sign-in are left out, so the segments
+ * date them from the window instead.
  */
 export function buildUserFirstSeenMap(
   users: readonly GnwUser[]
 ): Map<string, string> {
   const map = new Map<string, string>();
   for (const user of users) {
-    if (!user.createdAt) continue;
-    const ms = Date.parse(user.createdAt);
-    if (!Number.isFinite(ms)) continue;
-    map.set(user.id, new Date(ms).toISOString().slice(0, 10));
+    if (user.firstSeenDate) map.set(user.id, user.firstSeenDate);
   }
   return map;
 }

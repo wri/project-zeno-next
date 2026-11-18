@@ -5,8 +5,8 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// Export/Share are false doors surfaced through the Chakra toaster; stub it so
-// the click behaviour is observable without the app-level toaster mount.
+// Share is a false door surfaced through the Chakra toaster; stub it so the
+// click behaviour is observable without the app-level toaster mount.
 vi.mock("@/app/components/ui/toaster", () => ({
   toaster: { create: vi.fn() },
   Toaster: () => null,
@@ -30,6 +30,7 @@ const dashboard: Dashboard = {
   name: "Paraná, Brazil",
   description: null,
   is_public: false,
+  eligible_for_subscription: false,
   created_at: "2026-07-01T00:00:00Z",
   updated_at: "2026-07-01T00:00:00Z",
   aois: [],
@@ -76,7 +77,8 @@ describe("DashboardPinnedHeader", () => {
     );
   });
 
-  it("Export and Share behave identically to the full header (false-door toast)", () => {
+  it("Export and Share behave identically to the full header", () => {
+    const open = vi.spyOn(window, "open").mockImplementation(() => null);
     renderPinned(
       <DashboardPinnedHeader
         dashboard={dashboard}
@@ -89,10 +91,16 @@ describe("DashboardPinnedHeader", () => {
     fireEvent.click(screen.getByRole("button", { name: /export/i }));
     fireEvent.click(screen.getByRole("button", { name: /share/i }));
 
-    expect(toaster.create).toHaveBeenCalledTimes(2);
+    expect(open).toHaveBeenCalledWith(
+      "/dashboards/d1/report",
+      "_blank",
+      "noopener"
+    );
+    expect(toaster.create).toHaveBeenCalledTimes(1);
     expect(vi.mocked(toaster.create).mock.calls[0][0]).toMatchObject({
       title: "Coming soon",
     });
+    open.mockRestore();
   });
 
   it("is hidden from assistive tech and pointer events when not pinned", () => {

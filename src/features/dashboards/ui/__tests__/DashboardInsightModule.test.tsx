@@ -11,10 +11,28 @@ vi.mock("@/app/components/ui/toaster", () => ({
 
 // The chart body is WidgetMessage's contract, not the module's — stub it to a
 // marker so these tests assert structure without mounting echarts.
+// It names the first and last day of the rows it got, so a test can read the
+// period a chart was trimmed to.
 vi.mock("@/app/components/WidgetMessage", () => ({
-  default: ({ widget }: { widget: { title: string } }) => (
-    <div data-testid="widget-message">{widget.title}</div>
-  ),
+  default: ({
+    widget,
+  }: {
+    widget: { title: string; data: unknown; xAxis: string };
+  }) => {
+    const rows = Array.isArray(widget.data)
+      ? (widget.data as Record<string, unknown>[])
+      : [];
+    return (
+      <div
+        data-testid="widget-message"
+        data-rows={rows.length}
+        data-first={String(rows[0]?.[widget.xAxis])}
+        data-last={String(rows[rows.length - 1]?.[widget.xAxis])}
+      >
+        {widget.title}
+      </div>
+    );
+  },
 }));
 
 // Map bodies need WebGL — never rendered here, but keep the import inert.
@@ -67,13 +85,17 @@ function widget(overrides: Partial<DashboardWidget> = {}): DashboardWidget {
 
 function renderModule({
   widget: w = widget(),
+  sectionTemplate,
   isOwner = true,
   onUpdateConfig = vi.fn(),
   onRemove = vi.fn(),
   onToggleSize = vi.fn(),
+  print = false,
 }: {
   widget?: DashboardWidget;
+  sectionTemplate?: string;
   isOwner?: boolean;
+  print?: boolean;
   onUpdateConfig?: (config: Record<string, unknown>) => void;
   onRemove?: () => void;
   onToggleSize?: () => void;
@@ -82,8 +104,10 @@ function renderModule({
     <ChakraProvider value={defaultSystem}>
       <DashboardInsightModule
         widget={w}
+        sectionTemplate={sectionTemplate}
         isOwner={isOwner}
         isDouble
+        print={print}
         onArmDrag={() => {}}
         onToggleSize={onToggleSize}
         onUpdateConfig={onUpdateConfig}
@@ -302,6 +326,24 @@ describe("DashboardInsightModule", () => {
       expect(screen.getByText("2 of 2 charts")).toBeTruthy();
     });
 
+    it("prints every roll-up, each under its own DETAIL", () => {
+      renderModule({ widget: lgmsWidget(), print: true });
+
+      expect(
+        screen.getAllByTestId("widget-message").map((c) => c.textContent)
+      ).toEqual([
+        "Net GHG Flux — Annual Average",
+        "Net GHG Flux — Full Detail",
+        "Net GHG Flux by Category",
+        "Net GHG Flux Summary",
+      ]);
+      for (const detail of ["Full", "Category", "Summary"]) {
+        expect(
+          screen.getAllByRole("button", { name: `DETAIL: ${detail}` })
+        ).toHaveLength(1);
+      }
+    });
+
     it("shows the tree card's MEASURE pill, which has no DETAIL of its own", () => {
       renderModule({ widget: lgmsWidget() });
       expect(
@@ -424,5 +466,85 @@ describe("DashboardInsightModule", () => {
     expect(screen.queryByText(/layout and visibility changes are lost/i)).toBe(
       null
     );
+  });
+
+  describe("the alerts chart's period pills", () => {
+    /** The nrt-monitoring chart: a row for each of the 30 days to 16 October. */
+    const alertsWidget = () =>
+      widget({
+        insight: {
+          id: "ins-1",
+          insight_text: "",
+          codeact_parts: [],
+          charts: [
+            chart({
+              title: "Integrated alerts",
+              chart_type: "stacked-bar",
+              x_axis: "alert_date",
+              dataset_id: 11,
+              chart_data: Array.from({ length: 30 }, (_, i) => ({
+                alert_date: new Date(Date.UTC(2026, 8, 17 + i))
+                  .toISOString()
+                  .slice(0, 10),
+              })),
+            }),
+          ],
+        },
+      });
+    const shownPeriod = () => {
+      const body = screen.getByTestId("widget-message");
+      return [Number(body.dataset.rows), body.dataset.first, body.dataset.last];
+    };
+    const pill = (name: string) => screen.getByRole("button", { name });
+
+    it("shows the last 30 days by default and trims to a pill's days", () => {
+      renderModule({
+        widget: alertsWidget(),
+        sectionTemplate: "nrt-monitoring",
+      });
+      expect(pill("Last 30 days").getAttribute("aria-pressed")).toBe("true");
+      expect(shownPeriod()).toEqual([30, "2026-09-17", "2026-10-16"]);
+
+      fireEvent.click(pill("Last week"));
+      expect(pill("Last week").getAttribute("aria-pressed")).toBe("true");
+      expect(shownPeriod()).toEqual([7, "2026-10-10", "2026-10-16"]);
+
+      fireEvent.click(pill("Last 2 weeks"));
+      expect(shownPeriod()).toEqual([14, "2026-10-03", "2026-10-16"]);
+    });
+
+    it("takes custom dates inside the chart's 30 days", async () => {
+      renderModule({
+        widget: alertsWidget(),
+        sectionTemplate: "nrt-monitoring",
+      });
+      fireEvent.click(pill("Last week"));
+      fireEvent.click(pill("Custom"));
+      expect(pill("Custom").getAttribute("aria-pressed")).toBe("true");
+      // The dates open on the range on show.
+      const start = await screen.findByLabelText("Custom period start");
+      expect((start as HTMLInputElement).value).toBe("2026-10-10");
+
+      fireEvent.change(start, { target: { value: "2026-10-01" } });
+      expect(shownPeriod()).toEqual([16, "2026-10-01", "2026-10-16"]);
+      // Before the chart's first day: ignored, as a half-typed year is.
+      fireEvent.change(start, { target: { value: "2026-09-01" } });
+      expect(shownPeriod()).toEqual([16, "2026-10-01", "2026-10-16"]);
+    });
+
+    it("has no pills outside a Near real-time monitoring section", () => {
+      renderModule({ widget: alertsWidget() });
+      expect(screen.queryByRole("button", { name: "Last week" })).toBe(null);
+      expect(shownPeriod()).toEqual([30, "2026-09-17", "2026-10-16"]);
+    });
+
+    it("prints the whole period with no pills", () => {
+      renderModule({
+        widget: alertsWidget(),
+        sectionTemplate: "nrt-monitoring",
+        print: true,
+      });
+      expect(screen.queryByRole("button", { name: "Last week" })).toBe(null);
+    });
   });
 });

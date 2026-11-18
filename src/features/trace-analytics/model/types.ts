@@ -110,6 +110,7 @@ export interface GnwUser {
   readonly name: string | null;
   readonly email: string;
   readonly userType: string;
-  readonly createdAt: string | null;
+  /** Day of the first GNW sign-in (YYYY-MM-DD, UTC); null when unknown. */
+  readonly firstSeenDate: string | null;
   readonly updatedAt: string | null;
 }

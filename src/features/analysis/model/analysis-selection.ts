@@ -15,4 +15,10 @@ export interface AnalysisSelection {
   startDate: string;
   /** ISO date string "yyyy-MM-dd" */
   endDate: string;
+  /**
+   * The conversation the analysis runs in, if any. The backend tags the
+   * stored insight with it, so the insight is listed with that thread instead
+   * of belonging to the user alone.
+   */
+  threadId?: string;
 }

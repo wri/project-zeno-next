@@ -1,5 +1,8 @@
+import { useQueryClient } from "@tanstack/react-query";
+
 import { toaster } from "@/app/components/ui/toaster";
 import { deleteSection, updateSection } from "../api/dashboards";
+import { invalidateAlertsSummaries } from "../hooks/useDashboardAlertsSummary";
 import { withSectionRemoved } from "../model/dashboard-sections";
 import { useOptimisticDashboardMutation } from "./dashboardQueries";
 
@@ -23,7 +26,7 @@ export function useRenameSection(dashboardId: string) {
         s.id === sectionId ? { ...s, title } : s
       ),
     }),
-    toastError("Couldn't rename the section")
+    { onError: toastError("Couldn't rename the section") }
   );
 }
 
@@ -34,6 +37,8 @@ export function useRenameSection(dashboardId: string) {
  * swap the grid for the empty-state hero before a failure comes back.
  */
 export function useDeleteSection(dashboardId: string) {
+  const queryClient = useQueryClient();
+
   return useOptimisticDashboardMutation(
     dashboardId,
     ({
@@ -45,6 +50,11 @@ export function useDeleteSection(dashboardId: string) {
     }) => deleteSection(dashboardId, sectionId, deleteWidgets),
     (dashboard, { sectionId, deleteWidgets }) =>
       withSectionRemoved(dashboard, sectionId, deleteWidgets),
-    toastError("Couldn't delete the section")
+    {
+      onError: toastError("Couldn't delete the section"),
+      onSuccess: ({ deleteWidgets }) => {
+        if (deleteWidgets) invalidateAlertsSummaries(queryClient);
+      },
+    }
   );
 }

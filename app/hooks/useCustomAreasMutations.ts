@@ -4,6 +4,7 @@ import {
   CustomAreaSchema,
   type CustomArea,
 } from "@/app/schemas/api/custom_areas/get";
+import { renameCustomArea } from "@/app/utils/renameCustomArea";
 
 async function updateCustomAreaName(
   areaId: string,
@@ -37,7 +38,10 @@ export function useCustomAreasUpdate() {
   const mutation = useMutation({
     mutationFn: ({ areaId, name }: { areaId: string; name: string }) =>
       updateCustomAreaName(areaId, name),
-    onSuccess: () => {
+    onSuccess: (area) => {
+      // The query refetch updates the areas list; the map, the analysis
+      // selection and chat area cards hold their own copies of the name.
+      renameCustomArea(area);
       queryClient.invalidateQueries({ queryKey: ["customAreas"] });
     },
   });

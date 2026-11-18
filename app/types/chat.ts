@@ -46,6 +46,8 @@ export interface ChatMessage {
     | "analyse-nudge"
     | "view-analysis-nudge"
     | "create-dashboard-nudge"
+    | "profile-prompt"
+    | "profile-nudge"
     | "stopped";
   message: string;
   timestamp: string;
@@ -58,6 +60,10 @@ export interface ChatMessage {
   context?: MessageContext; // Read-only context snapshot for user messages
   viewAnalysisSuggestion?: ViewAnalysisSuggestion; // For view-analysis-nudge messages
   createDashboardSuggestion?: CreateDashboardSuggestion; // For create-dashboard-nudge messages
+  // A client-only UI message (e.g. the front door's profile-prompt card): not
+  // part of the conversation, so it is never "last" for the footer, it is
+  // dropped when the next question is sent, and threads never replay it.
+  transient?: true;
   traceId?: string;
   toolSteps?: ToolStepData[]; // For user messages - reasoning steps taken to respond
   reasoningDuration?: number; // Duration in seconds for reasoning to complete
@@ -112,10 +118,15 @@ export interface InsightWidget extends ChartColorFields {
   // direct/curated flow) as curated.
   curated?: boolean;
   analysisParams?: AnalysisParams; // Parameters used by the agent to produce this insight
-  // Persisted insight UUID (streamed with generate_insights). All charts of
-  // one analysis share it; it is the handle for REST widget adds
-  // (POST /api/dashboards/:id/widgets).
+  // Persisted insight UUID. All charts of one analysis share it; it is the
+  // handle for REST widget adds (POST /api/dashboards/:id/widgets) and the id
+  // the agent loads the insight by (view_context). generate_insights streams
+  // it; `chartsToWidgets` stamps it for direct analyses and stored insights.
   insightId?: string;
+  // This chart's 0-based position among its insight's charts (backend
+  // `position`), so the agent can tell which chart of an analysis is on
+  // screen.
+  chartPosition?: number;
 }
 
 // Parameters the agent used to produce an insight (read-only transparency)
@@ -158,6 +169,7 @@ export interface UiContext {
   aoi_selected?: {
     aoi: {
       name: string;
+      display_name?: string;
       gadm_id?: string;
       src_id?: string;
       subtype?: string;
@@ -273,6 +285,9 @@ export interface ImageryInfo {
 
 export interface AOI {
   name: string;
+  // The label a concession was picked by on the map, when the backend stores
+  // it under its cleaned name. Absent for every other area.
+  display_name?: string;
   src_id: string;
   source: string;
   subtype: string;
@@ -432,6 +447,24 @@ export interface DatasetInfo {
   provider?: string;
   [key: string]: unknown; // Allow other properties
 }
+
+/**
+ * What a dataset row and its info modal display. Both an agent-picked
+ * DatasetInfo and a static DatasetCardConfig satisfy it, so neither needs a
+ * cast.
+ */
+export type DatasetDetails = Pick<
+  DatasetInfo,
+  | "dataset_name"
+  | "summary"
+  | "description"
+  | "methodology"
+  | "cautions"
+  | "citation"
+  | "cadence"
+  | "geographic_coverage"
+  | "provider"
+>;
 
 // LangChain content structure (for internal API use)
 export interface LangChainContent {

@@ -7,6 +7,7 @@ import {
 import { toaster } from "@/app/components/ui/toaster";
 import { applyAnalysisTemplate } from "../api/dashboards";
 import { dashboardKeys } from "../hooks/dashboardKeys";
+import { invalidateAlertsSummaries } from "../hooks/useDashboardAlertsSummary";
 import { templateErrorMessage } from "../lib/analysis-templates";
 import { scrollToSectionWhenRendered } from "./scrollToSection";
 
@@ -33,6 +34,7 @@ export function useApplyAnalysisTemplate(dashboardId: string) {
         dashboardKeys.detail(dashboardId),
         result.dashboard
       );
+      invalidateAlertsSummaries(queryClient);
       for (const warning of result.warnings) {
         toaster.create({
           title: "Part of the template was left out",

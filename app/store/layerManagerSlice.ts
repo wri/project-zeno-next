@@ -7,6 +7,12 @@ import type { MapState } from "./mapStore";
 export interface FeatureRef {
   name: string;
   source: string;
+  // Part of the identity: names are display labels and repeat across
+  // concession parcels (RSPO parcels share a company, unnamed ones fall back
+  // to "Mining concession, IDN") and across saved custom areas. Every area
+  // that reaches the map carries one: agent-picked areas their `src_id`, saved
+  // custom areas (drawn and uploaded ones are saved first) their id.
+  srcId?: string;
 }
 
 export interface GeoJsonEntry {
@@ -17,14 +23,35 @@ export interface GeoJsonEntry {
 }
 
 /**
- * Look up a registry entry by its feature ref (exact name + source match —
- * refs and entries are created from the same objects at registration time).
+ * Whether two refs name the same area: exact name, source and src id (refs
+ * and entries are created from the same objects at registration time, so an
+ * id-less ref only ever matches an id-less entry).
  */
+export const sameFeatureRef = (a: FeatureRef, b: FeatureRef): boolean =>
+  a.name === b.name && a.source === b.source && a.srcId === b.srcId;
+
+/** The ref an agent-picked or card AOI is registered under. */
+export const aoiFeatureRef = (aoi: {
+  name: string;
+  source: string;
+  src_id?: string;
+}): FeatureRef => ({ name: aoi.name, source: aoi.source, srcId: aoi.src_id });
+
+/** The ref a saved custom area is registered under, wherever it is added. */
+export const customAreaRef = (area: {
+  id: string;
+  name: string;
+}): FeatureRef => ({
+  name: area.name,
+  source: "custom",
+  srcId: area.id,
+});
+
+/** Look up a registry entry by its feature ref (see `sameFeatureRef`). */
 export const findRegistryEntry = (
   registry: GeoJsonEntry[],
   ref: FeatureRef
-): GeoJsonEntry | undefined =>
-  registry.find((e) => e.ref.name === ref.name && e.ref.source === ref.source);
+): GeoJsonEntry | undefined => registry.find((e) => sameFeatureRef(e.ref, ref));
 
 export type LayerType = "raster" | "geojson" | "vector";
 
@@ -90,6 +117,14 @@ export interface LayerManagerSlice {
   geoJsonRegistry: GeoJsonEntry[];
 
   addLayer: (layer: Layer) => void;
+  /**
+   * Remove a layer and the registry entries only it still references.
+   * Entries are shared by ref across layers (an agent pick and the same area
+   * from My areas, or "Brazil" and "Brazil and Peru"), so deleting them all
+   * would blank the other layer. The cleanup is scoped to the removed layer's
+   * own `featureRefs` and must never become a global sweep: `pickAoi.ts`
+   * (`fetchAndRegisterAoi`) registers entries before `addLayer` runs.
+   */
   removeLayer: (id: string) => void;
   /**
    * Remove a dataset's layers (main + context sub-layers). Pass a `datasetId`
@@ -99,9 +134,10 @@ export interface LayerManagerSlice {
   removeDatasetLayers: (datasetId?: number) => void;
   setLayerVisibility: (id: string, visible: boolean) => void;
   setLayerOpacity: (id: string, opacity: number) => void;
+  /** Patch fields of a layer in place, keeping its position. No-op for an unknown id. */
+  updateLayer: (id: string, patch: Partial<Omit<Layer, "id">>) => void;
   reorderLayers: (ids: string[]) => void;
   addToRegistry: (entry: GeoJsonEntry) => void;
-  removeFromRegistry: (ref: FeatureRef) => void;
 }
 
 export const createLayerManagerSlice: StateCreator<
@@ -123,9 +159,21 @@ export const createLayerManagerSlice: StateCreator<
     });
   },
   removeLayer: (id) => {
-    set((state) => ({
-      layers: state.layers.filter((l) => l.id !== id),
-    }));
+    set((state) => {
+      const removed = state.layers.find((l) => l.id === id);
+      const layers = state.layers.filter((l) => l.id !== id);
+      const removedRefs = removed?.featureRefs ?? [];
+      if (removedRefs.length === 0) return { layers };
+      const stillUsed = layers.flatMap((l) => l.featureRefs ?? []);
+      return {
+        layers,
+        geoJsonRegistry: state.geoJsonRegistry.filter(
+          (e) =>
+            !removedRefs.some((r) => sameFeatureRef(r, e.ref)) ||
+            stillUsed.some((r) => sameFeatureRef(r, e.ref))
+        ),
+      };
+    });
     void import("@/app/store/chatStore").then(({ default: useChatStore }) => {
       useChatStore.getState().includeLayerInContext(id);
     });
@@ -150,14 +198,11 @@ export const createLayerManagerSlice: StateCreator<
       });
     }
   },
-  setLayerVisibility: (id, visible) => {
+  setLayerVisibility: (id, visible) => get().updateLayer(id, { visible }),
+  setLayerOpacity: (id, opacity) => get().updateLayer(id, { opacity }),
+  updateLayer: (id, patch) => {
     set((state) => ({
-      layers: state.layers.map((l) => (l.id === id ? { ...l, visible } : l)),
-    }));
-  },
-  setLayerOpacity: (id, opacity) => {
-    set((state) => ({
-      layers: state.layers.map((l) => (l.id === id ? { ...l, opacity } : l)),
+      layers: state.layers.map((l) => (l.id === id ? { ...l, ...patch } : l)),
     }));
   },
   reorderLayers: (ids) => {
@@ -171,20 +216,10 @@ export const createLayerManagerSlice: StateCreator<
     set((state) => ({
       geoJsonRegistry: [
         ...state.geoJsonRegistry.filter(
-          (e) =>
-            !(
-              e.ref.name === entry.ref.name && e.ref.source === entry.ref.source
-            )
+          (e) => !sameFeatureRef(e.ref, entry.ref)
         ),
         entry,
       ],
-    }));
-  },
-  removeFromRegistry: (ref) => {
-    set((state) => ({
-      geoJsonRegistry: state.geoJsonRegistry.filter(
-        (e) => !(e.ref.name === ref.name && e.ref.source === ref.source)
-      ),
     }));
   },
 });

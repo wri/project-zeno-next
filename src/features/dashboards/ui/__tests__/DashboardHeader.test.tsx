@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/app/components/ui/toaster", () => ({
@@ -18,6 +18,7 @@ const baseDashboard: Dashboard = {
   name: "Paraná, Brazil",
   description: null,
   is_public: false,
+  eligible_for_subscription: false,
   created_at: "2020-01-01T00:00:00Z",
   updated_at: "2020-01-01T00:00:00Z",
   aois: [],
@@ -51,6 +52,20 @@ describe("DashboardHeader", () => {
 
     expect(screen.queryByText(/^Updated/)).toBeNull();
     expect(screen.queryByText("Created just now")).toBeNull();
+  });
+
+  it("opens the printable report in a new tab from Export", () => {
+    const open = vi.spyOn(window, "open").mockImplementation(() => null);
+    renderHeader(baseDashboard);
+
+    fireEvent.click(screen.getByRole("button", { name: /export/i }));
+
+    expect(open).toHaveBeenCalledWith(
+      "/dashboards/d1/report",
+      "_blank",
+      "noopener"
+    );
+    open.mockRestore();
   });
 
   it("keeps the rename affordance in the tree for the owner", () => {

@@ -21,6 +21,9 @@ const MEASURE_LABEL: Record<NetFluxMeasure, string> = {
 };
 const MEASURE_OPTIONS: NetFluxMeasure[] = ["gross", "net"];
 
+/** What the DETAIL pill selects by: the sibling's id, or its title for one rehydrated without an id. */
+const detailValue = (w: InsightWidget) => w.id ?? w.title;
+
 function DetailInfo() {
   return (
     <Box>
@@ -49,20 +52,21 @@ function DetailInfo() {
  *
  * DETAIL selects between the three roll-ups `LGMSChartGenerator` returns
  * (Full detail / Category / Summary) rather than re-slicing one payload. It is
- * hidden when the widget has no siblings — a single chart, or one rehydrated
- * without the id shape the grouping relies on.
+ * hidden when the widget has no siblings — a single chart, or one with no
+ * `insightId` to group by.
  *
  * By default the siblings are found in the map workspace's insight store by
- * `chartBatchKey`. Surfaces that render an analysis from somewhere else (the
- * dashboard module, the Analyses pane) hold its charts directly and their ids
- * do not carry that shape, so they pass `siblings` and the `groupKey` the
- * DETAIL choice is remembered under — see `netFluxRollups`.
+ * `insightId`. Surfaces that render an analysis from somewhere else (the
+ * dashboard module, the Analyses pane) hold its charts directly, so they pass
+ * `siblings` and the `groupKey` the DETAIL choice is remembered under — see
+ * `netFluxRollups`.
  */
 export function NetFluxToolbar({
   widget,
   siblings: siblingsProp,
   groupKey: groupKeyProp,
   showDivider = true,
+  print = false,
 }: {
   widget: InsightWidget;
   /** The roll-ups to choose between, default detail first. */
@@ -70,6 +74,11 @@ export function NetFluxToolbar({
   /** Key the DETAIL choice is stored under; required alongside `siblings`. */
   groupKey?: string;
   showDivider?: boolean;
+  /**
+   * The export prints every roll-up, so DETAIL names this chart's own detail
+   * and offers no other, rather than following the group's choice.
+   */
+  print?: boolean;
 }) {
   const insights = useInsightStore((s) => s.insights);
   const siblings = siblingsProp ?? netFluxSiblings(insights, widget);
@@ -84,24 +93,24 @@ export function NetFluxToolbar({
         {siblings.length > 1 && (
           <Pill
             label="DETAIL"
-            value={netFluxWidgetDetailPillLabel(selected ?? widget)}
-            options={siblings.map((w) => ({
-              value: w.id ?? w.title,
+            value={detailValue(print ? widget : (selected ?? widget))}
+            options={(print ? [widget] : siblings).map((w) => ({
+              value: detailValue(w),
               label: netFluxWidgetDetailPillLabel(w),
             }))}
-            onSelect={select}
+            onSelect={print ? () => {} : select}
             minW="160px"
             info={<DetailInfo />}
           />
         )}
         <Pill
           label="MEASURE"
-          value={MEASURE_LABEL[measure]}
+          value={measure}
           options={MEASURE_OPTIONS.map((value) => ({
             value,
             label: MEASURE_LABEL[value],
           }))}
-          onSelect={(value) => setMeasure(value as NetFluxMeasure)}
+          onSelect={setMeasure}
           minW="160px"
           info={<MeasureInfo />}
         />

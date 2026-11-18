@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "@/src/shared/lib/router";
+import { useDebounced } from "@/src/shared/lib/use-debounced";
 import { Box, Button, Flex, Input, Text } from "@chakra-ui/react";
 import { MagnifyingGlassIcon, UploadSimpleIcon } from "@phosphor-icons/react";
 
@@ -8,6 +9,10 @@ import {
   useCustomAreasUpdate,
 } from "@/app/hooks/useCustomAreasMutations";
 import { toaster } from "@/app/components/ui/toaster";
+import {
+  AOI_SEARCH_DEBOUNCE_MS,
+  AOI_SEARCH_MIN_CHARS,
+} from "@/src/entities/aoi";
 import {
   AreaUploadDialog,
   uploadedAreaRefs,
@@ -29,11 +34,6 @@ const CATEGORY_PILLS: { id: AreaPickerSectionId | "all"; label: string }[] = [
   ...AREA_PICKER_SECTIONS,
 ];
 
-const SEARCH_DEBOUNCE_MS = 300;
-// Below this the term is too low-signal for the fuzzy AOI search — keep
-// showing the unfiltered browse list instead of firing requests.
-const MIN_SEARCH_CHARS = 3;
-
 function rowToDashboardAoi(row: AreaPickerRow) {
   return {
     source: row.source,
@@ -50,24 +50,19 @@ export function NewDashboardScreen() {
   >("all");
   const [search, setSearch] = useState("");
   // Debounced so each keystroke doesn't fire a server-side AOI search.
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const debouncedSearch = useDebounced(search, AOI_SEARCH_DEBOUNCE_MS);
   const [creatingRowKey, setCreatingRowKey] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [uploadOpen, setUploadOpen] = useState(false);
 
-  useEffect(() => {
-    const timer = setTimeout(
-      () => setDebouncedSearch(search),
-      SEARCH_DEBOUNCE_MS
-    );
-    return () => clearTimeout(timer);
-  }, [search]);
-
   // Search kicks in as the user types (no Enter needed) once the term reaches
-  // MIN_SEARCH_CHARS; shorter terms fall back to the unfiltered browse list.
+  // AOI_SEARCH_MIN_CHARS (below it the fuzzy search is too low-signal);
+  // shorter terms fall back to the unfiltered browse list.
   const effectiveSearch =
-    debouncedSearch.trim().length >= MIN_SEARCH_CHARS ? debouncedSearch : "";
+    debouncedSearch.trim().length >= AOI_SEARCH_MIN_CHARS
+      ? debouncedSearch
+      : "";
 
   const {
     rows,
@@ -88,7 +83,7 @@ export function NewDashboardScreen() {
   const trimmedSearch = effectiveSearch.trim();
   const typedSearch = search.trim();
   const showMinSearchHint =
-    typedSearch.length > 0 && typedSearch.length < MIN_SEARCH_CHARS;
+    typedSearch.length > 0 && typedSearch.length < AOI_SEARCH_MIN_CHARS;
   // One flag for both load flavours: the initial fetch and an in-flight
   // search whose stale keepPreviousData rows shouldn't be shown as results.
   const showSkeletons = isLoading || isSearching;
@@ -233,7 +228,7 @@ export function NewDashboardScreen() {
       />
       {showMinSearchHint && (
         <Text fontSize="xs" color="fg.muted" mt={-2} mb={4}>
-          Type at least {MIN_SEARCH_CHARS} characters to search.
+          Type at least {AOI_SEARCH_MIN_CHARS} characters to search.
         </Text>
       )}
       <Flex gap={2} mb={6} flexWrap="wrap">

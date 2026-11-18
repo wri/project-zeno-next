@@ -39,6 +39,14 @@ Read top to bottom for the narrative; each is one screen.
 | [0009](decisions/0009-insight-dedup-deferred.md)                    | Insight dedup deferred                 | Append for now; identity-based dedup is a later, optional refinement.                  |
 | [0010](decisions/0010-c4-adrs-and-a-fitness-function.md)            | C4 + ADRs + fitness function           | Communicable, agent-readable, and enforced — not just documented.                      |
 
+## Other decisions
+
+Cross-cutting ADRs that are not part of the boundary-analysis design but live here because this folder is the repo's tracked ADR home.
+
+| ADR                                                  | Decision                                                              | Status                                                                                                                                       |
+| ---------------------------------------------------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| [0011](decisions/0011-map-workspace-state-in-url.md) | Map workspace state lives in the URL, independent of the conversation | Proposed 2026-10-23; spans project-zeno too (chat contract, insight parameters, layer registry). Supersedes ADR-003 in `.claude/docs/ADRs/`. |
+
 ## Status
 
 Design accepted; not yet implemented. Known deferrals: insight deduplication ([0009](decisions/0009-insight-dedup-deferred.md)); telemetry adapter (`TelemetrySink` → Grafana Faro) is planned and appears dashed/"planned" in the diagrams.

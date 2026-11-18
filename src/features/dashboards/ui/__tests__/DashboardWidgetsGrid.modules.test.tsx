@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/app/components/ui/toaster", () => ({
@@ -18,6 +18,11 @@ vi.mock("@/app/components/WidgetMessage", () => ({
 }));
 vi.mock("../DashboardMapWidget", () => ({
   default: () => <div data-testid="map-widget" />,
+}));
+vi.mock("../DashboardAlertsWidget", () => ({
+  default: ({ isDouble }: { isDouble: boolean }) => (
+    <div data-testid="alerts-widget">{isDouble ? "double" : "single"}</div>
+  ),
 }));
 
 import DashboardWidgetsGrid from "../DashboardWidgetsGrid";
@@ -80,6 +85,7 @@ const dashboard: Dashboard = {
   name: "Test",
   description: null,
   is_public: false,
+  eligible_for_subscription: false,
   created_at: "2026-07-01T00:00:00Z",
   updated_at: "2026-07-01T00:00:00Z",
   aois: [
@@ -96,22 +102,26 @@ const dashboard: Dashboard = {
   widgets: [insightWidget, mapWidget],
 };
 
+const renderGrid = ({ print = false } = {}) =>
+  render(
+    <QueryClientProvider
+      client={
+        new QueryClient({ defaultOptions: { queries: { retry: false } } })
+      }
+    >
+      <ChakraProvider value={defaultSystem}>
+        <DashboardWidgetsGrid dashboard={dashboard} print={print} />
+      </ChakraProvider>
+    </QueryClientProvider>
+  );
+
 describe("DashboardWidgetsGrid grouping", () => {
   beforeEach(() => {
     useAuthStore.setState({ userId: "u1" });
   });
 
   it("renders an insight widget as one card, beside standalone widgets", () => {
-    const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false } },
-    });
-    render(
-      <QueryClientProvider client={queryClient}>
-        <ChakraProvider value={defaultSystem}>
-          <DashboardWidgetsGrid dashboard={dashboard} />
-        </ChakraProvider>
-      </QueryClientProvider>
-    );
+    renderGrid();
 
     // The insight is one card: the narrative and the first of its charts,
     // with the rest a page away — not one card per chart.
@@ -123,5 +133,121 @@ describe("DashboardWidgetsGrid grouping", () => {
     expect(screen.getByTestId("map-widget")).toBeTruthy();
     // Two widgets, so two cards — the insight has no extra remove of its own.
     expect(screen.getAllByLabelText("Remove from dashboard")).toHaveLength(2);
+  });
+
+  it("prints every chart of an insight, read-only even for the owner", () => {
+    renderGrid({ print: true });
+
+    // No pager on paper: each shown chart in turn, the narrative once.
+    const cards = screen.getAllByTestId("widget-message");
+    expect(cards.map((c) => c.textContent)).toEqual([
+      "Alerts trend",
+      "Alerts by driver",
+    ]);
+    expect(screen.getAllByText(/Alerts spiked in July\./)).toHaveLength(1);
+    expect(screen.queryByText(/of 2 charts/)).toBeNull();
+    expect(screen.getByTestId("map-widget")).toBeTruthy();
+    expect(screen.queryByLabelText("Remove from dashboard")).toBeNull();
+    expect(screen.queryByLabelText("Drag to reposition")).toBeNull();
+    expect(screen.queryByLabelText("View map full screen")).toBeNull();
+  });
+
+  // The post-2020 forest loss template's layout: a section holds the chart at
+  // full width (the insight default), then a layer map and an imagery map the
+  // backend writes as `size: "single"`, side by side. Sections size their
+  // cards the same way the top level does.
+  it("sizes a section's cards like top-level ones: full-width chart, half-width maps", () => {
+    const summary =
+      "First sentence of the summary. Second sentence of the summary. " +
+      "Third sentence, a little longer, so the subtitle wraps. " +
+      "Fourth sentence. Fifth and last sentence of the summary.";
+    const inSection = (w: DashboardWidget, position: number) => ({
+      ...w,
+      position,
+      section_id: "s1",
+    });
+    const half = (id: string, config: Record<string, unknown>) =>
+      inSection(
+        { ...mapWidget, id, config: { ...config, size: "single" } },
+        id === "w-layer" ? 1 : 2
+      );
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ChakraProvider value={defaultSystem}>
+          <DashboardWidgetsGrid
+            dashboard={{
+              ...dashboard,
+              sections: [
+                {
+                  id: "s1",
+                  title: "Post-2020 forest loss in Rondônia",
+                  description: summary,
+                  position: 0,
+                  template: null,
+                  created_at: "2026-10-07T00:00:00Z",
+                },
+              ],
+              widgets: [
+                inSection(insightWidget, 0),
+                half("w-layer", mapWidget.config),
+                half("w-imagery", {
+                  imagery: {
+                    tile_url: "https://example.test/s2/{z}/{x}/{y}.png",
+                    target_date: "2026-10-01",
+                  },
+                }),
+              ],
+            }}
+          />
+        </ChakraProvider>
+      </QueryClientProvider>
+    );
+
+    // The whole summary reads as the section's subtitle, unclamped.
+    expect(screen.getByText(summary)).toBeTruthy();
+    const cell = (id: string) =>
+      within(document.querySelector<HTMLElement>(`[data-widget-id="${id}"]`)!);
+    expect(cell("w-ins").getByLabelText("Shrink to one column")).toBeTruthy();
+    expect(cell("w-layer").getByLabelText("Expand to full width")).toBeTruthy();
+    expect(
+      cell("w-imagery").getByLabelText("Expand to full width")
+    ).toBeTruthy();
+  });
+
+  // The NRT template's alerts widget renders through its own component, full
+  // width by default, beside the other widgets.
+  it("renders an alerts widget through its own component at full width", () => {
+    const alertsWidget: DashboardWidget = {
+      id: "w-alerts",
+      position: 2,
+      widget_type: "alerts",
+      config: { alerts: { aoi: {}, days: 30 }, dataset: {} },
+      created_at: "2026-10-16T00:00:00Z",
+      insight: null,
+    };
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ChakraProvider value={defaultSystem}>
+          <DashboardWidgetsGrid
+            dashboard={{
+              ...dashboard,
+              widgets: [...dashboard.widgets, alertsWidget],
+            }}
+          />
+        </ChakraProvider>
+      </QueryClientProvider>
+    );
+
+    const alerts = screen.getByTestId("alerts-widget");
+    expect(alerts.textContent).toBe("double");
+    expect(alerts.closest('[data-widget-id="w-alerts"]')).toBeTruthy();
+    expect(screen.getByTestId("map-widget")).toBeTruthy();
+    expect(screen.queryByText(/isn't supported here yet/)).toBeNull();
   });
 });

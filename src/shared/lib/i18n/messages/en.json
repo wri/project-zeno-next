@@ -1,0 +1,19 @@
+{
+  "chat.header.title": "AI Assistant",
+  "chat.header.newConversation": "New conversation",
+  "chat.header.history": "Conversation history",
+  "chat.header.compactView": "Switch to compact view",
+  "chat.header.fullSizeView": "Switch to full-size view",
+  "chat.header.expand": "Expand panel",
+  "chat.header.collapse": "Collapse panel",
+  "chat.header.language": "Interface language",
+  "chat.input.label": "Ask a question",
+  "chat.input.sending": "Sending…",
+  "chat.input.placeholder.start": "Or describe what you want to explore…",
+  "chat.input.placeholder.followUp": "Ask a follow-up question…",
+  "chat.input.placeholder.nudge": "Or ask a different question…",
+  "chat.input.analyses": "Analyses",
+  "chat.input.startVoice": "Start voice input",
+  "chat.input.cancel": "Cancel request",
+  "chat.input.send": "Send prompt"
+}

@@ -1,0 +1,31 @@
+name: PR Agent
+
+# Thin per-repo shim that keeps event wiring local while reusing the
+# centralized workflow logic from the platform repository.
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review]
+  issue_comment:
+    types: [created]
+
+# Collapse superseded runs: on rapid consecutive pushes (or repeated /review
+# comments), each event would otherwise start an independent run, executing
+# multiple paid LLM reviews in parallel for the same PR. A per-PR concurrency
+# group cancels any in-flight run when a newer one starts.
+concurrency:
+  group: pr-agent-${{ github.event.pull_request.number || github.event.issue.number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  pr_agent:
+    # Tracks @main intentionally: the central workflow is the single source of
+    # truth and consumers pick up fixes without per-repo bumps.
+    uses: wri/.github/.github/workflows/pr-agent-core.yml@main
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    # Forward only the one secret the core workflow declares. `secrets: inherit`
+    # would hand every repo/org secret to the called workflow.
+    secrets:
+      OPENROUTER_PR_AGENT: ${{ secrets.OPENROUTER_PR_AGENT }}

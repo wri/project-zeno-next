@@ -6,13 +6,17 @@ import { jwtDecode } from "jwt-decode";
 import theme from "@/app/theme";
 import { Toaster } from "@/app/components/ui/toaster";
 import useAuthStore from "@/app/store/authStore";
-import { UserTypeEnum, type UserType } from "@/app/schemas/api/admin/users/get";
 import { getToken, clearToken, apiFetch } from "@/app/lib/api-client";
+import { parseAuthMe } from "@/app/lib/auth-me";
 import { queryClient } from "@/app/lib/query-client";
-
-function coerceUserType(value: unknown): UserType | null {
-  return UserTypeEnum.safeParse(value).data ?? null;
-}
+import { uiLocale } from "@/app/utils/uiLocale";
+import {
+  applyLocale,
+  browserLocaleInput,
+  i18n,
+  I18nextProvider,
+} from "@/src/shared/lib/i18n";
+import { usePathname } from "@/src/shared/lib/router";
 
 function AuthBootstrapper() {
   const { setAuthStatus, setAuthLoaded, clearAuth, setPromptUsage } =
@@ -62,37 +66,15 @@ function AuthBootstrapper() {
         const data = await res.json();
         if (cancelled) return;
 
-        const email = data?.email as string | undefined;
-        const id = data?.id as string | undefined;
-        const hasProfile = Boolean(data?.hasProfile);
-        const userType = coerceUserType(data?.userType);
-        const preferredLanguageCode =
-          typeof data?.preferredLanguageCode === "string"
-            ? data.preferredLanguageCode
-            : null;
-        if (email) {
-          setAuthStatus({
-            email,
-            id: id ?? "",
-            hasProfile,
-            userType,
-            preferredLanguageCode,
-          });
+        const { status, usage } = parseAuthMe(data);
+        if (status) {
+          setAuthStatus(status);
         } else {
           setAuthLoaded();
         }
 
-        const used =
-          typeof data?.promptsUsed === "number"
-            ? (data.promptsUsed as number)
-            : null;
-        const quota =
-          typeof data?.promptQuota === "number"
-            ? (data.promptQuota as number)
-            : null;
-
-        if (quota !== null) {
-          setPromptUsage(used || 0, quota);
+        if (usage) {
+          setPromptUsage(usage.used, usage.quota);
         }
       } catch {
         // Network/CORS error -- keep the token, mark loaded without authenticating
@@ -108,14 +90,33 @@ function AuthBootstrapper() {
   return null;
 }
 
+/**
+ * Keeps the UI locale resolved: signed-in profile, then the `gnw_locale`
+ * cookie, then the browser, then English (English always on the landing
+ * pages). Re-resolves when the profile language loads or changes.
+ */
+function LocaleSync() {
+  const profile = useAuthStore((s) => s.preferredLanguageCode);
+  const pathname = usePathname();
+
+  useEffect(() => {
+    applyLocale(uiLocale(pathname, { profile, ...browserLocaleInput() }));
+  }, [pathname, profile]);
+
+  return null;
+}
+
 function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
-      <ChakraProvider value={theme}>
-        {children}
-        <Toaster />
-        <AuthBootstrapper />
-      </ChakraProvider>
+      <I18nextProvider i18n={i18n}>
+        <ChakraProvider value={theme}>
+          {children}
+          <Toaster />
+          <AuthBootstrapper />
+          <LocaleSync />
+        </ChakraProvider>
+      </I18nextProvider>
     </QueryClientProvider>
   );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Flex,
   Box,
@@ -35,8 +35,8 @@ interface LegendProps {
   /** Visible boundary layer — rendered as the first AREA pill. */
   boundary?: LegendBoundary | null;
   onRemoveBoundary?: () => void;
-  /** Tighter type and spacing for small hosts (dashboard map widgets). */
-  compact?: boolean;
+  /** Rendered in the header beside the collapse caret (e.g. a Datasets button). */
+  headerAction?: ReactNode;
 }
 
 /**
@@ -53,7 +53,7 @@ export function Legend(props: LegendProps) {
     onRemoveAoi,
     boundary,
     onRemoveBoundary,
-    compact,
+    headerAction,
   } = props;
 
   // Controls whether the whole legend body is collapsed to just the header.
@@ -129,7 +129,7 @@ export function Legend(props: LegendProps) {
       {/* Always-visible header — 28px section header per Figma */}
       <Flex
         h="28px"
-        px={compact ? "12px" : "16px"}
+        px="16px"
         py="6px"
         gap="8px"
         alignItems="center"
@@ -153,23 +153,26 @@ export function Legend(props: LegendProps) {
             Map layers
           </Text>
         </Flex>
-        <IconButton
-          variant="ghost"
-          size="2xs"
-          p={0}
-          minW="16px"
-          h="16px"
-          w="16px"
-          color="#656E7B"
-          aria-label={isCollapsed ? "Expand legend" : "Collapse legend"}
-          onClick={() => setIsCollapsed((prev) => !prev)}
-        >
-          {isCollapsed ? (
-            <CaretDownIcon size={12} weight="bold" />
-          ) : (
-            <CaretUpIcon size={12} weight="bold" />
-          )}
-        </IconButton>
+        <Flex alignItems="center" gap="8px">
+          {headerAction}
+          <IconButton
+            variant="ghost"
+            size="2xs"
+            p={0}
+            minW="16px"
+            h="16px"
+            w="16px"
+            color="#656E7B"
+            aria-label={isCollapsed ? "Expand legend" : "Collapse legend"}
+            onClick={() => setIsCollapsed((prev) => !prev)}
+          >
+            {isCollapsed ? (
+              <CaretDownIcon size={12} weight="bold" />
+            ) : (
+              <CaretUpIcon size={12} weight="bold" />
+            )}
+          </IconButton>
+        </Flex>
       </Flex>
 
       {/* Collapsible body — animates height on open/close */}
@@ -188,13 +191,12 @@ export function Legend(props: LegendProps) {
               m={0}
               w="100%"
               overflowY="auto"
-              maxH={compact ? "160px" : "200px"}
+              maxH="200px"
             >
               {layers.map((item) => (
                 <Item
                   key={item.id}
                   item={item}
-                  compact={compact}
                   expanded={expandedIds.has(item.id)}
                   onToggleExpand={() =>
                     setExpandedIds((prev) => {
@@ -266,9 +268,8 @@ function Item(props: {
   expanded: boolean;
   onToggleExpand: () => void;
   onLayerAction: LayerActionHandler;
-  compact?: boolean;
 }) {
-  const { item, expanded, onToggleExpand, onLayerAction, compact } = props;
+  const { item, expanded, onToggleExpand, onLayerAction } = props;
   const dragControls = useDragControls();
 
   return (
@@ -277,7 +278,7 @@ function Item(props: {
       id={item}
       dragListener={false}
       dragControls={dragControls}
-      p={compact ? 1.5 : 2}
+      p={2}
       pl={1}
       display="flex"
       gap={1}
@@ -301,7 +302,6 @@ function Item(props: {
       {isImageryGroup(item) ? (
         <ImageryLegendEntry
           {...item}
-          compact={compact}
           expanded={expanded}
           onToggleExpand={onToggleExpand}
           onLayerAction={onLayerAction}
@@ -309,7 +309,6 @@ function Item(props: {
       ) : (
         <LayerEntry
           {...item}
-          compact={compact}
           expanded={expanded}
           onToggleExpand={onToggleExpand}
           onLayerAction={onLayerAction}

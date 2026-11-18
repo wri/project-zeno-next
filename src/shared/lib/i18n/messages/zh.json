@@ -1,0 +1,19 @@
+{
+  "chat.header.title": "AI 助手",
+  "chat.header.newConversation": "新对话",
+  "chat.header.history": "对话记录",
+  "chat.header.compactView": "切换到紧凑视图",
+  "chat.header.fullSizeView": "切换到完整视图",
+  "chat.header.expand": "展开面板",
+  "chat.header.collapse": "收起面板",
+  "chat.header.language": "界面语言",
+  "chat.input.label": "提出问题",
+  "chat.input.sending": "正在发送…",
+  "chat.input.placeholder.start": "或者描述你想探索的内容…",
+  "chat.input.placeholder.followUp": "提出后续问题…",
+  "chat.input.placeholder.nudge": "或者换一个问题…",
+  "chat.input.analyses": "分析",
+  "chat.input.startVoice": "开始语音输入",
+  "chat.input.cancel": "取消请求",
+  "chat.input.send": "发送问题"
+}

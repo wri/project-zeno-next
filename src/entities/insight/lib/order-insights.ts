@@ -1,10 +1,10 @@
 import type { InsightWidget } from "@/app/types/chat";
-import { chartBatchKey } from "./chart-batch-key";
 
-/** Widgets without the `{insightId}-chart-{n}` id shape get a key of their own. */
+/** Widgets of no persisted insight (dataset cards) get a key of their own. */
 function batchKey(widget: InsightWidget, index: number): string {
-  const key = chartBatchKey(widget.id);
-  return key ? `batch:${key}` : `single:${widget.id ?? index}`;
+  return widget.insightId
+    ? `batch:${widget.insightId}`
+    : `single:${widget.id ?? index}`;
 }
 
 /**

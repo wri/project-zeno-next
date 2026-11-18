@@ -1,13 +1,35 @@
 import { Link } from "@/src/shared/lib/router";
-import { Box, Flex, Heading, Link as ChakraLink, Text } from "@chakra-ui/react";
+import {
+  Box,
+  Flex,
+  Heading,
+  Link as ChakraLink,
+  Skeleton,
+  Text,
+} from "@chakra-ui/react";
 import { LockIcon, PolygonIcon } from "@phosphor-icons/react";
 
 import type { Dashboard } from "../api/schemas";
 import { updatedLabel } from "../lib/dates";
 import DashboardActionsMenu from "./DashboardActionsMenu";
-import { HERO_GRID_IMAGE } from "./heroGrid";
+import { CARD_BODY_PROPS, CARD_FRAME_PROPS } from "./cardFrame";
+import NewAlertsBadge from "./NewAlertsBadge";
 
-export default function DashboardCard({ dashboard }: { dashboard: Dashboard }) {
+/**
+ * The card's alerts badge: `"new"` when the area had integrated alerts in the
+ * summary's period, `"loading"` while the summary is still on its way (the
+ * badge slot shimmers so a card without one yet does not read as a card
+ * without alerts).
+ */
+export type CardAlerts = "loading" | "new" | "none";
+
+export default function DashboardCard({
+  dashboard,
+  alerts,
+}: {
+  dashboard: Dashboard;
+  alerts: CardAlerts;
+}) {
   const primaryAoi = dashboard.aois[0];
 
   return (
@@ -21,14 +43,7 @@ export default function DashboardCard({ dashboard }: { dashboard: Dashboard }) {
         alignItems="stretch"
         textAlign="left"
         flex="1"
-        minH="308px"
-        bg="white"
-        backgroundImage={HERO_GRID_IMAGE}
-        borderWidth="1px"
-        borderColor="border"
-        borderTopWidth="2px"
-        borderTopColor="primary.solid"
-        borderRadius="sm"
+        {...CARD_FRAME_PROPS}
         overflow="hidden"
         transition="border-color 0.16s ease, box-shadow 0.16s ease"
         _hover={{
@@ -43,14 +58,7 @@ export default function DashboardCard({ dashboard }: { dashboard: Dashboard }) {
         }}
       >
         <Link href={`/dashboards/${dashboard.id}`}>
-          <Flex
-            flex="1"
-            direction="column"
-            justify="flex-end"
-            gap={2}
-            p={5}
-            pt={16}
-          >
+          <Flex flex="1" {...CARD_BODY_PROPS}>
             {primaryAoi && (
               <Flex align="center" gap={2} color="primary.solid" fontSize="xs">
                 <PolygonIcon size={16} />
@@ -70,6 +78,21 @@ export default function DashboardCard({ dashboard }: { dashboard: Dashboard }) {
               {!dashboard.is_public && <LockIcon size={16} />}
               <Text>{updatedLabel(dashboard.updated_at)}</Text>
             </Flex>
+            {/* Pinned to the card's bottom-left per the Figma cards list, away
+                from the top-aligned text. */}
+            {alerts !== "none" && (
+              <Box mt="auto" pt={2} alignSelf="flex-start">
+                {alerts === "loading" ? (
+                  // Wrapping the badge sizes the shimmer to it; Chakra hides
+                  // the wrapped text, from screen readers too.
+                  <Skeleton loading>
+                    <NewAlertsBadge />
+                  </Skeleton>
+                ) : (
+                  <NewAlertsBadge />
+                )}
+              </Box>
+            )}
           </Flex>
         </Link>
       </ChakraLink>

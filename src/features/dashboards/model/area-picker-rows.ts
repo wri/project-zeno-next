@@ -1,6 +1,8 @@
 import type { CustomArea } from "@/app/schemas/api/custom_areas/get";
 
-import type { AoiSearchResult, Dashboard } from "../api/schemas";
+import type { AoiSearchResult } from "@/src/entities/aoi";
+
+import type { Dashboard } from "../api/schemas";
 
 /** A single row in the new-dashboard area picker table. */
 export interface AreaPickerRow {

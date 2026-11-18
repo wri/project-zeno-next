@@ -6,7 +6,6 @@ import {
   MAX_AREA_KM2,
   MAX_FILE_SIZE,
   MAX_FILE_SIZE_MB,
-  MIN_AREA_KM2,
   UPLOAD_FILE_TYPES,
 } from "../model/upload-limits";
 import { calculateAreaKm2 } from "@/app/utils/calculateAreaKm2";
@@ -16,7 +15,6 @@ export type AreaFileErrorType =
   | "file-too-large"
   | "file-empty"
   | "file-format-invalid"
-  | "file-area-too-small"
   | "file-area-too-large";
 
 export type AreaFileValidation =
@@ -158,16 +156,6 @@ export async function validateAreaFile(
     type: "FeatureCollection",
     features,
   });
-
-  if (areaSizeKm2 < MIN_AREA_KM2) {
-    return {
-      ok: false,
-      errorType: "file-area-too-small",
-      errorMessage: `Area is too small (${formatAreaWithUnits(
-        areaSizeKm2
-      )}). Minimum area is ${formatAreaWithUnits(MIN_AREA_KM2)}.`,
-    };
-  }
 
   if (areaSizeKm2 > MAX_AREA_KM2) {
     return {

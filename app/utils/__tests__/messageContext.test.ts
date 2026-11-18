@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { DATASET_BY_ID } from "@/app/constants/datasets";
 import type { GeoJsonEntry, Layer } from "@/app/store/layerManagerSlice";
 import {
+  aoiContextKey,
   deriveContext,
   diffUiContext,
   emptyContextKeys,
@@ -73,7 +74,7 @@ describe("deriveContext", () => {
       aoi_name: "Pará, Brazil",
       subtype: "state-province",
     });
-    expect(keys.aoi).toBe("Pará, Brazil");
+    expect(keys.aoi).toBe("Pará, Brazil|gadm:BRA.14_1");
     expect(snapshot.areas).toEqual(["Pará, Brazil"]);
   });
 
@@ -95,6 +96,81 @@ describe("deriveContext", () => {
       aoi_name: "Lebanon",
       subtype: "country",
     });
+  });
+
+  it("keys two manual areas that share a name apart by their id", () => {
+    // Unnamed concession parcels share one label; switching between them
+    // must still re-announce the area, or the agent keeps the first one.
+    const name = "Mining concession, IDN";
+    const parcel = (srcId: string) =>
+      deriveContext(
+        [
+          {
+            id: name,
+            name,
+            type: "geojson",
+            visible: true,
+            featureRefs: [{ name, source: "MINING" }],
+          },
+        ],
+        [
+          {
+            ref: { name, source: "MINING" },
+            data: { type: "FeatureCollection", features: [] },
+            srcId,
+            subtype: "mining-concession",
+          },
+        ],
+        null
+      );
+    const first = parcel("101");
+    const second = parcel("102");
+
+    expect(first.keys.aoi).toBe(`${name}|mining:101`);
+    expect(second.keys.aoi).not.toBe(first.keys.aoi);
+    expect(
+      diffUiContext(second.uiContext, second.keys, first.keys).aoi_selected
+    ).toBeDefined();
+  });
+
+  it("forwards a replayed map pick's display_name to the backend", () => {
+    const label = "PT. UNI SERAYA, PT. UNI SERAYA";
+    const stored = "PT. UNI SERAYA, Oil palm concession, IDN";
+    const { uiContext, keys } = deriveContext(
+      [
+        {
+          id: label,
+          name: label,
+          type: "geojson",
+          visible: true,
+          featureRefs: [{ name: stored, source: "oil_palm" }],
+          aoiSelection: {
+            name: label,
+            aois: [
+              {
+                name: stored,
+                display_name: label,
+                src_id: "239",
+                source: "oil_palm",
+                subtype: "oil-palm-concession",
+              },
+            ],
+          },
+        },
+      ],
+      [],
+      null
+    );
+
+    expect(uiContext.aoi_selected?.aoi).toMatchObject({
+      name: stored,
+      display_name: label,
+      src_id: "239",
+    });
+    expect(uiContext.aoi_selected?.aoi_name).toBe(label);
+    expect(keys.aoi).toBe(
+      aoiContextKey(label, { source: "oil_palm", src_id: "239" })
+    );
   });
 
   it("derives dataset_selected and a daterange from a dataset layer + date range", () => {

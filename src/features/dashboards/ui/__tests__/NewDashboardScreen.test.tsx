@@ -20,8 +20,8 @@ vi.mock("@/app/lib/api-client", () => ({ apiFetch: vi.fn() }));
 
 // The static-map thumbnail reads the map store (maplibre); stub it out so the
 // picker renders without the map stack.
-vi.mock("@/app/components/AreaCatalogThumbnail", () => ({
-  AreaCatalogThumbnail: () => null,
+vi.mock("@/app/components/AreaThumbnail", () => ({
+  AreaThumbnail: () => null,
 }));
 
 const pushSpy = vi.fn();

@@ -242,9 +242,11 @@ export function AnalyticsView() {
       stats: reportStats,
       utilisation,
       segments,
-      totalKnownUsers: users.firstSeenByUser?.size ?? 0,
+      // Every user row, dated or not: firstSeenByUser leaves out the users
+      // with no first sign-in.
+      totalKnownUsers: users.users.length,
     }),
-    [range, reportStats, utilisation, segments, users.firstSeenByUser]
+    [range, reportStats, utilisation, segments, users.users]
   );
 
   const threadUrl = baseThreadUrl(environment);

@@ -1,16 +1,64 @@
 import { useEffect } from "react";
-import { usePathname } from "@/src/shared/lib/router";
+import { usePathname, useRouter } from "@/src/shared/lib/router";
 import { getToken } from "@/app/lib/api-client";
 import useAuthStore from "@/app/store/authStore";
 import { API_CONFIG } from "@/app/config/api";
 
-function getLoginUrl(redirectTo: string): string {
-  const callbackUrl = `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirectTo)}`;
+/**
+ * The Resource Watch login URL that returns to `redirectTo` through
+ * /auth/callback on `origin` (this site by default).
+ */
+export function getLoginUrl(
+  redirectTo: string,
+  origin: string = window.location.origin
+): string {
+  const callbackUrl = `${origin}/auth/callback?redirect=${encodeURIComponent(redirectTo)}`;
   const url = new URL(`${API_CONFIG.RW_API_HOST}/auth/login`);
   url.searchParams.set("origin", "gnw");
   url.searchParams.set("callbackUrl", callbackUrl);
   url.searchParams.set("token", "true");
   return url.toString();
+}
+
+export interface AuthGuardInput {
+  pathname: string;
+  /** `window.location.search`, including the leading "?" (or ""). */
+  search: string;
+  termsAccepted: boolean;
+}
+
+/**
+ * Where to send a signed-in person instead of this route. `hard` is a full
+ * page load (every redirect the guard has always made); `client` is a router
+ * navigation, used only for /welcome → /app so accepting the terms never
+ * races a full reload.
+ */
+export interface AuthGuardRedirect {
+  href: string;
+  mode: "hard" | "client";
+}
+
+/**
+ * The route rules for a signed-in person, as a pure function so they can
+ * be pinned by tests. Returns null when the route may render.
+ *
+ * /app* needs accepted terms (not a
+ * profile: that is asked for later, in the chat), else /welcome with the
+ * query string, so ?prompt= survives; /welcome with the terms accepted
+ * continues to /app with the query string.
+ */
+export function authGuardDecision({
+  pathname,
+  search,
+  termsAccepted,
+}: AuthGuardInput): AuthGuardRedirect | null {
+  const isApp = pathname.startsWith("/app");
+  const isWelcome = pathname === "/welcome" || pathname.startsWith("/welcome/");
+  if (isApp && !termsAccepted)
+    return { href: `/welcome${search}`, mode: "hard" };
+  if (isWelcome && termsAccepted)
+    return { href: `/app${search}`, mode: "client" };
+  return null;
 }
 
 /**
@@ -19,9 +67,10 @@ function getLoginUrl(redirectTo: string): string {
  * Returns true when the user is authenticated and the page is safe to render.
  */
 export function useAuthGuard(): boolean {
-  const { authLoaded, isAuthenticated, hasProfile } = useAuthStore();
+  const { authLoaded, isAuthenticated, termsAccepted } = useAuthStore();
   // usePathname() is typed `string | null`; treat null as "" (matches no route).
   const pathname = usePathname() ?? "";
+  const router = useRouter();
 
   useEffect(() => {
     if (!authLoaded) return;
@@ -33,18 +82,27 @@ export function useAuthGuard(): boolean {
       return;
     }
 
-    if (pathname.startsWith("/app") && !hasProfile) {
-      window.location.href = `/onboarding${window.location.search}`;
-    } else if (pathname.startsWith("/onboarding") && hasProfile) {
-      window.location.href = "/app";
+    const redirect = authGuardDecision({
+      pathname,
+      search: window.location.search,
+      termsAccepted,
+    });
+    if (!redirect) return;
+    if (redirect.mode === "client") {
+      router.replace(redirect.href);
+    } else {
+      window.location.href = redirect.href;
     }
-  }, [authLoaded, isAuthenticated, hasProfile, pathname]);
+  }, [authLoaded, isAuthenticated, termsAccepted, pathname, router]);
 
   if (!authLoaded || !isAuthenticated) return false;
 
-  const isApp = pathname.startsWith("/app");
-  const isOnboarding = pathname.startsWith("/onboarding");
-  if ((isApp && !hasProfile) || (isOnboarding && hasProfile)) return false;
-
-  return true;
+  // Whether to render never depends on the query string.
+  return (
+    authGuardDecision({
+      pathname,
+      search: "",
+      termsAccepted,
+    }) === null
+  );
 }

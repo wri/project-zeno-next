@@ -92,5 +92,3 @@ export function inclusiveDays(startIso: string, endIso: string): number {
   if (Number.isNaN(start) || Number.isNaN(end)) return 0;
   return Math.round((end - start) / 86_400_000) + 1;
 }
-
-export { todayIso, shiftIsoDate } from "../model/dates";
