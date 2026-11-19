@@ -42,7 +42,7 @@ function PromptQuotaMeter() {
           whiteSpace="nowrap"
           color="#656E7B"
         >
-          {t("header.prompts.count", {
+          {t("prompts.count", {
             used: usedPrompts,
             total: totalPrompts,
           })}
@@ -51,7 +51,7 @@ function PromptQuotaMeter() {
           open={infoOpen}
           onOpenChange={(e) => setInfoOpen(e.open)}
           closeOnClick={false}
-          content={t("header.prompts.explanation", {
+          content={t("prompts.explanation", {
             used: usedPrompts,
             total: totalPrompts,
           })}
@@ -59,7 +59,7 @@ function PromptQuotaMeter() {
         >
           <chakra.button
             type="button"
-            aria-label={t("header.prompts.limit")}
+            aria-label={t("prompts.limit")}
             display="inline-flex"
             color="#656E7B"
             cursor="help"
@@ -77,7 +77,7 @@ function PromptQuotaMeter() {
       </Flex>
       <Box
         role="progressbar"
-        aria-label={t("header.prompts.used")}
+        aria-label={t("prompts.used")}
         aria-valuemin={0}
         aria-valuemax={totalPrompts}
         aria-valuenow={Math.min(usedPrompts, totalPrompts)}

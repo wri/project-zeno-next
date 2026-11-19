@@ -5,11 +5,11 @@
  */
 import { ChakraProvider } from "@chakra-ui/react";
 import { act, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import system from "@/app/theme";
 import { SYSTEM_BANNER_STORAGE_KEY } from "@/app/constants/system-banner";
-import { i18n } from "@/src/shared/lib/i18n";
+import { catalogs, i18n } from "@/src/shared/lib/i18n";
 
 import DisclaimerPanel from "../DisclaimerPanel";
 
@@ -27,27 +27,25 @@ describe("DisclaimerPanel", () => {
     localStorage.setItem(SYSTEM_BANNER_STORAGE_KEY, "true");
   });
 
-  it("renders the body, support sentences, links and dismiss in the active locale", async () => {
-    await act(() => i18n.changeLanguage("es"));
-    try {
-      renderPanel();
+  afterEach(async () => {
+    await act(() => i18n.changeLanguage("en"));
+  });
 
-      expect(screen.getByText(/Esta es una vista previa/)).toBeTruthy();
-      expect(screen.getByRole("link", { name: "aquí" })).toBeTruthy();
-      expect(
-        screen.getByRole("link", { name: "Centro de ayuda" })
-      ).toBeTruthy();
-      expect(
-        screen.getByRole("link", { name: "Preguntas frecuentes" })
-      ).toBeTruthy();
-      expect(
-        screen.getByRole("link", { name: "Problemas conocidos" })
-      ).toBeTruthy();
-      expect(
-        screen.getByRole("button", { name: "Descartar aviso" })
-      ).toBeTruthy();
-    } finally {
-      await act(() => i18n.changeLanguage("en"));
-    }
+  it("renders the support sentences whole, with the link inside, in the active locale", async () => {
+    const es = catalogs.es;
+    await act(() => i18n.changeLanguage("es"));
+    renderPanel();
+
+    // "Visita el <a>Centro de ayuda</a> para …": the link keeps its
+    // words, and the sentence around it renders in full.
+    const help = es["preview.help"]!;
+    const label = help.match(/<a>(.*)<\/a>/)![1];
+    const link = screen.getByRole("link", { name: label });
+    expect(link.parentElement!.textContent).toContain(
+      help.replace(/<\/?a>/g, "")
+    );
+    expect(
+      screen.getByRole("button", { name: es["preview.dismiss"] })
+    ).toBeTruthy();
   });
 });

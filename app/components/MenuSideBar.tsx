@@ -183,7 +183,7 @@ export default function MenuSideBar() {
             maxW="330px"
             w="330px"
             borderTop="4px solid #E3F37F"
-            aria-label={t("sidebar.menu")}
+            aria-label={t("nav.menu")}
           >
             <Flex align="center" gap="3" h="40px" px="4" flexShrink={0}>
               <Tooltip content={t("sidebar.close")} showArrow>
@@ -221,7 +221,7 @@ export default function MenuSideBar() {
             >
               <Stack gap="1">
                 <MenuItem
-                  label={t("sidebar.map")}
+                  label={t("nav.map")}
                   icon={MapTrifoldIcon}
                   href={mapTabHref(currentThreadId)}
                   // On My areas the link points at the current page, so leave
@@ -235,7 +235,7 @@ export default function MenuSideBar() {
                   active={onMap && !myAreasActive}
                 />
                 <MenuItem
-                  label={t("sidebar.dashboards")}
+                  label={t("nav.dashboards")}
                   icon={ChartLineIcon}
                   href="/dashboards"
                   active={pathname.startsWith("/dashboards")}
@@ -249,13 +249,13 @@ export default function MenuSideBar() {
               </Stack>
               <Stack gap="1" mt="auto">
                 <MenuItem
-                  label={t("sidebar.help")}
+                  label={t("nav.help")}
                   icon={LifebuoyIcon}
                   href={PREVIEW_HELP_CENTER_URL}
                   external
                 />
                 <MenuItem
-                  label={t("sidebar.whatsNew")}
+                  label={t("nav.whatsNew")}
                   icon={ShootingStarIcon}
                   onClick={openWhatsNew}
                   badge={
@@ -266,14 +266,14 @@ export default function MenuSideBar() {
                 />
                 {emailBeta && (
                   <MenuItem
-                    label={t("sidebar.subscriptions")}
+                    label={t("nav.subscriptions")}
                     icon={BellIcon}
                     href={withFlags("/subscriptions")}
                     active={pathname.startsWith("/subscriptions")}
                   />
                 )}
                 <MenuItem
-                  label={t("sidebar.settings")}
+                  label={t("nav.settings")}
                   icon={GearSixIcon}
                   href="/dashboard"
                   active={/^\/dashboard(\/|$)/.test(pathname)}
@@ -287,12 +287,12 @@ export default function MenuSideBar() {
                 <Text flex="1" fontSize="sm" truncate title={userEmail ?? ""}>
                   {userEmail}
                 </Text>
-                <Tooltip content={t("sidebar.signOut")} showArrow>
+                <Tooltip content={t("account.signOut")} showArrow>
                   <IconButton
                     size="xs"
                     variant="ghost"
                     color="#565E7B"
-                    aria-label={t("sidebar.signOut")}
+                    aria-label={t("account.signOut")}
                     loading={isLoggingOut}
                     onClick={logout}
                   >

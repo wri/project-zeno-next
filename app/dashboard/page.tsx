@@ -215,7 +215,7 @@ export default function UserProfilePage() {
         body: JSON.stringify(payload),
       });
       if (!res.ok) {
-        throw new Error(t("profile.saveFailed.error"));
+        throw new Error(`Failed to save profile (${res.status})`);
       }
       // This page is where "Complete your profile" leads, so the reminder
       // (menu item, in-chat asks) must stop without a reload.
@@ -245,8 +245,7 @@ export default function UserProfilePage() {
       console.error(err);
       toaster.create({
         title: t("profile.saveFailed.title"),
-        description:
-          (err as Error)?.message || t("profile.saveFailed.description"),
+        description: t("profile.saveFailed.description"),
         type: "error",
         duration: 4000,
       });
@@ -270,7 +269,7 @@ export default function UserProfilePage() {
           <Flex alignItems="center" gap={2} color="fg.muted">
             <UserCircleIcon size={24} />
             <Heading as="h1" size="2xl" fontWeight="normal">
-              {t("profile.title")}
+              {t("account.profile")}
             </Heading>
           </Flex>
           <Button

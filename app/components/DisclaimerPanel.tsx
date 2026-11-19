@@ -73,7 +73,7 @@ export default function DisclaimerPanel() {
           <InfoIcon weight="fill" size={16} />
         </Icon>
         <Box flex="1" pr={5}>
-          <Text mb={1}>{t("header.preview.body")}</Text>
+          <Text mb={1}>{t("preview.body")}</Text>
           <Text>
             <PreviewSupportLinks linkColor="fg.link" />
           </Text>
@@ -87,14 +87,14 @@ export default function DisclaimerPanel() {
           >
             {PREVIEW_LINKS.map((link) => (
               <Link
-                key={link.id}
+                key={link.href}
                 color="fg.link"
                 textDecoration="underline"
                 href={link.href}
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                {t(`header.preview.${link.id}`)}
+                {t(link.labelKey)}
               </Link>
             ))}
           </Flex>
@@ -105,7 +105,7 @@ export default function DisclaimerPanel() {
           top={2}
           right={2}
           onClick={dismiss}
-          aria-label={t("header.preview.dismiss")}
+          aria-label={t("preview.dismiss")}
         />
       </Flex>
     </Box>

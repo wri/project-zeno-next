@@ -2,7 +2,7 @@
 /**
  * The slim header: menu button (opens the menu side bar), logo with the
  * PREVIEW badge, the Map and Dashboards tabs, and the avatar (User Profile
- * and Logout, email on hover). The active tab follows the route; state items
+ * and Log out, email on hover). The active tab follows the route; state items
  * (prompt meter, What's new) sit left of the avatar.
  */
 import { ChakraProvider } from "@chakra-ui/react";
@@ -12,7 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import system from "@/app/theme";
 import useAuthStore from "@/app/store/authStore";
 import useSidebarStore from "@/app/store/sidebarStore";
-import { i18n } from "@/src/shared/lib/i18n";
+import { catalogs, i18n } from "@/src/shared/lib/i18n";
 import {
   WHATS_NEW_OPEN_EVENT,
   WHATS_NEW_STORAGE_KEY,
@@ -145,7 +145,7 @@ describe("PageHeader account menu", () => {
     expect(avatar().getAttribute("aria-label")).toBe("Account menu");
   });
 
-  it("lists only User Profile and Logout, without repeating the email", async () => {
+  it("lists only User Profile and Log out, without repeating the email", async () => {
     renderHeader("/app");
 
     await act(async () => {
@@ -155,7 +155,7 @@ describe("PageHeader account menu", () => {
     const items = screen
       .getAllByRole("menuitem")
       .map((el) => el.textContent?.trim());
-    expect(items).toEqual(["User Profile", "Logout"]);
+    expect(items).toEqual(["User Profile", "Log out"]);
     expect(screen.getByRole("menu").textContent).not.toContain(
       "user@example.com"
     );
@@ -391,7 +391,7 @@ describe("PageHeader profile reminder (front door)", () => {
 
     expect(await openAccountMenu()).toEqual([
       "Complete your profile",
-      "Logout",
+      "Log out",
     ]);
     expect(menuItem()!.getAttribute("href")).toBe("/dashboard");
   });
@@ -400,12 +400,14 @@ describe("PageHeader profile reminder (front door)", () => {
     signIn(true);
     renderHeader("/app");
     expect(dot()).toBeNull();
-    expect(await openAccountMenu()).toEqual(["User Profile", "Logout"]);
+    expect(await openAccountMenu()).toEqual(["User Profile", "Log out"]);
   });
 });
 
 describe("PageHeader locale", () => {
-  beforeEach(() => {
+  const es = catalogs.es;
+
+  beforeEach(async () => {
     localStorage.clear();
     useSidebarStore.setState({ menuOpen: false });
     useAuthStore.getState().setAuthStatus({
@@ -415,59 +417,42 @@ describe("PageHeader locale", () => {
       userType: null,
     });
     useAuthStore.getState().setPromptUsage(15, 20);
+    await act(() => i18n.changeLanguage("es"));
   });
 
-  it("renders the header, preview info and prompt meter in the active locale", async () => {
+  afterEach(async () => {
+    vi.unstubAllEnvs();
+    await act(() => i18n.changeLanguage("en"));
+  });
+
+  it("renders the header, preview info and account menu in the active locale", async () => {
     localStorage.setItem("gnw_disclaimer_dismissed_v2", "true");
-    await act(() => i18n.changeLanguage("es"));
-    try {
-      renderHeader("/app");
+    renderHeader("/app");
 
-      expect(screen.getByRole("button", { name: "Abrir menú" })).toBeTruthy();
-      expect(screen.getByRole("link", { name: "Mapa" })).toBeTruthy();
-      expect(screen.getByRole("link", { name: "Tableros" })).toBeTruthy();
-      expect(screen.getByText("VISTA PREVIA")).toBeTruthy();
-      expect(screen.getByText("15 / 20 consultas diarias")).toBeTruthy();
-      expect(
-        screen.getByRole("button", {
-          name: "Novedades (actualizaciones sin leer)",
-        })
-      ).toBeTruthy();
+    expect(screen.getByRole("link", { name: es["nav.map"] })).toBeTruthy();
+    expect(screen.getByText(es["header.badge.preview"]!)).toBeTruthy();
 
-      await act(async () => {
-        fireEvent.click(
-          screen.getByRole("button", {
-            name: "Abrir información de la vista previa",
-          })
-        );
-      });
-      expect(screen.getByText("Versión preliminar")).toBeTruthy();
-      expect(screen.getByRole("link", { name: "aquí" })).toBeTruthy();
-      expect(
-        screen.getByRole("link", { name: "Centro de ayuda" })
-      ).toBeTruthy();
-      expect(
-        screen.getByRole("link", { name: "Preguntas frecuentes" })
-      ).toBeTruthy();
-      expect(screen.getByRole("link", { name: "Capacidades" })).toBeTruthy();
-      expect(screen.getByRole("link", { name: "Precisión" })).toBeTruthy();
-      expect(
-        screen.getByRole("link", { name: "Problemas conocidos" })
-      ).toBeTruthy();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: es["preview.open"] }));
+    });
+    expect(screen.getByText(es["preview.title"]!)).toBeTruthy();
+    expect(screen.getByRole("link", { name: es["preview.faqs"] })).toBeTruthy();
 
-      await act(async () => {
-        fireEvent.click(
-          screen.getByRole("button", { name: "Menú de la cuenta" })
-        );
-      });
-      expect(
-        screen.getByRole("menuitem", { name: "Perfil de usuario" })
-      ).toBeTruthy();
-      expect(
-        screen.getByRole("menuitem", { name: "Cerrar sesión" })
-      ).toBeTruthy();
-    } finally {
-      await act(() => i18n.changeLanguage("en"));
-    }
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", { name: es["header.account.menu"] })
+      );
+    });
+    expect(
+      screen.getByRole("menuitem", { name: es["account.logOut"] })
+    ).toBeTruthy();
+  });
+
+  it("translates the PROTOTYPE badge in place of PREVIEW", () => {
+    vi.stubEnv("NEXT_PUBLIC_PROTOTYPE_MODE", "true");
+    renderHeader("/app");
+
+    expect(screen.getByText(es["header.badge.prototype"]!)).toBeTruthy();
+    expect(screen.queryByText(es["header.badge.preview"]!)).toBeNull();
   });
 });

@@ -23,14 +23,14 @@ function AvailablePromptsCard() {
       data-testid="available-prompts-card"
     >
       <Text fontSize="sm" fontWeight="medium" color="fg">
-        {t("sidebar.prompts.title")}
+        {t("prompts.title")}
       </Text>
       <Text fontSize="xs" color="fg.muted" mb="2">
-        {t("sidebar.prompts.count", { used: usedPrompts, total: totalPrompts })}
+        {t("prompts.count", { used: usedPrompts, total: totalPrompts })}
       </Text>
       <Box
         role="progressbar"
-        aria-label={t("sidebar.prompts.used")}
+        aria-label={t("prompts.used")}
         aria-valuemin={0}
         aria-valuemax={totalPrompts}
         aria-valuenow={Math.min(usedPrompts, totalPrompts)}

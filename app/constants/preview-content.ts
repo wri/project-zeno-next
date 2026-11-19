@@ -1,25 +1,26 @@
+import type { MessageKey } from "@/src/shared/lib/i18n";
+
 export const PREVIEW_FEEDBACK_FORM =
   "https://globalnaturewatch.zendesk.com/hc/en-us/requests/new";
 
 export const PREVIEW_HELP_CENTER_URL =
   "https://help.horizon.globalnaturewatch.org/";
 
-/** Labels live in the i18n catalogs as `header.preview.<id>`. */
 export const PREVIEW_LINKS = [
   {
-    id: "faqs",
+    labelKey: "preview.faqs",
     href: "https://help.horizon.globalnaturewatch.org/support/faqs",
   },
   {
-    id: "capabilities",
+    labelKey: "preview.capabilities",
     href: "https://help.horizon.globalnaturewatch.org/get-started/capabilities-and-datasets",
   },
   {
-    id: "accuracy",
+    labelKey: "preview.accuracy",
     href: "https://help.horizon.globalnaturewatch.org/get-started/accuracy-and-performance",
   },
   {
-    id: "knownIssues",
+    labelKey: "preview.knownIssues",
     href: "https://help.horizon.globalnaturewatch.org/resources/known-issues",
   },
-] as const;
+] as const satisfies readonly { labelKey: MessageKey; href: string }[];

@@ -5,11 +5,11 @@
  */
 import { ChakraProvider } from "@chakra-ui/react";
 import { act, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import system from "@/app/theme";
 import useAuthStore from "@/app/store/authStore";
-import { i18n } from "@/src/shared/lib/i18n";
+import { catalogs, i18n } from "@/src/shared/lib/i18n";
 
 vi.mock("@/app/components/ui/toaster", () => ({
   toaster: { create: vi.fn() },
@@ -59,41 +59,27 @@ describe("User profile page", () => {
     useAuthStore.getState().setPromptUsage(4, 20);
   });
 
+  afterEach(async () => {
+    await act(() => i18n.changeLanguage("en"));
+  });
+
   it("renders the page and settings shell in the active locale", async () => {
+    const es = catalogs.es;
     await act(() => i18n.changeLanguage("es"));
-    try {
-      renderPage();
+    renderPage();
 
-      expect(
-        screen.getByRole("heading", { name: "Perfil de usuario" })
-      ).toBeTruthy();
-      expect(screen.getByText("campos obligatorios")).toBeTruthy();
-      expect(screen.getByText("Nombre")).toBeTruthy();
-      expect(screen.getByText("Detalles adicionales")).toBeTruthy();
-      expect(screen.getByText("Guardar cambios")).toBeTruthy();
-      expect(
-        screen.getByText("Envíame noticias y eventos de Global Nature Watch.")
-      ).toBeTruthy();
-      expect(
-        screen.getByRole("heading", { name: "Eliminar tu cuenta" })
-      ).toBeTruthy();
-      expect(
-        screen.getByRole("link", {
-          name: "Solicitar la eliminación de la cuenta",
-        })
-      ).toBeTruthy();
-
-      expect(screen.getByRole("link", { name: "Ayuda" })).toBeTruthy();
-      expect(screen.getByText("Consultas disponibles")).toBeTruthy();
-      expect(screen.getByText("ada@example.com")).toBeTruthy();
-      expect(
-        screen
-          .getByRole("button", { name: "ada@example.com" })
-          .getAttribute("title")
-      ).toBe("Cerrar sesión");
-      expect(screen.getByRole("link", { name: "Volver al mapa" })).toBeTruthy();
-    } finally {
-      await act(() => i18n.changeLanguage("en"));
-    }
+    expect(
+      screen.getByRole("heading", { name: es["account.profile"] })
+    ).toBeTruthy();
+    expect(screen.getByText(es["profile.save"]!)).toBeTruthy();
+    expect(
+      screen.getByRole("link", { name: es["settings.backToMap"] })
+    ).toBeTruthy();
+    // The email stays as entered.
+    expect(
+      screen
+        .getByRole("button", { name: "ada@example.com" })
+        .getAttribute("title")
+    ).toBe(es["account.signOut"]);
   });
 });

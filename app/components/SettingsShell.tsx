@@ -5,7 +5,6 @@ import {
   ButtonGroup,
   Flex,
   Heading,
-  Progress,
   Text,
   Link as ChakraLink,
 } from "@chakra-ui/react";
@@ -22,6 +21,8 @@ import { Link } from "@/src/shared/lib/router";
 import { useTranslation } from "@/src/shared/lib/i18n";
 import useAuthStore from "@/app/store/authStore";
 import { useLogout } from "@/app/hooks/useLogout";
+import { PREVIEW_HELP_CENTER_URL } from "@/app/constants/preview-content";
+import AvailablePromptsCard from "./AvailablePromptsCard";
 import BackToMapLink from "./BackToMapLink";
 
 type SettingsPath =
@@ -40,7 +41,7 @@ export default function SettingsShell({
   children,
 }: SettingsShellProps) {
   const { t } = useTranslation();
-  const { userEmail, userType, usedPrompts, totalPrompts } = useAuthStore();
+  const { userEmail, userType } = useAuthStore();
   const { logout } = useLogout();
 
   return (
@@ -85,7 +86,7 @@ export default function SettingsShell({
           >
             <Link href="/dashboard">
               <UserCircleIcon />
-              {t("settings.profile")}
+              {t("account.profile")}
             </Link>
           </Button>
           {userType === "superuser" && (
@@ -122,40 +123,14 @@ export default function SettingsShell({
             </Button>
           )}
           <Button asChild>
-            <Link
-              href="https://help.horizon.globalnaturewatch.org/"
-              target="_blank"
-            >
+            <Link href={PREVIEW_HELP_CENTER_URL} target="_blank">
               <LifebuoyIcon />
-              {t("settings.help")}
+              {t("nav.help")}
             </Link>
           </Button>
         </ButtonGroup>
-        <Box p={4} mt="auto" bg="bg" rounded="lg">
-          <Heading size="xs" as="p" color="fg.muted">
-            {t("settings.prompts")}
-          </Heading>
-          <Progress.Root
-            size="xs"
-            min={0}
-            max={totalPrompts}
-            value={usedPrompts}
-            minW="6rem"
-            rounded="full"
-            colorPalette="primary"
-          >
-            <Progress.Label
-              mb={2}
-              fontSize="xs"
-              fontWeight="normal"
-              color="fg.subtle"
-            >
-              {usedPrompts}/{totalPrompts}
-            </Progress.Label>
-            <Progress.Track>
-              <Progress.Range />
-            </Progress.Track>
-          </Progress.Root>
+        <Box mt="auto" bg="bg" rounded="sm">
+          <AvailablePromptsCard />
         </Box>
         <Button
           size="sm"
@@ -164,7 +139,7 @@ export default function SettingsShell({
           variant="outline"
           justifyContent="flex-start"
           onClick={logout}
-          title={t("settings.signOut")}
+          title={t("account.signOut")}
         >
           <UserIcon />
           <Text mr="auto" truncate maxW="180px">

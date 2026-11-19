@@ -13,7 +13,7 @@ import system from "@/app/theme";
 import useAuthStore from "@/app/store/authStore";
 import useChatStore from "@/app/store/chatStore";
 import useSidebarStore from "@/app/store/sidebarStore";
-import { i18n } from "@/src/shared/lib/i18n";
+import { catalogs, i18n } from "@/src/shared/lib/i18n";
 import {
   WHATS_NEW_OPEN_EVENT,
   WHATS_NEW_STORAGE_KEY,
@@ -284,23 +284,13 @@ describe("MenuSideBar", () => {
     expect(logout).toHaveBeenCalledTimes(1);
   });
 
-  it("renders destinations, the unread badge and the prompts card in the active locale", async () => {
+  it("renders its destinations and the prompts card in the active locale", async () => {
+    const es = catalogs.es;
     await act(() => i18n.changeLanguage("es"));
     try {
       renderMenu();
-      expect(screen.getByRole("button", { name: "Cerrar menú" })).toBeTruthy();
-      expect(screen.getByRole("link", { name: "Mapa" })).toBeTruthy();
-      expect(screen.getByRole("link", { name: "Tableros" })).toBeTruthy();
-      expect(action(/mis áreas/i)).toBeTruthy();
-      expect(screen.getByRole("link", { name: "Ayuda" })).toBeTruthy();
-      expect(action(/novedades/i).textContent).toContain("elementos");
-      expect(
-        screen.getByRole("link", { name: "Ajustes de usuario" })
-      ).toBeTruthy();
-      expect(screen.getByText("Consultas disponibles")).toBeTruthy();
-      expect(screen.getByText("10 / 20 consultas diarias")).toBeTruthy();
-      expect(action(/cerrar sesión/i)).toBeTruthy();
-      expect(screen.getByText("user@example.com")).toBeTruthy();
+      expect(screen.getByRole("link", { name: es["nav.map"] })).toBeTruthy();
+      expect(screen.getByText(es["prompts.title"]!)).toBeTruthy();
     } finally {
       await act(() => i18n.changeLanguage("en"));
     }

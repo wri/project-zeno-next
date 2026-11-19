@@ -44,7 +44,7 @@ export default function PreviewInfoPanel({ onClose }: PreviewInfoPanelProps) {
         color="#B2B6BD"
         _hover={{ color: "#656E7B" }}
         onClick={onClose}
-        aria-label={t("header.preview.close")}
+        aria-label={t("preview.close")}
       >
         <XIcon size={16} />
       </Box>
@@ -71,7 +71,7 @@ export default function PreviewInfoPanel({ onClose }: PreviewInfoPanelProps) {
           color="#131619"
           lineHeight="1.4"
         >
-          {t("header.preview.title")}
+          {t("preview.title")}
         </Text>
         <Text
           fontFamily="sans-serif"
@@ -81,7 +81,7 @@ export default function PreviewInfoPanel({ onClose }: PreviewInfoPanelProps) {
           lineHeight="150%"
           mt={1}
         >
-          {t("header.preview.body")}
+          {t("preview.body")}
         </Text>
         <Text
           fontFamily="sans-serif"
@@ -100,7 +100,7 @@ export default function PreviewInfoPanel({ onClose }: PreviewInfoPanelProps) {
         <Flex gap={3} flexWrap="wrap">
           {PREVIEW_LINKS.map((link) => (
             <a
-              key={link.id}
+              key={link.href}
               href={link.href}
               target="_blank"
               rel="noopener noreferrer"
@@ -117,7 +117,7 @@ export default function PreviewInfoPanel({ onClose }: PreviewInfoPanelProps) {
               }}
             >
               <ArrowSquareOutIcon size={16} />
-              {t(`header.preview.${link.id}`)}
+              {t(link.labelKey)}
             </a>
           ))}
         </Flex>

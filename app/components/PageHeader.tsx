@@ -102,13 +102,13 @@ function PageHeader() {
       // Thread-aware: with a live conversation, land on its thread URL
       // (which preserves state) instead of the resetting /app.
       href: mapTabHref(currentThreadId),
-      label: t("header.nav.map"),
+      label: t("nav.map"),
       icon: MapTrifoldIcon,
       active: onMap,
     },
     {
       href: "/dashboards",
-      label: t("header.nav.dashboards"),
+      label: t("nav.dashboards"),
       icon: ChartLineIcon,
       active: onDashboards,
     },
@@ -136,7 +136,7 @@ function PageHeader() {
       <MenuSideBar />
       <Flex gap="10" alignItems="center" alignSelf="stretch" minW={0}>
         <Flex gap="3" alignItems="center">
-          <Tooltip content={t("header.menu")} showArrow>
+          <Tooltip content={t("nav.menu")} showArrow>
             <IconButton
               hideBelow="md"
               w="32px"
@@ -206,7 +206,7 @@ function PageHeader() {
                       : undefined
                   }
                   aria-label={
-                    disclaimerDismissed ? t("header.preview.open") : undefined
+                    disclaimerDismissed ? t("preview.open") : undefined
                   }
                 >
                   <Text
@@ -276,7 +276,7 @@ function PageHeader() {
         {/* State items (quota meter, What's new) sit left of the avatar. */}
         <PromptQuotaMeter />
         {whatsNewUnread && (
-          <Tooltip content={t("header.whatsNew")} showArrow>
+          <Tooltip content={t("nav.whatsNew")} showArrow>
             <IconButton
               position="relative"
               overflow="visible"
@@ -360,7 +360,7 @@ function PageHeader() {
                       <Menu.Item value="subscriptions" asChild>
                         <Link href={withFlags("/subscriptions")}>
                           <BellIcon />
-                          {t("header.account.subscriptions")}
+                          {t("nav.subscriptions")}
                         </Link>
                       </Menu.Item>
                     </>
@@ -370,9 +370,7 @@ function PageHeader() {
                       <Menu.Item value="dashboard" asChild>
                         <Link href="/dashboard">
                           <GearSixIcon />
-                          {emailBeta
-                            ? t("header.account.settings")
-                            : t("header.account.profile")}
+                          {t(emailBeta ? "nav.settings" : "account.profile")}
                         </Link>
                       </Menu.Item>
                     }
@@ -384,16 +382,10 @@ function PageHeader() {
                     color="fg.error"
                     _hover={{ bg: "bg.error", color: "fg.error" }}
                     onClick={logout}
-                    title={
-                      emailBeta
-                        ? t("header.account.logOut")
-                        : t("header.account.logout")
-                    }
+                    title={t("account.logOut")}
                   >
                     <SignOutIcon />
-                    {emailBeta
-                      ? t("header.account.logOut")
-                      : t("header.account.logout")}
+                    {t("account.logOut")}
                   </Menu.Item>
                 </Menu.Content>
               </Menu.Positioner>

@@ -3,53 +3,39 @@ import {
   PREVIEW_FEEDBACK_FORM,
   PREVIEW_HELP_CENTER_URL,
 } from "@/app/constants/preview-content";
-import { useTranslation } from "@/src/shared/lib/i18n";
-
-/** Marks where the link sits, so a translation can move it in the sentence. */
-const LINK_MARK = "";
+import { Trans } from "@/src/shared/lib/i18n";
 
 /**
  * The feedback and Help Center sentences shared by the preview disclaimer and
- * the preview info panel, each with its link wherever the locale puts it.
+ * the preview info panel. Each message wraps its link text in `<a>`, so a
+ * translation keeps the link and its words together.
  */
 export default function PreviewSupportLinks({
   linkColor,
 }: {
   linkColor: string;
 }) {
-  const { t } = useTranslation();
-  const withLink = (message: string, href: string, label: string) => {
-    const [before, after = ""] = message.split(LINK_MARK);
-    return (
-      <>
-        {before}
-        <Link
-          color={linkColor}
-          textDecoration="underline"
-          href={href}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {label}
-        </Link>
-        {after}
-      </>
-    );
-  };
+  const link = (href: string) => (
+    <Link
+      color={linkColor}
+      textDecoration="underline"
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+    />
+  );
 
   return (
     <>
-      {withLink(
-        t("header.preview.feedback", { link: LINK_MARK }),
-        PREVIEW_FEEDBACK_FORM,
-        t("header.preview.feedbackLink")
-      )}
+      <Trans
+        i18nKey="preview.feedback"
+        components={{ a: link(PREVIEW_FEEDBACK_FORM) }}
+      />
       <br />
-      {withLink(
-        t("header.preview.help", { link: LINK_MARK }),
-        PREVIEW_HELP_CENTER_URL,
-        t("header.preview.helpLink")
-      )}
+      <Trans
+        i18nKey="preview.help"
+        components={{ a: link(PREVIEW_HELP_CENTER_URL) }}
+      />
     </>
   );
 }
