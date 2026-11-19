@@ -42,21 +42,25 @@ export function newestRun(runs: readonly BenchmarkRunRef[]): BenchmarkRunRef {
 export function trendPoints(
   pages: readonly (BenchmarkPage | undefined)[]
 ): TrendPoint[] {
-  return pages.flatMap((p) =>
-    p?.summary.everyTime == null
-      ? []
-      : [
-          {
-            runId: p.run.runId,
-            started: p.run.started,
-            draft: p.run.draft,
-            scored: p.summary.scored,
-            everyTime: p.summary.everyTime,
-            majority: p.summary.majority,
-            anyTime: p.summary.anyTime,
-          },
-        ]
-  );
+  return pages.flatMap((p) => {
+    // The page data nulls the three shares together, and only when nothing
+    // was scored: such a run has no headline to plot.
+    const { everyTime, majority, anyTime } = p?.summary ?? {};
+    if (!p || everyTime == null || majority == null || anyTime == null) {
+      return [];
+    }
+    return [
+      {
+        runId: p.run.runId,
+        started: p.run.started,
+        draft: p.run.draft,
+        scored: p.summary.scored,
+        everyTime,
+        majority,
+        anyTime,
+      },
+    ];
+  });
 }
 
 /** The trend axis origin: 1 September 2026. */

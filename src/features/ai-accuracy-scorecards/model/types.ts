@@ -190,7 +190,7 @@ export interface TrendPoint {
   /** Share right on every try, in [0, 1]. */
   readonly everyTime: number;
   /** Share right on at least 2 of 3 tries. */
-  readonly majority: number | null;
+  readonly majority: number;
   /** Share right on at least 1 of 3 tries. */
-  readonly anyTime: number | null;
+  readonly anyTime: number;
 }

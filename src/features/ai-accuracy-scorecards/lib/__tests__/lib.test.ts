@@ -362,6 +362,19 @@ describe("runs", () => {
     ]);
   });
 
+  it("draws no point for a run that scored nothing", () => {
+    const empty = {
+      run: { runId: "x", started: "2026-10-28T00:00:00Z", draft: false },
+      summary: makeStats({
+        scored: 0,
+        everyTime: null,
+        majority: null,
+        anyTime: null,
+      }),
+    } as unknown as BenchmarkPage;
+    expect(trendPoints([empty])).toEqual([]);
+  });
+
   it("places dates on the axis in months since September 2026", () => {
     expect(monthsSinceOrigin("2026-09-01T00:00:00Z")).toBe(0);
     expect(monthsSinceOrigin("2026-11-16T00:00:00Z")).toBeCloseTo(2.5);

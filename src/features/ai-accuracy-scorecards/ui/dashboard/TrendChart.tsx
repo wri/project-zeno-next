@@ -38,14 +38,12 @@ const TICKS: readonly [number, string][] = [
 ];
 const Y_TICKS = [100, 80, 60, 40, 20, 0] as const;
 
-/** The point's range bar, bottom up; a missing share ends the bar early. */
+/** The point's range bar, bottom up. */
 function rangeSegments(p: TrendPoint) {
-  const segments: { tier: "most" | "some"; from: number; to: number }[] = [];
-  if (p.majority == null) return segments;
-  segments.push({ tier: "most", from: p.everyTime, to: p.majority });
-  if (p.anyTime != null) {
-    segments.push({ tier: "some", from: p.majority, to: p.anyTime });
-  }
+  const segments = [
+    { tier: "most", from: p.everyTime, to: p.majority },
+    { tier: "some", from: p.majority, to: p.anyTime },
+  ] as const;
   return segments.filter((s) => s.to > s.from);
 }
 
@@ -69,14 +67,12 @@ function RunTip({
         {point.draft ? " · draft run" : ""}
       </TipNote>
       <TipRows
-        rows={rows
-          .filter((row) => row.value != null)
-          .map((row) => ({
-            key: row.key,
-            color: TIER_COLORS[row.key],
-            label: `Accurate on ${TIER_COPY[row.key].tries}`,
-            value: pct(row.value, 1),
-          }))}
+        rows={rows.map((row) => ({
+          key: row.key,
+          color: TIER_COLORS[row.key],
+          label: `Accurate on ${TIER_COPY[row.key].tries}`,
+          value: pct(row.value, 1),
+        }))}
       />
       {previous && change !== null ? (
         <>
