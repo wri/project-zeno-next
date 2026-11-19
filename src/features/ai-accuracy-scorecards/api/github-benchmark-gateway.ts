@@ -143,6 +143,15 @@ const RawPage = z.looseObject({
     members: z.number(),
     excluded: z.number(),
   }),
+  // Only a languages companion page has this key. Its headline holds just
+  // the English twins of the translated questions, so it is not a run.
+  languages: z
+    .never({
+      error:
+        "this is a languages companion page, not a benchmark run; release " +
+        "the benchmark run's own page",
+    })
+    .optional(),
   summary: z.looseObject(RawStats.shape),
   stages: z.array(
     z.looseObject({
@@ -224,14 +233,6 @@ export function parseBenchmarkPage(
   draft: boolean
 ): BenchmarkPage {
   const raw = RawPage.parse(json);
-  // A languages companion run writes a page of the same shape, but its
-  // headline holds only the English twins of the translated questions.
-  if (raw.benchmark.version.endsWith("-languages")) {
-    throw new Error(
-      `benchmark version ${raw.benchmark.version} is a languages companion ` +
-        `page, not a benchmark run; release the benchmark run's own page`
-    );
-  }
   const typeLabels = new Map(raw.types.map((t) => [t.key, t.label]));
   function typeLabel(key: string): string {
     const label = typeLabels.get(key);

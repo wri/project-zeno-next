@@ -41,9 +41,9 @@ gives one headline point on the trend, oldest first, whatever its benchmark
 version; the point's tooltip gives the number of questions it scored.
 
 Release only a benchmark run's own page. A languages companion run writes a
-page of the same shape (its version ends in `-languages`) whose headline
-holds only the English twins of the translated questions; the gateway
-refuses it.
+page of the same shape, marked by a top-level `languages` key that no
+benchmark page has, and its headline holds only the English twins of the
+translated questions; the gateway refuses a page with that key.
 
 Unlike `/evals`, this slice computes no scores: the page data already carries
 the tiers, failure attribution and per-group stats, so the numbers match the
