@@ -5,14 +5,30 @@
  * 28 Oct, at f7c138e). So what a deployed page shows changes only with an
  * FE release: add an entry in a PR to develop, check it on staging, then
  * release to main. Release only canonical runs; the trend plots them.
- * `name` gives each run its label (`lib/format.ts`), and `draft` alone
- * decides whether the page marks the run as a draft.
+ * `name` gives each run its label, and `draft` alone decides whether the
+ * page marks the run as a draft.
  */
+
+type MonthSlug =
+  | "jan"
+  | "feb"
+  | "mar"
+  | "apr"
+  | "may"
+  | "jun"
+  | "jul"
+  | "aug"
+  | "sep"
+  | "oct"
+  | "nov"
+  | "dec";
 
 export interface Release {
   /** The release's slug, a three-letter month and a year ("oct-2026"),
-   * unique in the list; the page shows it as "October 2026". */
-  readonly name: string;
+   * unique in the list; the page shows it as "October 2026". A bad month
+   * does not compile: the label is built when the page module loads, so a
+   * bad name would otherwise crash the route. */
+  readonly name: `${MonthSlug}-${number}`;
   /** A gnw-gold-evals benchmark run with committed page data. */
   readonly runId: string;
   /** The full gnw-gold-evals commit sha the run's page is read at. */

@@ -280,27 +280,16 @@ describe("mixSentence", () => {
 });
 
 describe("runs", () => {
-  const ref = (n: number) => String(n).repeat(40);
-
-  it("lists the releases oldest first, with their names and draft flags", () => {
-    const runs = releasedRuns([
-      {
-        name: "nov-2026",
-        runId: "20261128T090000Z_prod",
-        ref: ref(2),
-        draft: true,
-      },
-      {
-        name: "oct-2026",
-        runId: "20261028T124051Z_prod",
-        ref: ref(1),
-        draft: false,
-      },
-    ]);
-    expect(runs.map((r) => [r.runId, r.name, r.draft])).toEqual([
-      ["20261028T124051Z_prod", "oct-2026", false],
-      ["20261128T090000Z_prod", "nov-2026", true],
-    ]);
+  it("lists the releases oldest first, whatever the list's order", () => {
+    const runs = releasedRuns([...RELEASES].reverse());
+    expect(runs.map((r) => r.runId)).toEqual(
+      RELEASES.map((r) => r.runId).sort()
+    );
+    expect(runs.map((r) => r.name)).toEqual(
+      [...RELEASES]
+        .sort((a, b) => a.runId.localeCompare(b.runId))
+        .map((r) => r.name)
+    );
   });
 
   it("ships well-formed releases: names, run ids, full commit shas, each name and run once", () => {
@@ -308,10 +297,6 @@ describe("runs", () => {
       expect(release.name).toMatch(/^[a-z]{3}-\d{4}$/);
       expect(release.runId).toMatch(/^\d{8}T\d{6}Z_/);
       expect(release.ref).toMatch(/^[0-9a-f]{40}$/);
-    }
-    // A name that is not a month would label its run "Invalid Date".
-    for (const release of RELEASES) {
-      expect(formatReleaseName(release.name)).toMatch(/^[A-Z][a-z]+ \d{4}$/);
     }
     for (const key of ["name", "runId"] as const) {
       const values = RELEASES.map((r) => r[key]);

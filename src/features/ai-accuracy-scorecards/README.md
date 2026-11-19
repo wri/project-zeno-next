@@ -27,7 +27,8 @@ schema mismatch throws rather than being papered over.
 1. Push the canonical run and its page file to gnw-gold-evals `benchmark`.
 2. Add `{ name, runId, ref, draft }` to `RELEASES` in `model/releases.ts`.
    `name` is a slug of a three-letter month and a year (`nov-2026`), unique
-   in the list; the page spells it out ("November 2026"). `ref` is the full
+   in the list; a bad month fails to compile, and the page spells it out
+   ("November 2026"). `ref` is the full
    sha of a pushed commit that holds the page as you want it shown. `draft`
    alone decides whether the page marks the run as a draft (header and hero
    badges, trend, footer, the questions' unreviewed expected answers); the
