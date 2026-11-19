@@ -65,7 +65,7 @@ function RunTip({
   return (
     <>
       <TipNote>
-        {formatDay(point.started)}
+        {formatDay(point.started)} · {point.scored} questions
         {point.draft ? " · draft run" : ""}
       </TipNote>
       <TipRows
@@ -93,7 +93,7 @@ function RunTip({
 }
 
 /**
- * Headline accuracy (right every time) per released run of the version.
+ * Headline accuracy (right every time) per released run, oldest first.
  * Points only; a line joins them once there are two or more. The shares are
  * nested (every time ⊆ most ⊆ some), so each point carries one bar stacked
  * upwards from it, tinted like the tier bar: up to "most of the time", then
@@ -178,7 +178,7 @@ export function TrendChart({
             ? `Accuracy over time: ${points
                 .map((p) => `${pct(p.everyTime, 1)} on ${formatDay(p.started)}`)
                 .join(", ")}.`
-            : "Accuracy over time: no comparable runs yet."
+            : "Accuracy over time: no runs yet."
         }
       >
         {last ? (

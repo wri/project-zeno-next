@@ -336,26 +336,29 @@ describe("runs", () => {
     expect(newestRun(runs).name).toBe("nov-2026");
   });
 
-  it("draws the trend from loaded pages of one version only", () => {
-    const page = (runId: string, version: string, draft: boolean) =>
+  it("draws one trend point per loaded page, whatever its version, with its question count", () => {
+    const page = (
+      runId: string,
+      version: string,
+      draft: boolean,
+      scored: number
+    ) =>
       ({
         run: { runId, started: "2026-10-28T00:00:00Z", draft },
         benchmark: { version },
-        summary: makeStats({ everyTime: 0.6, majority: 0.7, anyTime: 0.8 }),
+        summary: makeStats({ scored, everyTime: 0.6 }),
       }) as unknown as BenchmarkPage;
+    // What adding a second release gives: the pages of both runs, oldest
+    // first, of different versions.
     expect(
-      trendPoints(
-        [
-          page("a", "2026", false),
-          undefined,
-          page("b", "2027", false),
-          page("c", "2026", true),
-        ],
-        "2026"
-      ).map((p) => [p.runId, p.draft])
+      trendPoints([
+        page("oct", "2026-draft-5", true, 269),
+        undefined,
+        page("nov", "2026", false, 267),
+      ]).map((p) => [p.runId, p.draft, p.scored])
     ).toEqual([
-      ["a", false],
-      ["c", true],
+      ["oct", true, 269],
+      ["nov", false, 267],
     ]);
   });
 

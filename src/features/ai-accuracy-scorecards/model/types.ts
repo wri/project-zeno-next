@@ -185,6 +185,8 @@ export interface TrendPoint {
   readonly runId: string;
   readonly started: string;
   readonly draft: boolean;
+  /** Questions the run scored: the denominator of its shares. */
+  readonly scored: number;
   /** Share right on every try, in [0, 1]. */
   readonly everyTime: number;
   /** Share right on at least 2 of 3 tries. */

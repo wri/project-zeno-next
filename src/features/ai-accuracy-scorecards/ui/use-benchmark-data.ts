@@ -30,7 +30,7 @@ export function useBenchmarkPage(
 }
 
 /**
- * Several runs' pages (the trend's candidates), aligned with `runs`;
+ * Several runs' pages (the trend's runs), aligned with `runs`;
  * undefined while a page loads. Combined so callers re-render only when a
  * page arrives.
  */

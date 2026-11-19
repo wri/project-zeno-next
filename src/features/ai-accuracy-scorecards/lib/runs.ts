@@ -34,21 +34,23 @@ export function newestRun(runs: readonly BenchmarkRunRef[]): BenchmarkRunRef {
 }
 
 /**
- * The trend's points: the headline of each loaded page of `version`, in
- * the pages' order. Rates are only comparable within a version.
+ * The trend's points: the headline of each loaded page, in the pages'
+ * order, whatever its benchmark version (AJ, 2026-11-19). Each point
+ * carries the number of questions it scored, because the sets differ
+ * slightly between versions.
  */
 export function trendPoints(
-  pages: readonly (BenchmarkPage | undefined)[],
-  version: string
+  pages: readonly (BenchmarkPage | undefined)[]
 ): TrendPoint[] {
   return pages.flatMap((p) =>
-    p?.benchmark.version !== version || p.summary.everyTime == null
+    p?.summary.everyTime == null
       ? []
       : [
           {
             runId: p.run.runId,
             started: p.run.started,
             draft: p.run.draft,
+            scored: p.summary.scored,
             everyTime: p.summary.everyTime,
             majority: p.summary.majority,
             anyTime: p.summary.anyTime,

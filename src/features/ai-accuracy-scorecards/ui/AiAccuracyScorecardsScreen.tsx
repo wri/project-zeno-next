@@ -19,7 +19,7 @@ import {
 } from "@chakra-ui/react";
 import { Link, useRouter, useSearchParams } from "@/src/shared/lib/router";
 import { RELEASES } from "../model/releases";
-import type { BenchmarkPage, TrendPoint } from "../model/types";
+import type { BenchmarkPage } from "../model/types";
 import { resultsUrl } from "../api/github";
 import { newestRun, releasedRuns, trendPoints } from "../lib/runs";
 import { FailureFlowSection } from "./dashboard/FailureFlowSection";
@@ -36,14 +36,10 @@ import { useBenchmarkPage, useBenchmarkPages } from "./use-benchmark-data";
 const RUNS = releasedRuns(RELEASES);
 const RUN = newestRun(RUNS);
 
-/** The headline of every released run of the page's version; a point
- * appears once its page has loaded. */
-function useTrend(page: BenchmarkPage): TrendPoint[] {
-  return trendPoints(useBenchmarkPages(RUNS), page.benchmark.version);
-}
-
 function Dashboard({ page }: { readonly page: BenchmarkPage }) {
-  const trend = useTrend(page);
+  // The headline of every released run; a point appears once its page
+  // has loaded.
+  const trend = trendPoints(useBenchmarkPages(RUNS));
   return (
     <>
       <Hero
