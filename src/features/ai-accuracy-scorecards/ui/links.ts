@@ -1,5 +1,6 @@
-/** The page's views live in `?view=`, the run in `?run=`, so a view
- * of a given run can be bookmarked and shared. */
+/** The page's views live in `?view=`, so a view can be bookmarked and
+ * shared. The run is not in the URL: the page always shows the newest
+ * release, and the `?run=` of an older link is ignored. */
 
 export const VIEWS = ["dashboard", "questions", "methodology"] as const;
 export type View = (typeof VIEWS)[number];
@@ -18,7 +19,6 @@ const PAGE_PATH = "/ai-accuracy-scorecards";
 
 export function pageHref(params: {
   readonly view?: View;
-  readonly run?: string | null;
   readonly useCase?: string;
   /** An anchor on the target view, e.g. "question-types". */
   readonly hash?: string;
@@ -26,7 +26,6 @@ export function pageHref(params: {
   const search = new URLSearchParams();
   if (params.view && params.view !== "dashboard")
     search.set("view", params.view);
-  if (params.run) search.set("run", params.run);
   if (params.useCase) search.set("uc", params.useCase);
   const query = search.toString();
   const anchor = params.hash ? `#${params.hash}` : "";

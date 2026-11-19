@@ -5,7 +5,12 @@ import { failureBreakdown, failureFlow, failurePhrase } from "../failures";
 import { formatDay, formatMonth, pct, share, versionSet } from "../format";
 import { mixSentence } from "../mix";
 import { filterQuestions, NO_FILTER } from "../questions";
-import { monthsSinceOrigin, pickRun, releasedRuns, trendPoints } from "../runs";
+import {
+  monthsSinceOrigin,
+  newestRun,
+  releasedRuns,
+  trendPoints,
+} from "../runs";
 import { tierFigure, tierLines, tiersOf } from "../tiers";
 import { RELEASES } from "../../model/releases";
 import type { BenchmarkPage, FailedCheck } from "../../model/types";
@@ -313,26 +318,22 @@ describe("runs", () => {
     }
   });
 
-  it("opens on the requested release, else the newest", () => {
+  it("fills the page from the newest release, whatever the list's order", () => {
     const runs = releasedRuns([
       {
-        name: "sep-2026",
-        runId: "20260914T090000Z_prod",
-        ref: ref(1),
+        name: "nov-2026",
+        runId: "20261128T090000Z_prod",
+        ref: ref(2),
         draft: false,
       },
       {
         name: "oct-2026",
         runId: "20261028T124051Z_prod",
-        ref: ref(2),
+        ref: ref(1),
         draft: false,
       },
     ]);
-    expect(pickRun(runs, "20260914T090000Z_prod").runId).toBe(
-      "20260914T090000Z_prod"
-    );
-    expect(pickRun(runs, "missing").runId).toBe("20261028T124051Z_prod");
-    expect(pickRun(runs, null).runId).toBe("20261028T124051Z_prod");
+    expect(newestRun(runs).name).toBe("nov-2026");
   });
 
   it("draws the trend from loaded pages of one version only", () => {

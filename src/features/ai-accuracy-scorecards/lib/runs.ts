@@ -25,14 +25,12 @@ export function releasedRuns(releases: readonly Release[]): BenchmarkRunRef[] {
 }
 
 /**
- * The run the page opens on: the requested one when it is released, else
- * the newest release. Runs come oldest first, and RELEASES is never empty.
+ * The run that fills the page: the newest release (AJ, 2026-11-19). Older
+ * releases show only as points on the trend. Runs come oldest first, and
+ * RELEASES is never empty.
  */
-export function pickRun(
-  runs: readonly BenchmarkRunRef[],
-  requested: string | null
-): BenchmarkRunRef {
-  return runs.find((r) => r.runId === requested) ?? runs[runs.length - 1];
+export function newestRun(runs: readonly BenchmarkRunRef[]): BenchmarkRunRef {
+  return runs[runs.length - 1];
 }
 
 /**
