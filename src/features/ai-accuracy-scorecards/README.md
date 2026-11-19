@@ -24,15 +24,15 @@ schema mismatch throws rather than being papered over.
 
 ### Releasing a run
 
-1. Push the canonical run and its page file to gnw-gold-evals `benchmark`.
+1. Push the canonical run and its page file to gnw-gold-evals `main`.
 2. Add `{ name, runId, ref, draft }` to `RELEASES` in `model/releases.ts`.
    `name` is a slug of a three-letter month and a year (`nov-2026`), unique
    in the list; a bad month fails to compile, and the page spells it out
-   ("November 2026"). `ref` is the full
-   sha of a pushed commit that holds the page as you want it shown. `draft`
-   alone decides whether the page marks the run as a draft (header and hero
-   badges, trend, footer, the questions' unreviewed expected answers); the
-   version name in the page data does not.
+   ("November 2026"). `ref` is the full sha of a pushed commit that holds
+   the page as you want it shown. `draft` alone decides whether the page
+   marks the run as a draft (header and hero badges, trend, footer, the
+   questions' unreviewed expected answers); the version name in the page
+   data does not.
 3. Open a PR to `develop`, check the page on staging, then release to `main`.
 
 Adding the entry is the whole change. The newest release (by run id) fills
