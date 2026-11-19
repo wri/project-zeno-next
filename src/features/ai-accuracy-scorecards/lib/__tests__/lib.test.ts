@@ -12,12 +12,7 @@ import {
 } from "../format";
 import { mixSentence } from "../mix";
 import { filterQuestions, NO_FILTER } from "../questions";
-import {
-  monthsSinceOrigin,
-  newestRun,
-  releasedRuns,
-  trendPoints,
-} from "../runs";
+import { monthsSinceOrigin, releasedRuns, trendPoints } from "../runs";
 import { tierFigure, tierLines, tiersOf } from "../tiers";
 import { RELEASES } from "../../model/releases";
 import type { BenchmarkPage, FailedCheck } from "../../model/types";
@@ -323,24 +318,6 @@ describe("runs", () => {
       const values = RELEASES.map((r) => r[key]);
       expect(new Set(values).size).toBe(values.length);
     }
-  });
-
-  it("fills the page from the newest release, whatever the list's order", () => {
-    const runs = releasedRuns([
-      {
-        name: "nov-2026",
-        runId: "20261128T090000Z_prod",
-        ref: ref(2),
-        draft: false,
-      },
-      {
-        name: "oct-2026",
-        runId: "20261028T124051Z_prod",
-        ref: ref(1),
-        draft: false,
-      },
-    ]);
-    expect(newestRun(runs).name).toBe("nov-2026");
   });
 
   it("draws one trend point per loaded page, whatever its version, with its question count", () => {

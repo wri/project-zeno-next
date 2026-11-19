@@ -22,7 +22,7 @@ import { RELEASES } from "../model/releases";
 import type { BenchmarkPage } from "../model/types";
 import { resultsUrl } from "../api/github";
 import { formatReleaseName } from "../lib/format";
-import { newestRun, releasedRuns, trendPoints } from "../lib/runs";
+import { releasedRuns, trendPoints } from "../lib/runs";
 import { FailureFlowSection } from "./dashboard/FailureFlowSection";
 import { Hero } from "./dashboard/Hero";
 import { QuestionTypesSection } from "./dashboard/QuestionTypesSection";
@@ -35,7 +35,9 @@ import { HomeLink, Panel } from "./parts";
 import { useBenchmarkPage, useBenchmarkPages } from "./use-benchmark-data";
 
 const RUNS = releasedRuns(RELEASES);
-const RUN = newestRun(RUNS);
+// The newest release fills the page (AJ, 2026-11-19); older ones show only
+// on the trend.
+const RUN = RUNS[RUNS.length - 1];
 
 function Dashboard({ page }: { readonly page: BenchmarkPage }) {
   // The headline of every released run; a point appears once its page

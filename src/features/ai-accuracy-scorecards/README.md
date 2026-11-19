@@ -66,7 +66,7 @@ while the benchmark was a draft.
 | Segment  | Contents                                                                                                                 |
 | -------- | ------------------------------------------------------------------------------------------------------------------------ |
 | `model/` | Normalised page types, the gateway port, the release list, stage labels, use-case names, the check reference             |
-| `lib/`   | Pure presentation helpers (tiers, failure breakdown, filters, released runs, the newest run, trend points)               |
+| `lib/`   | Pure presentation helpers (tiers, failure breakdown, filters, released runs, trend points)                               |
 | `api/`   | GitHub raw gateway at pinned commits: zod schemas for the wire page, mapping                                             |
 | `ui/`    | Screen, three views in the URL (`?view=`; `?uc=` opens All questions filtered to a use case; `#checks` opens the checks) |
 

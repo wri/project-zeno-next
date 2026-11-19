@@ -13,15 +13,6 @@ export function releasedRuns(releases: readonly Release[]): Release[] {
 }
 
 /**
- * The run that fills the page: the newest release (AJ, 2026-11-19). Older
- * releases show only as points on the trend. Runs come oldest first, and
- * RELEASES is never empty.
- */
-export function newestRun(runs: readonly Release[]): Release {
-  return runs[runs.length - 1];
-}
-
-/**
  * The trend's points: the headline of each loaded page, in the pages'
  * order, whatever its benchmark version (AJ, 2026-11-19). Each point
  * carries the number of questions it scored, because the sets differ
