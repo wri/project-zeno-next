@@ -5,7 +5,7 @@
  * resolved, failure modes zero-filled, question status settled). A schema
  * mismatch, an unknown query type or an unknown use case throws: the page
  * is a derived artefact with a schema_version, so drift is a bug to see,
- * not to paper over.
+ * not to paper over. A languages companion page is refused too.
  */
 
 import { z } from "zod";
@@ -224,6 +224,14 @@ export function parseBenchmarkPage(
   draft: boolean
 ): BenchmarkPage {
   const raw = RawPage.parse(json);
+  // A languages companion run writes a page of the same shape, but its
+  // headline holds only the English twins of the translated questions.
+  if (raw.benchmark.version.endsWith("-languages")) {
+    throw new Error(
+      `benchmark version ${raw.benchmark.version} is a languages companion ` +
+        `page, not a benchmark run; release the benchmark run's own page`
+    );
+  }
   const typeLabels = new Map(raw.types.map((t) => [t.key, t.label]));
   function typeLabel(key: string): string {
     const label = typeLabels.get(key);

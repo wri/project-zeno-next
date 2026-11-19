@@ -251,6 +251,13 @@ describe("parseBenchmarkPage", () => {
     ).toThrow();
   });
 
+  it("refuses a languages companion page", () => {
+    const benchmark = { ...WIRE_PAGE.benchmark, version: "2026-languages" };
+    expect(() => parseBenchmarkPage({ ...WIRE_PAGE, benchmark }, true)).toThrow(
+      /2026-languages is a languages companion page/
+    );
+  });
+
   it("refuses a question whose type the page does not list", () => {
     const [q] = WIRE_PAGE.questions;
     expect(() =>
