@@ -5,11 +5,14 @@
  * 28 Oct, at f7c138e). So what a deployed page shows changes only with an
  * FE release: add an entry in a PR to develop, check it on staging, then
  * release to main. Release only canonical runs; the trend plots them.
- * The dropdown names each run by its month (`lib/runs.ts`), and `draft`
- * alone decides whether the page marks the run as a draft.
+ * `name` gives each run its label (`lib/runs.ts`), and `draft` alone
+ * decides whether the page marks the run as a draft.
  */
 
 export interface Release {
+  /** The release's slug, a three-letter month and a year ("oct-2026"),
+   * unique in the list; the page shows it as "October 2026". */
+  readonly name: string;
   /** A gnw-gold-evals benchmark run with committed page data. */
   readonly runId: string;
   /** The full gnw-gold-evals commit sha the run's page is read at. */
@@ -23,6 +26,7 @@ export interface Release {
 export const RELEASES: readonly [Release, ...Release[]] = [
   // 2026-draft-5, scored by attempt majority.
   {
+    name: "oct-2026",
     runId: "20261028T124051Z_prod",
     ref: "f7c138e514c4780ed84003b13a7decdfede8ff21",
     draft: false,

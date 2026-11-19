@@ -276,35 +276,60 @@ describe("mixSentence", () => {
 describe("runs", () => {
   const ref = (n: number) => String(n).repeat(40);
 
-  it("names each release by its month (by its day when it shares one) and keeps its draft flag", () => {
+  it("lists the releases oldest first, labelled from their names, with their draft flags", () => {
     const runs = releasedRuns([
-      { runId: "20261128T090000Z_prod", ref: ref(3), draft: true },
-      { runId: "20261014T090000Z_prod", ref: ref(1), draft: false },
-      { runId: "20261028T124051Z_prod", ref: ref(2), draft: false },
+      {
+        name: "nov-2026",
+        runId: "20261128T090000Z_prod",
+        ref: ref(2),
+        draft: true,
+      },
+      {
+        name: "oct-2026",
+        runId: "20261028T124051Z_prod",
+        ref: ref(1),
+        draft: false,
+      },
     ]);
     expect(runs.map((r) => [r.runId, r.label, r.draft])).toEqual([
-      ["20261014T090000Z_prod", "14 October 2026", false],
-      ["20261028T124051Z_prod", "28 October 2026", false],
+      ["20261028T124051Z_prod", "October 2026", false],
       ["20261128T090000Z_prod", "November 2026", true],
     ]);
   });
 
-  it("ships well-formed releases: run ids, full commit shas, each once", () => {
+  it("ships well-formed releases: names, run ids, full commit shas, each name and run once", () => {
     for (const release of RELEASES) {
+      expect(release.name).toMatch(/^[a-z]{3}-\d{4}$/);
       expect(release.runId).toMatch(/^\d{8}T\d{6}Z_/);
       expect(release.ref).toMatch(/^[0-9a-f]{40}$/);
     }
-    const ids = RELEASES.map((r) => r.runId);
-    expect(new Set(ids).size).toBe(ids.length);
+    // A name that is not a month would label its run "Invalid Date".
+    for (const run of releasedRuns(RELEASES)) {
+      expect(run.label).toMatch(/^[A-Z][a-z]+ \d{4}$/);
+    }
+    for (const key of ["name", "runId"] as const) {
+      const values = RELEASES.map((r) => r[key]);
+      expect(new Set(values).size).toBe(values.length);
+    }
   });
 
   it("opens on the requested release, else the newest", () => {
     const runs = releasedRuns([
-      { runId: "20261014T090000Z_prod", ref: ref(1), draft: false },
-      { runId: "20261028T124051Z_prod", ref: ref(2), draft: false },
+      {
+        name: "sep-2026",
+        runId: "20260914T090000Z_prod",
+        ref: ref(1),
+        draft: false,
+      },
+      {
+        name: "oct-2026",
+        runId: "20261028T124051Z_prod",
+        ref: ref(2),
+        draft: false,
+      },
     ]);
-    expect(pickRun(runs, "20261014T090000Z_prod").runId).toBe(
-      "20261014T090000Z_prod"
+    expect(pickRun(runs, "20260914T090000Z_prod").runId).toBe(
+      "20260914T090000Z_prod"
     );
     expect(pickRun(runs, "missing").runId).toBe("20261028T124051Z_prod");
     expect(pickRun(runs, null).runId).toBe("20261028T124051Z_prod");

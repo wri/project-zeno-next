@@ -24,16 +24,6 @@ export function formatMonth(iso: string): string {
   return format(calendarDate(iso), "MMM yyyy");
 }
 
-/** "2026-10-23" -> "October 2026". */
-export function formatLongMonth(iso: string): string {
-  return format(calendarDate(iso), "MMMM yyyy");
-}
-
-/** "2026-10-23" -> "23 October 2026". */
-export function formatLongDay(iso: string): string {
-  return format(calendarDate(iso), "d MMMM yyyy");
-}
-
 /** "2026-10-23T09:44:47Z" -> "23 Oct 2026". */
 export function formatDay(iso: string): string {
   return format(calendarDate(iso), "d MMM yyyy");

@@ -1,5 +1,5 @@
-import { differenceInCalendarMonths, getDate } from "date-fns";
-import { calendarDate, formatLongDay, formatLongMonth } from "./format";
+import { differenceInCalendarMonths, format, getDate, parse } from "date-fns";
+import { calendarDate } from "./format";
 import type { Release } from "../model/releases";
 import type {
   BenchmarkPage,
@@ -7,26 +7,20 @@ import type {
   TrendPoint,
 } from "../model/types";
 
+/** A release name spelled out: "oct-2026" -> "October 2026". */
+function releaseLabel(name: string): string {
+  return format(parse(name, "MMM-yyyy", new Date(0)), "MMMM yyyy");
+}
+
 /**
- * The released runs, oldest first, each named by the month in its run id
- * ("20261028T…" is October 2026); every release in a month that has more
- * than one is named by its day. The list's shape (run ids, full commit
- * shas, each run once) is checked by a unit test over RELEASES.
+ * The released runs, oldest first (a run id starts with its timestamp),
+ * each labelled from its release name. The list's shape (names, run ids,
+ * full commit shas, each name and run once) is checked by a unit test
+ * over RELEASES.
  */
 export function releasedRuns(releases: readonly Release[]): BenchmarkRunRef[] {
-  const dated = releases.map((release) => {
-    const id = release.runId;
-    const day = `${id.slice(0, 4)}-${id.slice(4, 6)}-${id.slice(6, 8)}`;
-    return { release, day, month: formatLongMonth(day) };
-  });
-  return dated
-    .map(({ release, day, month }) => ({
-      ...release,
-      label:
-        dated.filter((d) => d.month === month).length > 1
-          ? formatLongDay(day)
-          : month,
-    }))
+  return releases
+    .map((release) => ({ ...release, label: releaseLabel(release.name) }))
     .sort((a, b) => a.runId.localeCompare(b.runId));
 }
 

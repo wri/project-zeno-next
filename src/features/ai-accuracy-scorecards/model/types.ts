@@ -176,8 +176,7 @@ export interface BenchmarkPage {
 
 /** A released run (`model/releases.ts`), as the page lists it. */
 export interface BenchmarkRunRef extends Release {
-  /** "October 2026", or "28 October 2026" when another release shares
-   * the month. */
+  /** The release's name, spelled out: "October 2026" for "oct-2026". */
   readonly label: string;
 }
 

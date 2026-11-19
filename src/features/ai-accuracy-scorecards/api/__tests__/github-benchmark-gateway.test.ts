@@ -274,6 +274,7 @@ describe("parseBenchmarkPage", () => {
 
 describe("GithubBenchmarkGateway", () => {
   const RUN: BenchmarkRunRef = {
+    name: "oct-2026",
     runId: "r1",
     label: "October 2026",
     ref: "f7c138e514c4780ed84003b13a7decdfede8ff21",
