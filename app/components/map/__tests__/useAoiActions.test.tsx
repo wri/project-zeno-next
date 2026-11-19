@@ -456,6 +456,11 @@ describe("useAoiActions", () => {
           name: "Paraná, Brazil",
           type: "geojson",
           visible: true,
+          // As VectorAreasLayer builds it: the layer's ref is its entry's, so
+          // removing the layer drops the entry.
+          featureRefs: [
+            { name: "Paraná, Brazil", source: "GADM", srcId: "BRA.16_1" },
+          ],
         },
       ],
       geoJsonRegistry: [

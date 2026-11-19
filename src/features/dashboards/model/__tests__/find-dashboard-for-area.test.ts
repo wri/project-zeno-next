@@ -19,6 +19,7 @@ function dashboard(
     user_id: "user-1",
     name: aoi.name ?? "Dashboard",
     is_public: false,
+    eligible_for_subscription: false,
     created_at: "2026-01-01T00:00:00Z",
     updated_at: updatedAt,
     aois: [

@@ -4,6 +4,10 @@ FSD **shared** layer — reusable, business-agnostic building blocks usable by e
 
 - `lib/feature-flags/` — hidden-feature gate (`isFeatureEnabled`, `useFeatureFlag`); opt in via the
   `?ff=` URL param, e.g. `?ff=analysis`. Import from `@/src/shared/lib/feature-flags`.
+- `lib/i18n/` — the UI localisation layer: react-i18next with ICU catalogs bundled from `messages/`
+  (`en.json` is the source; keys are flat and location-based, e.g. `chat.input.send`), `resolveLocale`
+  (signed-in profile, then the `gnw_locale` cookie, then the browser, then `en`), `useLocale`, and the
+  browser helpers `applyLocale` / `rememberLocale`. Import from `@/src/shared/lib/i18n`.
 - `lib/units/` — `mgToMt`, converting the LGMS backend's megagram (metric ton) flux fields to the
   megatonnes the curated charts display. Import from `@/src/shared/lib/units`.
 - `lib/chart-ticks/` — `niceStep`, `niceTicks`, `formatTick`, round-number y-axis ticks for the

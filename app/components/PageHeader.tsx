@@ -10,6 +10,7 @@ import {
   Text,
 } from "@chakra-ui/react";
 import {
+  BellIcon,
   ChartLineIcon,
   GearSixIcon,
   ListIcon,
@@ -29,6 +30,7 @@ import MenuSideBar from "./MenuSideBar";
 import useAuthStore from "../store/authStore";
 import useChatStore from "../store/chatStore";
 import useSidebarStore from "../store/sidebarStore";
+import { useFeatureFlag, useWithFlags } from "@/src/shared/lib/feature-flags";
 import { Link } from "@/src/shared/lib/router";
 import { usePathname } from "@/src/shared/lib/router";
 import { useLogout } from "@/app/hooks/useLogout";
@@ -54,6 +56,8 @@ function PageHeader() {
   const { logout } = useLogout();
   const whatsNewUnread = useWhatsNewUnread();
   const pathname = usePathname() ?? "";
+  const emailBeta = useFeatureFlag("email-subscriptions");
+  const withFlags = useWithFlags();
   // Shared by the avatar's tooltip and menu so both attach to one button.
   const accountTriggerId = useId();
   const onMap = pathname.startsWith("/app");
@@ -308,7 +312,8 @@ function PageHeader() {
             <Tooltip
               ids={{ trigger: accountTriggerId }}
               content={userEmail}
-              disabled={!userEmail}
+              // With the beta menu the email is shown inside it.
+              disabled={!userEmail || emailBeta}
               showArrow
             >
               <Menu.Trigger asChild>
@@ -339,12 +344,31 @@ function PageHeader() {
                   minW="220px"
                   css={{ "& a": { cursor: "pointer" } }}
                 >
+                  {emailBeta && (
+                    <>
+                      <Box px="14px" py="2" minW={0}>
+                        <Text fontSize="xs" color="neutral.600">
+                          Signed in as
+                        </Text>
+                        <Text fontSize="sm" color="neutral.900" truncate>
+                          {userEmail}
+                        </Text>
+                      </Box>
+                      <Menu.Separator />
+                      <Menu.Item value="subscriptions" asChild>
+                        <Link href={withFlags("/subscriptions")}>
+                          <BellIcon />
+                          Alert subscriptions
+                        </Link>
+                      </Menu.Item>
+                    </>
+                  )}
                   <ProfileReminderMenuItem
                     fallback={
                       <Menu.Item value="dashboard" asChild>
                         <Link href="/dashboard">
                           <GearSixIcon />
-                          User Profile
+                          {emailBeta ? "User settings" : "User Profile"}
                         </Link>
                       </Menu.Item>
                     }
@@ -359,7 +383,7 @@ function PageHeader() {
                     title="Log Out"
                   >
                     <SignOutIcon />
-                    Logout
+                    {emailBeta ? "Log out" : "Logout"}
                   </Menu.Item>
                 </Menu.Content>
               </Menu.Positioner>

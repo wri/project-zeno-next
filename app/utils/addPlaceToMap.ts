@@ -54,11 +54,8 @@ export function removePlaceFromMap(
   layer: Layer,
   aoi: Pick<AOI, "source" | "src_id">
 ): void {
-  const { removeLayer, removeFromRegistry, clearAnalysis, analysisSelection } =
+  const { removeLayer, clearAnalysis, analysisSelection } =
     useMapStore.getState();
-  // By the layer's own refs: a boundary click keys them by the map layer id
-  // ("GADM"), which removeFromRegistry compares exactly.
-  (layer.featureRefs ?? []).forEach(removeFromRegistry);
   removeLayer(layer.id);
   if (
     analysisSelection &&

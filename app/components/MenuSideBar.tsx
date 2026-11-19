@@ -10,6 +10,7 @@ import {
   chakra,
 } from "@chakra-ui/react";
 import {
+  BellIcon,
   ChartLineIcon,
   GearSixIcon,
   LifebuoyIcon,
@@ -25,6 +26,7 @@ import {
 import { Tooltip } from "./ui/tooltip";
 import AvailablePromptsCard from "./AvailablePromptsCard";
 import { WHATS_NEW_FEATURES } from "./whatsNewFeatures";
+import { useFeatureFlag, useWithFlags } from "@/src/shared/lib/feature-flags";
 import { Link, usePathname, useRouter } from "@/src/shared/lib/router";
 import { PREVIEW_HELP_CENTER_URL } from "@/app/constants/preview-content";
 import { useLogout } from "@/app/hooks/useLogout";
@@ -151,6 +153,8 @@ export default function MenuSideBar() {
   const { logout, isLoggingOut } = useLogout();
   const whatsNewUnread = useWhatsNewUnread();
   const router = useRouter();
+  const emailBeta = useFeatureFlag("email-subscriptions");
+  const withFlags = useWithFlags();
   const pathname = usePathname() ?? "";
 
   const onMap = isAppRoute(pathname);
@@ -258,6 +262,14 @@ export default function MenuSideBar() {
                       : undefined
                   }
                 />
+                {emailBeta && (
+                  <MenuItem
+                    label="Alert subscriptions"
+                    icon={BellIcon}
+                    href={withFlags("/subscriptions")}
+                    active={pathname.startsWith("/subscriptions")}
+                  />
+                )}
                 <MenuItem
                   label="User settings"
                   icon={GearSixIcon}

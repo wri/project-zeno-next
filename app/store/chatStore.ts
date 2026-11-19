@@ -38,6 +38,7 @@ import { pickAoiTool } from "./chat-tools/pickAoi";
 import { pickDatasetTool } from "./chat-tools/pickDataset";
 import { pullDataTool } from "./chat-tools/pullData";
 import { showImageryTool } from "./chat-tools/showImagery";
+import { showBoundaryLayerTool } from "./chat-tools/showBoundaryLayer";
 import { isImageryTool } from "@/app/utils/imagery";
 import { queryClient } from "@/app/lib/query-client";
 import {
@@ -549,9 +550,7 @@ async function processStreamMessage(
     }
     // Handling for pull_data tool
     else if (streamMessage.name === "pull_data") {
-      void Promise.resolve().then(() =>
-        pullDataTool(streamMessage, addMessage)
-      );
+      void Promise.resolve().then(() => pullDataTool(streamMessage));
       return;
     }
     // Handling for imagery tools: render the imagery mosaic on the map.
@@ -563,6 +562,12 @@ async function processStreamMessage(
         await showImageryTool(streamMessage);
         useChatStore.getState().setImageryUpdating(false);
       });
+      return;
+    }
+    // Handling for show_boundary_layer: show the concessions boundary layer
+    // so the user can click a concession to pick it.
+    else if (streamMessage.name === "show_boundary_layer") {
+      showBoundaryLayerTool(streamMessage);
       return;
     }
   }

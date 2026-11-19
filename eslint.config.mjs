@@ -40,6 +40,15 @@ const eslintConfig = [
       "react-hooks/set-state-in-effect": "warn",
       "react-hooks/immutability": "warn",
       "react-hooks/refs": "warn",
+      "no-restricted-properties": [
+        "error",
+        {
+          object: "navigator",
+          property: "clipboard",
+          message:
+            "Use Chakra's useClipboard in components, or copyText in app/utils/exportToAI.ts outside React. navigator.clipboard is missing on non-HTTPS origins.",
+        },
+      ],
       "no-restricted-imports": [
         "error",
         {

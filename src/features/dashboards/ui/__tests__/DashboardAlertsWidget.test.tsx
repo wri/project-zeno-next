@@ -394,7 +394,7 @@ describe("DashboardAlertsWidget", () => {
       // The area's analytics id and the view on show: the new week, High.
       expect(mockedPrepare).toHaveBeenCalledTimes(1);
       expect(mockedPrepare.mock.calls[0][0]).toEqual({
-        gadmId: "BRA.16.137",
+        area: { kind: "gadm", gadmId: "BRA.16.137" },
         range: { start: "2026-10-10", end: "2026-10-16" },
         confidence: "high",
         landFilter: "any",

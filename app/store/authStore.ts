@@ -6,8 +6,8 @@ interface AuthState {
   userId: string | null;
   userEmail: string | null;
   userType: UserType | null;
-  // Onboarding language preference (ISO code, e.g. "pt"); used to default the
-  // Web Speech API dictation language. Null until /api/auth/me resolves.
+  // Profile language preference (ISO code, e.g. "pt"); the signed-in user's
+  // UI locale, which dictation follows. Null until /api/auth/me resolves.
   preferredLanguageCode: string | null;
   isAuthenticated: boolean;
   hasProfile: boolean;
@@ -32,6 +32,7 @@ interface AuthState {
     termsAccepted?: boolean;
   }) => void;
   setAuthLoaded: () => void;
+  setPreferredLanguageCode: (code: string) => void;
   clearAuth: () => void;
   fetchMetadata: () => Promise<void>;
 }
@@ -112,6 +113,9 @@ const useAuthStore = create<AuthState>()((set) => ({
   },
   setAuthLoaded: () => {
     set({ authLoaded: true });
+  },
+  setPreferredLanguageCode: (code) => {
+    set({ preferredLanguageCode: code });
   },
   clearAuth: () => {
     set({

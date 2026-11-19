@@ -37,7 +37,7 @@ import { useEnabledFlags } from "@/src/shared/lib/feature-flags";
 import { useCustomAreasListSuspense } from "../hooks/useCustomAreasList";
 import type { CustomArea } from "../schemas/api/custom_areas/get";
 import useMapStore from "../store/mapStore";
-import { isAreaLayer } from "../store/layerManagerSlice";
+import { customAreaRef, isAreaLayer } from "../store/layerManagerSlice";
 import { datasetCardLayers } from "../utils/datasetCardLayerContext";
 import { customAreaToFeature } from "@/src/entities/custom-area";
 
@@ -293,8 +293,9 @@ function AreaMenu() {
     );
     if (selected) {
       const feature = customAreaToFeature(selected);
+      const customRef = customAreaRef(selected);
       addToRegistry({
-        ref: { name: selected.name, source: "custom" },
+        ref: customRef,
         data: feature,
         srcId: selected.id,
         subtype: "custom-area",
@@ -304,7 +305,7 @@ function AreaMenu() {
         name: selected.name,
         type: "geojson",
         visible: true,
-        featureRefs: [{ name: selected.name, source: "custom" }],
+        featureRefs: [customRef],
       });
       flyToGeoJsonWithRetry(feature);
     }

@@ -6,6 +6,7 @@ import { useShallow } from "zustand/react/shallow";
 import { useCustomAreasListSuspense } from "@/app/hooks/useCustomAreasList";
 import type { CustomArea } from "@/app/schemas/api/custom_areas/get";
 import {
+  customAreaRef,
   findRegistryEntry,
   isAreaLayer,
   type Layer,
@@ -180,7 +181,6 @@ export function MonitoredAreaCard({ area }: { area: CustomArea }) {
   const addToRegistry = useMapStore((s) => s.addToRegistry);
   const addLayer = useMapStore((s) => s.addLayer);
   const removeLayer = useMapStore((s) => s.removeLayer);
-  const removeFromRegistry = useMapStore((s) => s.removeFromRegistry);
   const setLayerVisibility = useMapStore((s) => s.setLayerVisibility);
   const flyToGeoJsonWithRetry = useMapStore((s) => s.flyToGeoJsonWithRetry);
   const layer = useMapStore(
@@ -205,13 +205,15 @@ export function MonitoredAreaCard({ area }: { area: CustomArea }) {
     [area]
   );
 
+  const customRef = customAreaRef(area);
+
   function handleToggle(checked: boolean) {
     if (checked) {
       if (!layer) {
         // Register geometry and add a visible area layer — the layer IS the
         // scope, so there is no separate context item.
         addToRegistry({
-          ref: { name: area.name, source: "custom" },
+          ref: customRef,
           data: feature,
           srcId: area.id,
           subtype: "custom-area",
@@ -221,7 +223,7 @@ export function MonitoredAreaCard({ area }: { area: CustomArea }) {
           name: area.name,
           type: "geojson",
           visible: true,
-          featureRefs: [{ name: area.name, source: "custom" }],
+          featureRefs: [customRef],
         });
         flyToGeoJsonWithRetry(feature);
         return;
@@ -235,7 +237,6 @@ export function MonitoredAreaCard({ area }: { area: CustomArea }) {
     // Toggle OFF on a monitored card removes it from the map entirely.
     // (Visibility-only hiding is available from the "In this conversation" tab.)
     if (layer) {
-      removeFromRegistry({ name: area.name, source: "custom" });
       removeLayer(area.id);
     }
   }

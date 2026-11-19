@@ -1,4 +1,5 @@
 import type { CustomArea } from "@/app/schemas/api/custom_areas/get";
+import { customAreaRef } from "@/app/store/layerManagerSlice";
 import useMapStore from "@/app/store/mapStore";
 import { publishAnalysisSelection } from "@/app/utils/referenceArea";
 import { customAreaToFeature } from "@/src/entities/custom-area";
@@ -19,7 +20,7 @@ export function addCustomAreaToMap(
 ): void {
   const { addToRegistry, addLayer, flyToGeoJson } = useMapStore.getState();
   const feature = customAreaToFeature(area);
-  const featureRef = { name: area.name, source: "custom" };
+  const featureRef = customAreaRef(area);
 
   addToRegistry({
     ref: featureRef,

@@ -1,4 +1,11 @@
-import { Box, Button, Flex, Text, chakra } from "@chakra-ui/react";
+import {
+  Box,
+  Button,
+  Flex,
+  Text,
+  chakra,
+  useClipboard,
+} from "@chakra-ui/react";
 import { CopyIcon, SparkleIcon } from "@phosphor-icons/react";
 const Sparkle = chakra(SparkleIcon);
 
@@ -25,6 +32,8 @@ export default function CopySelectionTooltip({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const tooltipRef = useRef<HTMLDivElement | null>(null);
   const [visible, setVisible] = useState(false);
+  const [selectedText, setSelectedText] = useState("");
+  const clipboard = useClipboard({ value: selectedText });
   const [position, setPosition] = useState<{ top: number; left: number }>({
     top: 0,
     left: 0,
@@ -81,6 +90,7 @@ export default function CopySelectionTooltip({
       )
     );
     setPosition({ top, left: centeredLeft });
+    setSelectedText(sel.toString());
     setVisible(true);
     // After first paint, re-center using the actual measured width
     requestAnimationFrame(() => {
@@ -142,18 +152,10 @@ export default function CopySelectionTooltip({
     };
   }, [updateFromSelection, isSelectionInside, visible]);
 
-  const handleCopy = useCallback(async () => {
-    const sel = window.getSelection();
-    const text = sel?.toString() ?? "";
-    if (!text) return;
-    try {
-      await navigator.clipboard.writeText(text);
-      // Hide after copy
-      setVisible(false);
-    } catch {
-      // noop: copying may be blocked; we simply leave the tooltip
-    }
-  }, []);
+  const handleCopy = () => {
+    clipboard.copy();
+    setVisible(false);
+  };
 
   return (
     <Box position="relative" ref={containerRef} userSelect="text">

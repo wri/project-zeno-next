@@ -18,7 +18,6 @@ import {
   CONTEXT_LAYER_METADATA,
   DATASET_CARDS,
 } from "@/app/constants/datasets";
-import { buildYearParam } from "@/app/utils/formatYearRange";
 import type { DatasetLegendConfig } from "@/app/constants/datasets";
 import {
   CONCESSION_STYLES,
@@ -224,8 +223,7 @@ export function useLegendHook() {
         );
         const { title, info, note } = legend;
 
-        const yearParam = buildYearParam(layer.startDate, layer.endDate);
-        const params = buildParams(layer.parameters ?? {}, yearParam);
+        const params = buildParams(relatedDataset, layer);
 
         entries.push({
           id: layer.id,

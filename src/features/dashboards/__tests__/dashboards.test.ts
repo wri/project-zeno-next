@@ -11,9 +11,11 @@ import {
   addTextWidget,
   applyAnalysisTemplate,
   fetchDashboardAlertsSummary,
+  setEmailSubscription,
 } from "../api/dashboards";
 import {
   DashboardListResponseSchema,
+  DashboardResponseSchema,
   DashboardSectionResponseSchema,
 } from "../api/schemas";
 import {
@@ -171,8 +173,85 @@ describe("dashboard date helpers", () => {
   });
 });
 
+describe("dashboard subscriptions", () => {
+  const body = {
+    id: "d1",
+    user_id: "u1",
+    name: "Paraná",
+    is_public: false,
+    created_at: "2026-09-01T00:00:00Z",
+    updated_at: "2026-09-01T00:00:00Z",
+  };
+  const parse = (extra: object) =>
+    DashboardResponseSchema.parse({ ...body, ...extra });
+
+  const channels = (...on: string[]) => ({
+    subscriptions: { integrated_alerts: { channels: on } },
+  });
+
+  it("reads whether email is on", () => {
+    expect(parse(channels()).subscriptions).toEqual({ emailEnabled: false });
+    expect(parse(channels("email")).subscriptions).toEqual({
+      emailEnabled: true,
+    });
+  });
+
+  it("leaves subscriptions undefined when absent or malformed, and still parses the dashboard", () => {
+    expect(parse({}).subscriptions).toBeUndefined();
+    for (const bad of [{}, { integrated_alerts: { channels: "email" } }]) {
+      const malformed = parse({ subscriptions: bad });
+      expect(malformed.subscriptions).toBeUndefined();
+      expect(malformed.name).toBe("Paraná");
+    }
+  });
+
+  it("reads eligibility, and treats a missing or malformed value as not eligible", () => {
+    expect(
+      parse({ eligible_for_subscription: true }).eligible_for_subscription
+    ).toBe(true);
+    expect(parse({}).eligible_for_subscription).toBe(false);
+    expect(
+      parse({ eligible_for_subscription: "yes" }).eligible_for_subscription
+    ).toBe(false);
+  });
+});
+
+describe("setEmailSubscription", () => {
+  beforeEach(() => vi.mocked(apiFetch).mockReset());
+
+  it.each([
+    [true, ["email"]],
+    [false, []],
+  ] as const)("PUTs the channels for email %s", async (enabled, sent) => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      new Response(JSON.stringify({}), { status: 200 })
+    );
+
+    await setEmailSubscription("d1", enabled);
+
+    expect(apiFetch).toHaveBeenCalledWith("/api/dashboards/d1/subscriptions", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ datasets: ["integrated_alerts"], channels: sent }),
+    });
+  });
+
+  it("rejects with the status and detail of a 409", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      new Response(JSON.stringify({ detail: "Dashboard is not eligible" }), {
+        status: 409,
+      })
+    );
+
+    await expect(setEmailSubscription("d1", true)).rejects.toMatchObject({
+      status: 409,
+      detail: "Dashboard is not eligible",
+    });
+  });
+});
+
 describe("addTextWidget", () => {
-  it("sends config.text as a string, per the backend's validate_text_config", async () => {
+  it("sends config.text as a string and the owner as its source", async () => {
     vi.mocked(apiFetch).mockResolvedValue(
       new Response(JSON.stringify({}), { status: 200 })
     );
@@ -182,7 +261,10 @@ describe("addTextWidget", () => {
     expect(apiFetch).toHaveBeenCalledWith("/api/dashboards/d1/widgets", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ widget_type: "text", config: { text: "" } }),
+      body: JSON.stringify({
+        widget_type: "text",
+        config: { text: "", source: "user" },
+      }),
     });
   });
 });

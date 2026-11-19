@@ -52,6 +52,7 @@ function dashboard(overrides: Partial<Dashboard> = {}): Dashboard {
     user_id: "u1",
     name: "Paraná, Brazil",
     is_public: false,
+    eligible_for_subscription: false,
     created_at: "2026-08-07T00:00:00Z",
     updated_at: "2026-08-07T00:00:00Z",
     aois: [

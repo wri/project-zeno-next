@@ -1,5 +1,6 @@
 import {
   AnalysisTemplateListSchema,
+  BulkSubscriptionsResponseSchema,
   DashboardAlertsSummaryResponseSchema,
   DashboardCreateRequestSchema,
   DashboardListResponseSchema,
@@ -115,6 +116,51 @@ export async function renameDashboard(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name }),
   });
+}
+
+// Subscribes one dashboard to integrated alerts notification emails, or
+// unsubscribes it (owner only). The body is the desired state, so no
+// channels unsubscribes. The backend answers 409 when email is asked for on
+// an ineligible dashboard. The response (the updated dashboard) is ignored:
+// the shared optimistic mutation refetches on settle anyway.
+export async function setEmailSubscription(
+  dashboardId: string,
+  enabled: boolean
+): Promise<void> {
+  await readJson<unknown>(`/api/dashboards/${dashboardId}/subscriptions`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      datasets: ["integrated_alerts"],
+      channels: enabled ? ["email"] : [],
+    }),
+  });
+}
+
+// Turns email off for every dashboard the user has it on, in one request.
+// Returns those dashboards, so `restoreEmailSubscriptions` can undo exactly
+// that set.
+export async function turnOffAllEmailSubscriptions(): Promise<string[]> {
+  const data = await readJson<unknown>("/api/subscriptions?channel=email", {
+    method: "DELETE",
+  });
+  return BulkSubscriptionsResponseSchema.parse(data).dashboard_ids;
+}
+
+// Turns email back on for the listed dashboards in one request. `skipped`
+// are the ones the backend would not subscribe, e.g. a dashboard that lost
+// its alerts widget since.
+export async function restoreEmailSubscriptions(
+  dashboardIds: string[]
+): Promise<{ subscribed: string[]; skipped: string[] }> {
+  const data = await readJson<unknown>("/api/subscriptions", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ channel: "email", dashboard_ids: dashboardIds }),
+  });
+  const { dashboard_ids, skipped } =
+    BulkSubscriptionsResponseSchema.parse(data);
+  return { subscribed: dashboard_ids, skipped };
 }
 
 export async function deleteDashboard(dashboardId: string): Promise<void> {
@@ -252,11 +298,15 @@ export async function addInsightWidget(
 // The backend's `validate_text_config` requires `config.text` to be a
 // string (any string, including empty) — an empty string still renders as
 // a blank note client-side (`widgetText` treats a blank string as "no text").
+// The owner writes it, so its source is "user": no AI-assisted caption.
 export async function addTextWidget(dashboardId: string): Promise<void> {
   await readJson<unknown>(`/api/dashboards/${dashboardId}/widgets`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ widget_type: "text", config: { text: "" } }),
+    body: JSON.stringify({
+      widget_type: "text",
+      config: { text: "", source: "user" },
+    }),
   });
 }
 

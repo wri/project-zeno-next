@@ -7,7 +7,7 @@
  */
 import { ChakraProvider } from "@chakra-ui/react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import system from "@/app/theme";
 import useAuthStore from "@/app/store/authStore";
@@ -158,6 +158,103 @@ describe("PageHeader account menu", () => {
     expect(screen.getByRole("menu").textContent).not.toContain(
       "user@example.com"
     );
+  });
+
+  describe("with ?ff=email-subscriptions", () => {
+    const menuLabels = () =>
+      screen.getAllByRole("menuitem").map((el) => el.textContent?.trim());
+
+    async function openMenu() {
+      await act(async () => {
+        fireEvent.click(avatar());
+      });
+    }
+
+    beforeEach(() => {
+      window.history.replaceState({}, "", "/?ff=email-subscriptions");
+    });
+
+    afterEach(() => {
+      window.history.replaceState({}, "", "/");
+    });
+
+    it("shows who is signed in, then Alert subscriptions, User settings and Log out", async () => {
+      renderHeader("/app");
+      await openMenu();
+
+      expect(menuLabels()).toEqual([
+        "Alert subscriptions",
+        "User settings",
+        "Log out",
+      ]);
+      const menu = screen.getByRole("menu");
+      expect(menu.textContent).toContain("Signed in as");
+      expect(menu.textContent).toContain("user@example.com");
+      expect(
+        screen
+          .getByRole("menuitem", { name: "Alert subscriptions" })
+          .getAttribute("href")
+      ).toBe("/subscriptions?ff=email-subscriptions");
+    });
+
+    it("keeps the Complete your profile reminder in the settings slot", async () => {
+      useAuthStore.getState().setAuthStatus({
+        email: "user@example.com",
+        id: "u1",
+        hasProfile: false,
+        userType: null,
+      });
+      renderHeader("/app");
+      await openMenu();
+
+      expect(menuLabels()).toEqual([
+        "Alert subscriptions",
+        "Complete your profile",
+        "Log out",
+      ]);
+    });
+
+    it("drops the hover tooltip and keeps the email out of every aria-label", async () => {
+      renderHeader("/app");
+      fireEvent.pointerMove(avatar(), { pointerType: "mouse" });
+      await act(() => new Promise((r) => setTimeout(r, 50)));
+      expect(screen.queryByRole("tooltip")).toBeNull();
+
+      await openMenu();
+      expect(avatar().getAttribute("aria-label")).toBe("Account menu");
+      const labelled = document.body.querySelectorAll("[aria-label]");
+      for (const el of labelled) {
+        expect(el.getAttribute("aria-label")).not.toContain("user@example.com");
+      }
+    });
+
+    it("closes on Escape and returns focus to the avatar", async () => {
+      renderHeader("/app");
+      avatar().focus();
+      await act(async () => {
+        fireEvent.keyDown(avatar(), { key: "Enter" });
+      });
+      expect(await screen.findByRole("menu")).toBeTruthy();
+
+      await act(async () => {
+        fireEvent.keyDown(screen.getByRole("menu"), { key: "Escape" });
+      });
+      await act(() => new Promise((r) => setTimeout(r, 50)));
+
+      expect(screen.queryByRole("menu")).toBeNull();
+      expect(document.activeElement).toBe(avatar());
+    });
+
+    it("closes on a click outside", async () => {
+      renderHeader("/app");
+      await openMenu();
+      await act(async () => {
+        fireEvent.pointerDown(document.body, { pointerType: "mouse" });
+      });
+      await act(() => new Promise((r) => setTimeout(r, 50)));
+
+      expect(screen.queryByRole("menu")).toBeNull();
+    });
   });
 });
 
