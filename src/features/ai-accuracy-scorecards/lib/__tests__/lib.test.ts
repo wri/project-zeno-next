@@ -4,7 +4,6 @@ import { groupChecks } from "../checks";
 import { failureBreakdown, failureFlow, failurePhrase } from "../failures";
 import {
   formatDay,
-  formatMonth,
   formatReleaseName,
   pct,
   share,
@@ -320,35 +319,37 @@ describe("runs", () => {
     }
   });
 
-  it("draws one trend point per loaded page, whatever its version, with its question count", () => {
-    const page = (
-      runId: string,
-      version: string,
-      draft: boolean,
-      scored: number
-    ) =>
+  it("draws one trend point per loaded page, named by its release, whatever its version", () => {
+    const runs = releasedRuns(RELEASES);
+    const page = (runId: string, version: string, scored: number) =>
       ({
-        run: { runId, started: "2026-10-28T00:00:00Z", draft },
+        run: { runId, started: "2026-10-28T00:00:00Z", draft: false },
         benchmark: { version },
         summary: makeStats({ scored, everyTime: 0.6 }),
       }) as unknown as BenchmarkPage;
-    // What adding a second release gives: the pages of both runs, oldest
-    // first, of different versions.
+    const pages = runs.map((r, i) => page(r.runId, `v${i}`, 260 + i));
+    expect(trendPoints(runs, pages).map((p) => [p.name, p.runId])).toEqual(
+      runs.map((r) => [r.name, r.runId])
+    );
+    expect(trendPoints(runs, pages).map((p) => p.scored)).toEqual(
+      runs.map((_, i) => 260 + i)
+    );
+    // A page still loading leaves its own run out and keeps the rest named
+    // by the right release.
+    const rest = runs.slice(1);
     expect(
-      trendPoints([
-        page("oct", "2026-draft-5", true, 269),
-        undefined,
-        page("nov", "2026", false, 267),
-      ]).map((p) => [p.runId, p.draft, p.scored])
-    ).toEqual([
-      ["oct", true, 269],
-      ["nov", false, 267],
-    ]);
+      trendPoints(runs, [undefined, ...pages.slice(1)]).map((p) => p.name)
+    ).toEqual(rest.map((r) => r.name));
   });
 
   it("draws no point for a run that scored nothing", () => {
+    const runs = releasedRuns(RELEASES);
     const empty = {
-      run: { runId: "x", started: "2026-10-28T00:00:00Z", draft: false },
+      run: {
+        runId: runs[0].runId,
+        started: "2026-10-28T00:00:00Z",
+        draft: false,
+      },
       summary: makeStats({
         scored: 0,
         everyTime: null,
@@ -356,7 +357,7 @@ describe("runs", () => {
         anyTime: null,
       }),
     } as unknown as BenchmarkPage;
-    expect(trendPoints([empty])).toEqual([]);
+    expect(trendPoints(runs.slice(0, 1), [empty])).toEqual([]);
   });
 
   it("places dates on the axis in months since September 2026", () => {
@@ -371,7 +372,7 @@ describe("format", () => {
     expect(pct(null)).toBe("–");
     expect(share(1, 0)).toBeNull();
     expect(formatDay("2026-10-23T09:44:47Z")).toBe("23 Oct 2026");
-    expect(formatMonth("2026-10-28T12:40:51Z")).toBe("Oct 2026");
+    expect(formatReleaseName("oct-2026")).toBe("October 2026");
   });
 
   it("names the Benchmark Set a version belongs to", () => {

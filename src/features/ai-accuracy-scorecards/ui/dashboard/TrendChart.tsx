@@ -1,6 +1,6 @@
 import { useRef, type KeyboardEvent, type PointerEvent } from "react";
 import { Box } from "@chakra-ui/react";
-import { formatDay, formatMonth, pct } from "../../lib/format";
+import { formatDay, formatReleaseName, pct } from "../../lib/format";
 import { monthsSinceOrigin } from "../../lib/runs";
 import { TIER_COPY } from "../../lib/tiers";
 import type { TrendPoint } from "../../model/types";
@@ -247,7 +247,7 @@ export function TrendChart({
               fontWeight="600"
               fill="var(--chakra-colors-fg)"
             >
-              {formatMonth(first.started)} baseline
+              {formatReleaseName(first.name)} baseline
             </text>
           </>
         ) : null}

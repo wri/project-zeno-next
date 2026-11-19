@@ -13,15 +13,17 @@ export function releasedRuns(releases: readonly Release[]): Release[] {
 }
 
 /**
- * The trend's points: the headline of each loaded page, in the pages'
- * order, whatever its benchmark version (AJ, 2026-11-19). Each point
- * carries the number of questions it scored, because the sets differ
- * slightly between versions.
+ * The trend's points: the headline of each loaded page, in the runs' order
+ * (`pages[i]` is `runs[i]`'s page), whatever its benchmark version (AJ,
+ * 2026-11-19). Each point carries the number of questions it scored,
+ * because the sets differ slightly between versions.
  */
 export function trendPoints(
+  runs: readonly Release[],
   pages: readonly (BenchmarkPage | undefined)[]
 ): TrendPoint[] {
-  return pages.flatMap((p) => {
+  return runs.flatMap((run, i) => {
+    const p = pages[i];
     // The page data nulls the three shares together, and only when nothing
     // was scored: such a run has no headline to plot.
     const { everyTime, majority, anyTime } = p?.summary ?? {};
@@ -30,6 +32,7 @@ export function trendPoints(
     }
     return [
       {
+        name: run.name,
         runId: p.run.runId,
         started: p.run.started,
         draft: p.run.draft,

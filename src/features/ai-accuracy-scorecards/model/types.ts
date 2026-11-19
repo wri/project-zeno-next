@@ -175,6 +175,8 @@ export interface BenchmarkPage {
 
 /** One run's headline on the accuracy-over-time chart. */
 export interface TrendPoint {
+  /** The release's name ("oct-2026"). */
+  readonly name: string;
   readonly runId: string;
   readonly started: string;
   readonly draft: boolean;

@@ -42,7 +42,7 @@ const RUN = RUNS[RUNS.length - 1];
 function Dashboard({ page }: { readonly page: BenchmarkPage }) {
   // The headline of every released run; a point appears once its page
   // has loaded.
-  const trend = trendPoints(useBenchmarkPages(RUNS));
+  const trend = trendPoints(RUNS, useBenchmarkPages(RUNS));
   return (
     <>
       <Hero
