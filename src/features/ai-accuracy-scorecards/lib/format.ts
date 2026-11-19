@@ -1,4 +1,4 @@
-import { format, parseISO } from "date-fns";
+import { format, parse, parseISO } from "date-fns";
 
 /**
  * The calendar date an ISO timestamp names in UTC, as a local date: run
@@ -19,24 +19,14 @@ export function pct(value: number | null, digits = 0): string {
   return value == null ? "–" : `${(value * 100).toFixed(digits)}%`;
 }
 
-/** "2026-10-23T09:44:47Z" -> "Oct 2026". */
-export function formatMonth(iso: string): string {
-  return format(calendarDate(iso), "MMM yyyy");
-}
-
-/** "2026-10-23" -> "October 2026". */
-export function formatLongMonth(iso: string): string {
-  return format(calendarDate(iso), "MMMM yyyy");
-}
-
-/** "2026-10-23" -> "23 October 2026". */
-export function formatLongDay(iso: string): string {
-  return format(calendarDate(iso), "d MMMM yyyy");
-}
-
 /** "2026-10-23T09:44:47Z" -> "23 Oct 2026". */
 export function formatDay(iso: string): string {
   return format(calendarDate(iso), "d MMM yyyy");
+}
+
+/** A release name spelled out: "oct-2026" -> "October 2026". */
+export function formatReleaseName(name: string): string {
+  return format(parse(name, "MMM-yyyy", new Date(0)), "MMMM yyyy");
 }
 
 /**

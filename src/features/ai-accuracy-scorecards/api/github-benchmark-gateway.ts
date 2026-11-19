@@ -5,16 +5,16 @@
  * resolved, failure modes zero-filled, question status settled). A schema
  * mismatch, an unknown query type or an unknown use case throws: the page
  * is a derived artefact with a schema_version, so drift is a bug to see,
- * not to paper over.
+ * not to paper over. A languages companion page is refused too.
  */
 
 import { z } from "zod";
 import { STAGE_ORDER, USE_CASES } from "../model/config";
 import type { BenchmarkGateway } from "../model/benchmark-gateway";
+import type { Release } from "../model/releases";
 import type {
   Attempt,
   BenchmarkPage,
-  BenchmarkRunRef,
   Count,
   GroupStats,
   MeasuredType,
@@ -143,6 +143,15 @@ const RawPage = z.looseObject({
     members: z.number(),
     excluded: z.number(),
   }),
+  // Only a languages companion page has this key. Its headline holds just
+  // the English twins of the translated questions, so it is not a run.
+  languages: z
+    .never({
+      error:
+        "this is a languages companion page, not a benchmark run; release " +
+        "the benchmark run's own page",
+    })
+    .optional(),
   summary: z.looseObject(RawStats.shape),
   stages: z.array(
     z.looseObject({
@@ -321,10 +330,7 @@ export class GithubBenchmarkGateway implements BenchmarkGateway {
     private readonly fetchFn: FetchFn = (url, init) => fetch(url, init)
   ) {}
 
-  async page(
-    run: BenchmarkRunRef,
-    signal?: AbortSignal
-  ): Promise<BenchmarkPage> {
+  async page(run: Release, signal?: AbortSignal): Promise<BenchmarkPage> {
     const url = pageUrl(run);
     const response = await this.fetchFn(url, { signal });
     if (response.status === 404) throw new BenchmarkDataUnavailableError(url);
