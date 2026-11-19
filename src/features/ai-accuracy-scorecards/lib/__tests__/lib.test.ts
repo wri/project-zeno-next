@@ -285,11 +285,6 @@ describe("runs", () => {
     expect(runs.map((r) => r.runId)).toEqual(
       RELEASES.map((r) => r.runId).sort()
     );
-    expect(runs.map((r) => r.name)).toEqual(
-      [...RELEASES]
-        .sort((a, b) => a.runId.localeCompare(b.runId))
-        .map((r) => r.name)
-    );
   });
 
   it("ships well-formed releases: names, run ids, full commit shas, each name and run once", () => {

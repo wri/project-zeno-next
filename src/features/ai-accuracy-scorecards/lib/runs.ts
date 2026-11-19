@@ -24,19 +24,18 @@ export function trendPoints(
 ): TrendPoint[] {
   return runs.flatMap((run, i) => {
     const p = pages[i];
+    if (!p) return [];
+    const { scored, everyTime, majority, anyTime } = p.summary;
     // The page data nulls the three shares together, and only when nothing
     // was scored: such a run has no headline to plot.
-    const { everyTime, majority, anyTime } = p?.summary ?? {};
-    if (!p || everyTime == null || majority == null || anyTime == null) {
-      return [];
-    }
+    if (everyTime == null || majority == null || anyTime == null) return [];
     return [
       {
         name: run.name,
         runId: p.run.runId,
         started: p.run.started,
         draft: p.run.draft,
-        scored: p.summary.scored,
+        scored,
         everyTime,
         majority,
         anyTime,
