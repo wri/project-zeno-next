@@ -11,10 +11,10 @@
 import { z } from "zod";
 import { STAGE_ORDER, USE_CASES } from "../model/config";
 import type { BenchmarkGateway } from "../model/benchmark-gateway";
+import type { Release } from "../model/releases";
 import type {
   Attempt,
   BenchmarkPage,
-  BenchmarkRunRef,
   Count,
   GroupStats,
   MeasuredType,
@@ -330,10 +330,7 @@ export class GithubBenchmarkGateway implements BenchmarkGateway {
     private readonly fetchFn: FetchFn = (url, init) => fetch(url, init)
   ) {}
 
-  async page(
-    run: BenchmarkRunRef,
-    signal?: AbortSignal
-  ): Promise<BenchmarkPage> {
+  async page(run: Release, signal?: AbortSignal): Promise<BenchmarkPage> {
     const url = pageUrl(run);
     const response = await this.fetchFn(url, { signal });
     if (response.status === 404) throw new BenchmarkDataUnavailableError(url);

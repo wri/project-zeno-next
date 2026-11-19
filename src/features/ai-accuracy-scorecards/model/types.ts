@@ -6,7 +6,6 @@
  */
 
 import type { STAGE_ORDER } from "./config";
-import type { Release } from "./releases";
 
 export type StageKey = (typeof STAGE_ORDER)[number];
 
@@ -172,12 +171,6 @@ export interface BenchmarkPage {
   readonly unmeasuredTypes: readonly QueryType[];
   readonly useCases: readonly UseCaseResult[];
   readonly questions: readonly Question[];
-}
-
-/** A released run (`model/releases.ts`), as the page lists it. */
-export interface BenchmarkRunRef extends Release {
-  /** The release's name, spelled out: "October 2026" for "oct-2026". */
-  readonly label: string;
 }
 
 /** One run's headline on the accuracy-over-time chart. */

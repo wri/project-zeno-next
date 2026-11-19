@@ -2,7 +2,14 @@ import { describe, expect, it } from "vitest";
 import { checkLabel } from "../../model/checks";
 import { groupChecks } from "../checks";
 import { failureBreakdown, failureFlow, failurePhrase } from "../failures";
-import { formatDay, formatMonth, pct, share, versionSet } from "../format";
+import {
+  formatDay,
+  formatMonth,
+  formatReleaseName,
+  pct,
+  share,
+  versionSet,
+} from "../format";
 import { mixSentence } from "../mix";
 import { filterQuestions, NO_FILTER } from "../questions";
 import {
@@ -281,7 +288,7 @@ describe("mixSentence", () => {
 describe("runs", () => {
   const ref = (n: number) => String(n).repeat(40);
 
-  it("lists the releases oldest first, labelled from their names, with their draft flags", () => {
+  it("lists the releases oldest first, with their names and draft flags", () => {
     const runs = releasedRuns([
       {
         name: "nov-2026",
@@ -296,9 +303,9 @@ describe("runs", () => {
         draft: false,
       },
     ]);
-    expect(runs.map((r) => [r.runId, r.label, r.draft])).toEqual([
-      ["20261028T124051Z_prod", "October 2026", false],
-      ["20261128T090000Z_prod", "November 2026", true],
+    expect(runs.map((r) => [r.runId, r.name, r.draft])).toEqual([
+      ["20261028T124051Z_prod", "oct-2026", false],
+      ["20261128T090000Z_prod", "nov-2026", true],
     ]);
   });
 
@@ -309,8 +316,8 @@ describe("runs", () => {
       expect(release.ref).toMatch(/^[0-9a-f]{40}$/);
     }
     // A name that is not a month would label its run "Invalid Date".
-    for (const run of releasedRuns(RELEASES)) {
-      expect(run.label).toMatch(/^[A-Z][a-z]+ \d{4}$/);
+    for (const release of RELEASES) {
+      expect(formatReleaseName(release.name)).toMatch(/^[A-Z][a-z]+ \d{4}$/);
     }
     for (const key of ["name", "runId"] as const) {
       const values = RELEASES.map((r) => r[key]);

@@ -5,7 +5,7 @@
  * 28 Oct, at f7c138e). So what a deployed page shows changes only with an
  * FE release: add an entry in a PR to develop, check it on staging, then
  * release to main. Release only canonical runs; the trend plots them.
- * `name` gives each run its label (`lib/runs.ts`), and `draft` alone
+ * `name` gives each run its label (`lib/format.ts`), and `draft` alone
  * decides whether the page marks the run as a draft.
  */
 

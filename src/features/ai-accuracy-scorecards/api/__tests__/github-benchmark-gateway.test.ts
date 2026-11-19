@@ -4,7 +4,7 @@ import {
   GithubBenchmarkGateway,
   parseBenchmarkPage,
 } from "../github-benchmark-gateway";
-import type { BenchmarkRunRef } from "../../model/types";
+import type { Release } from "../../model/releases";
 
 const STATS = {
   scored: 2,
@@ -280,10 +280,9 @@ describe("parseBenchmarkPage", () => {
 });
 
 describe("GithubBenchmarkGateway", () => {
-  const RUN: BenchmarkRunRef = {
+  const RUN: Release = {
     name: "oct-2026",
     runId: "r1",
-    label: "October 2026",
     ref: "f7c138e514c4780ed84003b13a7decdfede8ff21",
     draft: true,
   };

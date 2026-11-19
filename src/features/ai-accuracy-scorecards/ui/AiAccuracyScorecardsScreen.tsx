@@ -21,6 +21,7 @@ import { Link, useRouter, useSearchParams } from "@/src/shared/lib/router";
 import { RELEASES } from "../model/releases";
 import type { BenchmarkPage } from "../model/types";
 import { resultsUrl } from "../api/github";
+import { formatReleaseName } from "../lib/format";
 import { newestRun, releasedRuns, trendPoints } from "../lib/runs";
 import { FailureFlowSection } from "./dashboard/FailureFlowSection";
 import { Hero } from "./dashboard/Hero";
@@ -125,7 +126,7 @@ export function AiAccuracyScorecardsScreen() {
         </HStack>
         <HStack gap={3} wrap="wrap">
           <Text fontSize="sm" color="fg.muted">
-            {RUN.label}
+            {formatReleaseName(RUN.name)}
           </Text>
           <HStack as="nav" aria-label="Views" gap={1}>
             {VIEWS.map((v) => (

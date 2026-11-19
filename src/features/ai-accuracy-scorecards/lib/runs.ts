@@ -1,27 +1,15 @@
-import { differenceInCalendarMonths, format, getDate, parse } from "date-fns";
+import { differenceInCalendarMonths, getDate } from "date-fns";
 import { calendarDate } from "./format";
 import type { Release } from "../model/releases";
-import type {
-  BenchmarkPage,
-  BenchmarkRunRef,
-  TrendPoint,
-} from "../model/types";
-
-/** A release name spelled out: "oct-2026" -> "October 2026". */
-function releaseLabel(name: string): string {
-  return format(parse(name, "MMM-yyyy", new Date(0)), "MMMM yyyy");
-}
+import type { BenchmarkPage, TrendPoint } from "../model/types";
 
 /**
- * The released runs, oldest first (a run id starts with its timestamp),
- * each labelled from its release name. The list's shape (names, run ids,
- * full commit shas, each name and run once) is checked by a unit test
- * over RELEASES.
+ * The released runs, oldest first (a run id starts with its timestamp).
+ * The list's shape (names, run ids, full commit shas, each name and run
+ * once) is checked by a unit test over RELEASES.
  */
-export function releasedRuns(releases: readonly Release[]): BenchmarkRunRef[] {
-  return releases
-    .map((release) => ({ ...release, label: releaseLabel(release.name) }))
-    .sort((a, b) => a.runId.localeCompare(b.runId));
+export function releasedRuns(releases: readonly Release[]): Release[] {
+  return [...releases].sort((a, b) => a.runId.localeCompare(b.runId));
 }
 
 /**
@@ -29,7 +17,7 @@ export function releasedRuns(releases: readonly Release[]): BenchmarkRunRef[] {
  * releases show only as points on the trend. Runs come oldest first, and
  * RELEASES is never empty.
  */
-export function newestRun(runs: readonly BenchmarkRunRef[]): BenchmarkRunRef {
+export function newestRun(runs: readonly Release[]): Release {
   return runs[runs.length - 1];
 }
 
