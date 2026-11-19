@@ -96,10 +96,6 @@ export function AiAccuracyScorecardsScreen() {
   const page = useBenchmarkPage(RUN);
   const useCaseParam = searchParams?.get("uc") ?? "";
 
-  function go(next: View) {
-    router.replace(pageHref({ view: next }), { scroll: next !== view });
-  }
-
   const data = page.data;
   return (
     <Box maxW="1200px" mx="auto" px={{ base: 4, md: 8 }} pb={12}>
@@ -137,7 +133,9 @@ export function AiAccuracyScorecardsScreen() {
                 size="sm"
                 variant={v === view ? "subtle" : "ghost"}
                 aria-current={v === view ? "page" : undefined}
-                onClick={() => go(v)}
+                onClick={() =>
+                  router.replace(pageHref({ view: v }), { scroll: v !== view })
+                }
               >
                 {VIEW_LABELS[v]}
               </Button>

@@ -1,6 +1,5 @@
 /** The page's views live in `?view=`, so a view can be bookmarked and
- * shared. The run is not in the URL: the page always shows the newest
- * release, and the `?run=` of an older link is ignored. */
+ * shared. */
 
 export const VIEWS = ["dashboard", "questions", "methodology"] as const;
 export type View = (typeof VIEWS)[number];

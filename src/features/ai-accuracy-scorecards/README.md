@@ -39,7 +39,8 @@ Adding the entry is the whole change. The newest release (by run id) fills
 the page, and its name shows in the header. There is no run picker, and a
 `?run=` in an older link is ignored. Every release, the older ones included,
 gives one headline point on the trend, oldest first, whatever its benchmark
-version; the point's tooltip gives the number of questions it scored.
+version (AJ, 2026-11-19). Versions differ by a few questions, so each point's
+tooltip gives the number it scored.
 
 Release only a benchmark run's own page. A languages companion run writes a
 page of the same shape, marked by a top-level `languages` key that no
@@ -85,6 +86,3 @@ while the benchmark was a draft.
   shared checks failed. A question wrong on fewer than most trials counts at
   the earliest stage among the checks that failed on any trial, so it sits at
   the same stage under every standard.
-- The trend draws every released run, whatever its benchmark version (AJ,
-  2026-11-19): versions of one set differ by a few questions, so each point
-  states the number it scored.
