@@ -4,6 +4,7 @@ import { InfoIcon } from "@phosphor-icons/react";
 
 import { Tooltip } from "./ui/tooltip";
 import { usePromptQuota } from "../hooks/usePromptQuota";
+import { useTranslation } from "@/src/shared/lib/i18n";
 
 // Semantics/Error/500 in the design (GlobalHeader - Phase 6).
 const METER_FILL = "#C11101";
@@ -16,6 +17,7 @@ const METER_TRACK = "#E0E2E5";
  * reactively, so the count and bar follow each prompt without a reload.
  */
 function PromptQuotaMeter() {
+  const { t } = useTranslation();
   const { usedPrompts, totalPrompts, showPromptMeter } = usePromptQuota();
   // Controlled so a click (touch devices, keyboard users) opens the
   // explanation as well as hover; the default tooltip closes on click.
@@ -40,18 +42,24 @@ function PromptQuotaMeter() {
           whiteSpace="nowrap"
           color="#656E7B"
         >
-          {usedPrompts} / {totalPrompts} daily prompts
+          {t("prompts.count", {
+            used: usedPrompts,
+            total: totalPrompts,
+          })}
         </Text>
         <Tooltip
           open={infoOpen}
           onOpenChange={(e) => setInfoOpen(e.open)}
           closeOnClick={false}
-          content={`You can send up to ${totalPrompts} prompts a day and have used ${usedPrompts}. Your prompts refresh every 24 hours.`}
+          content={t("prompts.explanation", {
+            used: usedPrompts,
+            total: totalPrompts,
+          })}
           showArrow
         >
           <chakra.button
             type="button"
-            aria-label="How the daily prompt limit works"
+            aria-label={t("prompts.limit")}
             display="inline-flex"
             color="#656E7B"
             cursor="help"
@@ -69,7 +77,7 @@ function PromptQuotaMeter() {
       </Flex>
       <Box
         role="progressbar"
-        aria-label="Daily prompts used"
+        aria-label={t("prompts.used")}
         aria-valuemin={0}
         aria-valuemax={totalPrompts}
         aria-valuenow={Math.min(usedPrompts, totalPrompts)}

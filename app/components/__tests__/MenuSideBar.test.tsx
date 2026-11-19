@@ -13,6 +13,7 @@ import system from "@/app/theme";
 import useAuthStore from "@/app/store/authStore";
 import useChatStore from "@/app/store/chatStore";
 import useSidebarStore from "@/app/store/sidebarStore";
+import { catalogs, i18n } from "@/src/shared/lib/i18n";
 import {
   WHATS_NEW_OPEN_EVENT,
   WHATS_NEW_STORAGE_KEY,
@@ -281,5 +282,17 @@ describe("MenuSideBar", () => {
     renderMenu();
     await click(action(/sign out/i));
     expect(logout).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders its destinations and the prompts card in the active locale", async () => {
+    const es = catalogs.es;
+    await act(() => i18n.changeLanguage("es"));
+    try {
+      renderMenu();
+      expect(screen.getByRole("link", { name: es["nav.map"] })).toBeTruthy();
+      expect(screen.getByText(es["prompts.title"]!)).toBeTruthy();
+    } finally {
+      await act(() => i18n.changeLanguage("en"));
+    }
   });
 });

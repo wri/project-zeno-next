@@ -3,6 +3,7 @@
 import { Box, Menu } from "@chakra-ui/react";
 import { GearSixIcon } from "@phosphor-icons/react";
 import { Link } from "@/src/shared/lib/router";
+import { useTranslation } from "@/src/shared/lib/i18n";
 import { ProfileIncompleteDot } from "./ProfileIncompleteDot";
 
 export type CompleteProfileMenuItemProps =
@@ -12,10 +13,11 @@ export type CompleteProfileMenuItemProps =
   | { onSelect: () => void; href?: never };
 
 function Content() {
+  const { t } = useTranslation();
   return (
     <>
       <GearSixIcon />
-      <Box flex="1">Complete your profile</Box>
+      <Box flex="1">{t("header.account.completeProfile")}</Box>
       <ProfileIncompleteDot />
     </>
   );
