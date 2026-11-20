@@ -1,9 +1,5 @@
 import { Box, Flex, Text } from "@chakra-ui/react";
-import { SparkleIcon } from "@phosphor-icons/react";
-import {
-  SOURCE_DATA_ICON_COLOR,
-  SourceDataIcon,
-} from "@/src/shared/ui/source-data-icon";
+import { VERIFICATION_EYEBROW } from "@/src/shared/ui/entity-card";
 import { Tooltip } from "./ui/tooltip";
 
 const AI_DISCLAIMER =
@@ -60,12 +56,12 @@ export default function InsightCaption({
   datasetName?: string;
   showLearnMore?: boolean;
 }) {
+  const spec = VERIFICATION_EYEBROW[curated ? "verified" : "ai-generated"];
+  const BadgeIcon = spec.Icon;
   return (
     <Flex align="center" gap="4px" h="16px">
-      {curated ? (
-        <SourceDataIcon size={12} color={SOURCE_DATA_ICON_COLOR} />
-      ) : (
-        <SparkleIcon size={12} weight="thin" color="#737C94" />
+      {BadgeIcon && (
+        <BadgeIcon size={12} weight={spec.iconWeight} color={spec.iconColor} />
       )}
       <Text
         fontSize="10px"
@@ -73,7 +69,7 @@ export default function InsightCaption({
         fontWeight="normal"
         lineHeight="16px"
         letterSpacing="0.03em"
-        color={curated ? "#656E7B" : "#737C94"}
+        color={spec.color}
         whiteSpace="nowrap"
       >
         {!curated ? (
