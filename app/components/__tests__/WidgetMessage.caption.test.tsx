@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 /**
- * Every chart card says how it was made (PZB-1738): in chat as well as in
- * the workspace, and on paper too. It names no dataset for now: the streamed
+ * Every chart card says how it was made (PZB-1738): in the workspace, in a
+ * host with no shell of its own (today /chart-debug) and on paper. It names no dataset for now: the streamed
  * name is inferred from the map, so a chart card never shows one.
  */
 import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
@@ -46,7 +46,7 @@ const renderCard = (
 const caption = () => screen.getByText(/^(SOURCE|AI-ASSISTED)/);
 
 describe("WidgetMessage caption", () => {
-  it("labels a curated chat card SOURCE DATA", () => {
+  it("labels a curated card SOURCE DATA", () => {
     renderCard(widget());
 
     expect(caption().textContent).toBe("SOURCE DATA · Learn more");
@@ -63,7 +63,7 @@ describe("WidgetMessage caption", () => {
     expect(caption().textContent).toBe("SOURCE DATA · Learn more");
   });
 
-  it("labels an AI chart in chat and keeps its disclaimer block", () => {
+  it("labels an AI chart and keeps its disclaimer block", () => {
     renderCard(
       widget({
         curated: false,

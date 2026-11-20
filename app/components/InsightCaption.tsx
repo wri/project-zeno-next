@@ -5,7 +5,7 @@ import { Tooltip } from "./ui/tooltip";
 const AI_DISCLAIMER =
   "This visualization includes AI-generated charts and data summaries. AI models may produce incomplete or incorrect information. Please verify all outputs before using them in your work.";
 
-// A curated chart can sit beside text the model wrote (in chat), so the note
+// A curated chart can sit beside text the model wrote, so the note
 // vouches for the charts and figures only, never the whole answer.
 function sourceDataNote(datasetName?: string) {
   return `The charts and figures come straight from ${datasetName ?? "the source data"} through a direct data query. No AI model made them.`;
@@ -37,8 +37,8 @@ function CaptionTooltip({ heading, body }: { heading: string; body: string }) {
 }
 
 /**
- * Caption that says where an insight came from, on chat chart cards, the map
- * workspace, the Analyses pane and dashboards. Both variants carry a
+ * Caption that says where an insight came from, in the map workspace,
+ * the Analyses pane and dashboards. Both variants carry a
  * "Learn more" tooltip; `showLearnMore={false}` drops it for compact badges.
  * It is hidden in print by the caption itself, where nothing can be hovered.
  * curated → green check circle + "SOURCE: <dataset>" (direct data query), or
