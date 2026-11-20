@@ -299,14 +299,13 @@ export default function WidgetMessage({
       )}
       <Flex gap={3} px={print ? 0 : 4} py={2} flexDir="column">
         {/* Where the output came from (SOURCE or AI-ASSISTED), above the
-            chart toolbar on every surface. Paper cannot hover, so print
-            drops "Learn more". A direct analysis records its dataset only
+            chart toolbar on every surface (the caption hides "Learn more" in
+            print itself). A direct analysis records its dataset only
             in the parameters; stored insights record neither, and show
             SOURCE DATA. */}
         <InsightCaption
           curated={isCurated}
           datasetName={widget.datasetName ?? widget.analysisParams?.dataset}
-          showLearnMore={!print}
         />
         {/* Every surface with a shell of its own puts these pills above the
             card (see InsightChartPills); inline is the fallback for a host

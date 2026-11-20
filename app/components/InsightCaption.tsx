@@ -43,8 +43,8 @@ function CaptionTooltip({ heading, body }: { heading: string; body: string }) {
 /**
  * Caption that says where an insight came from, on chat cards, the map
  * workspace, the Analyses pane and dashboards. Both variants carry a
- * "Learn more" tooltip; `showLearnMore={false}` drops it for compact badges
- * and for print, where nothing can be hovered.
+ * "Learn more" tooltip; `showLearnMore={false}` drops it for compact badges.
+ * It is hidden in print by the caption itself, where nothing can be hovered.
  * curated → green check circle + "SOURCE: <dataset>" (direct data query), or
  *   "SOURCE DATA" when the surface does not know the dataset. Never guess
  *   one: a wrong name is worse than none.
@@ -99,7 +99,8 @@ export default function InsightCaption({
           "SOURCE DATA"
         )}
         {showLearnMore && (
-          <>
+          // Paper cannot hover, so the whole "Learn more" part is hidden in print.
+          <Box as="span" _print={{ display: "none" }}>
             {" · "}
             <Tooltip
               variant="dark"
@@ -133,7 +134,7 @@ export default function InsightCaption({
                 Learn more
               </Box>
             </Tooltip>
-          </>
+          </Box>
         )}
       </Text>
     </Flex>

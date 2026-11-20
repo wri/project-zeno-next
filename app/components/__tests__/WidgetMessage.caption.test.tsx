@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 /**
  * Every chart card says where it came from (PZB-1738): in chat as well as in
- * the workspace, and on paper without the hover-only "Learn more".
+ * the workspace, and on paper too.
  */
 import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
 import { render, screen } from "@testing-library/react";
@@ -72,12 +72,14 @@ describe("WidgetMessage caption", () => {
     expect(caption().textContent).toBe("SOURCE: Tree cover · Learn more");
   });
 
-  it("prints the caption without Learn more", () => {
+  it("keeps the caption label on a print card", () => {
     renderCard(widget({ datasetName: "Tree cover loss" }), {
       inWorkspace: true,
       print: true,
     });
 
-    expect(caption().textContent).toBe("SOURCE: Tree cover loss");
+    // happy-dom cannot apply @media print, so hiding "Learn more" on paper is
+    // InsightCaption's CSS and is not asserted here.
+    expect(caption().textContent).toContain("SOURCE: Tree cover loss");
   });
 });
