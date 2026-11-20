@@ -92,7 +92,7 @@ function ModuleCard({
   /** Replaces the module icon (a spinner while running, a check once added). */
   iconNode?: ReactNode;
   label: string;
-  /** Small line under the label: the CURATED badge, or a status. */
+  /** Small line under the label: the SOURCE DATA badge, or a status. */
   caption?: ReactNode;
   tone: keyof typeof CARD_TONES;
   disabled?: boolean;
@@ -102,7 +102,7 @@ function ModuleCard({
   return (
     <Flex
       as="button"
-      // The label alone names the control; the caption (CURATED, a status) is
+      // The label alone names the control; the caption (SOURCE DATA, a status) is
       // presentational and must not change the accessible name.
       aria-label={label}
       aria-disabled={disabled}

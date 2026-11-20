@@ -4,6 +4,7 @@ import { MapPinIcon } from "@phosphor-icons/react";
 
 import InsightCaption from "@/app/components/InsightCaption";
 import DownloadMenu from "@/app/components/widgets/DownloadMenu";
+import { DATASET_CARD_BY_ID } from "@/app/constants/datasets";
 import type { DateRange } from "@/src/shared/lib/iso-date";
 import { InfoTooltip } from "@/src/shared/ui/InfoTooltip";
 import { Pill } from "@/src/shared/ui/Pill";
@@ -29,6 +30,7 @@ import {
   type AlertsLandFilter,
 } from "../lib/alertsWidgets";
 import { pageNumbers, paginate } from "../lib/pagination";
+import { INTEGRATED_ALERTS_DATASET_ID } from "../lib/widgets";
 import { TWO_COLUMN_QUERY } from "./gridLayout";
 import { CustomPeriodPill, pillProps } from "./PeriodPills";
 
@@ -420,7 +422,12 @@ export default function DashboardAlertsList({
       borderRadius="sm"
       minW={0}
     >
-      <InsightCaption curated />
+      <InsightCaption
+        curated
+        datasetName={
+          DATASET_CARD_BY_ID[INTEGRATED_ALERTS_DATASET_ID].dataset_name
+        }
+      />
 
       {headline ? (
         <Headline headline={headline} />

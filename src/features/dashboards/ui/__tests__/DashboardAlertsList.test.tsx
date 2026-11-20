@@ -19,6 +19,8 @@ import {
   type AlertsChip,
   type AlertsConfidence,
 } from "../../lib/alertsWidgets";
+import { DATASET_CARD_BY_ID } from "@/app/constants/datasets";
+import { INTEGRATED_ALERTS_DATASET_ID } from "../../lib/widgets";
 import type { DateRange } from "@/src/shared/lib/iso-date";
 import { chooseFromMenu } from "./chakraMenu";
 import DashboardAlertsList, {
@@ -99,6 +101,16 @@ const descriptionOf = (item: HTMLElement) =>
     ?.textContent;
 
 describe("DashboardAlertsList", () => {
+  it("captions the list with its source dataset (PZB-1738)", () => {
+    renderList();
+
+    const name = DATASET_CARD_BY_ID[INTEGRATED_ALERTS_DATASET_ID].dataset_name;
+    expect(name).toBe("Integrated alerts");
+    expect(screen.getByText(/^SOURCE:/).textContent).toBe(
+      `SOURCE: ${name} · Learn more`
+    );
+  });
+
   it("shows the headline figures, the new week's days with NEW badges, and totals in the footer", () => {
     renderList();
 

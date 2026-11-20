@@ -86,8 +86,8 @@ const INSIGHT_FILTERS: {
   dashboardOnly?: boolean;
 }[] = [
   { id: "templates", label: "Templates", dashboardOnly: true },
-  { id: "verified", label: "Curated" },
-  { id: "ai", label: "AI generated" },
+  { id: "verified", label: "Source data" },
+  { id: "ai", label: "AI-assisted" },
   { id: "conversation", label: "In this conversation" },
 ];
 
@@ -379,16 +379,16 @@ function InsightsList({
     threadId: currentThreadId,
   });
   const { insights: allInsights } = useUserInsights(aiScope);
-  // Stored insights split by how they were produced, so the Curated and AI
-  // generated filters never list the same record.
+  // Stored insights split by how they were produced, so the Source data and
+  // AI-assisted filters never list the same record.
   const { curated: curatedInsights, aiGenerated: aiInsights } = useMemo(
     () => partitionByVerification(allInsights),
     [allInsights]
   );
 
   // Dashboard surface: one card per analysis, added/removed whole — per-chart
-  // visibility lives in the module's Customize menu on the grid. The Curated
-  // filter is not a list of records here but the run-on-demand catalogue
+  // visibility lives in the module's Customize menu on the grid. The Source
+  // data filter is not a list of records here but the run-on-demand catalogue
   // (`CuratedInsightsList`), rendered below.
   const groups = useMemo<InsightGroupItem[]>(() => {
     if (!isDashboard || filter === "verified") return [];
@@ -499,9 +499,9 @@ function InsightsList({
 function EmptyState({ filter }: { filter: ListFilter }) {
   const message =
     filter === "verified"
-      ? "No curated analyses yet. Open a dashboard to run one for its area."
+      ? "No analyses from source data yet. Open a dashboard to run one for its area."
       : filter === "ai"
-        ? "No analyses generated yet. Ask the assistant to analyse an area."
+        ? "No AI-assisted analyses yet. Ask the assistant to analyse an area."
         : "No analyses in this conversation yet. Ask the assistant to analyse an area, or generate one from a dataset and area.";
   return (
     <Text fontSize="sm" color="fg.muted" mt={4}>

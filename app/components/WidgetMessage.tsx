@@ -42,6 +42,7 @@ import {
 } from "@/src/features/ghg-flux-tree";
 import { WidgetIcons } from "../utils/widgetIcons";
 import AddToDashboardToggle from "@/src/features/dashboards/ui/AddToDashboardToggle";
+import { isCuratedWidget } from "@/src/entities/insight";
 import InsightProvenanceDrawer from "./InsightProvenanceDrawer";
 import VisualizationDisclaimer from "./VisualizationDisclaimer";
 import WidgetErrorBoundary from "./widgets/WidgetErrorBoundary";
@@ -258,7 +259,7 @@ export default function WidgetMessage({
   const hasData =
     Array.isArray(displayWidget.data) && displayWidget.data.length > 0;
   const showDisclaimer = (isChartType || widget.type === "table") && hasData;
-  const isCurated = widget.curated ?? !widget.generation;
+  const isCurated = isCuratedWidget(widget);
   const supportsAxisFit = AXIS_FIT_TYPES.has(widget.type);
   const fullscreenChips = widget.analysisParams
     ? buildChips(widget.analysisParams)
@@ -298,8 +299,13 @@ export default function WidgetMessage({
         </Flex>
       )}
       <Flex gap={3} px={print ? 0 : 4} py={2} flexDir="column">
-        {/* AI-assisted caption — sits above the chart toolbar in the workspace */}
-        {inWorkspace && <InsightCaption curated={isCurated} />}
+        {/* Where the output came from (SOURCE DATA or AI-ASSISTED), above the
+            chart toolbar on every surface (the caption hides "Learn more" in
+            print itself). No dataset name on purpose: the stream's name is
+            inferred from the map, not recorded with the chart, and the real
+            inputs of an analysis are not recorded yet. A later PR names the
+            dataset from the recorded analysis inputs. */}
+        <InsightCaption curated={isCurated} />
         {/* Every surface with a shell of its own puts these pills above the
             card (see InsightChartPills); inline is the fallback for a host
             that has none, today only /chart-debug. */}
