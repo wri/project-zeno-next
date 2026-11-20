@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { IntegratedAlertsLatestResponseSchema } from "../../api/schemas";
 import {
+  ALERTS_DATA_TOOLTIP,
   awaitingPeriodData,
   countWithNewAlerts,
   formatAlertArea,
@@ -158,22 +159,49 @@ describe("awaitingPeriodData", () => {
 });
 
 describe("formatFreshness", () => {
-  it("prints both dates, the release without its year", () => {
-    expect(
-      formatFreshness({
-        latestAlertDate: "2026-10-16",
-        updatedOn: "2026-10-18",
-      })
-    ).toBe("Latest alert detected Oct 16, 2026 · updated Oct 18");
+  const both = { latestAlertDate: "2026-11-13", updatedOn: "2026-11-15" };
+  const acrossYears = {
+    latestAlertDate: "2026-12-31",
+    updatedOn: "2027-01-02",
+  };
+
+  it("puts the release first and the year once, at the end", () => {
+    expect(formatFreshness(both)).toBe(
+      "Data updated Nov 15 · alerts to Nov 13, 2026"
+    );
+    expect(formatFreshness(both, "day-first")).toBe(
+      "Data updated 15 Nov · alerts to 13 Nov 2026"
+    );
   });
 
-  it("gives the release its year when it falls in the next one", () => {
-    expect(
-      formatFreshness({
-        latestAlertDate: "2026-12-30",
-        updatedOn: "2027-01-01",
-      })
-    ).toBe("Latest alert detected Dec 30, 2026 · updated Jan 1, 2027");
+  it("gives both dates their year when they fall in different ones", () => {
+    expect(formatFreshness(acrossYears)).toBe(
+      "Data updated Jan 2, 2027 · alerts to Dec 31, 2026"
+    );
+    expect(formatFreshness(acrossYears, "day-first")).toBe(
+      "Data updated 2 Jan 2027 · alerts to 31 Dec 2026"
+    );
+  });
+
+  it("prints the one date it has", () => {
+    expect(formatFreshness({ latestAlertDate: "2026-11-13" })).toBe(
+      "Alerts to Nov 13, 2026"
+    );
+    expect(formatFreshness({ updatedOn: "2026-11-15" }, "day-first")).toBe(
+      "Data updated 15 Nov 2026"
+    );
+  });
+
+  it("prints nothing without either date", () => {
+    expect(formatFreshness({})).toBeUndefined();
+  });
+});
+
+describe("ALERTS_DATA_TOOLTIP", () => {
+  it("says how often new alerts data arrives", () => {
+    expect(ALERTS_DATA_TOOLTIP).toBe(
+      "Alerts are dated by when they were detected. Global Nature Watch gets new alerts data about once a week, so the newest alerts can be a week or more old."
+    );
   });
 });
 

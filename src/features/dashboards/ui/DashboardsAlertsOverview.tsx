@@ -2,6 +2,7 @@ import { Box, Flex, Skeleton, Text } from "@chakra-ui/react";
 
 import { InfoTooltip } from "@/src/shared/ui/InfoTooltip";
 import {
+  ALERTS_DATA_TOOLTIP,
   awaitingPeriodData,
   countWithNewAlerts,
   formatFreshness,
@@ -86,8 +87,7 @@ export default function DashboardsAlertsOverview({
       {freshness && (
         <Flex align="center" gap="4px" color="#656E7B">
           <InfoTooltip about="the alerts data">
-            Alerts are dated by when they were detected and reach Global Nature
-            Watch a few days after that.
+            {ALERTS_DATA_TOOLTIP}
           </InfoTooltip>
           <Text fontFamily="mono" fontSize="12px" lineHeight="16px">
             {formatFreshness(freshness)}

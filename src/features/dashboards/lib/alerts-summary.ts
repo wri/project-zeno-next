@@ -143,18 +143,48 @@ export function awaitingPeriodData(
 }
 
 /**
- * "Latest alert detected Oct 16, 2026 · updated Oct 18", with the release's
- * year only when it differs from the detection's.
+ * The tooltip beside every line that dates the alerts data. Users read an
+ * alert date a week old as data that stopped updating, so it says how often
+ * new data arrives.
  */
-export function formatFreshness({
-  latestAlertDate,
-  updatedOn,
-}: AlertsFreshness): string {
-  const detected = parseISO(latestAlertDate);
-  const updated = parseISO(updatedOn);
-  const updatedFormat =
-    detected.getFullYear() === updated.getFullYear() ? "MMM d" : "MMM d, yyyy";
-  return `Latest alert detected ${format(detected, "MMM d, yyyy")} · updated ${format(updated, updatedFormat)}`;
+export const ALERTS_DATA_TOOLTIP =
+  "Alerts are dated by when they were detected. Global Nature Watch gets new alerts data about once a week, so the newest alerts can be a week or more old.";
+
+/**
+ * Month first ("Nov 15") on the dashboards list and banner, day first
+ * ("15 Nov") in the alerts widget, matching the dates already on each.
+ */
+export type DateOrder = "month-first" | "day-first";
+
+const DAY_FORMATS: Record<DateOrder, { day: string; dayYear: string }> = {
+  "month-first": { day: "MMM d", dayYear: "MMM d, yyyy" },
+  "day-first": { day: "d MMM", dayYear: "d MMM yyyy" },
+};
+
+/**
+ * "Data updated Nov 15 · alerts to Nov 13, 2026": the release first, then
+ * the newest alert date the periods count back from. The year comes once,
+ * at the end, and on both dates when they differ in it. Either date alone
+ * ("Alerts to Nov 13, 2026") when the other is unknown; undefined for none.
+ */
+export function formatFreshness(
+  {
+    latestAlertDate,
+    updatedOn,
+  }: { latestAlertDate?: string; updatedOn?: string },
+  order: DateOrder = "month-first"
+): string | undefined {
+  const { day, dayYear } = DAY_FORMATS[order];
+  const updated = updatedOn ? parseISO(updatedOn) : undefined;
+  const alertsTo = latestAlertDate ? parseISO(latestAlertDate) : undefined;
+  if (updated && alertsTo) {
+    const updatedFormat =
+      updated.getFullYear() === alertsTo.getFullYear() ? day : dayYear;
+    return `Data updated ${format(updated, updatedFormat)} · alerts to ${format(alertsTo, dayYear)}`;
+  }
+  if (updated) return `Data updated ${format(updated, dayYear)}`;
+  if (alertsTo) return `Alerts to ${format(alertsTo, dayYear)}`;
+  return undefined;
 }
 
 /**
