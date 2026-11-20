@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
 /**
- * Every chart card says where it came from (PZB-1738): in chat as well as in
- * the workspace, and on paper too.
+ * Every chart card says how it was made (PZB-1738): in chat as well as in
+ * the workspace, and on paper too. It names no dataset for now: the streamed
+ * name is inferred from the map, so a chart card never shows one.
  */
 import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
 import { render, screen } from "@testing-library/react";
@@ -45,10 +46,21 @@ const renderCard = (
 const caption = () => screen.getByText(/^(SOURCE|AI-ASSISTED)/);
 
 describe("WidgetMessage caption", () => {
-  it("labels a chat card with its source dataset", () => {
-    renderCard(widget({ datasetName: "Tree cover loss" }));
+  it("labels a curated chat card SOURCE DATA", () => {
+    renderCard(widget());
 
-    expect(caption().textContent).toBe("SOURCE: Tree cover loss · Learn more");
+    expect(caption().textContent).toBe("SOURCE DATA · Learn more");
+  });
+
+  it("names no dataset even when the widget carries an inferred one", () => {
+    renderCard(
+      widget({
+        datasetName: "Tree cover loss",
+        analysisParams: { areas: ["Pará"], dataset: "Tree cover" },
+      })
+    );
+
+    expect(caption().textContent).toBe("SOURCE DATA · Learn more");
   });
 
   it("labels an AI chart in chat and keeps its disclaimer block", () => {
@@ -63,13 +75,13 @@ describe("WidgetMessage caption", () => {
     expect(screen.getByText(/AI models may produce/)).toBeTruthy();
   });
 
-  it("names a direct analysis's dataset from its parameters", () => {
+  it("labels a direct analysis in the workspace SOURCE DATA", () => {
     renderCard(
       widget({ analysisParams: { areas: ["Pará"], dataset: "Tree cover" } }),
       { inWorkspace: true }
     );
 
-    expect(caption().textContent).toBe("SOURCE: Tree cover · Learn more");
+    expect(caption().textContent).toBe("SOURCE DATA · Learn more");
   });
 
   it("keeps the caption label on a print card", () => {
@@ -80,6 +92,6 @@ describe("WidgetMessage caption", () => {
 
     // happy-dom cannot apply @media print, so hiding "Learn more" on paper is
     // InsightCaption's CSS and is not asserted here.
-    expect(caption().textContent).toContain("SOURCE: Tree cover loss");
+    expect(caption().textContent).toContain("SOURCE DATA");
   });
 });

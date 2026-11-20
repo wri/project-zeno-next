@@ -299,15 +299,13 @@ export default function WidgetMessage({
         </Flex>
       )}
       <Flex gap={3} px={print ? 0 : 4} py={2} flexDir="column">
-        {/* Where the output came from (SOURCE or AI-ASSISTED), above the
+        {/* Where the output came from (SOURCE DATA or AI-ASSISTED), above the
             chart toolbar on every surface (the caption hides "Learn more" in
-            print itself). A direct analysis records its dataset only
-            in the parameters; stored insights record neither, and show
-            SOURCE DATA. */}
-        <InsightCaption
-          curated={isCurated}
-          datasetName={widget.datasetName ?? widget.analysisParams?.dataset}
-        />
+            print itself). No dataset name on purpose: the stream's name is
+            inferred from the map, not recorded with the chart, and the real
+            inputs of an analysis are not recorded yet. A later PR names the
+            dataset from the recorded analysis inputs. */}
+        <InsightCaption curated={isCurated} />
         {/* Every surface with a shell of its own puts these pills above the
             card (see InsightChartPills); inline is the fallback for a host
             that has none, today only /chart-debug. */}

@@ -37,7 +37,7 @@ function CaptionTooltip({ heading, body }: { heading: string; body: string }) {
 }
 
 /**
- * Caption that says where an insight came from, on chat cards, the map
+ * Caption that says where an insight came from, on chat chart cards, the map
  * workspace, the Analyses pane and dashboards. Both variants carry a
  * "Learn more" tooltip; `showLearnMore={false}` drops it for compact badges.
  * It is hidden in print by the caption itself, where nothing can be hovered.
