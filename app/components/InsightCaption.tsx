@@ -56,6 +56,8 @@ export default function InsightCaption({
   datasetName?: string;
   showLearnMore?: boolean;
 }) {
+  // One rule for an empty name, so the label and the note never disagree.
+  const name = datasetName || undefined;
   const spec = VERIFICATION_EYEBROW[curated ? "verified" : "ai-generated"];
   const BadgeIcon = spec.Icon;
   return (
@@ -74,7 +76,7 @@ export default function InsightCaption({
       >
         {!curated ? (
           "AI-ASSISTED"
-        ) : datasetName ? (
+        ) : name ? (
           <>
             {"SOURCE: "}
             <Box
@@ -86,9 +88,9 @@ export default function InsightCaption({
               verticalAlign="bottom"
               letterSpacing="0.01em"
               color="#3A4048"
-              title={datasetName}
+              title={name}
             >
-              {datasetName}
+              {name}
             </Box>
           </>
         ) : (
@@ -104,7 +106,7 @@ export default function InsightCaption({
                 curated ? (
                   <CaptionTooltip
                     heading="SOURCE DATA"
-                    body={sourceDataNote(datasetName)}
+                    body={sourceDataNote(name)}
                   />
                 ) : (
                   <CaptionTooltip heading="AI-ASSISTED" body={AI_DISCLAIMER} />

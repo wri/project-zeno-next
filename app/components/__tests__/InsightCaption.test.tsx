@@ -60,6 +60,16 @@ describe("InsightCaption", () => {
     );
   });
 
+  it("treats an empty dataset name as unknown, in the label and the note", async () => {
+    const { container } = renderCaption({ curated: true, datasetName: "" });
+
+    expect(container.textContent).toBe("SOURCE DATA · Learn more");
+    const tooltip = await openTooltip("Learn more about source data");
+    expect(tooltip.textContent).toContain(
+      "come straight from the source data through a direct data query"
+    );
+  });
+
   it("drops Learn more for a badge", () => {
     const { container } = renderCaption({
       curated: true,
