@@ -75,9 +75,9 @@ export interface EyebrowSpec {
 
 /**
  * An analysis card's eyebrow says both what it is and how it was made, in
- * one badge, on every surface: the green source-data icon for a curated
- * (direct-query) analysis, a grey sparkle for an AI-assisted one. Icons and
- * colours match the workspace's `InsightCaption`.
+ * one badge, on every surface: a green check for a curated (direct-query)
+ * analysis, a grey sparkle for an AI-assisted one. Icons and colours match
+ * the workspace's `InsightCaption`.
  */
 export const VERIFICATION_EYEBROW: Record<AnalysisVerification, EyebrowSpec> = {
   verified: {
@@ -85,7 +85,6 @@ export const VERIFICATION_EYEBROW: Record<AnalysisVerification, EyebrowSpec> = {
     color: "#656E7B",
     Icon: SourceDataIcon,
     iconColor: SOURCE_DATA_ICON_COLOR,
-    iconWeight: "thin",
   },
   "ai-generated": {
     label: "AI-ASSISTED ANALYSIS",

@@ -45,7 +45,7 @@ function CaptionTooltip({ heading, body }: { heading: string; body: string }) {
  * workspace, the Analyses pane and dashboards. Both variants carry a
  * "Learn more" tooltip; `showLearnMore={false}` drops it for compact badges
  * and for print, where nothing can be hovered.
- * curated → green outline icon + "SOURCE: <dataset>" (direct data query), or
+ * curated → green check circle + "SOURCE: <dataset>" (direct data query), or
  *   "SOURCE DATA" when the surface does not know the dataset. Never guess
  *   one: a wrong name is worse than none.
  * default → gray sparkle + "AI-ASSISTED" (AI-generated, carries a disclaimer)
@@ -63,11 +63,7 @@ export default function InsightCaption({
   return (
     <Flex align="center" gap="4px" h="16px">
       {curated ? (
-        <SourceDataIcon
-          size={12}
-          weight="thin"
-          color={SOURCE_DATA_ICON_COLOR}
-        />
+        <SourceDataIcon size={12} color={SOURCE_DATA_ICON_COLOR} />
       ) : (
         <SparkleIcon size={12} weight="thin" color="#737C94" />
       )}
