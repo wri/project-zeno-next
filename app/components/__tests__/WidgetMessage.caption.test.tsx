@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 /**
  * Every chart card says how it was made (PZB-1738): in the workspace, in a
- * host with no shell of its own (today /chart-debug) and on paper. It names no dataset for now: the streamed
- * name is inferred from the map, so a chart card never shows one.
+ * host with no shell of its own (today /chart-debug) and on paper. It names no
+ * dataset for now, even when the inputs are recorded: a later PR adds it.
  */
 import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
 import { render, screen } from "@testing-library/react";
@@ -20,6 +20,15 @@ vi.mock("@/app/components/widgets/ChartWidget", async (importOriginal) => ({
 
 import WidgetMessage from "../WidgetMessage";
 import type { InsightWidget } from "@/app/types/chat";
+import type { AnalysisInputs } from "@/src/entities/insight";
+
+const inputs: AnalysisInputs = {
+  recorded: true,
+  areas: [{ name: "Pará" }],
+  datasets: [{ name: "Tree cover loss" }],
+  canopyCover: [30],
+  years: [{ start: 2001, end: 2024 }],
+};
 
 const widget = (over: Partial<InsightWidget> = {}): InsightWidget => ({
   id: "w-1",
@@ -52,12 +61,9 @@ describe("WidgetMessage caption", () => {
     expect(caption().textContent).toBe("SOURCE DATA · Learn more");
   });
 
-  it("names no dataset even when the widget carries an inferred one", () => {
+  it("names no dataset even when the widget carries one", () => {
     renderCard(
-      widget({
-        datasetName: "Tree cover loss",
-        analysisParams: { areas: ["Pará"], dataset: "Tree cover" },
-      })
+      widget({ datasetName: "Tree cover loss", analysisInputs: inputs })
     );
 
     expect(caption().textContent).toBe("SOURCE DATA · Learn more");
@@ -76,10 +82,7 @@ describe("WidgetMessage caption", () => {
   });
 
   it("labels a direct analysis in the workspace SOURCE DATA", () => {
-    renderCard(
-      widget({ analysisParams: { areas: ["Pará"], dataset: "Tree cover" } }),
-      { inWorkspace: true }
-    );
+    renderCard(widget({ analysisInputs: inputs }), { inWorkspace: true });
 
     expect(caption().textContent).toBe("SOURCE DATA · Learn more");
   });
