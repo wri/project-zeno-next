@@ -9,6 +9,7 @@ import type { DateRange } from "@/src/shared/lib/iso-date";
 import { InfoTooltip } from "@/src/shared/ui/InfoTooltip";
 import { Pill } from "@/src/shared/ui/Pill";
 import { isRetryable, type AlertsListError } from "../api/alerts";
+import { ALERTS_DATA_TOOLTIP } from "../lib/alerts-summary";
 import {
   estimateAlertPoints,
   formatAlertDate,
@@ -211,15 +212,15 @@ function Headline({ headline }: { headline: AlertsHeadline }) {
 }
 
 /**
- * The latest alert date every pill counts back from, in the dashboards
- * list's words, for the card's params row.
+ * How current the alerts data is, for the card's params row: the label the
+ * container words (`formatFreshness`, day first and in capitals) beside the
+ * tooltip every alerts date line carries.
  */
-export function LatestAlertDetected({ date }: { date: string }) {
+export function AlertsDataDates({ label }: { label: string }) {
   return (
     <Flex align="center" gap="4px" color="#565E7B">
       <InfoTooltip about="the alerts data" size={14}>
-        Alerts are dated by when they were detected and reach Global Nature
-        Watch a few days after that.
+        {ALERTS_DATA_TOOLTIP}
       </InfoTooltip>
       <Text
         fontFamily="mono"
@@ -227,7 +228,7 @@ export function LatestAlertDetected({ date }: { date: string }) {
         lineHeight="16px"
         whiteSpace="nowrap"
       >
-        LATEST ALERT DETECTED {formatAlertDate(date).toUpperCase()}
+        {label}
       </Text>
     </Flex>
   );
