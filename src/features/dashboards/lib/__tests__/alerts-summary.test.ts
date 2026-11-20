@@ -3,15 +3,16 @@ import { describe, expect, it } from "vitest";
 import { IntegratedAlertsLatestResponseSchema } from "../../api/schemas";
 import {
   ALERTS_DATA_TOOLTIP,
+  alertsStripAction,
   awaitingPeriodData,
   countWithNewAlerts,
   formatAlertArea,
+  formatDataUpdated,
   formatFreshness,
   formatPeriodRange,
   hasNewAlerts,
   toAlertsFreshness,
   toAlertsSummary,
-  updatableChartsLabel,
 } from "../alerts-summary";
 
 const wire = {
@@ -205,10 +206,77 @@ describe("ALERTS_DATA_TOOLTIP", () => {
   });
 });
 
-describe("updatableChartsLabel", () => {
-  it("words the lead-in by count, dropping the number when none is countable", () => {
-    expect(updatableChartsLabel(0)).toBe("Charts can be updated.");
-    expect(updatableChartsLabel(1)).toBe("1 chart can be updated.");
-    expect(updatableChartsLabel(2)).toBe("2 charts can be updated.");
+describe("formatDataUpdated", () => {
+  it("dates the release without a year, like the period before it", () => {
+    expect(formatDataUpdated("2026-11-15", "2026-11-13")).toBe(
+      "Data updated Nov 15"
+    );
+  });
+
+  it("gives the release its year when it falls after the period's year", () => {
+    expect(formatDataUpdated("2027-01-02", "2026-12-31")).toBe(
+      "Data updated Jan 2, 2027"
+    );
+  });
+});
+
+describe("alertsStripAction", () => {
+  const owner = {
+    alertsWidgetId: undefined,
+    canAdd: true,
+    templateNames: ["nrt-monitoring", "post-2020-forest-loss"],
+    pendingTemplates: [],
+  };
+
+  it("links to the alerts list when the dashboard has one, for anyone", () => {
+    expect(alertsStripAction({ ...owner, alertsWidgetId: "w-alerts" })).toEqual(
+      { kind: "view", widgetId: "w-alerts" }
+    );
+    expect(
+      alertsStripAction({
+        ...owner,
+        alertsWidgetId: "w-alerts",
+        canAdd: false,
+        templateNames: undefined,
+      })
+    ).toEqual({ kind: "view", widgetId: "w-alerts" });
+  });
+
+  it("offers an owner the Near real-time monitoring template otherwise", () => {
+    expect(alertsStripAction(owner)).toEqual({ kind: "add", state: "idle" });
+  });
+
+  it("offers nothing to a viewer, or while the registry is unknown or lacks the template", () => {
+    expect(alertsStripAction({ ...owner, canAdd: false })).toEqual({
+      kind: "none",
+    });
+    expect(alertsStripAction({ ...owner, templateNames: undefined })).toEqual({
+      kind: "none",
+    });
+    expect(
+      alertsStripAction({ ...owner, templateNames: ["post-2020-forest-loss"] })
+    ).toEqual({ kind: "none" });
+  });
+
+  it("reads as adding while that template applies, and holds while another does", () => {
+    expect(
+      alertsStripAction({ ...owner, pendingTemplates: ["nrt-monitoring"] })
+    ).toEqual({ kind: "add", state: "adding" });
+    expect(
+      alertsStripAction({
+        ...owner,
+        pendingTemplates: ["post-2020-forest-loss"],
+      })
+    ).toEqual({ kind: "add", state: "disabled" });
+  });
+
+  it("switches to the link as soon as the template's alerts list arrives, still pending", () => {
+    expect(
+      alertsStripAction({
+        ...owner,
+        alertsWidgetId: "w-new",
+        pendingTemplates: ["nrt-monitoring"],
+      })
+    ).toEqual({ kind: "view", widgetId: "w-new" });
   });
 });

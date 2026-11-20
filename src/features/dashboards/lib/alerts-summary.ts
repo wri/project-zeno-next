@@ -4,6 +4,7 @@ import type {
   DashboardAlertsSummaryResponse,
   IntegratedAlertsLatestResponse,
 } from "../api/schemas";
+import { NRT_MONITORING } from "./alertsChart";
 
 /**
  * The alerts summary as the dashboards pages consume it, settled once from
@@ -188,11 +189,60 @@ export function formatFreshness(
 }
 
 /**
- * The strip's "2 charts can be updated." lead-in. With no countable chart
- * (older rows without `dataset_id`) the sentence drops the number rather
- * than claiming zero on a dashboard the backend did flag.
+ * The banner's "Data updated Nov 15", after its period: like the period, no
+ * year unless the release falls in another year than the period's end.
  */
-export function updatableChartsLabel(count: number): string {
-  if (count === 0) return "Charts can be updated.";
-  return `${count} ${count === 1 ? "chart" : "charts"} can be updated.`;
+export function formatDataUpdated(
+  updatedOn: string,
+  periodEnd: string
+): string {
+  const updated = parseISO(updatedOn);
+  const sameYear = updated.getFullYear() === parseISO(periodEnd).getFullYear();
+  return `Data updated ${format(updated, sameYear ? "MMM d" : "MMM d, yyyy")}`;
+}
+
+/**
+ * The control at the end of the alerts banner: a link to the dashboard's
+ * alerts list, else, for an owner, a button that adds one with the Near
+ * real-time monitoring template, else nothing.
+ */
+export type AlertsStripAction =
+  | { kind: "view"; widgetId: string }
+  /**
+   * `adding` while that template applies; `disabled` while another one does,
+   * since two requests would make two sections.
+   */
+  | { kind: "add"; state: "idle" | "adding" | "disabled" }
+  | { kind: "none" };
+
+export function alertsStripAction({
+  alertsWidgetId,
+  canAdd,
+  templateNames,
+  pendingTemplates,
+}: {
+  /** The first alerts widget on screen (`firstAlertsWidgetId`). */
+  alertsWidgetId: string | undefined;
+  /** The viewer owns the dashboard, and it has an area for a template to use. */
+  canAdd: boolean;
+  /**
+   * The backend's template registry; undefined while it loads or when it
+   * failed, and then nothing is offered: a button that fails is worse than
+   * none.
+   */
+  templateNames: readonly string[] | undefined;
+  /** The templates being applied to this dashboard right now. */
+  pendingTemplates: readonly string[];
+}): AlertsStripAction {
+  if (alertsWidgetId) return { kind: "view", widgetId: alertsWidgetId };
+  if (!canAdd || !templateNames?.includes(NRT_MONITORING)) {
+    return { kind: "none" };
+  }
+  if (pendingTemplates.includes(NRT_MONITORING)) {
+    return { kind: "add", state: "adding" };
+  }
+  return {
+    kind: "add",
+    state: pendingTemplates.length > 0 ? "disabled" : "idle",
+  };
 }

@@ -31,8 +31,12 @@ export const ALERTS_CHART_PRESETS: {
   { value: "last-week", label: "Last week", days: 7 },
 ];
 
-/** The template whose alerts chart carries the pills (the Analyses pane's does not). */
-const NRT_MONITORING = "nrt-monitoring";
+/**
+ * The Near real-time monitoring template's registry name: its alerts chart
+ * carries the pills (the Analyses pane's does not), and the alerts banner
+ * applies it to add an alerts list.
+ */
+export const NRT_MONITORING = "nrt-monitoring";
 const ALERT_DATE = "alert_date";
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
 

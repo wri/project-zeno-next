@@ -358,23 +358,16 @@ export function findCuratedWidgetForDataset(
 export const INTEGRATED_ALERTS_DATASET_ID = 11;
 
 /**
- * How many charts across the widgets were computed from integrated alerts
- * and so can be brought up to date: the chart-level rule the backend applies
- * when deciding which dashboards its alerts summary covers. Same caveat as
- * `findCuratedWidgetForDataset`: charts persisted before `dataset_id`
- * existed are not counted.
+ * The first alerts list widget (`widget_type: "alerts"`) as the grid shows
+ * them, top-level widgets first and then section by section, for the alerts
+ * banner to link to.
  */
-export function countIntegratedAlertsCharts(
-  widgets: readonly DashboardWidget[]
-): number {
-  return widgets.reduce(
-    (count, widget) =>
-      count +
-      (widget.insight?.charts ?? []).filter(
-        (chart) => chart.dataset_id === INTEGRATED_ALERTS_DATASET_ID
-      ).length,
-    0
-  );
+export function firstAlertsWidgetId(dashboard: Dashboard): string | undefined {
+  for (const { widgets } of widgetContainers(dashboard)) {
+    const alerts = widgets.find((widget) => widget.widget_type === "alerts");
+    if (alerts) return alerts.id;
+  }
+  return undefined;
 }
 
 /**
