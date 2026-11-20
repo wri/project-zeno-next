@@ -47,12 +47,13 @@ export const RELEASES: readonly [Release, ...Release[]] = [
     ref: "f7c138e514c4780ed84003b13a7decdfede8ff21",
     draft: false,
   },
-  // 2026 (frozen), the first full run; chart_well_formed rescored before
-  // commit (gnw-gold-evals #73, #74).
+  // 2026 (frozen), the full run after the 20 Nov production update
+  // (gnw-gold-evals #76). It replaces the 19 Nov run (#74), which never
+  // reached production.
   {
     name: "nov-2026",
-    runId: "20261119T115511Z_prod",
-    ref: "edc37fa4255d21bee6937e835f6a71ae48045816",
+    runId: "20261120T172336Z_prod",
+    ref: "a3aedb1b5a959ab4d0e7512d7daa92ce162f7fcd",
     draft: false,
   },
 ];
