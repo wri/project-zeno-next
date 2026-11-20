@@ -84,7 +84,7 @@ describe("EntityCard — content", () => {
       kind: "analysis",
       verification: "verified",
     });
-    expect(screen.getByText("CURATED ANALYSIS")).toBeTruthy();
+    expect(screen.getByText("SOURCE DATA ANALYSIS")).toBeTruthy();
     expect(screen.queryByText("ANALYSIS")).toBeNull();
     unmount();
 

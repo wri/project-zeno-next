@@ -43,7 +43,7 @@ export type CardInteraction =
 
 export interface EntityCardProps {
   kind: EntityKind;
-  /** Analyses only: renders the merged CURATED / AI-ASSISTED ANALYSIS eyebrow. */
+  /** Analyses only: renders the merged SOURCE DATA / AI-ASSISTED ANALYSIS eyebrow. */
   verification?: AnalysisVerification;
   title: string;
   /** Mono meta line under the title ("annual · global · UMD"). */

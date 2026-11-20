@@ -253,7 +253,7 @@ describe("CuratedInsightsList", () => {
     const service = fakeService(() => Promise.resolve(RESULT));
     renderList(service);
 
-    expect(screen.getAllByText("CURATED")).toHaveLength(10);
+    expect(screen.getAllByText("SOURCE DATA")).toHaveLength(10);
     expect(screen.getByText(TCL_TITLE)).toBeTruthy();
     expect(screen.getByText("Integrated alerts in Pará")).toBeTruthy();
     expect(
@@ -284,7 +284,7 @@ describe("CuratedInsightsList", () => {
       expect(screen.queryByText(LGMS_TITLE)).toBeNull();
       // Tree cover gain is withheld from a KBA too; the other nine stay.
       expect(screen.queryByText(/^Tree cover gain in /)).toBeNull();
-      expect(screen.getAllByText("CURATED")).toHaveLength(9);
+      expect(screen.getAllByText("SOURCE DATA")).toHaveLength(9);
     });
 
     it("appears for an administrative area once the flag is set", () => {
@@ -292,7 +292,7 @@ describe("CuratedInsightsList", () => {
       renderList(fakeService(() => Promise.resolve(RESULT)));
       expect(screen.getByText(LGMS_TITLE)).toBeTruthy();
       expect(screen.getByText(/^Tree cover gain in /)).toBeTruthy();
-      expect(screen.getAllByText("CURATED")).toHaveLength(11);
+      expect(screen.getAllByText("SOURCE DATA")).toHaveLength(11);
     });
 
     it("pages its detail through two charts, the three roll-ups folded into one", async () => {
@@ -484,6 +484,6 @@ describe("CuratedInsightsList", () => {
     // The quiet retry is still there, and Back returns to the cards.
     expect(screen.getByRole("button", { name: "Try again" })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /Back to analyses/ }));
-    expect(screen.getAllByText("CURATED")).toHaveLength(10);
+    expect(screen.getAllByText("SOURCE DATA")).toHaveLength(10);
   });
 });
