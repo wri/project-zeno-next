@@ -42,6 +42,7 @@ import {
 } from "@/src/features/ghg-flux-tree";
 import { WidgetIcons } from "../utils/widgetIcons";
 import AddToDashboardToggle from "@/src/features/dashboards/ui/AddToDashboardToggle";
+import { isCuratedWidget } from "@/src/entities/insight";
 import InsightProvenanceDrawer from "./InsightProvenanceDrawer";
 import VisualizationDisclaimer from "./VisualizationDisclaimer";
 import WidgetErrorBoundary from "./widgets/WidgetErrorBoundary";
@@ -258,7 +259,7 @@ export default function WidgetMessage({
   const hasData =
     Array.isArray(displayWidget.data) && displayWidget.data.length > 0;
   const showDisclaimer = (isChartType || widget.type === "table") && hasData;
-  const isCurated = widget.curated ?? !widget.generation;
+  const isCurated = isCuratedWidget(widget);
   const supportsAxisFit = AXIS_FIT_TYPES.has(widget.type);
   const fullscreenChips = widget.analysisParams
     ? buildChips(widget.analysisParams)

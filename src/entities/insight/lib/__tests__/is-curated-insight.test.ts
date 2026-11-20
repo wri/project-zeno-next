@@ -1,6 +1,11 @@
+import type { InsightWidget } from "@/app/types/chat";
 import { describe, expect, it } from "vitest";
 
-import { codeActParts, isCuratedInsight } from "../is-curated-insight";
+import {
+  codeActParts,
+  isCuratedInsight,
+  isCuratedWidget,
+} from "../is-curated-insight";
 
 const wellFormed = { type: "code_block", content: "cHJpbnQoKQ==" };
 
@@ -41,5 +46,18 @@ describe("codeActParts", () => {
       wellFormed,
       other,
     ]);
+  });
+});
+
+describe("isCuratedWidget", () => {
+  const generation = { code: "print(1)" } as InsightWidget["generation"];
+
+  it.each([
+    ["explicit true", { curated: true }, true],
+    ["explicit false with no generation", { curated: false }, false],
+    ["undefined with generation", { generation }, false],
+    ["undefined without generation", {}, true],
+  ])("%s", (_label, widget, expected) => {
+    expect(isCuratedWidget(widget)).toBe(expected);
   });
 });

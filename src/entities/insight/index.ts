@@ -13,7 +13,11 @@ export { chartsToWidgets } from "./lib/charts-to-widgets";
 export { pivotByColorField } from "./lib/pivot-color-field";
 export { chartId } from "./lib/chart-id";
 export { orderInsightsForPager } from "./lib/order-insights";
-export { codeActParts, isCuratedInsight } from "./lib/is-curated-insight";
+export {
+  codeActParts,
+  isCuratedInsight,
+  isCuratedWidget,
+} from "./lib/is-curated-insight";
 export { generateInsightTitle } from "./lib/insight-title";
 export type { InsightTitleInput } from "./lib/insight-title";
 export {
