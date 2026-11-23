@@ -14,8 +14,8 @@ import {
   UsersThreeIcon,
 } from "@phosphor-icons/react";
 import useAuthStore from "@/app/store/authStore";
-import { useAdminUsersExport } from "@/app/hooks/useAdminUsersExport";
 import { toaster } from "@/app/components/ui/toaster";
+import { downloadCsv } from "@/src/shared/lib/csv";
 import { useAdminUsersList } from "../api/admin-users-list";
 import { useProfileLabels } from "../api/profile-labels";
 import {
@@ -33,6 +33,7 @@ import {
   sortUsers,
   type SortKey,
 } from "../lib/sort-users";
+import { usersCsvFilename, usersToCsv } from "../lib/users-csv";
 import { SuperuserConfirmDialog } from "./SuperuserConfirmDialog";
 import { UserFiltersBar } from "./UserFiltersBar";
 import { UserTypeCell } from "./UserTypeCell";
@@ -83,35 +84,26 @@ export function ManageUsersScreen() {
   };
 
   const typeChange = useUserTypeChange();
-  const exportMutation = useAdminUsersExport();
 
-  const handleDownloadCsv = () => {
-    exportMutation.mutate(undefined, {
-      onSuccess: ({ blob, filename }) => {
-        const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
-        link.setAttribute("href", url);
-        link.setAttribute("download", filename);
-        link.style.visibility = "hidden";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        toaster.create({
-          title: "Download started",
-          description: filename,
-          type: "success",
-          duration: 3000,
-        });
-      },
-      onError: (err) => {
-        toaster.create({
-          title: "Download failed",
-          description: (err as Error)?.message || "Could not download CSV.",
-          type: "error",
-          duration: 5000,
-        });
-      },
+  // Every matching row, in the table's order, not only the current page.
+  const handleDownload = () => {
+    const filename = usersCsvFilename(filtered);
+    try {
+      downloadCsv(usersToCsv(matches.map((u) => u.wire)), filename);
+    } catch (err) {
+      toaster.create({
+        title: "Download failed",
+        description: (err as Error).message || "Could not download CSV.",
+        type: "error",
+        duration: 5000,
+      });
+      return;
+    }
+    toaster.create({
+      title: "Download started",
+      description: `${usersLabel(matches.length)}, as loaded at ${formatLoadedAt(list.dataUpdatedAt)}.`,
+      type: "success",
+      duration: 3000,
     });
   };
 
@@ -140,12 +132,13 @@ export function ManageUsersScreen() {
         <Button
           size="sm"
           variant="outline"
-          onClick={handleDownloadCsv}
-          loading={exportMutation.isPending}
-          disabled={exportMutation.isPending}
+          onClick={handleDownload}
+          disabled={list.isError || matches.length === 0}
         >
           <DownloadSimpleIcon />
-          Download CSV
+          {filtered
+            ? `Download ${usersLabel(matches.length)} (CSV)`
+            : "Download CSV"}
         </Button>
       </Flex>
 

@@ -11,7 +11,8 @@ const wire = (overrides: Partial<UserModel> = {}): UserModel => ({
 
 describe("toManagedUser", () => {
   it("settles every absent field", () => {
-    expect(toManagedUser(wire())).toEqual({
+    const user = wire();
+    expect(toManagedUser(user)).toEqual({
       id: "u1",
       email: "ana@example.org",
       name: null,
@@ -24,6 +25,7 @@ describe("toManagedUser", () => {
       audience: "external",
       joinedOn: null,
       signupSource: "unknown",
+      wire: user,
     });
   });
 

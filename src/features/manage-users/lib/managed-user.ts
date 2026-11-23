@@ -38,6 +38,8 @@ export interface ManagedUser {
   /** The UTC day of the first GNW sign-in, `yyyy-MM-dd`. */
   joinedOn: string | null;
   signupSource: SignupSource;
+  /** The user as the API sent it, for the CSV download. */
+  wire: UserModel;
 }
 
 function audienceOf(email: string): Audience {
@@ -71,5 +73,6 @@ export function toManagedUser(user: UserModel): ManagedUser {
       ? new Date(user.firstSeenAt).toISOString().slice(0, 10)
       : null,
     signupSource: signupSourceOf(user.rwApps ?? []),
+    wire: user,
   };
 }
