@@ -39,7 +39,7 @@ export default function AnalysisParametersToggle({
       cursor="pointer"
     >
       <Text as="span" textDecoration="underline" textDecorationStyle="solid">
-        What was analysed
+        What was analyzed
       </Text>
       <CaretDownIcon
         size={10}

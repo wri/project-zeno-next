@@ -35,19 +35,19 @@ export type AnalysisInputsWire = z.infer<typeof AnalysisInputsWireSchema>;
  * `BRA.22_1`), so it identifies the area but must not be used to fetch its
  * geometry.
  */
-export interface AnalysedArea {
+export interface AnalyzedArea {
   name: string;
   source?: string;
   srcId?: string;
 }
 
-export interface AnalysedDataset {
+export interface AnalyzedDataset {
   name: string;
   id?: number;
 }
 
 /** Inclusive calendar years the statistics cover. */
-export interface AnalysedYears {
+export interface AnalyzedYears {
   start: number;
   end: number;
 }
@@ -60,10 +60,10 @@ export type AnalysisInputs =
   | { recorded: false }
   | {
       recorded: true;
-      areas: AnalysedArea[];
-      datasets: AnalysedDataset[];
+      areas: AnalyzedArea[];
+      datasets: AnalyzedDataset[];
       canopyCover: number[];
-      years: AnalysedYears[];
+      years: AnalyzedYears[];
     };
 
 export type RecordedAnalysisInputs = Extract<

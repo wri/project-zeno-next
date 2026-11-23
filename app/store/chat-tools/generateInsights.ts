@@ -33,7 +33,7 @@ export function generateInsightsTool(
   try {
     if (streamMessage.charts_data && Array.isArray(streamMessage.charts_data)) {
       // Only what the backend recorded, never the map or the chat's date
-      // range: those show what is on screen now, not what was analysed.
+      // range: those show what is on screen now, not what was analyzed.
       const analysisInputs = toAnalysisInputs(
         streamMessage.analysis_inputs,
         streamMessage.insight_id

@@ -58,11 +58,11 @@ export function formatGeneratedAt(createdAt: string): string {
 const PANEL_AREA_LIMIT = 5;
 
 /**
- * The detail view's "What was analysed" panel: the inputs the backend
+ * The detail view's "What was analyzed" panel: the inputs the backend
  * recorded for this analysis, and when it ran. Read-only: the map is not
  * moved and nothing re-runs from here.
  */
-export function AnalysedInputsPanel({
+export function AnalyzedInputsPanel({
   inputs,
   createdAt,
 }: {
@@ -99,7 +99,7 @@ export function AnalysedInputsPanel({
   return (
     <Box
       as="section"
-      aria-label="What was analysed"
+      aria-label="What was analyzed"
       bg="primary.25"
       borderWidth="1px"
       borderColor="#DDE2F5"
@@ -117,7 +117,7 @@ export function AnalysedInputsPanel({
         color="neutral.500"
         mb="8px"
       >
-        WHAT WAS ANALYSED
+        WHAT WAS ANALYZED
       </Text>
       {!inputs.recorded && (
         <Text mb={shown.length > 0 ? "8px" : 0}>{INPUTS_NOT_RECORDED}</Text>
@@ -266,7 +266,7 @@ export function InsightDetail({
 
       {widget.analysisInputs && (
         <Box mt={3}>
-          <AnalysedInputsPanel
+          <AnalyzedInputsPanel
             inputs={widget.analysisInputs}
             createdAt={createdAt}
           />

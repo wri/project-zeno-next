@@ -122,7 +122,7 @@ export interface InsightWidget extends ChartColorFields {
   // direct/curated flow) as curated.
   curated?: boolean;
   // What the analysis was computed from, as the backend recorded it. Set on
-  // every analysis widget (the "What was analysed" toggle); undefined on
+  // every analysis widget (the "What was analyzed" toggle); undefined on
   // widgets that are not analyses, such as dataset cards.
   analysisInputs?: AnalysisInputs;
   // Persisted insight UUID. All charts of one analysis share it; it is the

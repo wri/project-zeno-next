@@ -1,8 +1,8 @@
 import {
   AnalysisInputsWireSchema,
-  type AnalysedArea,
-  type AnalysedDataset,
-  type AnalysedYears,
+  type AnalyzedArea,
+  type AnalyzedDataset,
+  type AnalyzedYears,
   type AnalysisInputs,
 } from "../model/analysis-inputs";
 
@@ -46,14 +46,14 @@ export function toAnalysisInputs(
 
   const areas = pulls.flatMap((pull) =>
     pull.areas.map(
-      ({ name, source, src_id }): AnalysedArea =>
+      ({ name, source, src_id }): AnalyzedArea =>
         source !== null && src_id !== null
           ? { name, source, srcId: src_id }
           : { name }
     )
   );
   const datasets = pulls.map(
-    ({ dataset_id, dataset_name }): AnalysedDataset =>
+    ({ dataset_id, dataset_name }): AnalyzedDataset =>
       dataset_id !== null
         ? { name: dataset_name, id: dataset_id }
         : { name: dataset_name }
@@ -64,7 +64,7 @@ export function toAnalysisInputs(
     canopy_cover !== null ? [canopy_cover] : []
   );
   const years = pulls.map(
-    ({ start_date, end_date }): AnalysedYears => ({
+    ({ start_date, end_date }): AnalyzedYears => ({
       start: year(start_date),
       end: year(end_date),
     })
@@ -88,7 +88,7 @@ export function toAnalysisInputs(
 /** The dataset of a single-dataset analysis; undefined for any other. */
 export function soleDataset(
   inputs: AnalysisInputs | undefined
-): AnalysedDataset | undefined {
+): AnalyzedDataset | undefined {
   return inputs?.recorded && inputs.datasets.length === 1
     ? inputs.datasets[0]
     : undefined;

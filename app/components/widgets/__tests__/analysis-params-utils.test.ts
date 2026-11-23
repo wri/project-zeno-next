@@ -81,7 +81,7 @@ describe("buildChips", () => {
 
   it("renders an LGMS analysis over the years its data covers", () => {
     // PZB-1355: the row read "YEARS 2001–25" over a chart of 2016–2024
-    // figures. The years now come from the record of what was analysed.
+    // figures. The years now come from the record of what was analyzed.
     const chips = buildChips(
       inputs({
         areas: [{ name: "Pará, Brazil", source: "gadm", srcId: "BRA.14" }],

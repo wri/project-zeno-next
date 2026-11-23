@@ -232,9 +232,9 @@ describe("DashboardAlertsWidget", () => {
       "105.7ha of alerts since 17 Sep17 SEP – 16 OCT 2026"
     );
     // The latest alert date sits at the right of the card's params row,
-    // level with the "What was analysed" toggle, outside the list's white card.
+    // level with the "What was analyzed" toggle, outside the list's white card.
     const paramsRow = screen.getByRole("button", {
-      name: "What was analysed",
+      name: "What was analyzed",
     }).parentElement!;
     expect(
       within(paramsRow).getByText("LATEST ALERT DETECTED 16 OCT 2026")
@@ -253,7 +253,7 @@ describe("DashboardAlertsWidget", () => {
     expect(mapPane().dataset.context).toBe("");
   });
 
-  it("keeps the params chips behind the card's What was analysed toggle, as an analysis card's", async () => {
+  it("keeps the params chips behind the card's What was analyzed toggle, as an analysis card's", async () => {
     mockedFetch.mockResolvedValue(toAlertsList(ALERTS_LIST_WIRE));
     renderWidget();
     await screen.findByText(NEW_WEEK_FOOTER);
@@ -261,7 +261,7 @@ describe("DashboardAlertsWidget", () => {
     expect(screen.queryByText("AREA")).toBeNull();
     expect(screen.queryByText("CONFIDENCE")).toBeNull();
 
-    const toggle = screen.getByRole("button", { name: "What was analysed" });
+    const toggle = screen.getByRole("button", { name: "What was analyzed" });
     expect(toggle.getAttribute("aria-expanded")).toBe("false");
     fireEvent.click(toggle);
     expect(toggle.getAttribute("aria-expanded")).toBe("true");
@@ -301,7 +301,7 @@ describe("DashboardAlertsWidget", () => {
     expect(
       screen.getByRole("button", { name: "Confidence: High" })
     ).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "What was analysed" }));
+    fireEvent.click(screen.getByRole("button", { name: "What was analyzed" }));
     expect(chip("CONFIDENCE")).toBe("CONFIDENCEHigh");
 
     expect(mockedFetch).toHaveBeenCalledTimes(1);

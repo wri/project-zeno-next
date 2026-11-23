@@ -9,7 +9,7 @@ import type { AnalysisInputs } from "@/src/entities/insight";
 // The chart card is not what these tests read.
 vi.mock("@/app/components/WidgetMessage", () => ({ default: () => null }));
 
-import { AnalysedInputsPanel, InsightDetail } from "../insight-card-parts";
+import { AnalyzedInputsPanel, InsightDetail } from "../insight-card-parts";
 
 const RECORDED: AnalysisInputs = {
   recorded: true,
@@ -24,7 +24,7 @@ const renderIn = (ui: React.ReactElement) =>
 
 /** The panel's definition list as "term: value | value" lines. */
 function rows(): string[] {
-  const panel = screen.getByRole("region", { name: "What was analysed" });
+  const panel = screen.getByRole("region", { name: "What was analyzed" });
   return Array.from(panel.querySelectorAll("dt")).map((dt) => {
     const values = Array.from(dt.nextElementSibling!.children).map(
       (v) => v.textContent
@@ -33,13 +33,13 @@ function rows(): string[] {
   });
 }
 
-describe("AnalysedInputsPanel", () => {
+describe("AnalyzedInputsPanel", () => {
   it("lists the recorded inputs and the run date", () => {
     renderIn(
-      <AnalysedInputsPanel inputs={RECORDED} createdAt="2026-10-13T09:30:00" />
+      <AnalyzedInputsPanel inputs={RECORDED} createdAt="2026-10-13T09:30:00" />
     );
-    const panel = screen.getByRole("region", { name: "What was analysed" });
-    expect(within(panel).getByText("WHAT WAS ANALYSED")).toBeTruthy();
+    const panel = screen.getByRole("region", { name: "What was analyzed" });
+    expect(within(panel).getByText("WHAT WAS ANALYZED")).toBeTruthy();
     expect(rows()).toEqual([
       "Area: Rondônia, Brazil",
       "Dataset: Tree cover loss",
@@ -51,7 +51,7 @@ describe("AnalysedInputsPanel", () => {
 
   it("leaves out an empty canopy row and an unknown run date", () => {
     renderIn(
-      <AnalysedInputsPanel
+      <AnalyzedInputsPanel
         inputs={{ ...RECORDED, canopyCover: [] }}
         createdAt=""
       />
@@ -66,14 +66,14 @@ describe("AnalysedInputsPanel", () => {
   it("names five areas, then says how many more", () => {
     const areas = ["A", "B", "C", "D", "E", "F", "G"].map((name) => ({ name }));
     renderIn(
-      <AnalysedInputsPanel inputs={{ ...RECORDED, areas }} createdAt="" />
+      <AnalyzedInputsPanel inputs={{ ...RECORDED, areas }} createdAt="" />
     );
     expect(rows()[0]).toBe("Area: A | B | C | D | E | and 2 more");
   });
 
   it("says the inputs were not recorded, and keeps the run date", () => {
     renderIn(
-      <AnalysedInputsPanel
+      <AnalyzedInputsPanel
         inputs={{ recorded: false }}
         createdAt="2026-10-13T09:30:00"
       />
@@ -117,7 +117,7 @@ describe("InsightDetail", () => {
   it("shows no panel for a widget that is not an analysis", () => {
     renderDetail(widget(undefined));
     expect(
-      screen.queryByRole("region", { name: "What was analysed" })
+      screen.queryByRole("region", { name: "What was analyzed" })
     ).toBeNull();
   });
 });

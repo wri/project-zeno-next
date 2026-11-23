@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
-// What is on screen is not what was analysed. These stores hold an area, a
+// What is on screen is not what was analyzed. These stores hold an area, a
 // dataset and a date range that the chips must never pick up (they used to);
 // mocked also because their import chains reach the Chakra toaster (.tsx).
 vi.mock("@/app/store/mapStore", () => ({

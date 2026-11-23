@@ -24,14 +24,14 @@ const renderIn = (ui: React.ReactElement) =>
 describe("AnalysisParametersToggle", () => {
   it("is a disclosure with one label whose state is aria-expanded", () => {
     renderIn(<Harness />);
-    const toggle = screen.getByRole("button", { name: "What was analysed" });
+    const toggle = screen.getByRole("button", { name: "What was analyzed" });
     expect(toggle.getAttribute("aria-expanded")).toBe("false");
 
     fireEvent.click(toggle);
 
     expect(
       screen
-        .getByRole("button", { name: "What was analysed" })
+        .getByRole("button", { name: "What was analyzed" })
         .getAttribute("aria-expanded")
     ).toBe("true");
     expect(screen.queryByText(/hide/i)).toBeNull();

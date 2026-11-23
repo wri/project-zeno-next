@@ -28,7 +28,7 @@ const ALLOWED_TYPES = new Set<InsightWidget["type"]>([
  * Every chart here belongs to a persisted insight, so `insightId` and its
  * recorded `analysisInputs` are required: the id is what the agent loads the
  * insight by and what a dashboard adds, the inputs are what its "What was
- * analysed" toggle shows, and stamping both here means no acquisition path can
+ * analyzed" toggle shows, and stamping both here means no acquisition path can
  * forget them.
  *
  * Unknown chart types fall back to "bar" so a bad type never blanks the widget.

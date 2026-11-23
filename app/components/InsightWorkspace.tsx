@@ -332,7 +332,7 @@ export default function InsightWorkspace() {
               )}
             </Flex>
 
-            {/* What was analysed: the recorded inputs, or a note */}
+            {/* What was analyzed: the recorded inputs, or a note */}
             {inputs && paramsExpanded && (
               <Box px={4} py={2}>
                 <AnalysisInputsChips inputs={inputs} />

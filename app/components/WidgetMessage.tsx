@@ -617,7 +617,7 @@ export default function WidgetMessage({
                       {widget.analysisInputs && (
                         <Box>
                           <Heading size="xs" mb={2}>
-                            What was analysed
+                            What was analyzed
                           </Heading>
                           <AnalysisInputsChips inputs={widget.analysisInputs} />
                         </Box>

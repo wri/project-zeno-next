@@ -18,7 +18,7 @@ const UNBROKEN = { breakInside: "avoid" };
  * An analysis chart or map widget as the export prints it — the read-only
  * counterpart of `DashboardWidgetCard`. No shell (fill, edge, inset) and no
  * controls, so the widget reads as part of the section it sits in; its recorded
- * inputs show outright, since paper has no "What was analysed" toggle to
+ * inputs show outright, since paper has no "What was analyzed" toggle to
  * click. Unrecorded inputs print nothing: the report header names the area.
  */
 export default function DashboardWidgetDocument({
