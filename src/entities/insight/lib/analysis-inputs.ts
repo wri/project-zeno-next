@@ -48,7 +48,7 @@ export function toAnalysisInputs(
     pull.areas.map(
       ({ name, source, src_id }): AnalyzedArea =>
         source !== null && src_id !== null
-          ? { name, source, srcId: src_id }
+          ? { name, ref: { source, srcId: src_id } }
           : { name }
     )
   );
@@ -75,7 +75,7 @@ export function toAnalysisInputs(
     // Area identity is source + id; a name alone only when the ids are
     // unknown. Same-name areas (Santa Cruz, ARG and BOL) stay two areas.
     areas: distinctBy(areas, (a) =>
-      a.srcId !== undefined ? `${a.source}:${a.srcId}` : `name:${a.name}`
+      a.ref ? `${a.ref.source}:${a.ref.srcId}` : `name:${a.name}`
     ),
     datasets: distinctBy(datasets, (d) =>
       d.id !== undefined ? `id:${d.id}` : `name:${d.name}`

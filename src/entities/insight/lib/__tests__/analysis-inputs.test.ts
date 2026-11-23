@@ -34,7 +34,9 @@ describe("toAnalysisInputs", () => {
   it("settles one full pull", () => {
     expect(toAnalysisInputs([pull()], "ins-1")).toEqual({
       recorded: true,
-      areas: [{ name: "Rondônia, Brazil", source: "gadm", srcId: "BRA.22" }],
+      areas: [
+        { name: "Rondônia, Brazil", ref: { source: "gadm", srcId: "BRA.22" } },
+      ],
       datasets: [{ name: "Tree cover loss", id: 4 }],
       canopyCover: [30],
       years: [{ start: 2001, end: 2024 }],
@@ -88,7 +90,9 @@ describe("toAnalysisInputs", () => {
     );
     expect(inputs).toEqual({
       recorded: true,
-      areas: [{ name: "Rondônia, Brazil", source: "gadm", srcId: "BRA.22" }],
+      areas: [
+        { name: "Rondônia, Brazil", ref: { source: "gadm", srcId: "BRA.22" } },
+      ],
       datasets: [
         { name: "Tree cover loss", id: 4 },
         { name: "Tree cover gain", id: 9 },
@@ -136,8 +140,8 @@ describe("toAnalysisInputs", () => {
       "ins-1"
     );
     expect(inputs.recorded && inputs.areas).toEqual([
-      { name: "Santa Cruz", source: "gadm", srcId: "ARG.20" },
-      { name: "Santa Cruz", source: "gadm", srcId: "BOL.8" },
+      { name: "Santa Cruz", ref: { source: "gadm", srcId: "ARG.20" } },
+      { name: "Santa Cruz", ref: { source: "gadm", srcId: "BOL.8" } },
       { name: "Drawn" },
     ]);
   });

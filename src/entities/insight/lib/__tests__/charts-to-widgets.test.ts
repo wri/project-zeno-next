@@ -106,7 +106,7 @@ describe("chartsToWidgets", () => {
   it("stamps the insight's recorded inputs on every widget", () => {
     const inputs: AnalysisInputs = {
       recorded: true,
-      areas: [{ name: "Brazil", source: "gadm", srcId: "BRA" }],
+      areas: [{ name: "Brazil", ref: { source: "gadm", srcId: "BRA" } }],
       datasets: [{ name: "Tree cover loss", id: 4 }],
       canopyCover: [30],
       years: [{ start: 2001, end: 2024 }],

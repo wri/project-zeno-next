@@ -28,16 +28,15 @@ export const AnalysisInputsWireSchema = z
 
 export type AnalysisInputsWire = z.infer<typeof AnalysisInputsWireSchema>;
 
-/**
- * An area an analysis ran on. `source` and `srcId` are set together or not at
- * all. A chat-path GADM `srcId` lacks the `_N` version suffix (`BRA.22`, not
- * `BRA.22_1`), so it identifies the area but must not be used to fetch its
- * geometry.
- */
+/** An area an analysis ran on. */
 export interface AnalyzedArea {
   name: string;
-  source?: string;
-  srcId?: string;
+  /**
+   * Set when the backend recorded the area's identity. A chat-path GADM
+   * `srcId` lacks the `_N` version suffix (`BRA.22`, not `BRA.22_1`), so it
+   * identifies the area but must not be used to fetch its geometry.
+   */
+  ref?: { source: string; srcId: string };
 }
 
 export interface AnalyzedDataset {

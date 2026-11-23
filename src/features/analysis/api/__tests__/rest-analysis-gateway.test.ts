@@ -405,7 +405,7 @@ describe("RestAnalysisGateway.fetchResult", () => {
     expect(result.createdAt).toBe("2026-10-13T09:30:00Z");
     expect(result.analysisInputs).toEqual({
       recorded: true,
-      areas: [{ name: "Brazil", source: "gadm", srcId: "BRA" }],
+      areas: [{ name: "Brazil", ref: { source: "gadm", srcId: "BRA" } }],
       datasets: [{ name: "Tree cover loss", id: 4 }],
       canopyCover: [30],
       years: [{ start: 2020, end: 2022 }],

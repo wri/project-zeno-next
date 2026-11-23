@@ -84,7 +84,9 @@ describe("buildChips", () => {
     // figures. The years now come from the record of what was analyzed.
     const chips = buildChips(
       inputs({
-        areas: [{ name: "Pará, Brazil", source: "gadm", srcId: "BRA.14" }],
+        areas: [
+          { name: "Pará, Brazil", ref: { source: "gadm", srcId: "BRA.14" } },
+        ],
         datasets: [{ name: "Land GHG Monitoring System (LGMS)" }],
         years: [{ start: 2016, end: 2024 }],
       })

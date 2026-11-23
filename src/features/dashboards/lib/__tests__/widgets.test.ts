@@ -376,7 +376,9 @@ describe("dashboardWidgetToInsightWidgets", () => {
     );
     const recorded = {
       recorded: true,
-      areas: [{ name: "Acre, Brazil", source: "gadm", srcId: "BRA.1" }],
+      areas: [
+        { name: "Acre, Brazil", ref: { source: "gadm", srcId: "BRA.1" } },
+      ],
       datasets: [{ name: "Tree cover loss", id: 4 }],
       canopyCover: [30],
       years: [{ start: 2001, end: 2024 }],

@@ -228,7 +228,9 @@ describe("RestInsightsGateway.list", () => {
     const records = await new RestInsightsGateway(fetch).list();
     expect(records[0].analysisInputs).toEqual({
       recorded: true,
-      areas: [{ name: "Rondônia, Brazil", source: "gadm", srcId: "BRA.22" }],
+      areas: [
+        { name: "Rondônia, Brazil", ref: { source: "gadm", srcId: "BRA.22" } },
+      ],
       datasets: [{ name: "Tree cover loss", id: 4 }],
       canopyCover: [30],
       years: [{ start: 2001, end: 2024 }],
