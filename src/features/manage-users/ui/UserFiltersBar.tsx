@@ -73,8 +73,8 @@ export function UserFiltersBar({
   const byJoinDate = filters.joinedFrom !== null || filters.joinedTo !== null;
 
   return (
-    <Flex direction="column" gap={2}>
-      <Flex gap={3} wrap="wrap" alignItems="flex-end" role="search">
+    <Flex direction="column" gap={3} role="search">
+      <Flex gap={3} wrap="wrap" alignItems="flex-end">
         <Field.Root id="search" width="64">
           <Field.Label fontSize="xs">Search</Field.Label>
           <Input
@@ -150,6 +150,16 @@ export function UserFiltersBar({
           value={filters.profile}
           onChange={(profile) => onChange({ profile })}
         />
+        <FilterSelect
+          id="signup-source"
+          label="Signup source"
+          anyLabel="Any source"
+          options={SIGNUP_SOURCE_OPTIONS}
+          value={filters.signupSource}
+          onChange={(signupSource) => onChange({ signupSource })}
+        />
+      </Flex>
+      <Flex gap={3} wrap="wrap" alignItems="flex-end">
         <Field.Root id="joined-from" width="auto">
           <Field.Label fontSize="xs">Joined from</Field.Label>
           <Input
@@ -170,20 +180,19 @@ export function UserFiltersBar({
             onChange={(e) => onChange({ joinedTo: e.target.value || null })}
           />
         </Field.Root>
-        <FilterSelect
-          id="signup-source"
-          label="Signup source"
-          anyLabel="Any source"
-          options={SIGNUP_SOURCE_OPTIONS}
-          value={filters.signupSource}
-          onChange={(signupSource) => onChange({ signupSource })}
-        />
+        {byJoinDate && (
+          // Level with the inputs, beside the dates it explains.
+          <Text
+            h="9"
+            display="flex"
+            alignItems="center"
+            fontSize="xs"
+            color="fg.muted"
+          >
+            Users with no join date are left out while a join date is set.
+          </Text>
+        )}
       </Flex>
-      {byJoinDate && (
-        <Text fontSize="xs" color="fg.muted">
-          Users with no join date are left out while a join date is set.
-        </Text>
-      )}
     </Flex>
   );
 }
