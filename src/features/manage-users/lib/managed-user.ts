@@ -12,6 +12,17 @@ export type Audience = "internal" | "external";
 /** Where the person's account came from, read from their RW apps. */
 export type SignupSource = "gfw" | "horizon" | "other" | "unknown";
 
+/** How each source reads in the filter and in the Source column. */
+export const SIGNUP_SOURCE_COPY: Record<
+  SignupSource,
+  { option: string; column: string | null }
+> = {
+  gfw: { option: "GFW account", column: "GFW" },
+  horizon: { option: "Signed up in Horizon", column: "Horizon" },
+  other: { option: "Other Resource Watch app", column: "Other" },
+  unknown: { option: "Not recorded", column: null },
+};
+
 /** A user as the page shows, filters and sorts them. */
 export interface ManagedUser {
   id: string;

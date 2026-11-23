@@ -1,4 +1,9 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  mutationOptions,
+  useMutation,
+  useQueryClient,
+  type QueryClient,
+} from "@tanstack/react-query";
 import {
   PatchUserTypeRequestSchema,
   type AssignableUserType,
@@ -34,9 +39,8 @@ async function updateUserType({
   return UserModelSchema.parse(data);
 }
 
-export function useAdminUserTypeUpdate() {
-  const queryClient = useQueryClient();
-  return useMutation({
+export const userTypeUpdate = (queryClient: QueryClient) =>
+  mutationOptions({
     mutationFn: updateUserType,
     // Swap in the server's copy of the user: refetching would reload every
     // page of the list for one changed row. Cancel any refetch already in
@@ -45,8 +49,16 @@ export function useAdminUserTypeUpdate() {
       await queryClient.cancelQueries({ queryKey: ADMIN_USERS_QUERY_KEY });
       queryClient.setQueryData<ListUsersResponse>(
         ADMIN_USERS_QUERY_KEY,
-        (users) => users?.map((u) => (u.id === updated.id ? updated : u))
+        (users) => users?.map((u) => (u.id === updated.id ? updated : u)),
+        // One changed row is not a reload: keep the list's "Loaded at" time.
+        {
+          updatedAt: queryClient.getQueryState(ADMIN_USERS_QUERY_KEY)
+            ?.dataUpdatedAt,
+        }
       );
     },
   });
+
+export function useAdminUserTypeUpdate() {
+  return useMutation(userTypeUpdate(useQueryClient()));
 }

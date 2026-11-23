@@ -66,7 +66,11 @@ const toManagedUsers = (users: ListUsersResponse) => users.map(toManagedUser);
 export function useAdminUsersList(onProgress: (loaded: number) => void) {
   return useQuery({
     queryKey: ADMIN_USERS_QUERY_KEY,
-    queryFn: ({ signal }) => fetchAllAdminUsers(onProgress, signal),
+    queryFn: ({ signal }) => {
+      // Every load, a refetch too, counts from zero.
+      onProgress(0);
+      return fetchAllAdminUsers(onProgress, signal);
+    },
     select: toManagedUsers,
     // A full load is one request per 200 users; don't repeat it on every
     // window focus.
