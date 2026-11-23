@@ -193,13 +193,15 @@ describe("WeeklyAlertsStrip", () => {
     ]);
   });
 
-  it("announces the period's alert area and when the data was updated", async () => {
+  it("announces the period's alert area, its confidence and when the data was updated", async () => {
     renderStrip();
 
     expect(
       await screen.findByText("142 ha of new integrated alerts, Nov 7–13")
     ).toBeTruthy();
-    expect(await screen.findByText("· Data updated Nov 15")).toBeTruthy();
+    expect(
+      await screen.findByText("· High and Highest alerts · Data updated Nov 15")
+    ).toBeTruthy();
     expect(strip().textContent).not.toMatch(/can be updated|Ask the assistant/);
     expect(mockedSummary).toHaveBeenCalledWith(["d1"]);
   });
@@ -211,6 +213,7 @@ describe("WeeklyAlertsStrip", () => {
     await screen.findByText("142 ha of new integrated alerts, Nov 7–13");
     await waitFor(() => expect(mockedFreshness).toHaveBeenCalledTimes(1));
     await settle();
+    expect(screen.getByText("· High and Highest alerts")).toBeTruthy();
     expect(strip().textContent).not.toMatch(/Data updated/);
   });
 
@@ -230,7 +233,11 @@ describe("WeeklyAlertsStrip", () => {
     expect(
       await screen.findByText("3.1 ha of new integrated alerts, Dec 25–31")
     ).toBeTruthy();
-    expect(await screen.findByText("· Data updated Jan 2, 2027")).toBeTruthy();
+    expect(
+      await screen.findByText(
+        "· High and Highest alerts · Data updated Jan 2, 2027"
+      )
+    ).toBeTruthy();
   });
 
   it("links to the first alerts list on screen, for a viewer too, without asking for templates", async () => {

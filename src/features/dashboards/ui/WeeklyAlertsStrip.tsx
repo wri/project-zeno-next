@@ -34,10 +34,12 @@ const ACTION_BUTTON_PROPS = {
 /**
  * The Figma "Weekly alerts strip" (Playground 4549:3571): a red notice under
  * the dashboard title when the area had integrated alerts in the summary's
- * period: "142 ha of new integrated alerts, Nov 7–13 · Data updated Nov 15".
- * The period is counted back from the newest alert; the data updated date
- * says when GNW last got new alerts data, which is about weekly. Dismissing
- * hides the strip for that period; it returns with the next one.
+ * period: "142 ha of new integrated alerts, Nov 7–13 · High and Highest
+ * alerts · Data updated Nov 15". The area counts high and highest confidence
+ * alerts only, like the alerts list. The period is counted back from the
+ * newest alert; the data updated date says when GNW last got new alerts data,
+ * which is about weekly. Dismissing hides the strip for that period; it
+ * returns with the next one.
  */
 export default function WeeklyAlertsStrip({
   dashboard,
@@ -126,11 +128,11 @@ function AlertsNotice({
         <Text fontSize="14px" fontWeight="medium" color="#B91C1C">
           {`${formatAlertArea(areaHa)} of new integrated alerts, ${formatPeriodRange(summary.startDate, summary.endDate)}`}
         </Text>
-        {freshness && (
-          <Text fontSize="13px" color="#565E7B">
-            {`· ${formatDataUpdated(freshness.updatedOn, summary.endDate)}`}
-          </Text>
-        )}
+        <Text fontSize="13px" color="#565E7B">
+          {freshness
+            ? `· High and Highest alerts · ${formatDataUpdated(freshness.updatedOn, summary.endDate)}`
+            : "· High and Highest alerts"}
+        </Text>
       </Flex>
       {action.kind === "view" && (
         <Button
