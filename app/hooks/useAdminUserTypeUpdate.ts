@@ -50,8 +50,10 @@ export function useAdminUserTypeUpdate() {
   return useMutation({
     mutationFn: updateUserType,
     // Swap in the server's copy of the user: refetching would reload every
-    // page of the list for one changed row.
-    onSuccess: (updated) => {
+    // page of the list for one changed row. Cancel any refetch already in
+    // flight first: it may predate the PATCH and would overwrite the patch.
+    onSuccess: async (updated) => {
+      await queryClient.cancelQueries({ queryKey: ADMIN_USERS_QUERY_KEY });
       queryClient.setQueryData<ListUsersResponse>(
         ADMIN_USERS_QUERY_KEY,
         (users) => users?.map((u) => (u.id === updated.id ? updated : u))
