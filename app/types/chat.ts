@@ -1,10 +1,7 @@
 import { FeatureCollection } from "geojson";
 import type { BlogArticle } from "@/app/schemas/api/blogs/get";
 import type { ChartColorFields } from "@/app/types/chartColors";
-import type {
-  AnalysisInputs,
-  AnalysisInputsWire,
-} from "@/src/entities/insight";
+import type { AnalysisInputs } from "@/src/entities/insight";
 
 export type { BlogArticle };
 
@@ -217,9 +214,9 @@ export interface StreamMessage {
   // Persisted insight UUID riding on generate_insights (and recall/restyle)
   // state updates — the handle for adding the analysis to a dashboard.
   insight_id?: string;
-  // What that insight was computed from, as the backend sends it. Read it
-  // only through `toAnalysisInputs`.
-  analysis_inputs?: AnalysisInputsWire;
+  // What that insight was computed from, as the backend sends it. `unknown`
+  // so only `toAnalysisInputs` can read it.
+  analysis_inputs?: unknown;
   // Names of the tools an AI message is about to call. The agent announces a
   // tool call before its result streams back, so this is the earliest signal
   // that e.g. an insight is being generated.
@@ -507,8 +504,8 @@ export interface LangChainUpdate {
   charts_data: object[];
   insight_id?: string;
   // Rides on generate_insights next to insight_id; absent before the backend
-  // records it.
-  analysis_inputs?: AnalysisInputsWire;
+  // records it. `unknown`: only `toAnalysisInputs` reads it.
+  analysis_inputs?: unknown;
   // Optional provenance fields emitted by tools
   codeact_parts?: CodeActPart[];
   source_urls?: string[];

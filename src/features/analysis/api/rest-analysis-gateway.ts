@@ -7,12 +7,7 @@ import type {
 } from "../model/analysis-gateway";
 import type { AnalysisSelection } from "../model/analysis-selection";
 import type { AnalysisResult } from "../model/analysis-result";
-import {
-  chartId,
-  toAnalysisInputs,
-  type AnalysisInputsWire,
-  type Chart,
-} from "@/src/entities/insight";
+import { chartId, toAnalysisInputs, type Chart } from "@/src/entities/insight";
 import type { DivergentColors } from "@/app/types/chartColors";
 import { AnalysisError } from "../model/analysis-error";
 
@@ -51,8 +46,8 @@ interface RawInsightResponse {
   id: string;
   created_at: string;
   charts: RawChart[];
-  /** Absent from a backend that predates it. */
-  analysis_inputs?: AnalysisInputsWire;
+  /** Absent from a backend that predates it. Only `toAnalysisInputs` reads it. */
+  analysis_inputs?: unknown;
 }
 
 // ── Adapter ───────────────────────────────────────────────────────────────────
