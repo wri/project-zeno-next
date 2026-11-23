@@ -87,7 +87,7 @@ export function AnalyzedInputsPanel({
       ["Dataset", inputs.datasets.map((dataset) => dataset.name)],
       ["Canopy density", inputs.canopyCover.map(describeCanopyThreshold)],
       [
-        "Years",
+        "Years of data",
         inputs.years.map((years) => yearParam(years.start, years.end).value),
       ]
     );

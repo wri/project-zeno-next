@@ -46,7 +46,7 @@ describe("AnalyzedInputsPanel", () => {
       "Area: Rondônia, Brazil",
       "Dataset: Tree cover loss",
       "Canopy density: More than 30%",
-      "Years: 2001–24",
+      "Years of data: 2001–24",
       "Run: 13 Oct 2026",
     ]);
   });
@@ -61,7 +61,7 @@ describe("AnalyzedInputsPanel", () => {
     expect(rows()).toEqual([
       "Area: Rondônia, Brazil",
       "Dataset: Tree cover loss",
-      "Years: 2001–24",
+      "Years of data: 2001–24",
     ]);
   });
 
