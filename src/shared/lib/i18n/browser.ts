@@ -4,11 +4,6 @@ import { htmlLang, localeCookieAssignment, type Locale } from "./locale";
 // Browser-only: call from effects and event handlers, never while rendering
 // (the landing pages are prerendered in Node).
 
-/** The cookie `resolveLocale` reads in the browser. */
-export function browserLocaleInput() {
-  return { cookie: document.cookie };
-}
-
 /** Switch the UI to `locale` and keep `<html lang>` in step. */
 export function applyLocale(locale: Locale): void {
   void i18n.changeLanguage(locale);

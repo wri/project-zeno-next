@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { Box, Flex, IconButton, Text } from "@chakra-ui/react";
 import {
   CaretDownIcon,
@@ -71,6 +72,7 @@ function ChatPanelHeader({
   const chatHistoryOpen = useSidebarStore((s) => s.chatHistoryOpen);
   const setChatHistoryOpen = useSidebarStore((s) => s.setChatHistoryOpen);
   const isCollapsed = !isFullSize && isChatCollapsed;
+  const headerRef = useRef<HTMLDivElement>(null);
 
   return (
     <Flex
@@ -85,7 +87,7 @@ function ChatPanelHeader({
       cursor={isCollapsed ? "pointer" : undefined}
       onClick={isCollapsed ? () => setChatCollapsed(false) : undefined}
       data-testid="chat-panel-header"
-      data-locale-menu-anchor
+      ref={headerRef}
     >
       <SparkleIcon size={16} color="var(--chakra-colors-neutral-500)" />
       <Text
@@ -100,7 +102,7 @@ function ChatPanelHeader({
         {t("chat.header.title")}
       </Text>
       <Flex ml="auto" gap={1} alignItems="center">
-        <LocaleSwitcher />
+        <LocaleSwitcher anchorRef={headerRef} />
         <Box w="1px" h="16px" mx={1} bg="neutral.300" aria-hidden />
         <PanelIconButton
           label={t("chat.header.newConversation")}

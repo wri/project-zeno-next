@@ -141,7 +141,7 @@ const initialState: ChatState = {
       id: "1",
       type: "system",
       // Rendered from the `chat.welcome` catalog message in the UI language
-      // (see ChatMessages); the seed only marks the greeting's place.
+      // (see MessageBubble); the seed only marks the greeting's place.
       message: "",
       timestamp: new Date().toISOString(),
     },

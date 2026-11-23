@@ -1,9 +1,9 @@
 import { Box } from "@chakra-ui/react";
 import { useState } from "react";
-import { SAMPLE_PROMPTS } from "../constants/sample-prompts";
+import { SAMPLE_PROMPT_KEYS } from "../constants/sample-prompts";
 import useChatStore from "../store/chatStore";
 import { useRouter, usePathname } from "@/src/shared/lib/router";
-import { useLocale } from "@/src/shared/lib/i18n";
+import { useTranslation } from "@/src/shared/lib/i18n";
 import { firstMessageRedirectPath } from "../utils/threadNavigation";
 
 const SAMPLE_COUNT = 3;
@@ -23,13 +23,13 @@ function randomIndices(length: number, count: number): number[] {
  */
 export default function SamplePrompts() {
   const { sendMessage } = useChatStore();
-  const locale = useLocale();
+  const { t } = useTranslation();
   const [picks] = useState(() =>
-    randomIndices(SAMPLE_PROMPTS.en.length, SAMPLE_COUNT)
+    randomIndices(SAMPLE_PROMPT_KEYS.length, SAMPLE_COUNT)
   );
   const router = useRouter();
   const pathname = usePathname();
-  const prompts = picks.map((i) => SAMPLE_PROMPTS[locale][i]);
+  const prompts = picks.map((i) => t(SAMPLE_PROMPT_KEYS[i]));
 
   const submitPrompt = async (prompt: string) => {
     const result = await sendMessage(prompt);

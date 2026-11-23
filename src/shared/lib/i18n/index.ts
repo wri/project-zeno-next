@@ -15,6 +15,6 @@ export {
 } from "./locale";
 export { catalogs, type MessageKey } from "./catalogs";
 export { createI18n, i18n } from "./i18n";
-export { applyLocale, browserLocaleInput, rememberLocale } from "./browser";
+export { applyLocale, rememberLocale } from "./browser";
 export { useLocale } from "./use-locale";
 export { I18nextProvider, Trans, useTranslation } from "react-i18next";

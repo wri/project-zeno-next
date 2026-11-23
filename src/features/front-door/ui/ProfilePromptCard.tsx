@@ -19,6 +19,7 @@ import type { PersonNames } from "../lib/person-names";
 import {
   draftFromSuggestion,
   isProfileDraftComplete,
+  known,
   profileCardMode,
   toProfilePatch,
   type ProfileCardMode,
@@ -62,16 +63,8 @@ function initialDraft(
   const draft = draftFromSuggestion(suggestion, options, names);
   return {
     ...draft,
-    country:
-      draft.country === "" &&
-      defaultCountry &&
-      defaultCountry in options.countries
-        ? defaultCountry
-        : draft.country,
-    language:
-      draft.language === "" && defaultLanguage in options.languages
-        ? defaultLanguage
-        : draft.language,
+    country: draft.country || known(defaultCountry, options.countries),
+    language: draft.language || known(defaultLanguage, options.languages),
   };
 }
 

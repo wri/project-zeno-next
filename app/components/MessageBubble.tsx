@@ -28,6 +28,7 @@ import LclLogo from "./LclLogo";
 import ContextTag from "./ContextTag";
 import { useEffect, useState, useCallback, useMemo, ReactNode } from "react";
 import remarkBreaks from "remark-breaks";
+import { useTranslation } from "@/src/shared/lib/i18n";
 import { WarningIcon } from "@phosphor-icons/react";
 import useChatStore from "../store/chatStore";
 import { toaster } from "./ui/toaster";
@@ -75,6 +76,7 @@ function MessageBubble({
   isLast = false,
   bubbleRef,
 }: MessageBubbleProps) {
+  const { t } = useTranslation();
   const [formattedTimestamp, setFormattedTimestamp] = useState("");
   const clipboard = useClipboard({ value: message.message });
   const [isRating, setIsRating] = useState(false);
@@ -248,7 +250,7 @@ function MessageBubble({
           },
         }}
       >
-        <Markdown remarkPlugins={[remarkBreaks]}>{message.message}</Markdown>
+        <Markdown remarkPlugins={[remarkBreaks]}>{t("chat.welcome")}</Markdown>
       </Box>
     );
   }

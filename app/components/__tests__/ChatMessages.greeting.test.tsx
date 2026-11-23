@@ -14,9 +14,9 @@ vi.mock("@/src/shared/lib/router", async (importOriginal) => ({
 }));
 
 import system from "@/app/theme";
-import { SAMPLE_PROMPTS } from "@/app/constants/sample-prompts";
 import useChatStore from "@/app/store/chatStore";
-import { i18n } from "@/src/shared/lib/i18n";
+import { SAMPLE_PROMPT_KEYS } from "@/app/constants/sample-prompts";
+import { catalogs, i18n, type Locale } from "@/src/shared/lib/i18n";
 import ChatMessages from "../ChatMessages";
 
 function renderMessages() {
@@ -28,8 +28,10 @@ function renderMessages() {
 }
 
 /** The sample prompts on screen, by their index in the prompt lists. */
-function shownPromptIndices(locale: keyof typeof SAMPLE_PROMPTS): number[] {
-  return SAMPLE_PROMPTS[locale]
+function shownPromptIndices(locale: Locale): number[] {
+  return SAMPLE_PROMPT_KEYS.map(
+    (key) => (catalogs[locale] as Record<string, string>)[key]
+  )
     .map((prompt, i) => (screen.queryByText(prompt) ? i : -1))
     .filter((i) => i >= 0);
 }

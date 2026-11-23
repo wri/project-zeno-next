@@ -10,12 +10,7 @@ import { getToken, clearToken, apiFetch } from "@/app/lib/api-client";
 import { parseAuthMe } from "@/app/lib/auth-me";
 import { queryClient } from "@/app/lib/query-client";
 import { uiLocale } from "@/app/utils/uiLocale";
-import {
-  applyLocale,
-  browserLocaleInput,
-  i18n,
-  I18nextProvider,
-} from "@/src/shared/lib/i18n";
+import { applyLocale, i18n, I18nextProvider } from "@/src/shared/lib/i18n";
 import { usePathname } from "@/src/shared/lib/router";
 
 function AuthBootstrapper() {
@@ -100,7 +95,7 @@ function LocaleSync() {
   const pathname = usePathname();
 
   useEffect(() => {
-    applyLocale(uiLocale(pathname, { profile, ...browserLocaleInput() }));
+    applyLocale(uiLocale(pathname, { profile, cookie: document.cookie }));
   }, [pathname, profile]);
 
   return null;

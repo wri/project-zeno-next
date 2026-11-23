@@ -1,4 +1,4 @@
-import { useId, useRef } from "react";
+import { useId, type RefObject } from "react";
 import { Box, Button, Flex, Menu, Portal, Text } from "@chakra-ui/react";
 import { CaretDownIcon, CheckIcon, GlobeIcon } from "@phosphor-icons/react";
 import { Tooltip } from "@/app/components/ui/tooltip";
@@ -6,6 +6,7 @@ import {
   DEFAULT_LOCALE,
   htmlLang,
   isLocale,
+  LOCALES,
   useLocale,
   useTranslation,
   type Locale,
@@ -26,10 +27,10 @@ const LANGUAGES: Record<Locale, { native: string; english: string }> = {
 };
 
 /** Alphabetical by native name, as in the design. */
-const MENU_ORDER: Locale[] = ["id", "en", "es", "fr", "pt", "zh"];
+const MENU_ORDER = [...LOCALES].sort((a, b) =>
+  LANGUAGES[a].native.localeCompare(LANGUAGES[b].native, "en")
+);
 
-/** The header the menu aligns to (see `data-locale-menu-anchor` there). */
-const PANEL_ANCHOR = "[data-locale-menu-anchor]";
 /** Gap between the menu and the panel's right edge, as designed. */
 const MENU_EDGE_INSET = 10;
 
@@ -44,11 +45,15 @@ const MENU_BORDER = "#E0E2E5";
  * language code, opening a menu of the supported languages. A choice applies
  * at once and is saved as the preferred language (see `changeLocale`).
  */
-export function LocaleSwitcher() {
+export function LocaleSwitcher({
+  anchorRef,
+}: {
+  /** The panel header the menu hangs from; the button itself when omitted. */
+  anchorRef?: RefObject<HTMLElement | null>;
+}) {
   const locale = useLocale();
   const { t } = useTranslation();
   const triggerId = useId();
-  const triggerRef = useRef<HTMLButtonElement>(null);
   const current = t("chat.header.languageCurrent", {
     language: LANGUAGES[locale].native,
   });
@@ -59,11 +64,11 @@ export function LocaleSwitcher() {
       positioning={{
         placement: "bottom-end",
         // As designed, the menu hangs from the panel's right edge, not the
-        // button's. Falls back to the button where there is no header.
-        getAnchorRect: () => {
+        // button's.
+        getAnchorRect: (trigger) => {
           const anchor =
-            triggerRef.current?.closest<HTMLElement>(PANEL_ANCHOR) ??
-            triggerRef.current;
+            anchorRef?.current ??
+            (trigger instanceof HTMLElement ? trigger : null);
           if (!anchor) return null;
           const { x, y, width, height } = anchor.getBoundingClientRect();
           return { x, y, width: width - MENU_EDGE_INSET, height };
@@ -79,7 +84,6 @@ export function LocaleSwitcher() {
       >
         <Menu.Trigger asChild>
           <Button
-            ref={triggerRef}
             size="2xs"
             h="24px"
             px="6px"
@@ -109,8 +113,8 @@ export function LocaleSwitcher() {
             bg="white"
             boxShadow="0 8px 24px 0 rgba(18, 23, 26, 0.12)"
             overflow="hidden"
-            // Above the chat panel overlay (1100), like the area card menu.
-            zIndex={1500}
+            // Above the chat panel overlay.
+            zIndex="popover"
           >
             <Menu.RadioItemGroup
               value={locale}
@@ -194,7 +198,7 @@ export function LocaleSwitcher() {
             <Box
               px="14px"
               py="11px"
-              bg="neutral.100"
+              bg="neutral.200"
               borderTopWidth="1px"
               borderColor={MENU_BORDER}
             >

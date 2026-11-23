@@ -64,7 +64,7 @@ describe("LocaleSwitcher", () => {
       "English",
     ]);
     expect(
-      screen.getByText("Only the AI assistant is translated for now.")
+      screen.getByText("The AI assistant responds in the selected language.")
     ).toBeTruthy();
   });
 
