@@ -12,7 +12,7 @@ import InsightCaption from "@/app/components/InsightCaption";
 import InsightChartPills from "@/app/components/InsightChartPills";
 import WidgetMessage from "@/app/components/WidgetMessage";
 import { INPUTS_NOT_RECORDED } from "@/app/components/widgets/AnalysisParameters";
-import { buildYearParam } from "@/app/utils/formatYearRange";
+import { yearParam } from "@/app/utils/formatYearRange";
 import {
   collapseNetFluxRollups,
   netFluxRollups,
@@ -87,9 +87,7 @@ export function AnalyzedInputsPanel({
       ["Canopy density", inputs.canopyCover.map((v) => `More than ${v}%`)],
       [
         "Years",
-        inputs.years.flatMap(
-          (years) => buildYearParam(years.start, years.end)?.value ?? []
-        ),
+        inputs.years.map((years) => yearParam(years.start, years.end).value),
       ]
     );
   }

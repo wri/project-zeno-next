@@ -1,7 +1,7 @@
 import type { RecordedAnalysisInputs } from "@/src/entities/insight";
 import { ParamChipColorScheme } from "@/app/components/ui/ParamChip";
 import { shortDatasetName } from "@/app/constants/datasets";
-import { buildYearParam } from "@/app/utils/formatYearRange";
+import { yearParam } from "@/app/utils/formatYearRange";
 import { formatCanopyThreshold } from "@/app/utils/formatCanopyThreshold";
 
 export interface ParamChipData {
@@ -63,11 +63,11 @@ export function buildChips(
       })
     ),
     // Shared with the legend so labelling and format stay identical.
-    ...inputs.years.flatMap((years) => {
-      const yearParam = buildYearParam(years.start, years.end);
-      return yearParam
-        ? [{ ...yearParam, colorScheme: "purple" as const }]
-        : [];
-    }),
+    ...inputs.years.map(
+      (years): ParamChipData => ({
+        ...yearParam(years.start, years.end),
+        colorScheme: "purple",
+      })
+    ),
   ];
 }
