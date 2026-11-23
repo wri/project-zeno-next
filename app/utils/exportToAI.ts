@@ -1,5 +1,4 @@
 import { InsightWidget } from "@/app/types/chat";
-import { DATASET_BY_ID } from "@/app/constants/datasets";
 import { soleDataset } from "@/src/entities/insight";
 
 export type AIProvider = "claude" | "chatgpt" | "gemini";
@@ -57,18 +56,14 @@ export function buildExportPrompt(widget: InsightWidget): string {
   // The analysis's recorded dataset, not whatever the map shows now; none
   // when the inputs were not recorded or span several datasets.
   const dataset = soleDataset(widget.analysisInputs);
-  const meta =
-    dataset?.id !== undefined ? DATASET_BY_ID[dataset.id] : undefined;
   const dataTable = buildMarkdownTable(widget.data);
 
   const datasetName = dataset?.name;
-  const source = meta?.provider ?? meta?.source;
 
   const parts: string[] = [
     "I was exploring geospatial data on Global Nature Watch and generated the following analysis:",
   ];
   if (datasetName) parts.push(`Dataset: ${datasetName}`);
-  if (source) parts.push(`Source: ${source}`);
   if (dataTable) parts.push(`\n${dataTable}`);
 
   return parts.join("\n");
