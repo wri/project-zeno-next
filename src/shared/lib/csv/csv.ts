@@ -1,8 +1,27 @@
 import { saveUrl } from "../download";
 
-/** One CSV cell, quoted only when it needs it (comma, quote, or newline). */
+// Spreadsheet apps run a cell that starts with one of these as a formula, so
+// text a user typed (a profile's job title, an area's name) could run when
+// whoever downloads the file opens it.
+const FORMULA_START = /^[=+\-@\t\r]/;
+
+/** `text` with a leading `'` if a spreadsheet would run it as a formula.
+ * Text that is only a number, such as "-12.5", stays as it is. */
+function inertText(text: string): string {
+  return FORMULA_START.test(text) && !Number.isFinite(Number(text))
+    ? `'${text}`
+    : text;
+}
+
+/** One CSV cell, quoted only when it needs it (comma, quote, or newline).
+ * Text that would run as a formula is marked as text first (`inertText`). */
 function csvCell(value: unknown): string {
-  const str = value === null || value === undefined ? "" : String(value);
+  const str =
+    value === null || value === undefined
+      ? ""
+      : typeof value === "string"
+        ? inertText(value)
+        : String(value);
   return str.includes(",") || str.includes('"') || str.includes("\n")
     ? `"${str.replace(/"/g, '""')}"`
     : str;
