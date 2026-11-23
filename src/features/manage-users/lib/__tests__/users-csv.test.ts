@@ -42,6 +42,7 @@ describe("usersToCsv", () => {
       "2026-11-05T10:20:30.123456Z",
     ],
     ["the user type", { userType: "pro" }, "user_type", "pro"],
+    ["a formula as text", { jobTitle: "=1+2" }, "job_title", "'=1+2"],
   ])("writes %s", (_, overrides, column, expected) => {
     expect(cell(usersToCsv([user(overrides)]), column)).toBe(expected);
   });

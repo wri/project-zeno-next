@@ -37,8 +37,8 @@ const CSV_COLUMNS = {
 
 /**
  * The users as CSV, one row each in the given order. Empty for null,
- * "true" or "false" for booleans, lists joined with ";", and dates as the
- * API sent them.
+ * "true" or "false" for booleans, lists joined with ";", dates as the API
+ * sent them, and text that would run as a formula marked with a leading "'".
  */
 export function usersToCsv(users: readonly UserModel[]): string {
   const rows = users.map((user) =>
