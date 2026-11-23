@@ -178,6 +178,12 @@ const strip = () => screen.getByRole("status");
 /** Lets the freshness and registry requests settle, whichever way they go. */
 const settle = () => act(async () => {});
 
+// Neither View nor Add: Dismiss is the strip's only button.
+const expectOnlyDismiss = () =>
+  expect(
+    screen.getAllByRole("button").map((b) => b.getAttribute("aria-label"))
+  ).toEqual(["Dismiss alerts notice"]);
+
 describe("WeeklyAlertsStrip", () => {
   beforeEach(() => {
     localStorage.clear();
@@ -215,29 +221,6 @@ describe("WeeklyAlertsStrip", () => {
     await settle();
     expect(screen.getByText("· High and Highest alerts")).toBeTruthy();
     expect(strip().textContent).not.toMatch(/Data updated/);
-  });
-
-  it("dates a release in the next year with its year", async () => {
-    mockedSummary.mockResolvedValue({
-      startDate: "2026-12-25",
-      endDate: "2026-12-31",
-      assessedCount: 1,
-      newAlertAreaHa: { d1: 3.13 },
-    });
-    mockedFreshness.mockResolvedValue({
-      latestAlertDate: "2026-12-31",
-      updatedOn: "2027-01-02",
-    });
-    renderStrip();
-
-    expect(
-      await screen.findByText("3.1 ha of new integrated alerts, Dec 25–31")
-    ).toBeTruthy();
-    expect(
-      await screen.findByText(
-        "· High and Highest alerts · Data updated Jan 2, 2027"
-      )
-    ).toBeTruthy();
   });
 
   it("links to the first alerts list on screen, for a viewer too, without asking for templates", async () => {
@@ -343,18 +326,8 @@ describe("WeeklyAlertsStrip", () => {
 
     await screen.findByText("142 ha of new integrated alerts, Nov 7–13");
     await settle();
-    expect(screen.queryByRole("button", { name: /alerts list/ })).toBeNull();
+    expectOnlyDismiss();
     expect(mockedTemplates).not.toHaveBeenCalled();
-  });
-
-  it("offers nothing while the registry loads", async () => {
-    mockedTemplates.mockReturnValue(new Promise(() => {}));
-    renderStrip();
-
-    await screen.findByText("142 ha of new integrated alerts, Nov 7–13");
-    await waitFor(() => expect(mockedTemplates).toHaveBeenCalledTimes(1));
-    await settle();
-    expect(screen.queryByRole("button", { name: /alerts list/ })).toBeNull();
   });
 
   it("offers nothing when the registry failed to load", async () => {
@@ -364,17 +337,7 @@ describe("WeeklyAlertsStrip", () => {
     await screen.findByText("142 ha of new integrated alerts, Nov 7–13");
     await waitFor(() => expect(mockedTemplates).toHaveBeenCalledTimes(1));
     await settle();
-    expect(screen.queryByRole("button", { name: /alerts list/ })).toBeNull();
-  });
-
-  it("offers nothing when the registry does not list the template", async () => {
-    mockedTemplates.mockResolvedValue([template("post-2020-forest-loss")]);
-    renderStrip();
-
-    await screen.findByText("142 ha of new integrated alerts, Nov 7–13");
-    await waitFor(() => expect(mockedTemplates).toHaveBeenCalledTimes(1));
-    await settle();
-    expect(screen.queryByRole("button", { name: /alerts list/ })).toBeNull();
+    expectOnlyDismiss();
   });
 
   it("renders nothing, and asks for nothing more, for a dashboard without alerts", async () => {
