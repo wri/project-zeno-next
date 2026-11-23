@@ -1,4 +1,4 @@
-import { Flex, IconButton, Text } from "@chakra-ui/react";
+import { Box, Flex, IconButton, Text } from "@chakra-ui/react";
 import {
   CaretDownIcon,
   CaretUpIcon,
@@ -54,8 +54,9 @@ function PanelIconButton({
 }
 
 /**
- * The chat panel's own header: "AI ASSISTANT", the translation-review
- * language switcher (only with `?ff=i18n`) and, in order, New conversation, Conversation history, the size toggle and Collapse. Collapse
+ * The chat panel's own header: "AI ASSISTANT", the language selector and,
+ * after a divider, New conversation, Conversation history, the size toggle
+ * and Collapse. Collapse
  * from full-size lands on the collapsed compact panel; while collapsed, a
  * click anywhere on the bar opens the panel again.
  */
@@ -84,6 +85,7 @@ function ChatPanelHeader({
       cursor={isCollapsed ? "pointer" : undefined}
       onClick={isCollapsed ? () => setChatCollapsed(false) : undefined}
       data-testid="chat-panel-header"
+      data-locale-menu-anchor
     >
       <SparkleIcon size={16} color="var(--chakra-colors-neutral-500)" />
       <Text
@@ -99,6 +101,7 @@ function ChatPanelHeader({
       </Text>
       <Flex ml="auto" gap={1} alignItems="center">
         <LocaleSwitcher />
+        <Box w="1px" h="16px" mx={1} bg="neutral.300" aria-hidden />
         <PanelIconButton
           label={t("chat.header.newConversation")}
           onClick={() => {

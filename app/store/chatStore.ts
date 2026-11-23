@@ -140,11 +140,9 @@ const initialState: ChatState = {
     {
       id: "1",
       type: "system",
-      message: `**Welcome to Global Nature Watch Horizon!**
-
-Hi, I'm your nature monitoring assistant, powered by AI and open data from [Global Nature Watch](https://globalnaturewatch.org) and [Land & Carbon Lab](https://landcarbonlab.org).
-
-You can ask me about land cover change, forest loss, or biodiversity risks in places you care about. For more details on how to get started, check out the [Help Center](https://help.horizon.globalnaturewatch.org/get-started).`,
+      // Rendered from the `chat.welcome` catalog message in the UI language
+      // (see ChatMessages); the seed only marks the greeting's place.
+      message: "",
       timestamp: new Date().toISOString(),
     },
   ],

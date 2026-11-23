@@ -7,6 +7,7 @@
   "chat.header.expand": "展开面板",
   "chat.header.collapse": "收起面板",
   "chat.header.language": "界面语言",
+  "chat.header.languageCurrent": "语言：{language}",
   "chat.input.label": "提出问题",
   "chat.input.sending": "正在发送…",
   "chat.input.placeholder.start": "或者描述你想探索的内容…",
@@ -89,5 +90,8 @@
   "profile.saved.title": "资料已保存",
   "profile.saved.description": "你的更改已成功保存。",
   "profile.saveFailed.title": "保存失败",
-  "profile.saveFailed.description": "无法保存资料。"
+  "profile.saveFailed.description": "无法保存资料。",
+  "chat.language.scopeNote": "目前仅 AI 助手提供翻译。",
+  "chat.language.preferred": "首选",
+  "chat.welcome": "**欢迎使用 Global Nature Watch Horizon！**\n\n你好，我是你的自然监测助手，由 AI 以及来自 [Global Nature Watch](https://globalnaturewatch.org) 和 [Land & Carbon Lab](https://landcarbonlab.org) 的开放数据提供支持。\n\n你可以向我询问你关心的地方的土地覆盖变化、森林损失或生物多样性风险。如需了解如何开始，请访问[帮助中心](https://help.horizon.globalnaturewatch.org/get-started)。"
 }

@@ -7,6 +7,7 @@
   "chat.header.expand": "Expandir painel",
   "chat.header.collapse": "Recolher painel",
   "chat.header.language": "Idioma da interface",
+  "chat.header.languageCurrent": "Idioma: {language}",
   "chat.input.label": "Faça uma pergunta",
   "chat.input.sending": "Enviando…",
   "chat.input.placeholder.start": "Ou descreva o que você quer explorar…",
@@ -89,5 +90,8 @@
   "profile.saved.title": "Perfil salvo",
   "profile.saved.description": "Suas alterações foram salvas.",
   "profile.saveFailed.title": "Falha ao salvar",
-  "profile.saveFailed.description": "Não foi possível salvar o perfil."
+  "profile.saveFailed.description": "Não foi possível salvar o perfil.",
+  "chat.language.scopeNote": "Por enquanto, só o assistente de IA está traduzido.",
+  "chat.language.preferred": "Preferido",
+  "chat.welcome": "**Boas-vindas ao Global Nature Watch Horizon!**\n\nOlá, sou seu assistente de monitoramento da natureza, com IA e dados abertos do [Global Nature Watch](https://globalnaturewatch.org) e do [Land & Carbon Lab](https://landcarbonlab.org).\n\nVocê pode me perguntar sobre mudanças na cobertura do solo, perda de florestas ou riscos à biodiversidade nos lugares que importam para você. Para saber como começar, acesse a [Central de Ajuda](https://help.horizon.globalnaturewatch.org/get-started)."
 }

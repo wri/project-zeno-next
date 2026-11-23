@@ -1,6 +1,6 @@
 /**
  * Pure UI-locale resolution. No React, no router, no `document`: callers pass
- * the profile code, the cookie string and the browser language list in.
+ * the profile code and the cookie string in.
  */
 
 /** Same codes as the backend's `preferred_language_code`. */
@@ -53,18 +53,18 @@ function localeFromCookie(cookie: string | null | undefined): Locale | null {
 }
 
 /**
- * Signed-in profile, then the `gnw_locale` cookie, then the browser language
- * list, then English. Pass `profile` only for a signed-in user.
+ * The preferred language: the signed-in profile's, else the one chosen in the
+ * `gnw_locale` cookie, else English. The browser's language list is not
+ * consulted: with no choice made the UI is English (PZB-960). Pass `profile`
+ * only for a signed-in user.
  */
 export function resolveLocale(input: {
   profile?: string | null;
   cookie?: string | null;
-  languages?: readonly string[] | null;
 }): Locale {
   return (
     matchLocale(input.profile) ??
     localeFromCookie(input.cookie) ??
-    input.languages?.map(matchLocale).find((locale) => locale !== null) ??
     DEFAULT_LOCALE
   );
 }

@@ -7,6 +7,7 @@
   "chat.header.expand": "Perluas panel",
   "chat.header.collapse": "Ciutkan panel",
   "chat.header.language": "Bahasa antarmuka",
+  "chat.header.languageCurrent": "Bahasa: {language}",
   "chat.input.label": "Ajukan pertanyaan",
   "chat.input.sending": "Mengirim…",
   "chat.input.placeholder.start": "Atau jelaskan apa yang ingin Anda jelajahi…",
@@ -89,5 +90,8 @@
   "profile.saved.title": "Profil disimpan",
   "profile.saved.description": "Perubahan Anda berhasil disimpan.",
   "profile.saveFailed.title": "Gagal menyimpan",
-  "profile.saveFailed.description": "Tidak dapat menyimpan profil."
+  "profile.saveFailed.description": "Tidak dapat menyimpan profil.",
+  "chat.language.scopeNote": "Untuk saat ini, baru asisten AI yang diterjemahkan.",
+  "chat.language.preferred": "Diutamakan",
+  "chat.welcome": "**Selamat datang di Global Nature Watch Horizon!**\n\nHai, saya asisten pemantauan alam Anda, didukung AI dan data terbuka dari [Global Nature Watch](https://globalnaturewatch.org) dan [Land & Carbon Lab](https://landcarbonlab.org).\n\nAnda dapat bertanya kepada saya tentang perubahan tutupan lahan, kehilangan hutan, atau risiko keanekaragaman hayati di tempat-tempat yang Anda pedulikan. Untuk panduan memulai, kunjungi [Pusat Bantuan](https://help.horizon.globalnaturewatch.org/get-started)."
 }

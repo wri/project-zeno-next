@@ -1,22 +1,35 @@
 import { Box } from "@chakra-ui/react";
-import { useEffect, useState } from "react";
-import { usePromptStore } from "../store/promptStore";
+import { useState } from "react";
+import { SAMPLE_PROMPTS } from "../constants/sample-prompts";
 import useChatStore from "../store/chatStore";
 import { useRouter, usePathname } from "@/src/shared/lib/router";
+import { useLocale } from "@/src/shared/lib/i18n";
 import { firstMessageRedirectPath } from "../utils/threadNavigation";
 
+const SAMPLE_COUNT = 3;
+
+/** `count` distinct random indices below `length`. */
+function randomIndices(length: number, count: number): number[] {
+  const pool = Array.from({ length }, (_, i) => i);
+  return Array.from(
+    { length: Math.min(count, length) },
+    () => pool.splice(Math.floor(Math.random() * pool.length), 1)[0]
+  );
+}
+
+/**
+ * Three sample prompts in the UI language. The picks are drawn once, by
+ * index, so switching language translates the same three prompts.
+ */
 export default function SamplePrompts() {
-  const { prompts } = usePromptStore();
   const { sendMessage } = useChatStore();
-  const [samplePrompts, setSamplePrompts] = useState<string[]>([]);
+  const locale = useLocale();
+  const [picks] = useState(() =>
+    randomIndices(SAMPLE_PROMPTS.en.length, SAMPLE_COUNT)
+  );
   const router = useRouter();
   const pathname = usePathname();
-
-  useEffect(() => {
-    if (prompts.length > 0 && samplePrompts.length === 0) {
-      setSamplePrompts(getRandomFromArray(prompts, 3));
-    }
-  }, [prompts, samplePrompts.length]);
+  const prompts = picks.map((i) => SAMPLE_PROMPTS[locale][i]);
 
   const submitPrompt = async (prompt: string) => {
     const result = await sendMessage(prompt);
@@ -29,24 +42,12 @@ export default function SamplePrompts() {
       if (redirect) router.replace(redirect);
     }
   };
-  function getRandomFromArray<T>(arr: T[], count: number): T[] {
-    if (count > arr.length) {
-      throw new Error("Cannot select more items than available in the array.");
-    }
-    const shuffled = [...arr];
-    const randomItems = [];
-    for (let i = 0; i < count; i++) {
-      const randomIndex = Math.floor(Math.random() * shuffled.length);
-      const selectedItem = shuffled.splice(randomIndex, 1)[0]; // Remove and get the item
-      randomItems.push(selectedItem);
-    }
-    return randomItems;
-  }
+
   return (
     <Box display="flex" flexDir="column" gap={2} mt={4} mb={2}>
-      {samplePrompts.map((prompt, i) => (
+      {prompts.map((prompt) => (
         <Box
-          key={i}
+          key={prompt}
           p={2}
           rounded="md"
           border="1px solid"

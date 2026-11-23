@@ -4,6 +4,7 @@ import useChatStore from "@/app/store/chatStore";
 import useViewContextStore from "@/app/store/viewContextStore";
 import { usePinnedPrompt } from "@/app/hooks/usePinnedPrompt";
 import DashboardChatNudges from "@/src/features/dashboards/ui/DashboardChatNudges";
+import { useTranslation } from "@/src/shared/lib/i18n";
 import MessageBubble from "./MessageBubble";
 import PinnedPrompt from "./PinnedPrompt";
 import Reasoning from "./Reasoning";
@@ -24,6 +25,7 @@ function ChatMessages({ pt }: ChatMessagesProps) {
   const lastUserMessageRef = useRef<HTMLDivElement>(null);
   const spacerRef = useRef<HTMLDivElement>(null);
   const { messages, isLoading, toolSteps: currentToolSteps } = useChatStore();
+  const { t } = useTranslation();
   // The greeting and first-message prompts are surface-specific: on a
   // dashboard the seeded map welcome is swapped for the dashboard nudges.
   const onDashboard = useViewContextStore(
@@ -138,7 +140,13 @@ function ChatMessages({ pt }: ChatMessagesProps) {
                     ? registerPromptNode(message.id)
                     : undefined
                 }
-                message={message}
+                // The seeded greeting is Zeno's own text: it follows the UI
+                // language rather than the English seed in the store.
+                message={
+                  isSeededGreeting
+                    ? { ...message, message: t("chat.welcome") }
+                    : message
+                }
                 isConsecutive={isConsecutive}
                 isFirst={isFirst}
                 isLast={isLast}
