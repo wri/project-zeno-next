@@ -11,7 +11,6 @@ const pull = (overrides: Partial<Pull> = {}): Pull => ({
   start_date: "2001-01-01",
   end_date: "2024-12-31",
   canopy_cover: 30,
-  context_layer: null,
   ...overrides,
 });
 
@@ -66,10 +65,10 @@ describe("toAnalysisInputs", () => {
     ["natural_forest", 10],
     ["primary_forest", 30],
   ])(
-    "keeps the canopy value sent under the %s context layer",
+    "keeps the canopy value sent under the %s context layer, ignoring the layer key",
     (layer, value) => {
       const inputs = toAnalysisInputs(
-        [pull({ canopy_cover: value, context_layer: layer })],
+        [{ ...pull({ canopy_cover: value }), context_layer: layer }],
         "ins-1"
       );
       expect(inputs.recorded && inputs.canopyCover).toEqual([value]);

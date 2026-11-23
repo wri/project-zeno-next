@@ -22,7 +22,6 @@ export const AnalysisInputsWireSchema = z
       start_date: z.iso.date(),
       end_date: z.iso.date(),
       canopy_cover: z.number().nullable(),
-      context_layer: z.string().nullable(),
     })
   )
   .nullable();
