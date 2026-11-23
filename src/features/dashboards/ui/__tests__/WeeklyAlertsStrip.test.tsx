@@ -206,7 +206,9 @@ describe("WeeklyAlertsStrip", () => {
       await screen.findByText("142 ha of new integrated alerts, Nov 7–13")
     ).toBeTruthy();
     expect(
-      await screen.findByText("· High and Highest alerts · Data updated Nov 15")
+      await screen.findByText(
+        "· High and Highest confidence alerts · Data updated Nov 15"
+      )
     ).toBeTruthy();
     expect(strip().textContent).not.toMatch(/can be updated|Ask the assistant/);
     expect(mockedSummary).toHaveBeenCalledWith(["d1"]);
@@ -219,7 +221,9 @@ describe("WeeklyAlertsStrip", () => {
     await screen.findByText("142 ha of new integrated alerts, Nov 7–13");
     await waitFor(() => expect(mockedFreshness).toHaveBeenCalledTimes(1));
     await settle();
-    expect(screen.getByText("· High and Highest alerts")).toBeTruthy();
+    expect(
+      screen.getByText("· High and Highest confidence alerts")
+    ).toBeTruthy();
     expect(strip().textContent).not.toMatch(/Data updated/);
   });
 
