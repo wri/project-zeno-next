@@ -71,9 +71,10 @@ export default function WeeklyAlertsStrip({
  *
  * It ends on the alerts list: a View button that scrolls to the first one on
  * screen, or, for an owner whose dashboard has none, an Add button that
- * applies the Near real-time monitoring template (`useApplyAnalysisTemplate`
- * shows its toasts and scrolls to the new section). Once the template's
- * widgets reach the cache the same render offers View instead.
+ * applies the Near real-time monitoring template: a section with the alerts
+ * chart, the alerts list and imagery (`useApplyAnalysisTemplate` shows its
+ * toasts and scrolls to the new section). Once the template's widgets reach
+ * the cache the same render offers View instead.
  */
 function AlertsNotice({
   dashboard,
@@ -145,7 +146,7 @@ function AlertsNotice({
           disabled={action.state !== "idle"}
           onClick={() => apply.mutate(NRT_MONITORING)}
         >
-          {action.state === "adding" ? "Adding…" : "Add alerts list"}
+          {action.state === "adding" ? "Adding…" : "Add monitoring section"}
         </Button>
       )}
       <IconButton

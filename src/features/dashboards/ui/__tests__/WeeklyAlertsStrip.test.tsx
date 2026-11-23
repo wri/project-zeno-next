@@ -247,7 +247,7 @@ describe("WeeklyAlertsStrip", () => {
     );
     expect(scrollToWidgetWhenRendered).toHaveBeenCalledWith("w-in-s1");
     expect(
-      screen.queryByRole("button", { name: "Add alerts list" })
+      screen.queryByRole("button", { name: "Add monitoring section" })
     ).toBeNull();
     expect(mockedTemplates).not.toHaveBeenCalled();
   });
@@ -261,7 +261,9 @@ describe("WeeklyAlertsStrip", () => {
     );
     renderStrip();
 
-    const add = await screen.findByRole("button", { name: "Add alerts list" });
+    const add = await screen.findByRole("button", {
+      name: "Add monitoring section",
+    });
     fireEvent.click(add);
     const adding = await screen.findByRole("button", { name: "Adding…" });
     expect(mockedApply).toHaveBeenCalledWith("d1", "nrt-monitoring");
@@ -295,7 +297,7 @@ describe("WeeklyAlertsStrip", () => {
     renderStrip();
 
     fireEvent.click(
-      await screen.findByRole("button", { name: "Add alerts list" })
+      await screen.findByRole("button", { name: "Add monitoring section" })
     );
 
     await waitFor(() =>
@@ -303,14 +305,16 @@ describe("WeeklyAlertsStrip", () => {
         expect.objectContaining({ type: "error" })
       )
     );
-    const add = await screen.findByRole("button", { name: "Add alerts list" });
+    const add = await screen.findByRole("button", {
+      name: "Add monitoring section",
+    });
     expect((add as HTMLButtonElement).disabled).toBe(false);
   });
 
   it("holds Add, under its own label, while another template applies", async () => {
     mockedApply.mockReturnValue(new Promise(() => {}));
     renderStrip(dashboardWith(), { beside: <OtherTemplateCard /> });
-    await screen.findByRole("button", { name: "Add alerts list" });
+    await screen.findByRole("button", { name: "Add monitoring section" });
 
     fireEvent.click(screen.getByRole("button", { name: "Other template" }));
 
@@ -318,7 +322,7 @@ describe("WeeklyAlertsStrip", () => {
       expect(
         (
           screen.getByRole("button", {
-            name: "Add alerts list",
+            name: "Add monitoring section",
           }) as HTMLButtonElement
         ).disabled
       ).toBe(true)

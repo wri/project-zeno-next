@@ -203,8 +203,8 @@ export function formatDataUpdated(
 
 /**
  * The control at the end of the alerts banner: a link to the dashboard's
- * alerts list, else, for an owner, a button that adds one with the Near
- * real-time monitoring template, else nothing.
+ * alerts list, else, for an owner, a button that adds the Near real-time
+ * monitoring section (alerts chart, list and imagery), else nothing.
  */
 export type AlertsStripAction =
   | { kind: "view"; widgetId: string }
