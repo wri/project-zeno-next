@@ -5,7 +5,10 @@ import { z } from "zod";
  * dashboards expansion and the `generate_insights` stream update): one entry
  * per data pull the insight was computed from, in pull order. `null` means
  * the inputs were not recorded; an older backend omits the key. Inner fields
- * it has no value for are explicit nulls.
+ * it has no value for are explicit nulls. `pulled_start_date` and
+ * `pulled_end_date` are the range of the data pull, which can be wider than
+ * the period a chart shows (a pull of 2001 to 2025 may feed a 2018 to 2022
+ * chart).
  */
 export const AnalysisInputsWireSchema = z
   .array(
@@ -19,8 +22,8 @@ export const AnalysisInputsWireSchema = z
       ),
       dataset_id: z.number().nullable(),
       dataset_name: z.string(),
-      start_date: z.iso.date(),
-      end_date: z.iso.date(),
+      pulled_start_date: z.iso.date(),
+      pulled_end_date: z.iso.date(),
       canopy_cover: z.number().nullable(),
     })
   )

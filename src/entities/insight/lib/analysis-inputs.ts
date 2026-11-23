@@ -64,9 +64,9 @@ export function toAnalysisInputs(
     canopy_cover !== null ? [canopy_cover] : []
   );
   const years = pulls.map(
-    ({ start_date, end_date }): AnalyzedYears => ({
-      start: year(start_date),
-      end: year(end_date),
+    ({ pulled_start_date, pulled_end_date }): AnalyzedYears => ({
+      start: year(pulled_start_date),
+      end: year(pulled_end_date),
     })
   );
 
