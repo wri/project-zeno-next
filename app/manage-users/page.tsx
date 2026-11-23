@@ -263,6 +263,15 @@ export default function ManageUsersPage() {
           </Field.Root>
         </Flex>
 
+        {data && (
+          // The container's gap is wider than this line needs; pull the
+          // list up to sit close under the count.
+          <Text color="fg.muted" fontSize="sm" aria-live="polite" mb={-3}>
+            {matches.length === data.length
+              ? `${formatCount(data.length)} users`
+              : `${formatCount(matches.length)} of ${formatCount(data.length)} users`}
+          </Text>
+        )}
         {isPending ? (
           <Flex alignItems="center" gap={2} color="fg.muted">
             <Spinner size="sm" /> Loading users…
@@ -271,75 +280,62 @@ export default function ManageUsersPage() {
           <Text color="fg.error">
             {(error as Error)?.message || "Failed to load users."}
           </Text>
+        ) : matches.length === 0 ? (
+          <Text color="fg.muted">No users match these filters.</Text>
         ) : (
-          <Flex direction="column" gap={3}>
-            <Text color="fg.muted" fontSize="sm" aria-live="polite">
-              {matches.length === data.length
-                ? `${formatCount(data.length)} users`
-                : `${formatCount(matches.length)} of ${formatCount(data.length)} users`}
-            </Text>
-            {matches.length === 0 ? (
-              <Text color="fg.muted">No users match these filters.</Text>
-            ) : (
-              <Flex direction="column" gap={2}>
-                {matches.slice(0, rowsShown).map((user) => {
-                  const isSelf = user.id === userId;
-                  const isPending =
-                    mutation.isPending &&
-                    mutation.variables?.userId === user.id;
-                  return (
-                    <Flex
-                      key={user.id}
-                      alignItems="center"
-                      justifyContent="space-between"
-                      p={4}
-                      borderWidth="1px"
-                      borderColor="border"
-                      rounded="md"
-                      gap={4}
-                    >
-                      <Flex direction="column" minW={0} flex="1">
-                        <Text fontWeight="medium" truncate>
-                          {user.email}
-                          {isSelf && (
-                            <Text
-                              as="span"
-                              color="fg.muted"
-                              fontWeight="normal"
-                            >
-                              {" "}
-                              (you)
-                            </Text>
-                          )}
+          <Flex direction="column" gap={2}>
+            {matches.slice(0, rowsShown).map((user) => {
+              const isSelf = user.id === userId;
+              const isUpdating =
+                mutation.isPending && mutation.variables?.userId === user.id;
+              return (
+                <Flex
+                  key={user.id}
+                  alignItems="center"
+                  justifyContent="space-between"
+                  p={4}
+                  borderWidth="1px"
+                  borderColor="border"
+                  rounded="md"
+                  gap={4}
+                >
+                  <Flex direction="column" minW={0} flex="1">
+                    <Text fontWeight="medium" truncate>
+                      {user.email}
+                      {isSelf && (
+                        <Text as="span" color="fg.muted" fontWeight="normal">
+                          {" "}
+                          (you)
                         </Text>
-                        {user.name && (
-                          <Text color="fg.muted" fontSize="sm" truncate>
-                            {user.name}
-                          </Text>
-                        )}
-                      </Flex>
-                      <UserTypeSelect
-                        user={user}
-                        isSelf={isSelf}
-                        isPending={isPending}
-                        onChange={(newType) => handleChange(user, newType)}
-                      />
-                    </Flex>
-                  );
-                })}
-              </Flex>
-            )}
-            {rowsShown < matches.length && (
-              <Button
-                alignSelf="flex-start"
-                size="sm"
-                variant="outline"
-                onClick={() => setRowsShown((n) => n + ROWS_PER_PAGE)}
-              >
-                Show more
-              </Button>
-            )}
+                      )}
+                    </Text>
+                    {user.name && (
+                      <Text color="fg.muted" fontSize="sm" truncate>
+                        {user.name}
+                      </Text>
+                    )}
+                  </Flex>
+                  <UserTypeSelect
+                    user={user}
+                    isSelf={isSelf}
+                    isPending={isUpdating}
+                    onChange={(newType) => handleChange(user, newType)}
+                  />
+                </Flex>
+              );
+            })}
           </Flex>
+        )}
+        {rowsShown < matches.length && (
+          <Button
+            alignSelf="flex-start"
+            size="sm"
+            variant="outline"
+            mt={-3}
+            onClick={() => setRowsShown((n) => n + ROWS_PER_PAGE)}
+          >
+            Show more
+          </Button>
         )}
       </Container>
     </SettingsShell>
