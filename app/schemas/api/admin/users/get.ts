@@ -15,7 +15,14 @@ export const UserModelSchema = z
     email: z.string(),
     name: z.string().nullable().optional(),
     userType: UserTypeEnum,
+    companyOrganization: z.string().nullish(),
+    countryCode: z.string().nullish(),
+    sectorCode: z.string().nullish(),
+    preferredLanguageCode: z.string().nullish(),
     hasProfile: z.boolean().optional(),
+    // First GNW sign-in, and the apps the Resource Watch account had then.
+    firstSeenAt: z.iso.datetime({ offset: true }).nullish(),
+    rwApps: z.array(z.string()).nullish(),
     createdAt: z.string().optional(),
     updatedAt: z.string().optional(),
   })

@@ -1,13 +1,5 @@
-import type { UserModel, UserType } from "@/app/schemas/api/admin/users/get";
-
-// Staff, consultants and the backend contractor. Subdomains count too.
-const INTERNAL_EMAIL_DOMAINS = [
-  "wri.org",
-  "wriconsultant.org",
-  "developmentseed.org",
-];
-
-export type Audience = "internal" | "external";
+import type { UserType } from "@/app/schemas/api/admin/users/get";
+import type { Audience, ManagedUser } from "./managed-user";
 
 export interface UserFilters {
   query: string;
@@ -15,24 +7,16 @@ export interface UserFilters {
   audience: Audience | "all";
 }
 
-export function audienceOf(email: string): Audience {
-  const domain = email.slice(email.lastIndexOf("@") + 1).toLowerCase();
-  const internal = INTERNAL_EMAIL_DOMAINS.some(
-    (d) => domain === d || domain.endsWith(`.${d}`)
-  );
-  return internal ? "internal" : "external";
-}
-
 /** Matches the query against email and name, case-insensitively. */
 export function filterUsers(
-  users: readonly UserModel[],
+  users: readonly ManagedUser[],
   { query, userType, audience }: UserFilters
-): UserModel[] {
+): ManagedUser[] {
   const needle = query.trim().toLowerCase();
   return users.filter(
     (u) =>
       (userType === "all" || u.userType === userType) &&
-      (audience === "all" || audienceOf(u.email) === audience) &&
+      (audience === "all" || u.audience === audience) &&
       (u.email.toLowerCase().includes(needle) ||
         (u.name ?? "").toLowerCase().includes(needle))
   );

@@ -1,22 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { UserModel } from "@/app/schemas/api/admin/users/get";
-import { audienceOf, filterUsers, type UserFilters } from "../filter-users";
-
-describe("audienceOf", () => {
-  it.each([
-    ["ana@wri.org", "internal"],
-    ["ana@WRI.ORG", "internal"],
-    ["ana@wriconsultant.org", "internal"],
-    ["ana@developmentseed.org", "internal"],
-    ["ana@india.wri.org", "internal"],
-    ["ana@notwri.org", "external"],
-    ["ana@wri.org.evil.com", "external"],
-    ["ana@gmail.com", "external"],
-    ["", "external"],
-  ] as const)("%s is %s", (email, expected) => {
-    expect(audienceOf(email)).toBe(expected);
-  });
-});
+import { filterUsers, type UserFilters } from "../filter-users";
+import { toManagedUser } from "../managed-user";
 
 describe("filterUsers", () => {
   const user = (
@@ -24,7 +9,7 @@ describe("filterUsers", () => {
     email: string,
     userType: UserModel["userType"],
     name: string | null = null
-  ) => ({ id, email, userType, name });
+  ) => toManagedUser({ id, email, userType, name });
 
   const users = [
     user("1", "ana@wri.org", "superuser", "Ana Lima"),

@@ -19,11 +19,7 @@ import useAuthStore from "@/app/store/authStore";
 import SettingsShell from "@/app/components/SettingsShell";
 import { useAdminUsersExport } from "@/app/hooks/useAdminUsersExport";
 import { toaster } from "@/app/components/ui/toaster";
-import {
-  UserTypeEnum,
-  type UserModel,
-  type UserType,
-} from "@/app/schemas/api/admin/users/get";
+import { UserTypeEnum, type UserType } from "@/app/schemas/api/admin/users/get";
 import {
   AssignableUserTypeEnum,
   type AssignableUserType,
@@ -32,6 +28,7 @@ import {
   filterUsers,
   useAdminUserTypeUpdate,
   useAdminUsersList,
+  type ManagedUser,
   type UserFilters,
 } from "@/src/features/manage-users";
 
@@ -54,7 +51,7 @@ function UserTypeSelect({
   isPending,
   onChange,
 }: {
-  user: UserModel;
+  user: ManagedUser;
   isSelf: boolean;
   isPending: boolean;
   onChange: (newType: AssignableUserType) => void;
@@ -116,8 +113,9 @@ export default function ManageUsersPage() {
   const { userId } = useAuthStore();
   const [filters, setFilters] = useState(NO_FILTERS);
   const [rowsShown, setRowsShown] = useState(ROWS_PER_PAGE);
+  const [loadedSoFar, setLoadedSoFar] = useState(0);
 
-  const { data, isPending, isError, error } = useAdminUsersList();
+  const { data, isPending, isError, error } = useAdminUsersList(setLoadedSoFar);
   const matches = useMemo(
     () => (data ? filterUsers(data, filters) : []),
     [data, filters]
@@ -160,7 +158,7 @@ export default function ManageUsersPage() {
     });
   };
 
-  const handleChange = (user: UserModel, newType: AssignableUserType) => {
+  const handleChange = (user: ManagedUser, newType: AssignableUserType) => {
     mutation.mutate(
       { userId: user.id, userType: newType },
       {
@@ -266,7 +264,7 @@ export default function ManageUsersPage() {
           </Field.Root>
         </Flex>
 
-        {data && (
+        {data && !isError && (
           // The container's gap is wider than this line needs; pull the
           // list up to sit close under the count.
           <Text color="fg.muted" fontSize="sm" aria-live="polite" mb={-3}>
@@ -278,6 +276,7 @@ export default function ManageUsersPage() {
         {isPending ? (
           <Flex alignItems="center" gap={2} color="fg.muted">
             <Spinner size="sm" /> Loading users…
+            {loadedSoFar > 0 && ` ${formatCount(loadedSoFar)} so far`}
           </Flex>
         ) : isError ? (
           <Text color="fg.error">
