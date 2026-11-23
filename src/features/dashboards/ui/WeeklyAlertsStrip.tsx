@@ -12,7 +12,7 @@ import {
   formatPeriodRange,
   type AlertsSummary,
 } from "../lib/alerts-summary";
-import { NRT_MONITORING } from "../lib/alertsChart";
+import { NRT_MONITORING } from "../lib/analysis-templates";
 import { firstAlertsWidgetId } from "../lib/widgets";
 import { useAnalysisTemplates } from "./dashboardQueries";
 import { scrollToWidgetWhenRendered } from "./scrollToSection";
@@ -129,9 +129,7 @@ function AlertsNotice({
           {`${formatAlertArea(areaHa)} of new integrated alerts, ${formatPeriodRange(summary.startDate, summary.endDate)}`}
         </Text>
         <Text fontSize="13px" color="#565E7B">
-          {freshness
-            ? `· High and Highest alerts · ${formatDataUpdated(freshness.updatedOn, summary.endDate)}`
-            : "· High and Highest alerts"}
+          {`· High and Highest alerts${freshness ? ` · ${formatDataUpdated(freshness.updatedOn, summary.endDate)}` : ""}`}
         </Text>
       </Flex>
       {action.kind === "view" && (
@@ -148,7 +146,7 @@ function AlertsNotice({
           disabled={action.state !== "idle"}
           onClick={() => apply.mutate(NRT_MONITORING)}
         >
-          {action.state === "adding" ? "Adding…" : "Add monitoring section"}
+          {action.state === "building" ? "Adding…" : "Add monitoring section"}
         </Button>
       )}
       <IconButton

@@ -4,7 +4,11 @@ import type {
   DashboardAlertsSummaryResponse,
   IntegratedAlertsLatestResponse,
 } from "../api/schemas";
-import { NRT_MONITORING } from "./alertsChart";
+import {
+  NRT_MONITORING,
+  templateStatus,
+  type TemplateStatus,
+} from "./analysis-templates";
 
 /**
  * The alerts summary as the dashboards pages consume it, settled once from
@@ -175,30 +179,33 @@ export function formatFreshness(
   }: { latestAlertDate?: string; updatedOn?: string },
   order: DateOrder = "month-first"
 ): string | undefined {
-  const { day, dayYear } = DAY_FORMATS[order];
-  const updated = updatedOn ? parseISO(updatedOn) : undefined;
+  const { dayYear } = DAY_FORMATS[order];
   const alertsTo = latestAlertDate ? parseISO(latestAlertDate) : undefined;
-  if (updated && alertsTo) {
-    const updatedFormat =
-      updated.getFullYear() === alertsTo.getFullYear() ? day : dayYear;
-    return `Data updated ${format(updated, updatedFormat)} · alerts to ${format(alertsTo, dayYear)}`;
+  if (updatedOn && alertsTo) {
+    return `${formatDataUpdated(updatedOn, latestAlertDate, order)} · alerts to ${format(alertsTo, dayYear)}`;
   }
-  if (updated) return `Data updated ${format(updated, dayYear)}`;
+  if (updatedOn) return formatDataUpdated(updatedOn, undefined, order);
   if (alertsTo) return `Alerts to ${format(alertsTo, dayYear)}`;
   return undefined;
 }
 
 /**
- * The banner's "Data updated Nov 15", after its period: like the period, no
- * year unless the release falls in another year than the period's end.
+ * "Data updated Nov 15": the one owner of the phrase. Without a year when
+ * `against` (the date it follows: the period's end, or the newest alert
+ * date) falls in the same year, with it otherwise or when there is nothing
+ * to compare to.
  */
 export function formatDataUpdated(
   updatedOn: string,
-  periodEnd: string
+  against?: string,
+  order: DateOrder = "month-first"
 ): string {
+  const { day, dayYear } = DAY_FORMATS[order];
   const updated = parseISO(updatedOn);
-  const sameYear = updated.getFullYear() === parseISO(periodEnd).getFullYear();
-  return `Data updated ${format(updated, sameYear ? "MMM d" : "MMM d, yyyy")}`;
+  const sameYear =
+    against !== undefined &&
+    updated.getFullYear() === parseISO(against).getFullYear();
+  return `Data updated ${format(updated, sameYear ? day : dayYear)}`;
 }
 
 /**
@@ -208,11 +215,7 @@ export function formatDataUpdated(
  */
 export type AlertsStripAction =
   | { kind: "view"; widgetId: string }
-  /**
-   * `adding` while that template applies; `disabled` while another one does,
-   * since two requests would make two sections.
-   */
-  | { kind: "add"; state: "idle" | "adding" | "disabled" }
+  | { kind: "add"; state: TemplateStatus }
   | { kind: "none" };
 
 export function alertsStripAction({
@@ -238,11 +241,8 @@ export function alertsStripAction({
   if (!canAdd || !templateNames?.includes(NRT_MONITORING)) {
     return { kind: "none" };
   }
-  if (pendingTemplates.includes(NRT_MONITORING)) {
-    return { kind: "add", state: "adding" };
-  }
   return {
     kind: "add",
-    state: pendingTemplates.length > 0 ? "disabled" : "idle",
+    state: templateStatus(NRT_MONITORING, pendingTemplates),
   };
 }

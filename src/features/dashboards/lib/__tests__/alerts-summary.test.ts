@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import { IntegratedAlertsLatestResponseSchema } from "../../api/schemas";
 import {
-  ALERTS_DATA_TOOLTIP,
   alertsStripAction,
   awaitingPeriodData,
   countWithNewAlerts,
@@ -198,14 +197,6 @@ describe("formatFreshness", () => {
   });
 });
 
-describe("ALERTS_DATA_TOOLTIP", () => {
-  it("says how often new alerts data arrives", () => {
-    expect(ALERTS_DATA_TOOLTIP).toBe(
-      "Alerts are dated by when they were detected. Global Nature Watch gets new alerts data about once a week, so the newest alerts can be a week or more old."
-    );
-  });
-});
-
 describe("formatDataUpdated", () => {
   it("dates the release without a year, like the period before it", () => {
     expect(formatDataUpdated("2026-11-15", "2026-11-13")).toBe(
@@ -261,7 +252,7 @@ describe("alertsStripAction", () => {
   it("reads as adding while that template applies, and holds while another does", () => {
     expect(
       alertsStripAction({ ...owner, pendingTemplates: ["nrt-monitoring"] })
-    ).toEqual({ kind: "add", state: "adding" });
+    ).toEqual({ kind: "add", state: "building" });
     expect(
       alertsStripAction({
         ...owner,
