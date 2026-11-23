@@ -6,10 +6,8 @@ import InsightCaption from "@/app/components/InsightCaption";
 import DownloadMenu from "@/app/components/widgets/DownloadMenu";
 import { DATASET_CARD_BY_ID } from "@/app/constants/datasets";
 import type { DateRange } from "@/src/shared/lib/iso-date";
-import { InfoTooltip } from "@/src/shared/ui/InfoTooltip";
 import { Pill } from "@/src/shared/ui/Pill";
 import { isRetryable, type AlertsListError } from "../api/alerts";
-import { ALERTS_DATA_TOOLTIP } from "../lib/alerts-summary";
 import {
   estimateAlertPoints,
   formatAlertDate,
@@ -207,29 +205,6 @@ function Headline({ headline }: { headline: AlertsHeadline }) {
         tone="since"
         px="24px"
       />
-    </Flex>
-  );
-}
-
-/**
- * How current the alerts data is, for the card's params row: the label the
- * container words (`formatFreshness`, day first and in capitals) beside the
- * tooltip every alerts date line carries.
- */
-export function AlertsDataDates({ label }: { label: string }) {
-  return (
-    <Flex align="center" gap="4px" color="#565E7B">
-      <InfoTooltip about="the alerts data" size={14}>
-        {ALERTS_DATA_TOOLTIP}
-      </InfoTooltip>
-      <Text
-        fontFamily="mono"
-        fontSize="10px"
-        lineHeight="16px"
-        whiteSpace="nowrap"
-      >
-        {label}
-      </Text>
     </Flex>
   );
 }

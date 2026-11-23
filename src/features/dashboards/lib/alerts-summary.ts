@@ -148,14 +148,6 @@ export function awaitingPeriodData(
 }
 
 /**
- * The tooltip beside every line that dates the alerts data. Users read an
- * alert date a week old as data that stopped updating, so it says how often
- * new data arrives.
- */
-export const ALERTS_DATA_TOOLTIP =
-  "Alerts are dated by when they were detected. Global Nature Watch gets new alerts data about once a week, so the newest alerts can be a week or more old.";
-
-/**
  * Month first ("Nov 15") on the dashboards list and banner, day first
  * ("15 Nov") in the alerts widget, matching the dates already on each.
  */

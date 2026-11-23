@@ -32,8 +32,8 @@ import {
   type AlertsList,
   type AlertsWidgetSpec,
 } from "../lib/alertsWidgets";
+import { AlertsDataDates } from "./AlertsDataDates";
 import DashboardAlertsList, {
-  AlertsDataDates,
   type AlertsListView,
 } from "./DashboardAlertsList";
 import DashboardAlertsMapPane from "./DashboardAlertsMapPane";

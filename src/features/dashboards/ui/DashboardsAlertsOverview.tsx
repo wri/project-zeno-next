@@ -1,8 +1,6 @@
 import { Box, Flex, Skeleton, Text } from "@chakra-ui/react";
 
-import { InfoTooltip } from "@/src/shared/ui/InfoTooltip";
 import {
-  ALERTS_DATA_TOOLTIP,
   awaitingPeriodData,
   countWithNewAlerts,
   formatFreshness,
@@ -10,6 +8,7 @@ import {
   type AlertsFreshness,
   type AlertsSummary,
 } from "../lib/alerts-summary";
+import { AlertsDataDates } from "./AlertsDataDates";
 
 /** The row's height, held whenever the row is silent so the cards never jump. */
 const LINE_HEIGHT = "18px";
@@ -85,14 +84,7 @@ export default function DashboardsAlertsOverview({
             } new alerts detected ${period}`}
       </Text>
       {freshness && (
-        <Flex align="center" gap="4px" color="#656E7B">
-          <InfoTooltip about="the alerts data">
-            {ALERTS_DATA_TOOLTIP}
-          </InfoTooltip>
-          <Text fontFamily="mono" fontSize="12px" lineHeight="16px">
-            {formatFreshness(freshness)}
-          </Text>
-        </Flex>
+        <AlertsDataDates size="md" label={formatFreshness(freshness)} />
       )}
     </Flex>
   );
