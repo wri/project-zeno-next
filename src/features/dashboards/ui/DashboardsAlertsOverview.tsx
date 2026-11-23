@@ -64,6 +64,7 @@ export default function DashboardsAlertsOverview({
 
   const total = dashboardIds.length;
   const period = formatPeriodRange(summary.startDate, summary.endDate);
+  const freshnessLabel = freshness && formatFreshness(freshness);
 
   return (
     <Flex
@@ -83,9 +84,7 @@ export default function DashboardsAlertsOverview({
               total === 1 ? "dashboard has" : "dashboards have"
             } new alerts detected ${period}`}
       </Text>
-      {freshness && (
-        <AlertsDataDates size="md" label={formatFreshness(freshness)} />
-      )}
+      {freshnessLabel && <AlertsDataDates size="md" label={freshnessLabel} />}
     </Flex>
   );
 }

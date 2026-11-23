@@ -25,7 +25,7 @@ export function AlertsDataDates({
   label,
   size = "sm",
 }: {
-  label?: string;
+  label: string;
   size?: keyof typeof SIZES;
 }) {
   const s = SIZES[size];
