@@ -12,6 +12,7 @@ import InsightCaption from "@/app/components/InsightCaption";
 import InsightChartPills from "@/app/components/InsightChartPills";
 import WidgetMessage from "@/app/components/WidgetMessage";
 import { INPUTS_NOT_RECORDED } from "@/app/components/widgets/AnalysisParameters";
+import { describeCanopyThreshold } from "@/app/utils/formatCanopyThreshold";
 import { yearParam } from "@/app/utils/formatYearRange";
 import {
   collapseNetFluxRollups,
@@ -84,7 +85,7 @@ export function AnalyzedInputsPanel({
         ],
       ],
       ["Dataset", inputs.datasets.map((dataset) => dataset.name)],
-      ["Canopy density", inputs.canopyCover.map((v) => `More than ${v}%`)],
+      ["Canopy density", inputs.canopyCover.map(describeCanopyThreshold)],
       [
         "Years",
         inputs.years.map((years) => yearParam(years.start, years.end).value),
