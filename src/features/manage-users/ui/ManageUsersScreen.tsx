@@ -16,9 +16,7 @@ import {
 import useAuthStore from "@/app/store/authStore";
 import { useAdminUsersExport } from "@/app/hooks/useAdminUsersExport";
 import { toaster } from "@/app/components/ui/toaster";
-import type { AssignableUserType } from "@/app/schemas/api/admin/users/patch";
 import { useAdminUsersList } from "../api/admin-users-list";
-import { useAdminUserTypeUpdate } from "../api/admin-user-type-update";
 import { useProfileLabels } from "../api/profile-labels";
 import {
   NO_FILTERS,
@@ -28,7 +26,6 @@ import {
   type UserFilters,
 } from "../lib/filter-users";
 import { formatCount, formatLoadedAt, usersLabel } from "../lib/format";
-import type { ManagedUser } from "../lib/managed-user";
 import { DEFAULT_PAGE_SIZE, pageOf, type PageSize } from "../lib/paging";
 import {
   DEFAULT_SORT,
@@ -36,10 +33,12 @@ import {
   sortUsers,
   type SortKey,
 } from "../lib/sort-users";
+import { SuperuserConfirmDialog } from "./SuperuserConfirmDialog";
 import { UserFiltersBar } from "./UserFiltersBar";
 import { UserTypeCell } from "./UserTypeCell";
 import { UsersPager } from "./UsersPager";
 import { UsersTable } from "./UsersTable";
+import { useUserTypeChange } from "./useUserTypeChange";
 
 export function ManageUsersScreen() {
   const { userId } = useAuthStore();
@@ -83,7 +82,7 @@ export function ManageUsersScreen() {
     setPage(1);
   };
 
-  const mutation = useAdminUserTypeUpdate();
+  const typeChange = useUserTypeChange();
   const exportMutation = useAdminUsersExport();
 
   const handleDownloadCsv = () => {
@@ -114,31 +113,6 @@ export function ManageUsersScreen() {
         });
       },
     });
-  };
-
-  const handleChange = (user: ManagedUser, newType: AssignableUserType) => {
-    mutation.mutate(
-      { userId: user.id, userType: newType },
-      {
-        onSuccess: (updated) => {
-          toaster.create({
-            title: "User updated",
-            description: `${updated.email} is now ${updated.userType}.`,
-            type: "success",
-            duration: 3000,
-          });
-        },
-        onError: (err) => {
-          toaster.create({
-            title: "Update failed",
-            description:
-              (err as Error)?.message || "Could not update user type.",
-            type: "error",
-            duration: 5000,
-          });
-        },
-      }
-    );
   };
 
   const loading = (
@@ -262,12 +236,12 @@ export function ManageUsersScreen() {
                 typeCell={(user) => (
                   <UserTypeCell
                     user={user}
+                    shownType={typeChange.shownType(user)}
                     isSelf={user.id === userId}
-                    isSaving={
-                      mutation.isPending &&
-                      mutation.variables?.userId === user.id
+                    isSaving={typeChange.isSaving(user)}
+                    onChange={(from, to) =>
+                      typeChange.request({ user, from, to })
                     }
-                    onChange={(to) => handleChange(user, to)}
                   />
                 )}
               />
@@ -285,6 +259,12 @@ export function ManageUsersScreen() {
           )}
         </Flex>
       )}
+
+      <SuperuserConfirmDialog
+        change={typeChange.confirming}
+        onConfirm={typeChange.confirm}
+        onCancel={typeChange.cancel}
+      />
     </Container>
   );
 }

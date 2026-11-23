@@ -1,6 +1,7 @@
 import {
   mutationOptions,
   useMutation,
+  useMutationState,
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
@@ -22,6 +23,8 @@ interface UpdateUserTypeArgs {
   userType: AssignableUserType;
 }
 
+const USER_TYPE_MUTATION_KEY = ["adminUsers", "userType"] as const;
+
 async function updateUserType({
   userId,
   userType,
@@ -41,6 +44,7 @@ async function updateUserType({
 
 export const userTypeUpdate = (queryClient: QueryClient) =>
   mutationOptions({
+    mutationKey: USER_TYPE_MUTATION_KEY,
     mutationFn: updateUserType,
     // Swap in the server's copy of the user: refetching would reload every
     // page of the list for one changed row. Cancel any refetch already in
@@ -61,4 +65,14 @@ export const userTypeUpdate = (queryClient: QueryClient) =>
 
 export function useAdminUserTypeUpdate() {
   return useMutation(userTypeUpdate(useQueryClient()));
+}
+
+/** The type each user is being changed to, while that change is saving. */
+export function usePendingUserTypes(): Map<string, AssignableUserType> {
+  const saving = useMutationState({
+    filters: { mutationKey: USER_TYPE_MUTATION_KEY, status: "pending" },
+    // The cache types variables as unknown; the key pins them to this one.
+    select: (m) => m.state.variables as UpdateUserTypeArgs,
+  });
+  return new Map(saving.map((v) => [v.userId, v.userType]));
 }
