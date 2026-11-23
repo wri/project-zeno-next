@@ -1,9 +1,5 @@
 /**
- * Public API of the `manage-users` feature (FSD slice): the superuser page
- * that lists, filters and re-types users.
+ * Public API of the `manage-users` feature (FSD slice): the user-list
+ * filtering for the superuser Manage Users page.
  */
-export {
-  filterUsers,
-  type Audience,
-  type UserFilters,
-} from "./lib/filter-users";
+export { filterUsers, type UserFilters } from "./lib/filter-users";

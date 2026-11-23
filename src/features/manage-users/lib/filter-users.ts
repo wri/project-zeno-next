@@ -24,16 +24,16 @@ export function audienceOf(email: string): Audience {
 }
 
 /** Matches the query against email and name, case-insensitively. */
-export function filterUsers<
-  T extends Pick<UserModel, "email" | "name" | "userType">,
->(users: readonly T[], { query, userType, audience }: UserFilters): T[] {
+export function filterUsers(
+  users: readonly UserModel[],
+  { query, userType, audience }: UserFilters
+): UserModel[] {
   const needle = query.trim().toLowerCase();
   return users.filter(
     (u) =>
       (userType === "all" || u.userType === userType) &&
       (audience === "all" || audienceOf(u.email) === audience) &&
-      (needle === "" ||
-        u.email.toLowerCase().includes(needle) ||
+      (u.email.toLowerCase().includes(needle) ||
         (u.name ?? "").toLowerCase().includes(needle))
   );
 }
