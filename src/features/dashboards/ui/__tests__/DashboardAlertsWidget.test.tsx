@@ -27,6 +27,11 @@ vi.mock("../../api/alert-locations", async (importOriginal) => ({
   prepareAlertLocations: vi.fn(),
 }));
 
+// How current the data is comes from the analytics API, not the list.
+vi.mock("../../api/analytics", () => ({
+  fetchIntegratedAlertsFreshness: vi.fn(),
+}));
+
 vi.mock("@/app/components/ui/toaster", () => ({
   toaster: { create: vi.fn(), update: vi.fn(), dismiss: vi.fn() },
 }));
@@ -68,6 +73,7 @@ import {
   prepareAlertLocations,
   type AlertLocationsFile,
 } from "../../api/alert-locations";
+import { fetchIntegratedAlertsFreshness } from "../../api/analytics";
 import { toaster } from "@/app/components/ui/toaster";
 import { downloadCsv } from "@/src/shared/lib/csv";
 import DashboardAlertsWidget from "../DashboardAlertsWidget";
@@ -77,6 +83,7 @@ const mockedFetch = vi.mocked(fetchAlertsList);
 const mockedDownload = vi.mocked(downloadCsv);
 const mockedPrepare = vi.mocked(prepareAlertLocations);
 const mockedToaster = vi.mocked(toaster);
+const mockedFreshness = vi.mocked(fetchIntegratedAlertsFreshness);
 
 /** The abortable preparation the real export runs: an abort rejects it. */
 function abortablePrepare() {
@@ -208,6 +215,11 @@ describe("DashboardAlertsWidget", () => {
   beforeEach(() => {
     mockedFetch.mockReset();
     mockedPrepare.mockReset();
+    // Released two days after the fixture list's latest alert date.
+    mockedFreshness.mockReset().mockResolvedValue({
+      latestAlertDate: "2026-10-16",
+      updatedOn: "2026-10-18",
+    });
     // Each new toast is "toast-1".
     mockedToaster.create.mockReset().mockReturnValue("toast-1");
     mockedToaster.update.mockReset();
@@ -231,13 +243,16 @@ describe("DashboardAlertsWidget", () => {
     expect(kpi("Alerts since")).toBe(
       "105.7ha of alerts since 17 Sep17 SEP – 16 OCT 2026"
     );
-    // The latest alert date sits at the right of the card's params row,
-    // level with Show params, outside the list's white card.
+    // The data dates sit at the right of the card's params row, level with
+    // Show params, outside the list's white card: the release, then the
+    // latest alert date the pills count back from.
     const paramsRow = screen.getByRole("button", {
       name: "Show params",
     }).parentElement!;
     expect(
-      within(paramsRow).getByText("LATEST ALERT DETECTED 16 OCT 2026")
+      await within(paramsRow).findByText(
+        "DATA UPDATED 18 OCT · ALERTS TO 16 OCT 2026"
+      )
     ).toBeTruthy();
     expect(
       within(paramsRow).getByRole("img", { name: "About the alerts data" })
@@ -508,7 +523,7 @@ describe("DashboardAlertsWidget", () => {
     expect(mockedPrepare).not.toHaveBeenCalled();
   });
 
-  it("counts back from the window's end, with no latest alert line, when neither the dataset's nor the area's latest date is known", async () => {
+  it("counts back from the window's end, dating only the release, when neither the dataset's nor the area's latest date is known", async () => {
     mockedFetch.mockResolvedValue(
       toAlertsList({
         ...ALERTS_LIST_WIRE,
@@ -525,7 +540,8 @@ describe("DashboardAlertsWidget", () => {
     expect(kpi("Alerts since")).toBe(
       "0ha of alerts since 20 Sep20 SEP – 19 OCT 2026"
     );
-    expect(screen.queryByText(/LATEST ALERT DETECTED/)).toBeNull();
+    expect(await screen.findByText("DATA UPDATED 18 OCT 2026")).toBeTruthy();
+    expect(screen.queryByText(/ALERTS TO/)).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Last 30 days" }));
     expect(
       screen.getByText(/Alert days from 20 Sep 2026 to 19 Oct 2026/)
@@ -699,6 +715,56 @@ describe("DashboardAlertsWidget", () => {
     expect(screen.queryByLabelText("Remove from dashboard")).toBeNull();
   });
 
+  it("dates only the alerts when the release date failed to load", async () => {
+    mockedFreshness.mockRejectedValue(new Error("analytics API down"));
+    mockedFetch.mockResolvedValue(toAlertsList(ALERTS_LIST_WIRE));
+    renderWidget();
+    await screen.findByText(NEW_WEEK_FOOTER);
+    await waitFor(() => expect(mockedFreshness).toHaveBeenCalledTimes(1));
+    await act(async () => {});
+
+    expect(screen.getByText("ALERTS TO 16 OCT 2026")).toBeTruthy();
+    expect(screen.queryByText(/DATA UPDATED/)).toBeNull();
+  });
+
+  it("shows no data dates when neither date is known", async () => {
+    mockedFreshness.mockRejectedValue(new Error("analytics API down"));
+    mockedFetch.mockResolvedValue(
+      toAlertsList({ ...ALERTS_LIST_WIRE, latest_alert_date: null })
+    );
+    renderWidget();
+    await screen.findByText(NEW_WEEK_FOOTER);
+    await waitFor(() => expect(mockedFreshness).toHaveBeenCalledTimes(1));
+    await act(async () => {});
+
+    expect(screen.queryByText(/DATA UPDATED|ALERTS TO/)).toBeNull();
+    expect(
+      screen.queryByRole("img", { name: "About the alerts data" })
+    ).toBeNull();
+  });
+
+  it("gives both dates their year when the release falls in the next one", async () => {
+    mockedFreshness.mockResolvedValue({
+      latestAlertDate: "2026-12-31",
+      updatedOn: "2027-01-02",
+    });
+    mockedFetch.mockResolvedValue(
+      toAlertsList({
+        ...ALERTS_LIST_WIRE,
+        latest_alert_date: "2026-12-31",
+        data_to: "2026-12-31",
+        start_date: "2026-12-02",
+        end_date: "2026-12-31",
+        new_week: { start_date: "2026-12-25", end_date: "2026-12-31" },
+      })
+    );
+    renderWidget();
+
+    expect(
+      await screen.findByText("DATA UPDATED 2 JAN 2027 · ALERTS TO 31 DEC 2026")
+    ).toBeTruthy();
+  });
+
   it("prints its title and a pointer to the dashboard, fetching nothing", () => {
     renderWidget({ print: true });
 
@@ -709,6 +775,7 @@ describe("DashboardAlertsWidget", () => {
       )
     ).toBeTruthy();
     expect(mockedFetch).not.toHaveBeenCalled();
+    expect(mockedFreshness).not.toHaveBeenCalled();
     expect(screen.queryByRole("button", { name: "New alerts" })).toBeNull();
     expect(screen.queryByTestId("map-widget")).toBeNull();
   });

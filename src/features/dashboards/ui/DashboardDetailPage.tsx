@@ -156,7 +156,7 @@ export default function DashboardDetailPage() {
                   <Box ref={sentinelRef} aria-hidden={pinned} inert={pinned}>
                     <DashboardHeader dashboard={dashboard} isOwner={isOwner} />
                   </Box>
-                  <WeeklyAlertsStrip dashboard={dashboard} />
+                  <WeeklyAlertsStrip dashboard={dashboard} isOwner={isOwner} />
                 </Flex>
 
                 {hasContent ? (

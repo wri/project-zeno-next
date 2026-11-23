@@ -1,11 +1,10 @@
 import { describe, it, expect } from "vitest";
 
 import {
-  INTEGRATED_ALERTS_DATASET_ID,
   chartTitleOverride,
-  countIntegratedAlertsCharts,
   dashboardWidgetToInsightWidgets,
   findCuratedWidgetForDataset,
+  firstAlertsWidgetId,
   hasDashboardContent,
   hasWidgetCustomization,
   unresolvedPendingInsightWidgets,
@@ -882,35 +881,68 @@ describe("hasWidgetCustomization", () => {
   });
 });
 
-describe("countIntegratedAlertsCharts", () => {
-  const alerts = (id: string) =>
-    chart({ id, dataset_id: INTEGRATED_ALERTS_DATASET_ID });
-
-  it("counts integrated alerts charts across widgets, like the backend's rule", () => {
-    const widgets = [
-      widget({
-        id: "w-1",
-        insight: { id: "ins-1", charts: [alerts("c-1"), alerts("c-2")] },
-      }),
-      widget({
-        id: "w-2",
-        insight: { id: "ins-2", charts: [chart({ id: "c-3", dataset_id: 2 })] },
-      }),
-      widget({ id: "w-3", insight: { id: "ins-3", charts: [alerts("c-4")] } }),
-    ];
-    expect(countIntegratedAlertsCharts(widgets)).toBe(3);
+describe("firstAlertsWidgetId", () => {
+  const section = (id: string, position: number) => ({
+    id,
+    title: `Section ${id}`,
+    description: null,
+    position,
+    template: null,
+    created_at: "2026-07-01T00:00:00Z",
+  });
+  const alertsWidget = (
+    id: string,
+    sectionId: string | null,
+    position: number
+  ): DashboardWidget =>
+    widget({
+      id,
+      widget_type: "alerts",
+      section_id: sectionId,
+      position,
+      insight_id: null,
+      insight: null,
+    });
+  const dashboard = (widgets: DashboardWidget[]): Dashboard => ({
+    id: "d1",
+    user_id: "u1",
+    name: "Pará",
+    description: null,
+    is_public: false,
+    eligible_for_subscription: false,
+    created_at: "2026-07-01T00:00:00Z",
+    updated_at: "2026-07-01T00:00:00Z",
+    aois: [],
+    // Listed out of order: the grid sorts sections by position.
+    sections: [section("s2", 1), section("s1", 0)],
+    widgets,
   });
 
-  it("ignores charts without a dataset id and widgets without an insight", () => {
-    const widgets = [
-      widget({
-        insight: {
-          id: "ins-1",
-          charts: [chart({ dataset_id: null }), chart({ id: "c-2" })],
-        },
-      }),
-      widget({ id: "w-2", widget_type: "text", insight: null }),
-    ];
-    expect(countIntegratedAlertsCharts(widgets)).toBe(0);
+  it("finds the first alerts widget in the grid's order, not the array's", () => {
+    expect(
+      firstAlertsWidgetId(
+        dashboard([
+          alertsWidget("w-in-s2", "s2", 0),
+          alertsWidget("w-s1-second", "s1", 1),
+          widget({ id: "w-s1-first", section_id: "s1", position: 0 }),
+          widget({ id: "w-top", section_id: null, position: 0 }),
+        ])
+      )
+    ).toBe("w-s1-second");
+  });
+
+  it("puts the top-level widgets before every section", () => {
+    expect(
+      firstAlertsWidgetId(
+        dashboard([
+          alertsWidget("w-in-s1", "s1", 0),
+          alertsWidget("w-top", null, 3),
+        ])
+      )
+    ).toBe("w-top");
+  });
+
+  it("finds none on a dashboard without an alerts widget", () => {
+    expect(firstAlertsWidgetId(dashboard([widget()]))).toBeUndefined();
   });
 });

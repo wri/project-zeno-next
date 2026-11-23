@@ -122,8 +122,8 @@ describe("DashboardAlertsList", () => {
     expect(kpi("Alerts since")).toBe(
       "105.7ha of alerts since 17 Sep17 SEP – 16 OCT 2026"
     );
-    // The latest alert date sits in the card's params row, not in here.
-    expect(screen.queryByText(/LATEST ALERT DETECTED/)).toBeNull();
+    // The data dates sit in the card's params row, not in here.
+    expect(screen.queryByText(/DATA UPDATED|ALERTS TO/)).toBeNull();
     const newPill = screen.getByRole("button", { name: "New alerts" });
     expect(newPill.getAttribute("aria-pressed")).toBe("true");
     expect(

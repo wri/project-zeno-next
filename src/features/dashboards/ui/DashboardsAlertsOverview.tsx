@@ -1,6 +1,5 @@
 import { Box, Flex, Skeleton, Text } from "@chakra-ui/react";
 
-import { InfoTooltip } from "@/src/shared/ui/InfoTooltip";
 import {
   awaitingPeriodData,
   countWithNewAlerts,
@@ -9,6 +8,7 @@ import {
   type AlertsFreshness,
   type AlertsSummary,
 } from "../lib/alerts-summary";
+import { AlertsDataDates } from "./AlertsDataDates";
 
 /** The row's height, held whenever the row is silent so the cards never jump. */
 const LINE_HEIGHT = "18px";
@@ -64,6 +64,7 @@ export default function DashboardsAlertsOverview({
 
   const total = dashboardIds.length;
   const period = formatPeriodRange(summary.startDate, summary.endDate);
+  const freshnessLabel = freshness && formatFreshness(freshness);
 
   return (
     <Flex
@@ -83,17 +84,7 @@ export default function DashboardsAlertsOverview({
               total === 1 ? "dashboard has" : "dashboards have"
             } new alerts detected ${period}`}
       </Text>
-      {freshness && (
-        <Flex align="center" gap="4px" color="#656E7B">
-          <InfoTooltip about="the alerts data">
-            Alerts are dated by when they were detected and reach Global Nature
-            Watch a few days after that.
-          </InfoTooltip>
-          <Text fontFamily="mono" fontSize="12px" lineHeight="16px">
-            {formatFreshness(freshness)}
-          </Text>
-        </Flex>
-      )}
+      {freshnessLabel && <AlertsDataDates size="md" label={freshnessLabel} />}
     </Flex>
   );
 }
