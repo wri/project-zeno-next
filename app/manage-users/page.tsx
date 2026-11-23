@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Button,
   Container,
@@ -6,6 +6,7 @@ import {
   Flex,
   Heading,
   Input,
+  NativeSelect,
   Portal,
   Select,
   Spinner,
@@ -20,13 +21,27 @@ import { useAdminUsersList } from "@/app/hooks/useAdminUsersList";
 import { useAdminUserTypeUpdate } from "@/app/hooks/useAdminUserTypeUpdate";
 import { useAdminUsersExport } from "@/app/hooks/useAdminUsersExport";
 import { toaster } from "@/app/components/ui/toaster";
-import { type UserModel } from "@/app/schemas/api/admin/users/get";
+import {
+  UserTypeEnum,
+  type UserModel,
+  type UserType,
+} from "@/app/schemas/api/admin/users/get";
 import {
   AssignableUserTypeEnum,
   type AssignableUserType,
 } from "@/app/schemas/api/admin/users/patch";
+import { filterUsers, type UserFilters } from "@/src/features/manage-users";
 
 const ASSIGNABLE_TYPES = AssignableUserTypeEnum.options;
+
+// Rows rendered at a time: each row mounts its own type menu.
+const ROWS_PER_PAGE = 50;
+
+const NO_FILTERS: UserFilters = { query: "", userType: "all", audience: "all" };
+
+const typeLabel = (t: UserType) => t.charAt(0).toUpperCase() + t.slice(1);
+
+const formatCount = (n: number) => n.toLocaleString("en-US");
 
 type ValueChangeDetails = { value: string[] };
 
@@ -45,7 +60,7 @@ function UserTypeSelect({
     () =>
       createListCollection({
         items: ASSIGNABLE_TYPES.map((t) => ({
-          label: t.charAt(0).toUpperCase() + t.slice(1),
+          label: typeLabel(t),
           value: t,
         })),
         // Self-demote guard: backend rejects, but disable here for clearer UX.
@@ -96,15 +111,19 @@ function UserTypeSelect({
 export default function ManageUsersPage() {
   const isReady = useAuthGuard();
   const { userId } = useAuthStore();
-  const [query, setQuery] = useState("");
-  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [filters, setFilters] = useState(NO_FILTERS);
+  const [rowsShown, setRowsShown] = useState(ROWS_PER_PAGE);
 
-  useEffect(() => {
-    const t = setTimeout(() => setDebouncedQuery(query), 250);
-    return () => clearTimeout(t);
-  }, [query]);
+  const { data, isPending, isError, error } = useAdminUsersList();
+  const matches = useMemo(
+    () => (data ? filterUsers(data, filters) : []),
+    [data, filters]
+  );
 
-  const { data, isLoading, isError, error } = useAdminUsersList(debouncedQuery);
+  const updateFilters = (patch: Partial<UserFilters>) => {
+    setFilters((f) => ({ ...f, ...patch }));
+    setRowsShown(ROWS_PER_PAGE);
+  };
   const mutation = useAdminUserTypeUpdate();
   const exportMutation = useAdminUsersExport();
 
@@ -165,8 +184,6 @@ export default function ManageUsersPage() {
 
   if (!isReady) return null;
 
-  const trimmedQuery = debouncedQuery.trim();
-
   return (
     <SettingsShell activePath="/manage-users">
       <Container
@@ -195,19 +212,58 @@ export default function ManageUsersPage() {
           </Button>
         </Flex>
 
-        <Field.Root id="search" maxW="md">
-          <Field.Label>Search by email</Field.Label>
-          <Input
-            type="search"
-            placeholder="Type an email…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-        </Field.Root>
+        <Flex gap={3} wrap="wrap" alignItems="flex-end">
+          <Field.Root id="search" maxW="sm" flex="1" minW="200px">
+            <Field.Label>Search</Field.Label>
+            <Input
+              type="search"
+              placeholder="Email or name"
+              value={filters.query}
+              onChange={(e) => updateFilters({ query: e.target.value })}
+            />
+          </Field.Root>
+          <Field.Root id="user-type" width="auto">
+            <Field.Label>User type</Field.Label>
+            <NativeSelect.Root width="auto">
+              <NativeSelect.Field
+                value={filters.userType}
+                onChange={(e) =>
+                  updateFilters({
+                    userType: e.target.value as UserFilters["userType"],
+                  })
+                }
+              >
+                <option value="all">All types</option>
+                {UserTypeEnum.options.map((t) => (
+                  <option key={t} value={t}>
+                    {typeLabel(t)}
+                  </option>
+                ))}
+              </NativeSelect.Field>
+              <NativeSelect.Indicator />
+            </NativeSelect.Root>
+          </Field.Root>
+          <Field.Root id="audience" width="auto">
+            <Field.Label>Internal or external</Field.Label>
+            <NativeSelect.Root width="auto">
+              <NativeSelect.Field
+                value={filters.audience}
+                onChange={(e) =>
+                  updateFilters({
+                    audience: e.target.value as UserFilters["audience"],
+                  })
+                }
+              >
+                <option value="all">All users</option>
+                <option value="internal">Internal</option>
+                <option value="external">External</option>
+              </NativeSelect.Field>
+              <NativeSelect.Indicator />
+            </NativeSelect.Root>
+          </Field.Root>
+        </Flex>
 
-        {trimmedQuery.length === 0 ? (
-          <Text color="fg.muted">Type an email to search for a user.</Text>
-        ) : isLoading ? (
+        {isPending ? (
           <Flex alignItems="center" gap={2} color="fg.muted">
             <Spinner size="sm" /> Loading users…
           </Flex>
@@ -215,50 +271,74 @@ export default function ManageUsersPage() {
           <Text color="fg.error">
             {(error as Error)?.message || "Failed to load users."}
           </Text>
-        ) : !data || data.length === 0 ? (
-          <Text color="fg.muted">No users match that email.</Text>
         ) : (
-          <Flex direction="column" gap={2}>
-            {data.map((user) => {
-              const isSelf = user.id === userId;
-              const isPending =
-                mutation.isPending && mutation.variables?.userId === user.id;
-              return (
-                <Flex
-                  key={user.id}
-                  alignItems="center"
-                  justifyContent="space-between"
-                  p={4}
-                  borderWidth="1px"
-                  borderColor="border"
-                  rounded="md"
-                  gap={4}
-                >
-                  <Flex direction="column" minW={0} flex="1">
-                    <Text fontWeight="medium" truncate>
-                      {user.email}
-                      {isSelf && (
-                        <Text as="span" color="fg.muted" fontWeight="normal">
-                          {" "}
-                          (you)
+          <Flex direction="column" gap={3}>
+            <Text color="fg.muted" fontSize="sm" aria-live="polite">
+              {matches.length === data.length
+                ? `${formatCount(data.length)} users`
+                : `${formatCount(matches.length)} of ${formatCount(data.length)} users`}
+            </Text>
+            {matches.length === 0 ? (
+              <Text color="fg.muted">No users match these filters.</Text>
+            ) : (
+              <Flex direction="column" gap={2}>
+                {matches.slice(0, rowsShown).map((user) => {
+                  const isSelf = user.id === userId;
+                  const isPending =
+                    mutation.isPending &&
+                    mutation.variables?.userId === user.id;
+                  return (
+                    <Flex
+                      key={user.id}
+                      alignItems="center"
+                      justifyContent="space-between"
+                      p={4}
+                      borderWidth="1px"
+                      borderColor="border"
+                      rounded="md"
+                      gap={4}
+                    >
+                      <Flex direction="column" minW={0} flex="1">
+                        <Text fontWeight="medium" truncate>
+                          {user.email}
+                          {isSelf && (
+                            <Text
+                              as="span"
+                              color="fg.muted"
+                              fontWeight="normal"
+                            >
+                              {" "}
+                              (you)
+                            </Text>
+                          )}
                         </Text>
-                      )}
-                    </Text>
-                    {user.name && (
-                      <Text color="fg.muted" fontSize="sm" truncate>
-                        {user.name}
-                      </Text>
-                    )}
-                  </Flex>
-                  <UserTypeSelect
-                    user={user}
-                    isSelf={isSelf}
-                    isPending={isPending}
-                    onChange={(newType) => handleChange(user, newType)}
-                  />
-                </Flex>
-              );
-            })}
+                        {user.name && (
+                          <Text color="fg.muted" fontSize="sm" truncate>
+                            {user.name}
+                          </Text>
+                        )}
+                      </Flex>
+                      <UserTypeSelect
+                        user={user}
+                        isSelf={isSelf}
+                        isPending={isPending}
+                        onChange={(newType) => handleChange(user, newType)}
+                      />
+                    </Flex>
+                  );
+                })}
+              </Flex>
+            )}
+            {rowsShown < matches.length && (
+              <Button
+                alignSelf="flex-start"
+                size="sm"
+                variant="outline"
+                onClick={() => setRowsShown((n) => n + ROWS_PER_PAGE)}
+              >
+                Show more
+              </Button>
+            )}
           </Flex>
         )}
       </Container>

@@ -1,14 +1,21 @@
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
   ListUsersResponseSchema,
   type ListUsersResponse,
+  type UserModel,
 } from "@/app/schemas/api/admin/users/get";
 import { apiFetch } from "@/app/lib/api-client";
 
-async function fetchAdminUsers(emailQuery: string): Promise<ListUsersResponse> {
-  const params = new URLSearchParams();
-  if (emailQuery) params.set("email", emailQuery);
-  params.set("limit", "50");
+export const ADMIN_USERS_QUERY_KEY = ["adminUsers"] as const;
+
+// The endpoint's maximum page size.
+const PAGE_SIZE = 200;
+
+async function fetchAdminUsersPage(offset: number): Promise<ListUsersResponse> {
+  const params = new URLSearchParams({
+    limit: `${PAGE_SIZE}`,
+    offset: `${offset}`,
+  });
 
   const res = await apiFetch(`/api/admin/users?${params.toString()}`, {
     method: "GET",
@@ -32,13 +39,27 @@ async function fetchAdminUsers(emailQuery: string): Promise<ListUsersResponse> {
   return ListUsersResponseSchema.parse(data);
 }
 
-export function useAdminUsersList(emailQuery: string) {
-  const trimmed = emailQuery.trim();
+/**
+ * Every user, newest first. The endpoint pages by offset, so a sign-up during
+ * the load shifts a row onto the next page; keep the first copy of each id.
+ */
+export async function fetchAllAdminUsers(): Promise<ListUsersResponse> {
+  const users = new Map<string, UserModel>();
+  for (let offset = 0; ; offset += PAGE_SIZE) {
+    const page = await fetchAdminUsersPage(offset);
+    for (const user of page) {
+      if (!users.has(user.id)) users.set(user.id, user);
+    }
+    if (page.length < PAGE_SIZE) return [...users.values()];
+  }
+}
+
+export function useAdminUsersList() {
   return useQuery<ListUsersResponse>({
-    queryKey: ["adminUsers", trimmed],
-    queryFn: () => fetchAdminUsers(trimmed),
-    enabled: trimmed.length > 0,
-    placeholderData: keepPreviousData,
-    staleTime: 5_000,
+    queryKey: ADMIN_USERS_QUERY_KEY,
+    queryFn: fetchAllAdminUsers,
+    // A full load is one request per 200 users; don't repeat it on every
+    // window focus.
+    staleTime: 5 * 60_000,
   });
 }

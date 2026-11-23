@@ -5,9 +5,11 @@ import {
 } from "@/app/schemas/api/admin/users/patch";
 import {
   UserModelSchema,
+  type ListUsersResponse,
   type UserModel,
 } from "@/app/schemas/api/admin/users/get";
 import { apiFetch } from "@/app/lib/api-client";
+import { ADMIN_USERS_QUERY_KEY } from "@/app/hooks/useAdminUsersList";
 
 interface UpdateUserTypeArgs {
   userId: string;
@@ -47,8 +49,13 @@ export function useAdminUserTypeUpdate() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: updateUserType,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["adminUsers"] });
+    // Swap in the server's copy of the user: refetching would reload every
+    // page of the list for one changed row.
+    onSuccess: (updated) => {
+      queryClient.setQueryData<ListUsersResponse>(
+        ADMIN_USERS_QUERY_KEY,
+        (users) => users?.map((u) => (u.id === updated.id ? updated : u))
+      );
     },
   });
 }
