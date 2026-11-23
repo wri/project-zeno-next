@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { uiLocale } from "../uiLocale";
 
 describe("uiLocale", () => {
-  const spanish = { profile: "es", cookie: null, languages: ["fr"] };
+  const spanish = { profile: "es", cookie: null };
 
   it.each(["/app", "/app/threads/abc", "/dashboards/1", "/welcome"])(
     "resolves the user's locale on %s",
