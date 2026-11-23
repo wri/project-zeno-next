@@ -17,8 +17,6 @@ import { DownloadSimpleIcon, UsersThreeIcon } from "@phosphor-icons/react";
 import { useAuthGuard } from "@/app/hooks/useAuthGuard";
 import useAuthStore from "@/app/store/authStore";
 import SettingsShell from "@/app/components/SettingsShell";
-import { useAdminUsersList } from "@/app/hooks/useAdminUsersList";
-import { useAdminUserTypeUpdate } from "@/app/hooks/useAdminUserTypeUpdate";
 import { useAdminUsersExport } from "@/app/hooks/useAdminUsersExport";
 import { toaster } from "@/app/components/ui/toaster";
 import {
@@ -30,7 +28,12 @@ import {
   AssignableUserTypeEnum,
   type AssignableUserType,
 } from "@/app/schemas/api/admin/users/patch";
-import { filterUsers, type UserFilters } from "@/src/features/manage-users";
+import {
+  filterUsers,
+  useAdminUserTypeUpdate,
+  useAdminUsersList,
+  type UserFilters,
+} from "@/src/features/manage-users";
 
 const ASSIGNABLE_TYPES = AssignableUserTypeEnum.options;
 

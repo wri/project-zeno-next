@@ -9,7 +9,7 @@ import {
   type UserModel,
 } from "@/app/schemas/api/admin/users/get";
 import { apiFetch } from "@/app/lib/api-client";
-import { ADMIN_USERS_QUERY_KEY } from "@/app/hooks/useAdminUsersList";
+import { ADMIN_USERS_QUERY_KEY } from "./admin-users-list";
 
 interface UpdateUserTypeArgs {
   userId: string;

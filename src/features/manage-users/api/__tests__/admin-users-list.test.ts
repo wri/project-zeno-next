@@ -5,7 +5,7 @@ vi.mock("@/app/lib/api-client", () => ({
 }));
 
 import { apiFetch } from "@/app/lib/api-client";
-import { fetchAllAdminUsers } from "../useAdminUsersList";
+import { fetchAllAdminUsers } from "../admin-users-list";
 
 const mockedFetch = vi.mocked(apiFetch);
 
