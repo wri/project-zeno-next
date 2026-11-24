@@ -1,10 +1,7 @@
 // Single indirection point for routing APIs: nothing outside this file may
 // import react-router directly (enforced by no-restricted-imports in
 // eslint.config.mjs). It keeps the Next-style API the app was written against.
-//
-// Every in-app navigation through it carries the hidden-feature `?ff=…` flags
-// of the current URL (`carryFlags`), so a flag opted into once stays on across
-// the map, dashboards and every other page without each link forwarding it.
+// In-app navigation through it carries the current URL's ?ff= flags (carryFlags).
 import { useMemo, type ComponentProps } from "react";
 import {
   Link as RouterLink,

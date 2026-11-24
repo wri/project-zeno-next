@@ -53,14 +53,11 @@ export function carryFlags(href: string, currentSearch: string): string {
   const ff = new URLSearchParams(currentSearch).get(FLAGS_PARAM);
   if (!ff || EXTERNAL_HREF.test(href)) return href;
 
-  const hashAt = href.indexOf("#");
-  const path = hashAt === -1 ? href : href.slice(0, hashAt);
-  const hash = hashAt === -1 ? "" : href.slice(hashAt);
-  const queryAt = path.indexOf("?");
-  const query = queryAt === -1 ? "" : path.slice(queryAt + 1);
+  // Path, then the query without its "?", then the hash with its "#".
+  const [, path = "", query = "", hash = ""] =
+    /^([^?#]*)\??([^#]*)(.*)$/.exec(href) ?? [];
   if (new URLSearchParams(query).has(FLAGS_PARAM)) return href;
 
-  const separator =
-    queryAt === -1 ? "?" : query === "" || query.endsWith("&") ? "" : "&";
-  return `${path}${separator}${new URLSearchParams({ ff })}${hash}`;
+  const kept = query.replace(/&+$/, "");
+  return `${path}?${kept && `${kept}&`}${new URLSearchParams({ ff })}${hash}`;
 }
