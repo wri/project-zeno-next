@@ -86,6 +86,13 @@ describe("carryFlags", () => {
     );
   });
 
+  it("carries the flags onto a hash-only or query-only href", () => {
+    expect(carryFlags("#use-cases", on)).toBe(
+      "?ff=email-subscriptions#use-cases"
+    );
+    expect(carryFlags("?tab=x", on)).toBe("?tab=x&ff=email-subscriptions");
+  });
+
   it("does not add a separator after an empty query or a trailing &", () => {
     expect(carryFlags("/app?", on)).toBe("/app?ff=email-subscriptions");
     expect(carryFlags("/app?a=1&", on)).toBe("/app?a=1&ff=email-subscriptions");
