@@ -38,3 +38,26 @@ export function withFlags(href: string, params: URLSearchParams): string {
   const ff = params.get(FLAGS_PARAM);
   return ff ? `${href}?${new URLSearchParams({ ff })}` : href;
 }
+
+// A scheme (`https:`, `mailto:`) or a protocol-relative `//host` leaves the app.
+const EXTERNAL_HREF = /^([a-z][a-z\d+.-]*:|\/\/)/i;
+
+/**
+ * `href` with the `?ff=…` flags of `currentSearch` added. The router applies
+ * it to every in-app navigation, so flags opted into once stay on from page to
+ * page rather than each link having to carry them. An href that leaves the
+ * app or sets its own `ff` is returned unchanged. The href's existing query is
+ * appended to, not re-serialised, so its encoding is kept as written.
+ */
+export function carryFlags(href: string, currentSearch: string): string {
+  const ff = new URLSearchParams(currentSearch).get(FLAGS_PARAM);
+  if (!ff || EXTERNAL_HREF.test(href)) return href;
+
+  // Path, then the query without its "?", then the hash with its "#".
+  const [, path = "", query = "", hash = ""] =
+    /^([^?#]*)\??([^#]*)(.*)$/.exec(href) ?? [];
+  if (new URLSearchParams(query).has(FLAGS_PARAM)) return href;
+
+  const kept = query.replace(/&+$/, "");
+  return `${path}?${kept && `${kept}&`}${new URLSearchParams({ ff })}${hash}`;
+}
