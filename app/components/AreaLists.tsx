@@ -31,6 +31,7 @@ import { areaActionIconProps } from "./AreaCardMenu";
 import { AreaThumbnail } from "./AreaThumbnail";
 import ConversationAreaActionsMenu from "./ConversationAreaActionsMenu";
 import LibraryAreaActionsMenu from "./LibraryAreaActionsMenu";
+import { LibraryAreaThumbnail } from "./LibraryAreaThumbnail";
 import { PanelEmpty, PanelList } from "./PanelList";
 import { Tooltip } from "./ui/tooltip";
 
@@ -189,10 +190,6 @@ export function MonitoredAreaCard({ entry }: { entry: UserAoi }) {
   // A library area hidden from "In this conversation" is still on the map.
   const isVisible = !!layer?.visible;
   const aoi = useMemo(() => userAoiToAoi(entry), [entry]);
-  const aoiSelection = useMemo(
-    (): AOISelection => ({ name: aoi.name, aois: [aoi] }),
-    [aoi]
-  );
 
   async function handleToggle(checked: boolean) {
     if (!checked) {
@@ -226,7 +223,7 @@ export function MonitoredAreaCard({ entry }: { entry: UserAoi }) {
   return (
     <EntityCard
       kind="area"
-      thumbnail={<AreaThumbnail aoiSelection={aoiSelection} alt={entry.name} />}
+      thumbnail={<LibraryAreaThumbnail entry={entry} />}
       title={entry.name}
       meta={placeMeta(aoi)}
       interaction={{
