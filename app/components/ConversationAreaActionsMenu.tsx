@@ -1,75 +1,54 @@
 import { Menu } from "@chakra-ui/react";
 import { FloppyDiskIcon, XIcon } from "@phosphor-icons/react";
-import type { Polygon } from "geojson";
 
 import { toaster } from "@/app/components/ui/toaster";
-import { useCustomAreasCreate } from "@/app/hooks/useCustomAreasCreate";
-import {
-  findRegistryEntry,
-  type GeoJsonEntry,
-  type Layer,
-} from "@/app/store/layerManagerSlice";
+import type { Layer } from "@/app/store/layerManagerSlice";
 import useMapStore from "@/app/store/mapStore";
-import { toPolygons } from "@/app/utils/selectionPolygons";
+import { listSavableAreas } from "@/app/utils/savableAreas";
+import { useSaveUserAoi, useUserAois } from "@/src/entities/user-aoi";
 
 import { AreaCardMenu } from "./AreaCardMenu";
 
-/** Resolve all Polygon geometries backing an area layer from the registry. */
-function collectPolygons(layer: Layer, registry: GeoJsonEntry[]): Polygon[] {
-  return (layer.featureRefs ?? []).flatMap((ref) => {
-    const entry = findRegistryEntry(registry, ref);
-    return entry ? toPolygons(entry.data) : [];
-  });
-}
-
 /**
  * Kebab (⋮) menu for an "in this conversation" area card: save the area to the
- * user's monitored (custom) areas, and remove it from the conversation.
+ * user's areas, and remove it from the conversation.
  *
- * "Save area" mirrors the on-map AOI menu (`useAoiActions.saveArea`) — it
- * POSTs the layer's resolved Polygon geometry as a new custom area (see
- * `useCustomAreasCreate`). It only appears when the layer has resolvable
- * polygons in the geojson registry (e.g. not the global "all countries"
- * vector-tile layer) and, matching `useAoiActions.canSaveArea`, never for a
- * `custom`-sourced selection — those are already saved.
+ * "Save area" mirrors the on-map AOI menu (`useAoiActions.saveArea`): it saves
+ * each source area on the layer to the user's library by reference, so no
+ * geometry is copied. It only appears while the layer has a source area that
+ * isn't saved yet; drawn and uploaded areas are already in the library.
  */
 export default function ConversationAreaActionsMenu({
   layer,
 }: {
   layer: Layer;
 }) {
-  const { createArea, isCreating } = useCustomAreasCreate();
+  const saveUserAoi = useSaveUserAoi();
+  const { data: library = [] } = useUserAois();
 
   const name = layer.aoiSelection?.name ?? layer.name;
-  // A custom-sourced selection is already a saved area (drawn, uploaded, or a
-  // monitored area toggled onto the map) — offering Save would duplicate it.
-  const alreadySaved = (layer.featureRefs ?? []).some(
-    (ref) => ref.source.toLowerCase() === "custom"
-  );
-  const canSave = useMapStore(
-    (s) => !alreadySaved && collectPolygons(layer, s.geoJsonRegistry).length > 0
-  );
+  const savable = listSavableAreas(layer, library);
 
-  const handleSave = () => {
-    if (isCreating) return;
-    const polygons = collectPolygons(
-      layer,
-      useMapStore.getState().geoJsonRegistry
+  const handleSave = async () => {
+    if (saveUserAoi.isPending || savable.length === 0) return;
+    const results = await Promise.allSettled(
+      savable.map((area) => saveUserAoi.mutateAsync(area))
     );
-    if (polygons.length === 0) return;
-    // Errors are surfaced by useCustomAreasCreate's shared error handler; the
-    // hook also refreshes the library so My areas picks it up.
-    createArea(
-      { name, geometries: polygons },
-      {
-        onSuccess: () =>
-          toaster.create({
+    const failed = results.filter((r) => r.status === "rejected").length;
+    toaster.create(
+      failed === 0
+        ? {
             title: "Area saved",
             description: `"${name}" is now in your areas.`,
             type: "success",
             duration: 3000,
-          }),
-      }
+          }
+        : {
+            title: "Couldn't save this area",
+            description: "Please try again.",
+            type: "error",
+            duration: 4000,
+          }
     );
   };
 
@@ -79,8 +58,12 @@ export default function ConversationAreaActionsMenu({
 
   return (
     <AreaCardMenu label={`Actions for ${name}`}>
-      {canSave && (
-        <Menu.Item value="save" color="fg.muted" onSelect={handleSave}>
+      {savable.length > 0 && (
+        <Menu.Item
+          value="save"
+          color="fg.muted"
+          onSelect={() => void handleSave()}
+        >
           <FloppyDiskIcon />
           Save area
         </Menu.Item>
