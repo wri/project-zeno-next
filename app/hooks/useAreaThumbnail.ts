@@ -5,11 +5,12 @@ import { apiFetch } from "@/app/lib/api-client";
 
 async function fetchAreaThumbnail(
   source: string,
-  srcId: string,
-  size: number
+  srcId: string
 ): Promise<Blob> {
   const path = `/api/geometry/${encodeURIComponent(source)}/${encodeURIComponent(srcId)}/thumbnail`;
-  const res = await apiFetch(`${path}?width=${size}&height=${size}`);
+  // The route pads the outline by 40px, more than a card-sized image can fit,
+  // so this takes the route's default size and the card scales it down.
+  const res = await apiFetch(path);
   if (!res.ok) throw new Error(`Thumbnail request failed: ${res.status}`);
   return res.blob();
 }
@@ -19,14 +20,10 @@ async function fetchAreaThumbnail(
  * URL, or null until it loads or when it fails. The API authenticates with a
  * header, which an `<img src>` can't send, so the image is fetched here.
  */
-export function useAreaThumbnail(
-  source: string,
-  srcId: string,
-  size: number
-): string | null {
+export function useAreaThumbnail(source: string, srcId: string): string | null {
   const { data: blob } = useQuery({
-    queryKey: ["areaThumbnail", source, srcId, size],
-    queryFn: () => fetchAreaThumbnail(source, srcId, size),
+    queryKey: ["areaThumbnail", source, srcId],
+    queryFn: () => fetchAreaThumbnail(source, srcId),
     // An area's outline doesn't change while it keeps its id.
     staleTime: Infinity,
   });

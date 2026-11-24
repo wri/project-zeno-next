@@ -3,7 +3,6 @@ import { useMemo } from "react";
 
 import { useAreaThumbnail } from "@/app/hooks/useAreaThumbnail";
 import { userAoiToAoi, type UserAoi } from "@/src/entities/user-aoi";
-import { ENTITY_CARD_THUMBNAIL_PX } from "@/src/shared/ui/entity-card";
 
 import { AreaThumbnail } from "./AreaThumbnail";
 
@@ -13,11 +12,7 @@ import { AreaThumbnail } from "./AreaThumbnail";
  * can't, the plain area thumbnail stands in.
  */
 export function LibraryAreaThumbnail({ entry }: { entry: UserAoi }) {
-  const outlineUrl = useAreaThumbnail(
-    entry.source,
-    entry.src_id,
-    ENTITY_CARD_THUMBNAIL_PX
-  );
+  const outlineUrl = useAreaThumbnail(entry.source, entry.src_id);
   const aoiSelection = useMemo(() => {
     const aoi = userAoiToAoi(entry);
     return { name: aoi.name, aois: [aoi] };
