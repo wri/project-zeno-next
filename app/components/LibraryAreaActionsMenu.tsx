@@ -3,40 +3,43 @@ import { Button, Dialog, Input, Menu, Portal } from "@chakra-ui/react";
 import { PencilSimpleIcon, TrashIcon } from "@phosphor-icons/react";
 
 import { toaster } from "@/app/components/ui/toaster";
-import {
-  useCustomAreasDelete,
-  useCustomAreasUpdate,
-} from "@/app/hooks/useCustomAreasMutations";
-import type { CustomArea } from "@/app/schemas/api/custom_areas/get";
 import useMapStore from "@/app/store/mapStore";
+import { findLibraryAreaLayer } from "@/app/utils/libraryAreaMap";
+import { renameCustomArea } from "@/app/utils/renameCustomArea";
+import {
+  useDeleteUserAoi,
+  useRenameUserAoi,
+  type UserAoi,
+} from "@/src/entities/user-aoi";
 
 import { AreaCardMenu } from "./AreaCardMenu";
 
 /**
- * Kebab (⋮) menu for a saved custom area card: rename + delete, with toast
+ * Kebab (⋮) menu for a "My areas" card: rename and remove, with toast
  * feedback and map synchronisation.
  *
- * Acts on the persisted area (`area.id` / `area.name`), so it renders regardless
- * of whether the area is currently shown on the map. React Query invalidation of
- * `["customAreas"]` refreshes the card list, but it does NOT touch the Zustand
- * `mapStore`: a rename is carried onto the map by `useCustomAreasUpdate`, and on
- * delete we mirror the map-removal done elsewhere in the Areas panel.
+ * An owned custom area is renamed or deleted itself, so the map's copies of
+ * it follow. A saved source area only changes in the user's library: its
+ * label, or whether it is listed. The area itself, and any map layer or
+ * dashboard showing it, stay as they are.
  */
-export default function CustomAreaActionsMenu({ area }: { area: CustomArea }) {
+export default function LibraryAreaActionsMenu({ entry }: { entry: UserAoi }) {
   const [renameOpen, setRenameOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
-  const { renameAreaAsync, isRenaming } = useCustomAreasUpdate();
-  const { deleteAreaAsync, isDeleting } = useCustomAreasDelete();
+  const rename = useRenameUserAoi();
+  const remove = useDeleteUserAoi();
+  const isOwned = entry.relationship === "owner";
 
   // Dialogs stay open on failure so the user can retry; success closes them.
   const handleRename = async (newName: string) => {
-    if (newName === area.name) {
+    if (newName === entry.name) {
       setRenameOpen(false);
       return;
     }
     try {
-      await renameAreaAsync({ areaId: area.id, name: newName });
+      await rename.mutateAsync({ entryId: entry.id, name: newName });
+      if (isOwned) renameCustomArea({ id: entry.src_id, name: newName });
       setRenameOpen(false);
       toaster.create({
         title: "Area renamed",
@@ -56,22 +59,24 @@ export default function CustomAreaActionsMenu({ area }: { area: CustomArea }) {
 
   const handleDelete = async () => {
     try {
-      await deleteAreaAsync(area.id);
+      await remove.mutateAsync(entry.id);
       setDeleteOpen(false);
-      // Map isn't auto-synced by the query invalidation — mirror the removal
-      // done by the card's show-on-map toggle when the area is on the map.
-      const { layers, removeLayer } = useMapStore.getState();
-      if (layers.some((l) => l.id === area.id)) removeLayer(area.id);
+      if (isOwned) {
+        // The area no longer exists, so it can't stay on the map.
+        const { layers, removeLayer } = useMapStore.getState();
+        const layer = findLibraryAreaLayer(layers, entry);
+        if (layer) removeLayer(layer.id);
+      }
       toaster.create({
-        title: "Area deleted",
-        description: `“${area.name}” was removed.`,
+        title: isOwned ? "Area deleted" : "Area removed",
+        description: `“${entry.name}” was removed from your areas.`,
         type: "success",
         duration: 4000,
       });
     } catch {
       toaster.create({
-        title: "Delete failed",
-        description: "The area couldn't be deleted. Please try again.",
+        title: isOwned ? "Delete failed" : "Remove failed",
+        description: "The area couldn't be removed. Please try again.",
         type: "error",
         duration: 4000,
       });
@@ -80,7 +85,7 @@ export default function CustomAreaActionsMenu({ area }: { area: CustomArea }) {
 
   return (
     <>
-      <AreaCardMenu label={`Actions for ${area.name}`}>
+      <AreaCardMenu label={`Actions for ${entry.name}`}>
         <Menu.Item
           value="rename"
           color="fg.muted"
@@ -96,23 +101,24 @@ export default function CustomAreaActionsMenu({ area }: { area: CustomArea }) {
           onSelect={() => setDeleteOpen(true)}
         >
           <TrashIcon />
-          Delete
+          {isOwned ? "Delete" : "Remove from my areas"}
         </Menu.Item>
       </AreaCardMenu>
       {renameOpen && (
         <CustomAreaRenameDialog
-          name={area.name}
+          name={entry.name}
           onClose={() => setRenameOpen(false)}
           onRename={handleRename}
-          isPending={isRenaming}
+          isPending={rename.isPending}
         />
       )}
       {deleteOpen && (
         <CustomAreaDeleteDialog
-          areaName={area.name}
+          areaName={entry.name}
+          isOwned={isOwned}
           onClose={() => setDeleteOpen(false)}
           onConfirm={handleDelete}
-          isPending={isDeleting}
+          isPending={remove.isPending}
         />
       )}
     </>
@@ -188,11 +194,14 @@ function CustomAreaRenameDialog({
 
 function CustomAreaDeleteDialog({
   areaName,
+  isOwned,
   onClose,
   onConfirm,
   isPending,
 }: {
   areaName: string;
+  /** A saved area is only unlisted; an owned area is deleted for good. */
+  isOwned: boolean;
   onClose: () => void;
   onConfirm: () => Promise<void>;
   isPending: boolean;
@@ -213,10 +222,17 @@ function CustomAreaDeleteDialog({
               <Dialog.Title>Are you sure?</Dialog.Title>
             </Dialog.Header>
             <Dialog.Body>
-              <p>
-                This action cannot be undone. This will permanently delete the
-                area <strong>{areaName}</strong>.
-              </p>
+              {isOwned ? (
+                <p>
+                  This action cannot be undone. This will permanently delete the
+                  area <strong>{areaName}</strong>.
+                </p>
+              ) : (
+                <p>
+                  <strong>{areaName}</strong> will be removed from your areas.
+                  Dashboards built on it are not affected.
+                </p>
+              )}
             </Dialog.Body>
             <Dialog.Footer>
               <Dialog.ActionTrigger asChild>
@@ -229,7 +245,7 @@ function CustomAreaDeleteDialog({
                 loading={isPending}
                 onClick={() => void onConfirm()}
               >
-                Delete
+                {isOwned ? "Delete" : "Remove"}
               </Button>
             </Dialog.Footer>
           </Dialog.Content>

@@ -5,6 +5,7 @@ import {
   customAreaToRow,
   aoiSearchResultToRow,
   filterRowsBySearch,
+  userAoiToRow,
   type AreaPickerRow,
 } from "../area-picker-rows";
 import type { Dashboard } from "../../api/schemas";
@@ -126,6 +127,53 @@ describe("row mappers", () => {
       name: "My farm",
       typeLabel: "Custom area",
       previousAnalyses: 5,
+    });
+  });
+});
+
+describe("userAoiToRow", () => {
+  const entry = {
+    id: "entry-1",
+    relationship: "saved" as const,
+    name: "Project country",
+    source: "gadm",
+    src_id: "BRA",
+    subtype: "country",
+    bbox: [-74, -34, -34, 5] as [number, number, number, number],
+    created_at: "2026-11-24T00:00:00",
+  };
+
+  // Picking it creates the same dashboard as picking Brazil from the GADM tab.
+  it("maps a saved area to a row under its own source", () => {
+    const row = userAoiToRow(entry, new Map([["gadm:BRA", 2]]));
+
+    expect(row).toEqual<AreaPickerRow>({
+      source: "gadm",
+      src_id: "BRA",
+      subtype: "country",
+      name: "Project country",
+      typeLabel: "Administrative area",
+      previousAnalyses: 2,
+      bbox: [-74, -34, -34, 5],
+    });
+  });
+
+  it("maps an owned area to a custom area row", () => {
+    const row = userAoiToRow(
+      {
+        ...entry,
+        relationship: "owner",
+        source: "custom",
+        src_id: "area-1",
+        subtype: "custom-area",
+      },
+      new Map()
+    );
+
+    expect(row).toMatchObject({
+      source: "custom",
+      src_id: "area-1",
+      typeLabel: "Custom area",
     });
   });
 });

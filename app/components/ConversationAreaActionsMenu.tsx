@@ -58,7 +58,7 @@ export default function ConversationAreaActionsMenu({
     );
     if (polygons.length === 0) return;
     // Errors are surfaced by useCustomAreasCreate's shared error handler; the
-    // hook also invalidates ["customAreas"] so the Monitored tab picks it up.
+    // hook also refreshes the library so My areas picks it up.
     createArea(
       { name, geometries: polygons },
       {

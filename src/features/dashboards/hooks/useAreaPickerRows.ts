@@ -1,11 +1,10 @@
 import { useMemo } from "react";
-import { useCustomAreasList } from "@/app/hooks/useCustomAreasList";
 import { useDashboards } from "./useDashboards";
 import { useAoiBrowse } from "./useAoiBrowse";
 import {
   aoiSearchResultToRow,
   buildPreviousAnalysesMap,
-  customAreaToRow,
+  userAoiToRow,
   filterRowsBySearch,
   type AreaPickerRow,
 } from "../model/area-picker-rows";
@@ -14,6 +13,7 @@ import {
   REFERENCE_AOI_SOURCES,
   type ReferenceAoiSource,
 } from "@/src/entities/aoi";
+import { useUserAois } from "@/src/entities/user-aoi";
 import type { AreaPickerSectionId } from "../model/dashboard-area";
 
 function isReferenceSourceEnabled(
@@ -58,12 +58,12 @@ export function useAreaPickerRows(
   activeCategory: AreaPickerSectionId | "all",
   search: string
 ): AreaPickerRowsResult {
-  const { customAreas, isLoading: customLoading } = useCustomAreasList();
+  const { data: libraryEntries, isLoading: customLoading } = useUserAois();
   const { data: dashboards } = useDashboards();
 
   // Reference sources are searched server-side (fuzzy, similarity-ranked) by
-  // threading `search` through to the /api/aois endpoint. Custom areas are all
-  // loaded locally and filtered client-side below.
+  // threading `search` through to the /api/aois endpoint. The user's library
+  // is loaded whole and filtered client-side below.
   const gadm = useAoiBrowse("gadm", {
     enabled: isReferenceSourceEnabled(activeCategory, "gadm"),
     name: search,
@@ -88,8 +88,9 @@ export function useAreaPickerRows(
   );
 
   const customRows = useMemo(
-    () => (customAreas ?? []).map((area) => customAreaToRow(area, analysesMap)),
-    [customAreas, analysesMap]
+    () =>
+      (libraryEntries ?? []).map((entry) => userAoiToRow(entry, analysesMap)),
+    [libraryEntries, analysesMap]
   );
 
   const referenceRows = useMemo(() => {
@@ -118,7 +119,7 @@ export function useAreaPickerRows(
     return {
       rows: filterRowsBySearch(customRows, search),
       isLoading: customLoading,
-      // Custom areas are filtered client-side, so there is never a search
+      // The library is filtered client-side, so there is never a search
       // round-trip to wait on.
       isSearching: false,
       hasNextPage: false,

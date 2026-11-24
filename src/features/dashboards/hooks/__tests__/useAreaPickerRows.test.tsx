@@ -2,15 +2,17 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const customAreasState = vi.hoisted(() => ({
-  customAreas: [
+const libraryState = vi.hoisted(() => ({
+  data: [
     {
-      id: "area-1",
-      user_id: "u1",
+      id: "entry-1",
+      relationship: "owner",
       name: "My farm",
-      geometries: [],
+      source: "custom",
+      src_id: "area-1",
+      subtype: "custom-area",
+      bbox: null,
       created_at: "2026-01-01",
-      updated_at: "2026-01-01",
     },
   ],
   isLoading: false,
@@ -89,8 +91,8 @@ const REFERENCE_SOURCES = ["gadm", "kba", "wdpa", "landmark"] as const;
 
 const browseCalls = vi.hoisted(() => [] as { source: string; name?: string }[]);
 
-vi.mock("@/app/hooks/useCustomAreasList", () => ({
-  useCustomAreasList: () => customAreasState,
+vi.mock("@/src/entities/user-aoi", () => ({
+  useUserAois: () => libraryState,
 }));
 
 vi.mock("../useAoiBrowse", () => ({

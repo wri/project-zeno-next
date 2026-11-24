@@ -34,12 +34,14 @@ import {
 } from "../constants/datasets";
 import { filterDatasetsByFeatureFlag } from "@/app/utils/filterDatasetsByFeatureFlag";
 import { useEnabledFlags } from "@/src/shared/lib/feature-flags";
-import { useCustomAreasListSuspense } from "../hooks/useCustomAreasList";
-import type { CustomArea } from "../schemas/api/custom_areas/get";
+import { toaster } from "@/app/components/ui/toaster";
 import useMapStore from "../store/mapStore";
-import { customAreaRef, isAreaLayer } from "../store/layerManagerSlice";
 import { datasetCardLayers } from "../utils/datasetCardLayerContext";
-import { customAreaToFeature } from "@/src/entities/custom-area";
+import {
+  addLibraryAreaToMap,
+  findLibraryAreaLayer,
+} from "../utils/libraryAreaMap";
+import { useUserAoisSuspense } from "@/src/entities/user-aoi";
 
 const LAYER_CARDS = ORDERED_DATASET_CARDS;
 
@@ -251,63 +253,33 @@ function AreaCardList({
 }
 
 function AreaMenu() {
-  const { customAreas } = useCustomAreasListSuspense();
-  const { addToRegistry, addLayer, flyToGeoJsonWithRetry, layers } =
-    useMapStore();
+  const { data: entries } = useUserAoisSuspense();
+  const layers = useMapStore((s) => s.layers);
   const [query, setQuery] = useState("");
 
-  const filtered = useMemo(() => {
-    const list = (customAreas as unknown as CustomArea[] | undefined) ?? [];
-    if (!query) return list;
+  const cards = useMemo(() => {
     const q = query.toLowerCase();
-    return list.filter((a: CustomArea) => a.name.toLowerCase().includes(q));
-  }, [customAreas, query]);
+    return entries
+      .filter((entry) => !q || entry.name.toLowerCase().includes(q))
+      .map((entry) => ({
+        id: entry.id,
+        name: entry.name,
+        selected: !!findLibraryAreaLayer(layers, entry),
+      }));
+  }, [entries, query, layers]);
 
-  const sorted = useMemo(() => {
-    const list = filtered.sort(
-      (a, b) => Number(new Date(b.created_at)) - Number(new Date(a.created_at))
-    );
-    return list;
-  }, [filtered]);
-
-  const cards = useMemo(
-    () =>
-      sorted.map((a) => {
-        // The visible area layer IS the scope. Custom-area layers are keyed by
-        // the area's DB id (see handleSelectArea), so match on layer id/name.
-        const isSelected = layers.some(
-          (l) => isAreaLayer(l) && (l.id === a.id || l.name === a.name)
-        );
-        return { id: a.id, name: a.name, selected: isSelected };
-      }),
-    [sorted, layers]
-  );
-
-  const handleSelectArea = (area: { id: string; name: string }) => {
-    // Areas stack — adding a custom area's layer puts it in scope. The layer
-    // is keyed by the area id, so re-selecting replaces in place (the `cards`
-    // lookup already disables the card once selected). No separate context item.
-
-    const selected = (customAreas as unknown as CustomArea[] | undefined)?.find(
-      (a) => a.id === area.id
-    );
-    if (selected) {
-      const feature = customAreaToFeature(selected);
-      const customRef = customAreaRef(selected);
-      addToRegistry({
-        ref: customRef,
-        data: feature,
-        srcId: selected.id,
-        subtype: "custom-area",
+  const handleSelectArea = async (card: { id: string; name: string }) => {
+    const entry = entries.find((e) => e.id === card.id);
+    if (!entry) return;
+    try {
+      await addLibraryAreaToMap(entry);
+    } catch (error) {
+      console.error(`Failed to add "${entry.name}" to the map:`, error);
+      toaster.create({
+        type: "error",
+        title: "Couldn't add this area",
+        description: `"${entry.name}" couldn't be loaded. Please try again.`,
       });
-      addLayer({
-        id: selected.id,
-        name: selected.name,
-        type: "geojson",
-        visible: true,
-        featureRefs: [customRef],
-      });
-      flyToGeoJsonWithRetry(feature);
     }
   };
 
@@ -335,10 +307,13 @@ function AreaMenu() {
       >
         {cards.length === 0 ? (
           <Box color="fg.muted" fontSize="sm">
-            No custom areas found
+            No areas found
           </Box>
         ) : (
-          <AreaCardList cards={cards} onCardClick={handleSelectArea} />
+          <AreaCardList
+            cards={cards}
+            onCardClick={(card) => void handleSelectArea(card)}
+          />
         )}
       </Stack>
     </Stack>

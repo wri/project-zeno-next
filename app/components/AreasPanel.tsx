@@ -54,8 +54,9 @@ const AREA_FILTERS: { id: AreasPanelFilter; label: string }[] = [
  *  - "In this conversation" — read from `mapStore.layers` (filtered via
  *    `isAreaLayer`); the visible area layer IS the scope. Show-on-map toggle
  *    controls the layer's `visible` flag via `mapStore.setLayerVisibility`.
- *  - "My areas" — `useCustomAreasListSuspense().customAreas`. Toggling
- *    show-on-map registers the geometry and adds an area layer (or removes it).
+ *  - "My areas" — the user's library (`useUserAoisSuspense`): owned custom
+ *    areas and saved source areas. Toggling show-on-map fetches the geometry
+ *    and adds an area layer (or removes it).
  *  - `AreaActionBar` above the chips: Draw (`startDrawing`) and Upload
  *    (`toggleUploadAreaDialog`), and the draw status / confirm strip.
  *  - The search box: typing swaps the tabs for `AreaSearchResults` (saved

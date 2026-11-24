@@ -2,7 +2,6 @@ import { Suspense, useMemo, useState } from "react";
 import { Button, Stack, Text } from "@chakra-ui/react";
 
 import { toaster } from "@/app/components/ui/toaster";
-import { useCustomAreasListSuspense } from "@/app/hooks/useCustomAreasList";
 import useMapStore from "@/app/store/mapStore";
 import {
   addPlaceToMap,
@@ -20,6 +19,7 @@ import {
   type AoiSearchResult,
   type ReferenceAoiSource,
 } from "@/src/entities/aoi";
+import { useUserAoisSuspense } from "@/src/entities/user-aoi";
 import { useDebounced } from "@/src/shared/lib/use-debounced";
 import { EntityCard } from "@/src/shared/ui/entity-card";
 
@@ -90,11 +90,11 @@ function SavedMatchList({
   term: string;
   showEmpty: boolean;
 }) {
-  const { customAreas } = useCustomAreasListSuspense();
+  const { data: entries } = useUserAoisSuspense();
   const matches = useMemo(() => {
     const q = term.toLowerCase();
-    return customAreas.filter((a) => a.name.toLowerCase().includes(q));
-  }, [customAreas, term]);
+    return entries.filter((entry) => entry.name.toLowerCase().includes(q));
+  }, [entries, term]);
 
   if (matches.length === 0) {
     return showEmpty ? (
@@ -104,8 +104,8 @@ function SavedMatchList({
   return (
     <PanelSection label="My areas">
       <PanelList>
-        {matches.map((area) => (
-          <MonitoredAreaCard key={area.id} area={area} />
+        {matches.map((entry) => (
+          <MonitoredAreaCard key={entry.id} entry={entry} />
         ))}
       </PanelList>
     </PanelSection>

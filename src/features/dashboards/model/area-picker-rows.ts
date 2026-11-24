@@ -1,6 +1,8 @@
 import type { CustomArea } from "@/app/schemas/api/custom_areas/get";
+import { areaSourceLabel } from "@/app/utils/areaSourceLabel";
 
 import type { AoiSearchResult } from "@/src/entities/aoi";
+import type { UserAoi } from "@/src/entities/user-aoi";
 
 import type { Dashboard } from "../api/schemas";
 
@@ -63,6 +65,23 @@ export function customAreaToRow(
     name: area.name,
     typeLabel: "Custom area",
     previousAnalyses: analysesMap.get(analysesKey("custom", area.id)) ?? 0,
+  };
+}
+
+/** A library entry as a row, addressed by the area's own source and id. */
+export function userAoiToRow(
+  entry: UserAoi,
+  analysesMap: Map<string, number>
+): AreaPickerRow {
+  return {
+    source: entry.source,
+    src_id: entry.src_id,
+    subtype: entry.subtype,
+    name: entry.name,
+    typeLabel: areaSourceLabel(entry.source),
+    previousAnalyses:
+      analysesMap.get(analysesKey(entry.source, entry.src_id)) ?? 0,
+    ...(entry.bbox ? { bbox: entry.bbox } : {}),
   };
 }
 
