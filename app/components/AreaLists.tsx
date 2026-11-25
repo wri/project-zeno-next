@@ -187,7 +187,8 @@ export function MonitoredAreaCard({ userAoi }: { userAoi: UserAoi }) {
   const layer = useMapStore((s) => findUserAoiLayer(s.layers, userAoi));
   const [adding, setAdding] = useState(false);
 
-  // A user AOI hidden from "In this conversation" is still on the map.
+  // A layer hidden from "In this conversation" shows as off here; turning it
+  // on shows it again rather than adding a second copy.
   const isVisible = !!layer?.visible;
   const aoi = useMemo(() => userAoiToAoi(userAoi), [userAoi]);
 
