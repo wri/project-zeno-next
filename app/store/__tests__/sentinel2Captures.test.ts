@@ -44,7 +44,7 @@ vi.mock("@/src/features/imagery", async (importOriginal) => ({
   findScenes: (...args: unknown[]) => findScenes(...args),
 }));
 
-import { previewSentinel2, showSentinel2Capture } from "../sentinel2Captures";
+import { searchSentinel2, showSentinel2Capture } from "../sentinel2Captures";
 import { encodeRecipe, type Sentinel2Request } from "@/src/features/imagery";
 
 const square = {
@@ -92,6 +92,7 @@ const okResult: SceneSearchResult = {
     maxCloudCover: 4,
   },
   found: 1,
+  candidates: [scene],
 };
 
 const layerId = `imagery-${encodeRecipe(request)}`;
@@ -186,26 +187,24 @@ describe("showSentinel2Capture", () => {
   });
 });
 
-describe("previewSentinel2", () => {
+describe("searchSentinel2", () => {
   beforeEach(() => {
     mapState.layers = [];
     mapState.geoJsonRegistry = [];
     vi.clearAllMocks();
   });
 
-  it("reports the scene count without adding a layer", async () => {
+  it("returns the search result and the area bounds without adding a layer", async () => {
     fetchGeometry.mockResolvedValue({ geometry: square });
     findScenes.mockResolvedValue({ ...okResult, found: 30 });
-    expect(await previewSentinel2(request)).toEqual({
-      status: "ok",
-      sceneCount: 1,
-      found: 30,
-    });
+    const { result, bounds } = await searchSentinel2(request);
+    expect(result.found).toBe(30);
+    expect(bounds).toHaveLength(4);
     expect(mapState.layers).toHaveLength(0);
   });
 
-  it("reports an error when the geometry cannot be loaded", async () => {
+  it("rejects when the geometry cannot be loaded", async () => {
     fetchGeometry.mockRejectedValue(new Error("404"));
-    expect((await previewSentinel2(request)).status).toBe("error");
+    await expect(searchSentinel2(request)).rejects.toThrow("404");
   });
 });

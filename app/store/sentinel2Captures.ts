@@ -6,7 +6,7 @@ import {
   encodeRecipe,
   findScenes,
   toFeatureCollection,
-  type ScenePreview,
+  type SceneSearchResult,
   type Sentinel2Request,
 } from "@/src/features/imagery";
 import { isFeatureEnabled } from "@/src/shared/lib/feature-flags";
@@ -136,18 +136,15 @@ export async function showSentinel2Capture(
   });
 }
 
-/** What a request would show, for the legend's Edit popover. */
-export async function previewSentinel2(
-  request: Sentinel2Request
-): Promise<ScenePreview> {
-  try {
-    const result = await findScenes(request, await loadAoiGeometry(request));
-    return {
-      status: result.status,
-      sceneCount: result.scenes.length,
-      found: result.found,
-    };
-  } catch {
-    return { status: "error", sceneCount: 0, found: 0 };
-  }
+/** A request's full search result and its area's bounds, for the focus editor. */
+export async function searchSentinel2(request: Sentinel2Request): Promise<{
+  result: SceneSearchResult;
+  bounds: [number, number, number, number];
+}> {
+  const aoi = await loadAoiGeometry(request);
+  const [west, south, east, north] = turfBbox(aoi);
+  return {
+    result: await findScenes(request, aoi),
+    bounds: [west, south, east, north],
+  };
 }

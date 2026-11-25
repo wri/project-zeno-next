@@ -9,6 +9,18 @@ import {
 
 export const SENTINEL2_COLLECTION = "sentinel-2-l2a";
 
+/**
+ * The most items one search reads. The search must read every item of the
+ * window: a smaller cap keeps only the clearest (or newest) items of the
+ * whole area, which often all come from one satellite swath, and the MGRS
+ * tiles outside it get no scene at all. selectScenes then keeps the best
+ * scenes of each tile. 500 covers ±60 days over a 50,000 km² area (about
+ * 12 tiles, a scene every 2-3 days each); items are small (`fields`).
+ */
+export const SEARCH_ITEM_CAP = 500;
+/** Items per page; earth-search's maximum. */
+export const SEARCH_PAGE_SIZE = 100;
+
 /** The AOI geometries of a request, as one FeatureCollection. */
 export function toFeatureCollection(
   shapes: (Feature | FeatureCollection | Geometry)[]
@@ -49,15 +61,20 @@ export function buildSearchBody(
     collections: [SENTINEL2_COLLECTION],
     intersects: geometry,
     datetime: `${start}T00:00:00Z/${end}T23:59:59Z`,
-    query: { "eo:cloud_cover": { lt: request.maxCloudCover } },
-    // Least cloudy first, so the item cap (maxItems) keeps the clearest
-    // scenes of a long window. Nearest-date ranking happens client-side.
+    // The filter is "less than", so a 100 % limit would still drop fully
+    // clouded scenes: at 100 % there is no cloud filter.
+    ...(request.maxCloudCover < 100
+      ? { query: { "eo:cloud_cover": { lt: request.maxCloudCover } } }
+      : {}),
+    // Least cloudy first: if a window holds more than SEARCH_ITEM_CAP
+    // items, the cap drops the cloudiest. Ranking (with nodata) happens
+    // client-side in selectScenes.
     ...((request.sort ?? DEFAULT_SORT) === "cloud"
       ? {
           sortby: [{ field: "properties.eo:cloud_cover", direction: "asc" }],
         }
       : {}),
-    limit: Math.min(request.maxItems, 100),
+    limit: SEARCH_PAGE_SIZE,
     // Only what selectScenes reads; full items are ~10 kB each.
     fields: {
       include: [
@@ -65,6 +82,7 @@ export function buildSearchBody(
         "bbox",
         "properties.datetime",
         "properties.eo:cloud_cover",
+        "properties.s2:nodata_pixel_percentage",
         "properties.grid:code",
         "properties.proj:epsg",
         "assets.visual",

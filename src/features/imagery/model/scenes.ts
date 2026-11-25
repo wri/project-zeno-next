@@ -13,6 +13,8 @@ export interface StacItem {
   properties: {
     datetime?: string;
     "eo:cloud_cover"?: number;
+    /** Share of the MGRS tile outside the swath (no data), in percent. */
+    "s2:nodata_pixel_percentage"?: number;
     "grid:code"?: string;
     "proj:epsg"?: number;
     [key: string]: unknown;
@@ -33,7 +35,14 @@ export interface Scene {
   bbox: [number, number, number, number];
   /** ISO datetime of acquisition. */
   datetime: string;
+  /** Cloud cover of the scene's valid pixels, in percent. */
   cloudCover: number;
+  /**
+   * Share of the tile with no data, in percent: a tile at a swath edge is
+   * only partly imaged. Absent (read as 0) in scenes saved before it was
+   * added, e.g. in dashboard widgets.
+   */
+  nodata?: number;
   /** MGRS tile, e.g. "MGRS-20LNP". Several scenes can share one tile. */
   gridCode: string;
   /** The 8-bit true-colour COG (`visual` asset). */
@@ -80,12 +89,13 @@ const DAY_MS = 86_400_000;
 
 /**
  * Rank the items, keep the best `maxScenesPerTile` per MGRS tile, then cap
- * the total at `maxScenes`. The cap drops the worst ranks first, so no tile
- * loses its best scene to another tile's second-best.
+ * the total at `maxScenes`. The cap drops the worst ranks first, so every
+ * tile keeps its best scene before any tile gets a second one: covering the
+ * whole area comes first.
  *
- * `sort` decides "best": "cloud" (default) is least cloudy first, then
- * nearest the target date; "date" is nearest the date first, then least
- * cloudy (what the backend mosaic did).
+ * `sort` decides "best": "cloud" (default) is the largest clear share of
+ * the tile first (clearShare: cloud and nodata), then nearest the target
+ * date; "date" is nearest the date first, then the largest clear share.
  */
 export function selectScenes(
   items: StacItem[],
@@ -94,7 +104,53 @@ export function selectScenes(
   sort: SceneSort = DEFAULT_SORT
 ): Scene[] {
   const target = Date.parse(`${targetDate}T12:00:00Z`);
-  const candidates = items.flatMap((item): Scene[] => {
+  const candidates = itemsToScenes(items);
+  const daysFromTarget = (scene: Scene) =>
+    Math.round(Math.abs(Date.parse(scene.datetime) - target) / DAY_MS);
+  const byDate = (a: Scene, b: Scene) => daysFromTarget(a) - daysFromTarget(b);
+  // Whole percent of the tile, so near-equal scenes fall through to the
+  // next criterion.
+  const byClear = (a: Scene, b: Scene) =>
+    Math.round(clearShare(b)) - Math.round(clearShare(a));
+  candidates.sort(
+    (a, b) =>
+      (sort === "date"
+        ? byDate(a, b) || byClear(a, b)
+        : byClear(a, b) || byDate(a, b)) || a.id.localeCompare(b.id)
+  );
+
+  // Each tile's scenes in that order; the fill scenes prefer footprints the
+  // tile's chosen scenes do not have yet (see pickForTile).
+  const byTile = new Map<string, Scene[]>();
+  for (const scene of candidates) {
+    const list = byTile.get(scene.gridCode);
+    if (list) list.push(scene);
+    else byTile.set(scene.gridCode, [scene]);
+  }
+  const ranked: Scene[] = [];
+  for (const scene of candidates) {
+    const list = byTile.get(scene.gridCode);
+    if (!list) continue;
+    byTile.delete(scene.gridCode);
+    pickForTile(list, limits.maxScenesPerTile).forEach((picked, rank) =>
+      ranked.push({ ...picked, rank })
+    );
+  }
+
+  // Within one rank, the order above is kept: the total cap drops the
+  // worst scenes of the worst rank.
+  const order = new Map(candidates.map((scene, index) => [scene.id, index]));
+  return ranked
+    .sort((a, b) => a.rank - b.rank || order.get(a.id)! - order.get(b.id)!)
+    .slice(0, limits.maxScenes);
+}
+
+/**
+ * The items as scenes (rank 0), in search order. Items with no visual COG,
+ * bbox or date are left out: the map cannot draw them.
+ */
+export function itemsToScenes(items: StacItem[]): Scene[] {
+  return items.flatMap((item): Scene[] => {
     const visualHref = item.assets.visual?.href;
     const bbox = item.bbox;
     const datetime = item.properties.datetime;
@@ -105,6 +161,7 @@ export function selectScenes(
         bbox: [bbox[0], bbox[1], bbox[2], bbox[3]],
         datetime,
         cloudCover: item.properties["eo:cloud_cover"] ?? 100,
+        nodata: item.properties["s2:nodata_pixel_percentage"] ?? 0,
         gridCode: item.properties["grid:code"] ?? item.id,
         visualHref,
         thumbnailHref: item.assets.thumbnail?.href,
@@ -114,32 +171,42 @@ export function selectScenes(
       },
     ];
   });
-  const daysFromTarget = (scene: Scene) =>
-    Math.round(Math.abs(Date.parse(scene.datetime) - target) / DAY_MS);
-  const byDate = (a: Scene, b: Scene) => daysFromTarget(a) - daysFromTarget(b);
-  const byCloud = (a: Scene, b: Scene) => a.cloudCover - b.cloudCover;
-  candidates.sort(
-    (a, b) =>
-      (sort === "date"
-        ? byDate(a, b) || byCloud(a, b)
-        : byCloud(a, b) || byDate(a, b)) || a.id.localeCompare(b.id)
-  );
+}
 
-  const perTile = new Map<string, number>();
-  const ranked: Scene[] = [];
-  for (const scene of candidates) {
-    const rank = perTile.get(scene.gridCode) ?? 0;
-    if (rank >= limits.maxScenesPerTile) continue;
-    perTile.set(scene.gridCode, rank + 1);
-    ranked.push({ ...scene, rank });
+/**
+ * The share of its MGRS tile a scene shows clear ground in, in percent:
+ * imaged (not nodata) and not cloudy. A scene from a swath edge can be
+ * cloud-free and still image only a sliver of the tile.
+ */
+export function clearShare(scene: Pick<Scene, "nodata" | "cloudCover">) {
+  return ((100 - (scene.nodata ?? 0)) * (100 - scene.cloudCover)) / 100;
+}
+
+/** Two scenes' nodata shares differ by more than this: other footprints. */
+const FOOTPRINT_DIFF = 5;
+
+/**
+ * Up to `max` scenes of one tile, best first (`scenes` is in rank order).
+ * After the first, a partial scene's fill should come from another swath:
+ * a scene of the same orbit has the same gap. Scenes of one swath have
+ * about the same nodata share, so the next scenes prefer a nodata share
+ * unlike any chosen one. A full first scene needs no such fill.
+ */
+function pickForTile(scenes: Scene[], max: number): Scene[] {
+  const picked: Scene[] = [];
+  const rest = [...scenes];
+  while (picked.length < max && rest.length > 0) {
+    const needsFill = picked.some((p) => (p.nodata ?? 0) > FOOTPRINT_DIFF);
+    const index = needsFill
+      ? rest.findIndex((s) =>
+          picked.every(
+            (p) => Math.abs((s.nodata ?? 0) - (p.nodata ?? 0)) > FOOTPRINT_DIFF
+          )
+        )
+      : -1;
+    picked.push(...rest.splice(index === -1 ? 0 : index, 1));
   }
-
-  // Stable: within one rank, the date/cloud order above is kept.
-  return ranked
-    .map((scene, order) => ({ scene, order }))
-    .sort((a, b) => a.scene.rank - b.scene.rank || a.order - b.order)
-    .slice(0, limits.maxScenes)
-    .map(({ scene }) => scene);
+  return picked;
 }
 
 /** What the legend and the agent's view context say about a capture. */

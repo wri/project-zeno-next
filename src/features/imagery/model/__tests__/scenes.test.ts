@@ -5,7 +5,8 @@ function item(
   id: string,
   datetime: string,
   cloud: number,
-  tile: string
+  tile: string,
+  nodata = 0
 ): StacItem {
   return {
     id,
@@ -13,6 +14,7 @@ function item(
     properties: {
       datetime: `${datetime}T14:35:00Z`,
       "eo:cloud_cover": cloud,
+      "s2:nodata_pixel_percentage": nodata,
       "grid:code": tile,
     },
     assets: {
@@ -96,6 +98,58 @@ describe("selectScenes", () => {
     );
     // a2 is nearer the date than b1 and c1, but every tile keeps its best.
     expect(ids(scenes)).toEqual(["a1", "c1", "b1"]);
+  });
+
+  it("covers every tile before any tile's second scene", () => {
+    // One clear swath (tile A) and a cloudier one (tiles B, C): the clear
+    // swath's many scenes must not push B and C out.
+    const items = [
+      ...Array.from({ length: 30 }, (_, i) =>
+        item(`a${i}`, "2026-06-15", i / 10, "A")
+      ),
+      item("b", "2026-06-12", 40, "B"),
+      item("c", "2026-06-18", 60, "C"),
+    ];
+    const scenes = selectScenes(items, "2026-06-15", {
+      maxScenesPerTile: 2,
+      maxScenes: 4,
+    });
+    expect(scenes.filter((s) => s.rank === 0).map((s) => s.gridCode)).toEqual([
+      "A",
+      "B",
+      "C",
+    ]);
+    expect(ids(scenes)).toEqual(["a0", "b", "c", "a1"]);
+  });
+
+  it("prefers a scene that images the whole tile over a clearer sliver", () => {
+    // Real case (20LRP): the clearest scene is 94 % nodata.
+    const scenes = selectScenes(
+      [
+        item("sliver", "2026-09-15", 0, "A", 94),
+        item("full", "2026-09-15", 4, "A", 0),
+      ],
+      "2026-09-15",
+      { maxScenesPerTile: 1, maxScenes: 10 }
+    );
+    expect(ids(scenes)).toEqual(["full"]);
+  });
+
+  it("fills a partial scene's gap from another swath", () => {
+    // Same orbit = same nodata share = same gap: the fill must differ.
+    const scenes = selectScenes(
+      [
+        item("west-1", "2026-09-15", 0, "A", 40),
+        item("west-2", "2026-09-25", 1, "A", 41),
+        item("east", "2026-09-20", 10, "A", 62),
+      ],
+      "2026-09-15",
+      { maxScenesPerTile: 2, maxScenes: 10 }
+    );
+    expect(scenes.map((s) => [s.id, s.rank])).toEqual([
+      ["west-1", 0],
+      ["east", 1],
+    ]);
   });
 
   it("skips items without a visual asset, bbox or date", () => {

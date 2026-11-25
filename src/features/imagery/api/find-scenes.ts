@@ -1,8 +1,14 @@
 import type { FeatureCollection } from "geojson";
-import { areaKm2, buildSearchBody, searchGeometry } from "../lib/search";
+import {
+  SEARCH_ITEM_CAP,
+  areaKm2,
+  buildSearchBody,
+  searchGeometry,
+} from "../lib/search";
 import { encodeRecipe, type Sentinel2Request } from "../model/request";
 import {
   SCENE_LIMITS,
+  itemsToScenes,
   selectScenes,
   summarizeScenes,
   type CaptureStatus,
@@ -18,6 +24,11 @@ export interface SceneSearchResult {
   summary: SceneSummary;
   /** Items the STAC search returned, before the scene limits. */
   found: number;
+  /**
+   * Every scene the search returned, in search order, before the scene
+   * limits. The focus editor shows them all and marks the ones in `scenes`.
+   */
+  candidates: Scene[];
 }
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
@@ -41,7 +52,12 @@ export function findScenes(
   if (cached) return cached;
 
   const run = async (): Promise<SceneSearchResult> => {
-    const empty = { scenes: [], summary: { itemCount: 0 }, found: 0 };
+    const empty = {
+      scenes: [],
+      summary: { itemCount: 0 },
+      found: 0,
+      candidates: [],
+    };
     if (areaKm2(aoi) > limits.maxAreaKm2) {
       return { status: "too_large", ...empty };
     }
@@ -49,7 +65,9 @@ export function findScenes(
     if (!geometry) return { status: "error", ...empty };
     const items = await searchStac(
       buildSearchBody(request, geometry, todayIso()),
-      request.maxItems
+      // Every item of the window, not request.maxItems: coverage needs
+      // every MGRS tile's scenes before the per-tile selection.
+      SEARCH_ITEM_CAP
     );
     const scenes = selectScenes(
       items,
@@ -62,6 +80,7 @@ export function findScenes(
       scenes,
       summary: summarizeScenes(scenes),
       found: items.length,
+      candidates: itemsToScenes(items),
     };
   };
 
@@ -73,6 +92,7 @@ export function findScenes(
       scenes: [],
       summary: { itemCount: 0 },
       found: 0,
+      candidates: [],
     };
   });
   cache.set(key, promise);

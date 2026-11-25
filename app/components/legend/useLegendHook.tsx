@@ -307,7 +307,7 @@ export function useLegendHook() {
         return;
       }
 
-      // The imagery Edit popover (and its quick fixes) ask for a new
+      // The imagery quick fixes ask for a new
       // Sentinel-2 capture; it becomes the live capture.
       if (action === "imagery-request") {
         void showSentinel2Capture(payload.request);

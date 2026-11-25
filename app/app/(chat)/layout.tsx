@@ -29,6 +29,7 @@ import { CATALOG_COLUMN_Z_INDEX } from "@/app/explorationLayout";
 import { ViewAnalysisTrigger } from "@/src/features/analysis";
 import { CreateDashboardTrigger } from "@/src/features/dashboards";
 import { ProfileAskTrigger } from "@/src/features/front-door";
+import { useImageryFocusActive } from "@/app/store/imageryFocusStore";
 
 export default function DashboardLayout({
   children,
@@ -40,6 +41,8 @@ export default function DashboardLayout({
   const { toggleSidebar } = useSidebarStore();
   const isMobile = useBreakpointValue({ base: true, md: false });
   const [mobileHeight, setMobileHeight] = useState("0");
+  // The imagery focus editor: only the map and the editor stay on screen.
+  const focusing = useImageryFocusActive();
 
   useEffect(() => {
     // Set layout heights after mount to avoid flash of both layouts at once
@@ -73,7 +76,7 @@ export default function DashboardLayout({
         left={0}
         zIndex={CATALOG_COLUMN_Z_INDEX}
         pointerEvents="none"
-        display={{ base: "none", md: "block" }}
+        display={{ base: "none", md: focusing ? "none" : "block" }}
       >
         <CatalogPanel />
         <AreasPanel />
@@ -85,7 +88,7 @@ export default function DashboardLayout({
         bottom={0}
         left={0}
         zIndex={1100}
-        display="flex"
+        display={focusing ? "none" : "flex"}
         flexDir="column"
         pointerEvents="none"
       >
@@ -113,7 +116,7 @@ export default function DashboardLayout({
     >
       <Box
         w="100%"
-        h={`calc(100% - ${sheetHeight}px + 12px)`}
+        h={focusing ? "100%" : `calc(100% - ${sheetHeight}px + 12px)`}
         transition="height 0.05s linear"
       >
         <Drawer.Root placement="start">
@@ -122,6 +125,7 @@ export default function DashboardLayout({
               variant="plain"
               bg="bg"
               position="absolute"
+              display={focusing ? "none" : undefined}
               top={3}
               left={3}
               rounded="sm"
@@ -149,14 +153,17 @@ export default function DashboardLayout({
           rounded="sm"
           overflow="hidden"
           zIndex={100}
+          display={focusing ? "none" : undefined}
         >
           <PageHeader />
         </Box>
         <Map />
       </Box>
-      <DraggableBottomSheet onHeightChange={setSheetHeight}>
-        <ChatPanel />
-      </DraggableBottomSheet>
+      <Box display={focusing ? "none" : "contents"}>
+        <DraggableBottomSheet onHeightChange={setSheetHeight}>
+          <ChatPanel />
+        </DraggableBottomSheet>
+      </Box>
     </Box>
   );
 
@@ -176,7 +183,13 @@ export default function DashboardLayout({
       <ProfileAskTrigger />
 
       {!isMobile && (
-        <Box>
+        // Emptied, not display:none, while the imagery editor is open: a
+        // hidden box takes no grid cell, so the map would move up into this
+        // min-content row and collapse to zero height.
+        <Box
+          h={focusing ? 0 : undefined}
+          overflow={focusing ? "hidden" : undefined}
+        >
           <PageHeader />
           {/* Rebrand announcement sits full-width directly below the header and
               supersedes the preview DisclaimerPanel while it is showing.

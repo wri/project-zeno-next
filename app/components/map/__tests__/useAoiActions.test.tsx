@@ -56,6 +56,7 @@ import { DATASET_CARDS } from "@/app/constants/datasets";
 import { runAnalysis } from "@/app/lib/analysis/runAnalysis";
 import useChatStore from "@/app/store/chatStore";
 import useMapStore from "@/app/store/mapStore";
+import useImageryFocusStore from "@/app/store/imageryFocusStore";
 import type { Layer } from "@/app/store/layerManagerSlice";
 import { useAoiActions } from "../useAoiActions";
 
@@ -522,6 +523,14 @@ describe("useAoiActions", () => {
           maxCloudCover: 50,
         })
       );
+    });
+
+    it("opens the imagery editor on the new capture", () => {
+      clientImagery.enabled = true;
+      render().result.current?.showImagery();
+      const [request] = showSentinel2Capture.mock.lastCall!;
+      expect(useImageryFocusStore.getState().original).toEqual(request);
+      useImageryFocusStore.getState().close({ apply: false });
     });
   });
 });

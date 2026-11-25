@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { Layer, Source } from "react-map-gl/maplibre";
+import useImageryFocusStore from "@/app/store/imageryFocusStore";
 import useMapStore from "@/app/store/mapStore";
 import type { Layer as ManagedLayer } from "@/app/store/layerManagerSlice";
 
@@ -22,6 +23,9 @@ export function layerId(id: string) {
  */
 function DynamicTileLayers() {
   const allLayers = useMapStore((s) => s.layers);
+  // The imagery focus editor shows its preview alone: every raster hides,
+  // dataset layers too, so nothing covers the imagery.
+  const focusing = useImageryFocusStore((s) => s.original !== null);
   const rasterLayers = useMemo(() => {
     const rasters = allLayers.filter(
       (l): l is ManagedLayer & { tileUrl: string } =>
@@ -79,9 +83,10 @@ function DynamicTileLayers() {
               type="raster"
               beforeId={beforeId}
               paint={{
-                "raster-opacity": rasterLayer.visible
-                  ? (rasterLayer.opacity ?? 0.8)
-                  : 0,
+                "raster-opacity":
+                  rasterLayer.visible && !focusing
+                    ? (rasterLayer.opacity ?? 0.8)
+                    : 0,
               }}
             />
           </Source>

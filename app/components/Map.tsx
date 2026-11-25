@@ -46,6 +46,8 @@ import { buildBasemapTileUrl } from "@/app/utils/basemapTileUrl";
 import DebugToastsPanel from "@/app/components/DebugToastsPanel";
 import { MAP_LEGEND_ATTR } from "@/app/explorationLayout";
 import { ImageryZoomHint } from "./map/ImageryZoomHint";
+import ImageryFocusMode from "./map/ImageryFocusMode";
+import { useImageryFocusActive } from "@/app/store/imageryFocusStore";
 
 const MAPBOX_ACCESS_TOKEN = import.meta.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
@@ -89,6 +91,8 @@ function Map({
   // Desktop shows attribution in the custom footer row (hideBelow="md").
   // Mobile has no footer, so mount MapLibre's compact control there instead.
   const isMobile = useBreakpointValue({ base: true, md: false });
+  // The imagery focus editor takes over the map: every other panel hides.
+  const focusing = useImageryFocusActive();
   const onMapLoad = () => {
     if (mapRef.current) {
       const map = mapRef.current.getMap();
@@ -189,7 +193,7 @@ function Map({
         >
           <Layer id="background-tiles" type="raster" />
         </Source>
-        {(layers.length > 0 || aois.length > 0 || !!boundary) && (
+        {!focusing && (layers.length > 0 || aois.length > 0 || !!boundary) && (
           <Button
             variant="subtle"
             position="absolute"
@@ -226,6 +230,7 @@ function Map({
           w="calc(100% - 2rem)"
           pointerEvents="all"
           hideBelow="md"
+          display={focusing ? "none" : undefined}
         >
           <DisclaimerPanel />
         </Box>
@@ -245,6 +250,8 @@ function Map({
           flexDirection="column"
           gap={2}
           pointerEvents="none"
+          // Hidden, not unmounted: the legend keeps its state for after.
+          visibility={focusing ? "hidden" : undefined}
         >
           {(hasInsights || isLoading || isGeneratingInsight) && (
             <InsightWorkspace />
@@ -301,14 +308,21 @@ function Map({
         <PendingDrawArea basemapTheme={basemapTheme} />
         <SelectAreaLayer />
 
-        {!disableMapAreaControls && (
+        <ImageryFocusMode />
+
+        {!disableMapAreaControls && !focusing && (
           <MapAreaControls
             basemapTiles={basemapTiles}
             setBasemapTiles={setBasemapTiles}
           />
         )}
 
-        <AbsoluteCenter fontSize="sm" opacity={0.375} hideBelow="md">
+        <AbsoluteCenter
+          fontSize="sm"
+          opacity={0.375}
+          hideBelow="md"
+          display={focusing ? "none" : undefined}
+        >
           <PlusIcon />
         </AbsoluteCenter>
         <Flex

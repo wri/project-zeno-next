@@ -108,7 +108,7 @@ export interface ImageryLegendGroup {
   thumbnail?: CaptureThumbnail;
   /**
    * Set when the live capture is rendered in the browser (Sentinel-2,
-   * `?ff=client-imagery`): its request, which the Edit popover starts from,
+   * `?ff=client-imagery`): its request, which the focus editor starts from,
    * and its scene search status.
    */
   sentinel2?: { request: Sentinel2Request; status: CaptureStatus };
@@ -140,7 +140,7 @@ export type LayerActionArgs =
       payload: { layers: LegendEntry[] };
     }
   | {
-      /** Show a Sentinel-2 capture for this request (legend Edit popover). */
+      /** Show a Sentinel-2 capture for this request (the focus editor's draft, or a quick fix). */
       action: "imagery-request";
       payload: { request: Sentinel2Request };
     };

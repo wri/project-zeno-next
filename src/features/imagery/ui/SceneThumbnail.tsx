@@ -115,6 +115,8 @@ export function SceneThumbnail({
       <img
         src={href}
         alt="Satellite imagery"
+        // The focus editor's strip can hold hundreds of scenes.
+        loading="lazy"
         onError={() => setFailedHref(href)}
         style={
           crop

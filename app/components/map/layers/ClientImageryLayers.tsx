@@ -4,6 +4,7 @@ import { ImageBrokenIcon } from "@phosphor-icons/react";
 import type { FeatureCollection } from "geojson";
 import { Layer, Marker, Source } from "react-map-gl/maplibre";
 import useMapStore from "@/app/store/mapStore";
+import useImageryFocusStore from "@/app/store/imageryFocusStore";
 import { createBboxPolygon } from "@/app/utils/bboxUtils";
 import {
   Sentinel2Layers,
@@ -39,21 +40,36 @@ export function ImageryAnchorLayer() {
  */
 export default function ClientImageryLayers() {
   const layers = useMapStore((s) => s.layers);
+  const focusing = useImageryFocusStore((s) => s.original !== null);
+  const focusSearch = useImageryFocusStore((s) => s.searched);
   const captures = useMemo<Sentinel2LayerCapture[]>(
     () =>
-      layers.flatMap((l) =>
-        l.sentinel2
+      // The focus editor previews its draft alone. Until the first search
+      // returns, the map shows no imagery rather than the old capture.
+      focusing
+        ? focusSearch
           ? [
               {
-                id: l.id,
-                scenes: l.sentinel2.scenes,
-                visible: l.visible,
-                opacity: l.opacity ?? 1,
+                id: `focus-${focusSearch.key}`,
+                scenes: focusSearch.result.scenes,
+                visible: true,
+                opacity: 1,
               },
             ]
           : []
-      ),
-    [layers]
+        : layers.flatMap((l) =>
+            l.sentinel2
+              ? [
+                  {
+                    id: l.id,
+                    scenes: l.sentinel2.scenes,
+                    visible: l.visible,
+                    opacity: l.opacity ?? 1,
+                  },
+                ]
+              : []
+          ),
+    [layers, focusing, focusSearch]
   );
   if (captures.length === 0) return null;
   return (
@@ -61,7 +77,7 @@ export default function ClientImageryLayers() {
       <Suspense fallback={null}>
         <Sentinel2Layers captures={captures} beforeId={IMAGERY_SENTINEL_ID} />
       </Suspense>
-      <ImageryStatusMarkers />
+      {!focusing && <ImageryStatusMarkers />}
     </>
   );
 }

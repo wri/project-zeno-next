@@ -5,7 +5,8 @@
  * - model: the request (and its recipe token, shared with the backend), scene
  *   selection and limits.
  * - api: the earth-search scene search.
- * - ui: the deck.gl map layers (lazy) and the legend's filter popover.
+ * - ui: the deck.gl map layers (lazy) and the focus editor's filters and
+ *   scene strip.
  *
  * Consumers import ONLY from this barrel. It never imports deck.gl
  * statically: `Sentinel2Layers` is a lazy component.
@@ -19,6 +20,7 @@ export {
   DEFAULT_SORT,
   DEFAULT_WINDOW_DAYS,
   FIRST_SCENE_DATE,
+  SORT_LABELS,
   SORT_OPTIONS,
   WINDOW_OPTIONS,
   decodeRecipe,
@@ -43,12 +45,10 @@ export type {
   Sentinel2LayerCapture,
   Sentinel2LayersProps,
 } from "./ui/Sentinel2Layers";
-export {
-  ImageryFilterPopover,
-  SORT_LABELS,
-  type ScenePreview,
-} from "./ui/ImageryFilterPopover";
 export { ImageryPlaceholder } from "./ui/ImageryPlaceholder";
+export { FocusFilters } from "./ui/focus/FocusFilters";
+export { SceneStrip, type SceneStripResult } from "./ui/focus/SceneStrip";
+export { cloudWeather, formatSceneDate } from "./ui/focus/cloudCover";
 export { SceneThumbnail } from "./ui/SceneThumbnail";
 export {
   useSentinel2Scenes,

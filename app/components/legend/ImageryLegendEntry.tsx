@@ -31,13 +31,13 @@ import type {
 } from "./types";
 import { ParamChip } from "@/app/components/ui/ParamChip";
 import {
-  ImageryFilterPopover,
   ImageryPlaceholder,
   SceneThumbnail,
   type CaptureStatus,
   type Sentinel2Request,
 } from "@/src/features/imagery";
-import { previewSentinel2 } from "@/app/store/sentinel2Captures";
+import useImageryFocusStore from "@/app/store/imageryFocusStore";
+import useMapStore from "@/app/store/mapStore";
 
 /**
  * The "Satellite Imagery" legend section: one entry grouping every Sentinel-2
@@ -221,24 +221,29 @@ export function ImageryLegendEntry(
                     />
                   ))}
                   {sentinel2 && (
-                    <ImageryFilterPopover
-                      request={sentinel2.request}
-                      onApply={requestImagery}
-                      preview={previewSentinel2}
+                    <Button
+                      variant="plain"
+                      size="xs"
+                      h="20px"
+                      px={1}
+                      fontSize="xs"
+                      color="primary.500"
+                      textDecoration="underline"
+                      aria-label="Edit imagery date, window and cloud cover"
+                      onClick={() => {
+                        // The live capture's area, so the editor can frame
+                        // it before its first search returns.
+                        const liveId = captures.find((c) => c.live)?.layerId;
+                        const bounds = useMapStore
+                          .getState()
+                          .layers.find((l) => l.id === liveId)?.bounds;
+                        useImageryFocusStore
+                          .getState()
+                          .open(sentinel2.request, bounds);
+                      }}
                     >
-                      <Button
-                        variant="plain"
-                        size="xs"
-                        h="20px"
-                        px={1}
-                        fontSize="xs"
-                        color="primary.500"
-                        textDecoration="underline"
-                        aria-label="Edit imagery date, window and cloud cover"
-                      >
-                        Edit
-                      </Button>
-                    </ImageryFilterPopover>
+                      Edit
+                    </Button>
                   )}
                 </Flex>
               )}

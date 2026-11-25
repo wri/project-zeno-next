@@ -7,6 +7,7 @@ import { useCustomAreasCreate } from "@/app/hooks/useCustomAreasCreate";
 import { runAnalysis } from "@/app/lib/analysis/runAnalysis";
 import useChatStore from "@/app/store/chatStore";
 import useMapStore from "@/app/store/mapStore";
+import useImageryFocusStore from "@/app/store/imageryFocusStore";
 import { toPolygons } from "@/app/utils/selectionPolygons";
 import {
   isAnalysableForSource,
@@ -253,15 +254,18 @@ export function useAoiActions(
     removeFromMap,
     showImagery: () => {
       if (!srcId) return;
-      void showSentinel2Capture(
-        defaultRequest(
-          // Canonical lowercase source, as the agent's AOIs carry it, so the
-          // recipe token (layer id) matches the agent's for the same area.
-          [{ source: source.toLowerCase(), srcId }],
-          [areaName],
-          new Date().toISOString().slice(0, 10)
-        )
+      const request = defaultRequest(
+        // Canonical lowercase source, as the agent's AOIs carry it, so the
+        // recipe token (layer id) matches the agent's for the same area.
+        [{ source: source.toLowerCase(), srcId }],
+        [areaName],
+        new Date().toISOString().slice(0, 10)
       );
+      // Add the default capture, then open the focus editor on it: a user
+      // who adds imagery by hand most likely wants to pick the date. Both
+      // searches share one STAC request (findScenes caches by recipe).
+      void showSentinel2Capture(request);
+      useImageryFocusStore.getState().open(request);
     },
   };
 }

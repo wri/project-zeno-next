@@ -496,7 +496,7 @@ describe("buildImageryGroup with a client-rendered capture", () => {
     sentinel2: { request, status, scenes },
   });
 
-  it("exposes the live request for the Edit popover", () => {
+  it("exposes the live request for the focus editor", () => {
     const group = buildImageryGroup([clientLayer("ok")], false)!;
     expect(group.sentinel2).toEqual({ request, status: "ok" });
     expect(group.updating).toBe(false);

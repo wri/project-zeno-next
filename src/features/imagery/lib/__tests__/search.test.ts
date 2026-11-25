@@ -64,9 +64,27 @@ describe("buildSearchBody", () => {
       collections: ["sentinel-2-l2a"],
       datetime: "2026-06-08T00:00:00Z/2026-06-22T23:59:59Z",
       query: { "eo:cloud_cover": { lt: 20 } },
-      limit: 50,
+      // Full pages, whatever maxItems says: the search reads the window.
+      limit: 100,
       intersects: square(1),
     });
+  });
+
+  it("has no cloud filter at a 100 % limit", () => {
+    const body = buildSearchBody(
+      {
+        aois: [{ source: "gadm", srcId: "X" }],
+        aoiNames: [],
+        targetDate: "2026-06-15",
+        windowDays: 3,
+        maxCloudCover: 100,
+        maxItems: 50,
+      },
+      square(1),
+      "2026-11-25"
+    );
+    expect(body.query).toBeUndefined();
+    expect(body.datetime).toBe("2026-06-12T00:00:00Z/2026-06-18T23:59:59Z");
   });
 
   it("asks for the least cloudy scenes first, unless sorted by date", () => {

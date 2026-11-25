@@ -5,7 +5,7 @@ import { isImageryLayerId } from "@/app/utils/imagery";
  * Make an imagery capture the one on show: hide the other captures (they stay
  * in the legend's captures list for toggling back) and move it to the top of
  * the imagery group. Shared by every way a capture is added: the agent's
- * show_imagery / show_planet_imagery, and the legend's Edit popover.
+ * show_imagery / show_planet_imagery, and the imagery focus editor.
  *
  * addLayer appends, which would leave the new capture under earlier ones it
  * overlaps. The imagery group itself stays below dataset rasters (see

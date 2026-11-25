@@ -2,7 +2,7 @@
  * A Sentinel-2 imagery request: which areas, around which date, how wide a
  * search window and how cloudy a scene may be. It is the one input of the
  * client-side imagery path, whatever produced it (the agent's show_imagery
- * payload, the legend's Edit popover, and later the agent's client payload).
+ * payload, the imagery focus editor, and later the agent's client payload).
  */
 
 /** An area by its backend reference, as the geometry endpoint takes it. */
@@ -21,7 +21,11 @@ export interface Sentinel2Request {
   windowDays: number;
   /** Scenes with this much cloud cover (%) or more are left out. */
   maxCloudCover: number;
-  /** The most scenes the STAC search returns, before the scene limits. */
+  /**
+   * The backend's item cap. Part of the recipe token, so a token stays equal
+   * to the backend's, but the browser does not cap its search with it: a
+   * cap cuts whole MGRS tiles out of the result (see SEARCH_ITEM_CAP).
+   */
   maxItems: number;
   /**
    * Which scenes win: "cloud" (default) puts the least cloudy scenes of the
@@ -34,13 +38,20 @@ export interface Sentinel2Request {
 
 export type SceneSort = "cloud" | "date";
 export const DEFAULT_SORT: SceneSort = "cloud";
+/** How each scene ranking reads in the legend. */
+export const SORT_LABELS: Record<SceneSort, string> = {
+  cloud: "Least cloudy",
+  date: "Nearest date",
+};
 /** Sort choices offered in the legend. */
 export const SORT_OPTIONS: readonly SceneSort[] = ["cloud", "date"];
 
 /** Window choices offered in the legend, in days. */
-export const WINDOW_OPTIONS = [7, 15, 30, 60] as const;
+// ±3 d is one week (7 days searched), the shortest window offered.
+export const WINDOW_OPTIONS = [3, 7, 15, 30, 60] as const;
 /** Cloud-cover choices offered in the legend, in percent. */
-export const CLOUD_OPTIONS = [10, 20, 30, 50, 80] as const;
+// 100 % means no cloud filter at all (buildSearchBody).
+export const CLOUD_OPTIONS = [10, 20, 30, 50, 80, 100] as const;
 
 /** The backend defaults of show_imagery (src/agent/imagery/sentinel2.py). */
 export const DEFAULT_WINDOW_DAYS = 7;
