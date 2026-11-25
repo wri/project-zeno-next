@@ -50,8 +50,13 @@ describe("resolveLocale", () => {
 
   it.each([
     {
-      name: "a signed-in profile beats the cookie",
+      name: "this device's display choice beats the preferred language",
       input: { profile: "es", cookie: cookie("fr") },
+      expected: "fr",
+    },
+    {
+      name: "the preferred language is used with no display choice",
+      input: { profile: "es", cookie: "other=1" },
       expected: "es",
     },
     {
@@ -60,9 +65,9 @@ describe("resolveLocale", () => {
       expected: "fr",
     },
     {
-      name: "an unsupported profile falls through to the cookie",
-      input: { profile: "de", cookie: cookie("id") },
-      expected: "id",
+      name: "an unsupported cookie falls through to the profile",
+      input: { profile: "pt", cookie: cookie("de") },
+      expected: "pt",
     },
     {
       name: "no preference resolves to English",

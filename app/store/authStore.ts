@@ -32,7 +32,6 @@ interface AuthState {
     termsAccepted?: boolean;
   }) => void;
   setAuthLoaded: () => void;
-  setPreferredLanguageCode: (code: string) => void;
   clearAuth: () => void;
   fetchMetadata: () => Promise<void>;
 }
@@ -113,9 +112,6 @@ const useAuthStore = create<AuthState>()((set) => ({
   },
   setAuthLoaded: () => {
     set({ authLoaded: true });
-  },
-  setPreferredLanguageCode: (code) => {
-    set({ preferredLanguageCode: code });
   },
   clearAuth: () => {
     set({

@@ -34,7 +34,7 @@ import { getSettingsFormSchema } from "@/app/dashboard/schema";
 import RequirementHint from "@/app/components/RequirementHint";
 import { TopicPills, toggleTopic } from "@/app/components/TopicPills";
 import { ACCOUNT_DELETION_URL } from "@/app/dashboard/account-deletion";
-import { useTranslation } from "@/src/shared/lib/i18n";
+import { adoptPreferredLocale, useTranslation } from "@/src/shared/lib/i18n";
 
 /**
  * Every sector's "Other:" role. Choosing it relabels Job title as "Your role",
@@ -209,6 +209,7 @@ export default function UserProfilePage() {
         has_profile: true,
       });
 
+      const previousLanguage = useAuthStore.getState().preferredLanguageCode;
       const res = await apiFetch(`/api/auth/profile`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -221,6 +222,10 @@ export default function UserProfilePage() {
       // (menu item, in-chat asks) must stop without a reload.
       const { status } = parseAuthMe(await res.json());
       if (status) useAuthStore.getState().setAuthStatus(status);
+      // A new preferred language also resets this device's display language,
+      // or nothing would visibly change after saving (PZB-1722).
+      if ((payload.preferred_language_code ?? null) !== previousLanguage)
+        adoptPreferredLocale(payload.preferred_language_code);
 
       // Submit to Ortto directly from client (no secrets needed)
       await submitOrttoProfile({

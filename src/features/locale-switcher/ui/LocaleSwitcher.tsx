@@ -2,11 +2,12 @@ import { useId, type RefObject } from "react";
 import { Box, Button, Flex, Menu, Portal, Text } from "@chakra-ui/react";
 import { CaretDownIcon, CheckIcon, GlobeIcon } from "@phosphor-icons/react";
 import { Tooltip } from "@/app/components/ui/tooltip";
+import useAuthStore from "@/app/store/authStore";
 import {
-  DEFAULT_LOCALE,
   htmlLang,
   isLocale,
   LOCALES,
+  matchLocale,
   useLocale,
   useTranslation,
   type Locale,
@@ -41,9 +42,10 @@ const SELECTED_ROW = "#F0F4FF";
 const MENU_BORDER = "#E0E2E5";
 
 /**
- * The chat header's language selector: a globe button showing the active
- * language code, opening a menu of the supported languages. A choice applies
- * at once and is saved as the preferred language (see `changeLocale`).
+ * The chat header's display-language selector: a globe button showing the
+ * active language code, opening a menu of the supported languages. A choice
+ * applies at once and is remembered on this device only (see `changeLocale`);
+ * the signed-in user's preferred language is marked with a badge.
  */
 export function LocaleSwitcher({
   anchorRef,
@@ -52,6 +54,9 @@ export function LocaleSwitcher({
   anchorRef?: RefObject<HTMLElement | null>;
 }) {
   const locale = useLocale();
+  const preferred = useAuthStore((s) =>
+    s.isAuthenticated ? matchLocale(s.preferredLanguageCode) : null
+  );
   const { t } = useTranslation();
   const triggerId = useId();
   const current = t("chat.header.languageCurrent", {
@@ -119,8 +124,7 @@ export function LocaleSwitcher({
             <Menu.RadioItemGroup
               value={locale}
               onValueChange={({ value }) => {
-                if (isLocale(value) && value !== locale)
-                  void changeLocale(value);
+                if (isLocale(value) && value !== locale) changeLocale(value);
               }}
               aria-label={t("chat.header.language")}
             >
@@ -153,7 +157,7 @@ export function LocaleSwitcher({
                         >
                           {native}
                         </Text>
-                        {code === DEFAULT_LOCALE && (
+                        {code === preferred && (
                           <Text
                             as="span"
                             px="6px"

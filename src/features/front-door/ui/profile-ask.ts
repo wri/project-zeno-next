@@ -5,6 +5,7 @@ import { trackEvent } from "@/app/lib/track-event";
 import { queryClient } from "@/app/lib/query-client";
 import useAuthStore from "@/app/store/authStore";
 import useChatStore from "@/app/store/chatStore";
+import { adoptPreferredLocale } from "@/src/shared/lib/i18n";
 import { patchProfile } from "../api/profile";
 import { PREFILL_NOT_FOUND, type ProfilePrefill } from "../api/profile-prefill";
 import { profileOptionsQuery, profilePrefillQuery } from "../api/queries";
@@ -227,6 +228,9 @@ export async function saveProfileFromCard(
 ): Promise<void> {
   const { status } = await patchProfile(patch);
   if (status) useAuthStore.getState().setAuthStatus(status);
+  // Onboarding sets both languages: the display follows the new preference.
+  if (patch.preferred_language_code)
+    adoptPreferredLocale(patch.preferred_language_code);
 
   const auth = useAuthStore.getState();
   useChatStore.getState().removeMessage(messageId);
