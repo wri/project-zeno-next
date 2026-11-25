@@ -25,6 +25,7 @@ const baseActions = (): AoiActions => ({
   hasDataset: true,
   canViewAnalysis: true,
   canSaveArea: true,
+  canShowImagery: false,
   canUseDashboard: true,
   dashboardLabel: "Create Dashboard",
   isCreatingDashboard: false,
@@ -33,6 +34,7 @@ const baseActions = (): AoiActions => ({
   viewAnalysis: vi.fn(),
   openOrCreateDashboard: vi.fn(),
   saveArea: vi.fn().mockResolvedValue(undefined),
+  showImagery: vi.fn(),
   removeFromMap: vi.fn(),
 });
 
@@ -133,5 +135,20 @@ describe("AoiActionsMenu", () => {
 
     expect(screen.getByText("Open Dashboard")).toBeTruthy();
     expect(screen.queryByText("Create Dashboard")).toBeNull();
+  });
+
+  it("offers satellite imagery only when it is available", async () => {
+    renderMenu();
+    await openMenu();
+    expect(screen.queryByText("Show satellite imagery")).toBeNull();
+  });
+
+  // What the item does is tested on the hook (useAoiActions.test.tsx), like
+  // the other actions: selecting needs the menu widget's pointer events.
+  it("offers satellite imagery when it is available", async () => {
+    actions = { ...baseActions(), canShowImagery: true };
+    renderMenu();
+    await openMenu();
+    expect(await screen.findByText("Show satellite imagery")).toBeTruthy();
   });
 });

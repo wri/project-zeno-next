@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   decodeRecipe,
+  defaultRequest,
   encodeRecipe,
   normalizeRequest,
   searchRange,
@@ -109,5 +110,20 @@ describe("searchRange", () => {
 
   it("crosses month and year ends", () => {
     expect(shiftIsoDate("2026-12-28", 7)).toBe("2027-01-04");
+  });
+});
+
+describe("defaultRequest", () => {
+  it("is the agent's no-date default: the past two weeks, < 20% cloud", () => {
+    expect(
+      defaultRequest([{ source: "gadm", srcId: "X" }], ["X"], "2026-11-25")
+    ).toEqual({
+      aois: [{ source: "gadm", srcId: "X" }],
+      aoiNames: ["X"],
+      targetDate: "2026-11-18",
+      windowDays: 7,
+      maxCloudCover: 20,
+      maxItems: 50,
+    });
   });
 });

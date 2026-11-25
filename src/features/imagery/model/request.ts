@@ -43,6 +43,26 @@ export const DEFAULT_MAX_ITEMS = 50;
  */
 export const FIRST_SCENE_DATE = "2016-11-01";
 
+/**
+ * The request show_imagery makes when the user gives no date: about the past
+ * two weeks (target one week ago, ±7 days), less than 20 % cloud. Used by
+ * the area menu's "Show satellite imagery".
+ */
+export function defaultRequest(
+  aois: AoiRef[],
+  aoiNames: string[],
+  today: string
+): Sentinel2Request {
+  return {
+    aois,
+    aoiNames,
+    targetDate: shiftIsoDate(today, -DEFAULT_WINDOW_DAYS),
+    windowDays: DEFAULT_WINDOW_DAYS,
+    maxCloudCover: DEFAULT_MAX_CLOUD_COVER,
+    maxItems: DEFAULT_MAX_ITEMS,
+  };
+}
+
 const clamp = (value: number, min: number, max: number): number =>
   Math.min(Math.max(Math.round(value), min), max);
 

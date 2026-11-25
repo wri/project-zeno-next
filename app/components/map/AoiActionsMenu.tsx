@@ -3,6 +3,7 @@ import {
   ChartLineIcon,
   DotsThreeVerticalIcon,
   FloppyDiskIcon,
+  GlobeHemisphereWestIcon,
   SparkleIcon,
   SquaresFourIcon,
   XIcon,
@@ -99,6 +100,15 @@ export default function AoiActionsMenu({
                 >
                   <SquaresFourIcon size={16} color={ITEM_ICON_COLOR} />
                   {actions.dashboardLabel}
+                </Menu.Item>
+              )}
+              {actions.canShowImagery && (
+                <Menu.Item
+                  value="show satellite imagery"
+                  onSelect={actions.showImagery}
+                >
+                  <GlobeHemisphereWestIcon size={16} color={ITEM_ICON_COLOR} />
+                  Show satellite imagery
                 </Menu.Item>
               )}
               {actions.canSaveArea && (

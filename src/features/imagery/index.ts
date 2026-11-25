@@ -20,6 +20,7 @@ export {
   FIRST_SCENE_DATE,
   WINDOW_OPTIONS,
   decodeRecipe,
+  defaultRequest,
   encodeRecipe,
   normalizeRequest,
   searchRange,
