@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { Layer } from "@/app/store/layerManagerSlice";
 
 // Stateful mapStore mock: the handler reads layers back after mutating them
@@ -39,7 +39,17 @@ vi.mock("@/app/lib/api-client", () => ({
   getAuthHeaders: () => ({ Authorization: "Bearer test-token" }),
 }));
 
+// The client-rendering path (?ff=client-imagery) is off unless a test turns
+// it on; its capture flow has its own tests (sentinel2Captures.test.ts).
+const clientImagery = { enabled: false };
+const showSentinel2Capture = vi.fn();
+vi.mock("@/app/store/sentinel2Captures", () => ({
+  isClientImageryEnabled: () => clientImagery.enabled,
+  showSentinel2Capture: (...args: unknown[]) => showSentinel2Capture(...args),
+}));
+
 import { showImageryTool } from "../showImagery";
+import { encodeRecipe } from "@/src/features/imagery";
 import { API_CONFIG } from "@/app/config/api";
 import type { ImageryInfo, StreamMessage } from "@/app/types/chat";
 
@@ -268,5 +278,60 @@ describe("showImageryTool", () => {
 
     await expect(showImageryTool(baseMsg())).resolves.toBeUndefined();
     expect(mapState.addLayer).not.toHaveBeenCalled();
+  });
+
+  describe("with client rendering on", () => {
+    const recipe = {
+      aois: [{ source: "gadm", srcId: "PER.11.3_1" }],
+      aoiNames: [],
+      targetDate: "2026-06-15",
+      windowDays: 30,
+      maxCloudCover: 50,
+      maxItems: 50,
+    };
+
+    beforeEach(() => {
+      clientImagery.enabled = true;
+      showSentinel2Capture.mockClear();
+    });
+    afterEach(() => {
+      clientImagery.enabled = false;
+    });
+
+    it("decodes the recipe from mosaic_id and renders it in the browser", async () => {
+      const fetchMock = mockFetch({ json: async () => tileJson });
+      await showImageryTool(
+        baseMsg({ imagery: { ...imagery, mosaic_id: encodeRecipe(recipe) } })
+      );
+      expect(showSentinel2Capture).toHaveBeenCalledWith({
+        ...recipe,
+        aoiNames: ["Paracas National Reserve"],
+      });
+      // No TileJSON, no tiler layer.
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(mapState.addLayer).not.toHaveBeenCalled();
+    });
+
+    it("keeps the tiler path for Planet", async () => {
+      mockFetch({ json: async () => tileJson });
+      await showImageryTool(
+        baseMsg({
+          imagery: {
+            ...imagery,
+            provider: "planet",
+            mosaic_id: encodeRecipe(recipe),
+          },
+        })
+      );
+      expect(showSentinel2Capture).not.toHaveBeenCalled();
+      expect(mapState.addLayer).toHaveBeenCalled();
+    });
+
+    it("keeps the tiler path when mosaic_id is not a recipe", async () => {
+      mockFetch({ json: async () => tileJson });
+      await showImageryTool(baseMsg());
+      expect(showSentinel2Capture).not.toHaveBeenCalled();
+      expect(mapState.addLayer).toHaveBeenCalled();
+    });
   });
 });

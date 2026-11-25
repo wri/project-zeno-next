@@ -263,7 +263,8 @@ export interface ImageryInfo {
   // Absent on payloads written before wri/project-zeno#800, which were all
   // Sentinel-2.
   provider?: ImageryProvider | null;
-  tile_url: string;
+  // Absent on a Sentinel-2 capture rendered in the browser (no tiler).
+  tile_url?: string | null;
   tilejson_url?: string | null;
   bounds?: [number, number, number, number] | null;
   min_zoom?: number | null;

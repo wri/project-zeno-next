@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import type { ImageryMetadata } from "@/app/constants/planet-metadata";
+import type { CaptureStatus, Sentinel2Request } from "@/src/features/imagery";
 
 /**
  * A single read-only parameter chip shown beneath a layer title.
@@ -89,6 +90,12 @@ export interface ImageryLegendGroup {
   /** show_imagery announced but its result not yet streamed. */
   updating: boolean;
   thumbnailUrl?: string;
+  /**
+   * Set when the live capture is rendered in the browser (Sentinel-2,
+   * `?ff=client-imagery`): its request, which the Edit popover starts from,
+   * and its scene search status.
+   */
+  sentinel2?: { request: Sentinel2Request; status: CaptureStatus };
 }
 
 /** A renderable legend entry: a dataset layer card or the imagery group. */
@@ -115,6 +122,11 @@ export type LayerActionArgs =
   | {
       action: "reorder";
       payload: { layers: LegendEntry[] };
+    }
+  | {
+      /** Show a Sentinel-2 capture for this request (legend Edit popover). */
+      action: "imagery-request";
+      payload: { request: Sentinel2Request };
     };
 
 export type LayerActionHandler = (args: LayerActionArgs) => void;

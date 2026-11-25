@@ -26,6 +26,7 @@ import {
 } from "@/app/types/map";
 import { Tooltip } from "@/app/components/ui/tooltip";
 import { isAreaLayer } from "@/app/store/layerManagerSlice";
+import { showSentinel2Capture } from "@/app/store/sentinel2Captures";
 import {
   buildImageryGroup,
   IMAGERY_LEGEND_GROUP_ID,
@@ -303,6 +304,13 @@ export function useLegendHook() {
           .map((l) => l.id)
           .filter((id) => !orderedIds.includes(id));
         reorderLayers([...orderedIds, ...rest]);
+        return;
+      }
+
+      // The imagery Edit popover (and its quick fixes) ask for a new
+      // Sentinel-2 capture; it becomes the live capture.
+      if (action === "imagery-request") {
+        void showSentinel2Capture(payload.request);
         return;
       }
 

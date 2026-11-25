@@ -21,6 +21,7 @@ import {
 } from "@/app/utils/imagery";
 import type { ImageryLegendMeta } from "@/app/utils/imagery";
 import type { Layer } from "@/app/store/layerManagerSlice";
+import type { CaptureStatus } from "@/src/features/imagery";
 import { PLANET_METADATA } from "@/app/constants/planet-metadata";
 
 describe("toImageryMeta", () => {
@@ -454,6 +455,80 @@ describe("buildImageryGroup", () => {
       areaCount: 0,
     });
     expect(group?.info).toBeUndefined();
+  });
+});
+
+describe("buildImageryGroup with a client-rendered capture", () => {
+  const request = {
+    aois: [{ source: "gadm", srcId: "PER.11.3_1" }],
+    aoiNames: ["Paracas"],
+    targetDate: "2026-06-15",
+    windowDays: 7,
+    maxCloudCover: 20,
+    maxItems: 50,
+  };
+  const scene = {
+    id: "s",
+    bbox: [0, 0, 1, 1] as [number, number, number, number],
+    datetime: "2026-06-14T15:00:00Z",
+    cloudCover: 4,
+    gridCode: "MGRS-18LTM",
+    visualHref: "https://cogs/TCI.tif",
+    thumbnailHref: "https://cogs/preview.jpg",
+    rank: 0,
+  };
+  const clientLayer = (status: CaptureStatus, scenes = [scene]): Layer => ({
+    id: "imagery-token",
+    name: "Satellite Imagery",
+    type: "raster",
+    visible: true,
+    minzoom: 8,
+    imagery: {
+      provider: "sentinel-2",
+      mosaic_id: "token",
+      target_date: "2026-06-15",
+      window_days: 7,
+      max_cloud_cover: 20,
+      aoi_names: ["Paracas"],
+      item_count: scenes.length,
+    },
+    sentinel2: { request, status, scenes },
+  });
+
+  it("exposes the live request for the Edit popover", () => {
+    const group = buildImageryGroup([clientLayer("ok")], false)!;
+    expect(group.sentinel2).toEqual({ request, status: "ok" });
+    expect(group.updating).toBe(false);
+  });
+
+  it("uses the best scene's preview image as the thumbnail", () => {
+    const group = buildImageryGroup([clientLayer("ok")], false)!;
+    expect(group.captures[0].thumbnailUrl).toBe("https://cogs/preview.jpg");
+    expect(group.thumbnailUrl).toBe("https://cogs/preview.jpg");
+  });
+
+  it("shows the updating state while the scene search runs", () => {
+    expect(
+      buildImageryGroup([clientLayer("searching", [])], false)!.updating
+    ).toBe(true);
+  });
+
+  it("explains an empty or failed search in the note", () => {
+    expect(
+      buildImageryGroup([clientLayer("no_scenes", [])], false)!.note
+    ).toMatch(/No Sentinel-2 scenes/);
+    expect(
+      buildImageryGroup([clientLayer("too_large", [])], false)!.note
+    ).toMatch(/too large/);
+  });
+
+  it("leaves tiler captures without Edit state", () => {
+    const tiler: Layer = {
+      ...clientLayer("ok"),
+      sentinel2: undefined,
+      tileUrl: "https://tiles/{z}/{x}/{y}.png",
+    };
+    expect(buildImageryGroup([tiler], false)!.sentinel2).toBeUndefined();
   });
 });
 

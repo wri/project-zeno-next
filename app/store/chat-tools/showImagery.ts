@@ -7,9 +7,14 @@ import {
   imageryAttribution,
   imageryLayerId,
   imageryLayerTitle,
-  isImageryLayerId,
   toImageryMeta,
 } from "@/app/utils/imagery";
+import { decodeRecipe } from "@/src/features/imagery";
+import {
+  isClientImageryEnabled,
+  showSentinel2Capture,
+} from "../sentinel2Captures";
+import { promoteImageryLayer } from "./imageryLayers";
 
 interface TileJson {
   bounds?: [number, number, number, number];
@@ -61,8 +66,22 @@ export async function showImageryTool(streamMessage: StreamMessage) {
   const imagery = streamMessage.imagery;
   if (!imagery) return;
 
-  const { addLayer, setLayerVisibility, reorderLayers } =
-    useMapStore.getState();
+  // Client rendering: a Sentinel-2 mosaic_id is the recipe token, so the
+  // request decodes from it and the browser searches and draws the scenes
+  // itself. The backend's tile_url is not used. Planet, and Sentinel-2
+  // payloads whose id is not a recipe, keep the tiler path below.
+  if (
+    isClientImageryEnabled() &&
+    (imagery.provider ?? "sentinel-2") === "sentinel-2"
+  ) {
+    const request = decodeRecipe(imagery.mosaic_id, imagery.aoi_names);
+    if (request) {
+      await showSentinel2Capture(request);
+      return;
+    }
+  }
+
+  const { addLayer } = useMapStore.getState();
 
   // Normalize once at the boundary (ImageryLegendMeta's raw nulls/legacy
   // field names never leak past this call) — see toImageryMeta.
@@ -110,19 +129,12 @@ export async function showImageryTool(streamMessage: StreamMessage) {
 
   const id = imageryLayerId(imagery.mosaic_id);
 
-  // Newest capture wins: hide earlier captures so the map shows the mosaic
-  // the agent just produced. They stay in the legend for toggling back.
-  useMapStore
-    .getState()
-    .layers.filter((l) => isImageryLayerId(l.id) && l.id !== id && l.visible)
-    .forEach((l) => setLayerVisibility(l.id, false));
-
   addLayer({
     id,
     name: imageryLayerTitle(meta.targetDate),
     type: "raster",
     visible: true,
-    tileUrl: imagery.tile_url,
+    tileUrl: imagery.tile_url ?? undefined,
     minzoom: tileMetadata.minzoom,
     maxzoom: tileMetadata.maxzoom,
     bounds: tileMetadata.bounds,
@@ -132,18 +144,9 @@ export async function showImageryTool(streamMessage: StreamMessage) {
     imagery,
   });
 
-  // addLayer appends, which would leave the new mosaic underneath any
-  // earlier ones it overlaps. Reorder so the newest imagery layer sits at
-  // the top of the imagery group (which itself stays below dataset rasters —
-  // see DynamicTileLayers).
-  const layers = useMapStore.getState().layers;
-  const nonImageryIds = layers
-    .filter((l) => !isImageryLayerId(l.id))
-    .map((l) => l.id);
-  const olderImageryIds = layers
-    .filter((l) => isImageryLayerId(l.id) && l.id !== id)
-    .map((l) => l.id);
-  reorderLayers([...nonImageryIds, id, ...olderImageryIds]);
+  // Newest capture wins: earlier captures are hidden (not removed) and the
+  // new one moves to the top of the imagery group.
+  promoteImageryLayer(id);
 
   // No camera movement here: the viewport was already positioned by
   // pick_aoi, and re-fitting to the mosaic bounds would yank the map

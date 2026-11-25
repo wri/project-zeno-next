@@ -3,6 +3,11 @@ import { FeatureCollection, Feature } from "geojson";
 import type { AOISelection, ImageryInfo } from "@/app/types/chat";
 import type { VectorStyleSpec } from "@/app/constants/datasets";
 import type { MapState } from "./mapStore";
+import type {
+  CaptureStatus,
+  Scene,
+  Sentinel2Request,
+} from "@/src/features/imagery";
 
 export interface FeatureRef {
   name: string;
@@ -84,6 +89,15 @@ export interface Layer {
   attribution?: string;
   // Set when added from show_imagery (Sentinel-2 mosaic legend metadata)
   imagery?: ImageryInfo;
+  // Set on a client-rendered Sentinel-2 capture (no tileUrl): the request it
+  // shows, its scene search state and the scenes deck.gl draws.
+  sentinel2?: Sentinel2LayerState;
+}
+
+export interface Sentinel2LayerState {
+  request: Sentinel2Request;
+  status: CaptureStatus;
+  scenes: Scene[];
 }
 
 // The two MVT renderers partition vector layers by whether they carry a

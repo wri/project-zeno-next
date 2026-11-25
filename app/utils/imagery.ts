@@ -7,6 +7,7 @@ import type {
   LegendParam,
 } from "@/app/components/legend/types";
 import type { Layer } from "@/app/store/layerManagerSlice";
+import { SCENE_LIMITS, type CaptureStatus } from "@/src/features/imagery";
 import {
   PLANET_METADATA,
   type ImageryMetadata,
@@ -355,6 +356,7 @@ export function buildImageryGroup(
 
   const live = imageryLayers[0];
   const liveMeta = live?.imagery ? toImageryMeta(live.imagery) : undefined;
+  const liveSentinel2 = live?.sentinel2;
   const captures = imageryLayers.map((layer, index) => {
     const meta = toImageryMeta(layer.imagery!);
     return {
@@ -364,14 +366,7 @@ export function buildImageryGroup(
       metaLabel: captureMetaLabel(meta),
       visible: layer.visible,
       live: index === 0,
-      thumbnailUrl: layer.tileUrl
-        ? imageryThumbnailUrl(
-            layer.tileUrl,
-            layer.bounds,
-            layer.minzoom,
-            layer.maxzoom
-          )
-        : undefined,
+      thumbnailUrl: captureThumbnailUrl(layer),
     };
   });
 
@@ -383,16 +378,56 @@ export function buildImageryGroup(
     opacity: (live?.opacity ?? 1) * 100,
     params: liveMeta ? imageryLegendParams(liveMeta) : [],
     info: liveMeta ? imageryLegendInfo(liveMeta) : undefined,
-    note: liveMeta ? imageryCloudNote(liveMeta) : undefined,
+    note:
+      (liveSentinel2 && sentinel2StatusNote(liveSentinel2.status)) ??
+      (liveMeta ? imageryCloudNote(liveMeta) : undefined),
     metadata: liveMeta
       ? providerDisplay(liveMeta.provider).metadata
       : undefined,
     imageDate: liveMeta?.startDate,
     captures,
     areaCount: new Set(captures.map((c) => c.areaLabel)).size,
-    updating,
+    // A client-rendered capture shows the updating state while its scene
+    // search runs, as a tiler capture does while the agent builds it.
+    updating: updating || liveSentinel2?.status === "searching",
+    sentinel2: liveSentinel2
+      ? { request: liveSentinel2.request, status: liveSentinel2.status }
+      : undefined,
     thumbnailUrl: captures[0]?.thumbnailUrl,
   };
+}
+
+/**
+ * The legend note for a client-rendered capture whose search showed nothing.
+ * Undefined while searching or when there are scenes.
+ */
+export function sentinel2StatusNote(status: CaptureStatus): string | undefined {
+  switch (status) {
+    case "no_scenes":
+      return "No Sentinel-2 scenes match. Try a wider window or a higher cloud limit.";
+    case "too_large":
+      return `This area is too large for satellite imagery (over ${SCENE_LIMITS.maxAreaKm2.toLocaleString("en")} km²). Pick a smaller area.`;
+    case "error":
+      return "Couldn't search for Sentinel-2 scenes.";
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * A capture's thumbnail: the preview image of its best scene when rendered
+ * in the browser, else one tile of its tiler mosaic.
+ */
+function captureThumbnailUrl(layer: Layer): string | undefined {
+  if (layer.sentinel2) return layer.sentinel2.scenes[0]?.thumbnailHref;
+  return layer.tileUrl
+    ? imageryThumbnailUrl(
+        layer.tileUrl,
+        layer.bounds,
+        layer.minzoom,
+        layer.maxzoom
+      )
+    : undefined;
 }
 
 /**

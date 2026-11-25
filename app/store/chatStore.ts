@@ -845,7 +845,8 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     const viewContext = enrichMapViewContext(
       useViewContextStore.getState().viewContext,
       useMapStore.getState().mapRef,
-      useInsightStore.getState()
+      useInsightStore.getState(),
+      useMapStore.getState().layers
     );
     const ff = chatFeatureFlag(
       useAgentProfileStore.getState().agentProfile,

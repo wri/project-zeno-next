@@ -1,6 +1,7 @@
 import { Fragment, useState } from "react";
 import {
   Box,
+  Button,
   ButtonGroup,
   Collapsible,
   Flex,
@@ -28,6 +29,12 @@ import type {
   LayerActionHandler,
 } from "./types";
 import { ParamChip } from "@/app/components/ui/ParamChip";
+import {
+  ImageryFilterPopover,
+  type CaptureStatus,
+  type Sentinel2Request,
+} from "@/src/features/imagery";
+import { previewSentinel2 } from "@/app/store/sentinel2Captures";
 
 /**
  * The "Satellite Imagery" legend section: one entry grouping every Sentinel-2
@@ -56,10 +63,14 @@ export function ImageryLegendEntry(
     areaCount,
     updating,
     thumbnailUrl,
+    sentinel2,
     onLayerAction,
     expanded = false,
     onToggleExpand,
   } = props;
+
+  const requestImagery = (request: Sentinel2Request) =>
+    onLayerAction({ action: "imagery-request", payload: { request } });
 
   // "Collapse state as default" (Figma) — captures expand on demand.
   const [capturesOpen, setCapturesOpen] = useState(false);
@@ -179,7 +190,7 @@ export function ImageryLegendEntry(
       <Collapsible.Root open={expanded}>
         <Collapsible.Content css={{ transition: "height 0.15s ease" }}>
           {updating ? (
-            <UpdatingBody />
+            <UpdatingBody searching={!!sentinel2} />
           ) : (
             <Flex flexDir="column" gap={2} pt={2} pr={4}>
               {/* Summary row: thumbnail + source/rendering label */}
@@ -189,7 +200,7 @@ export function ImageryLegendEntry(
                   {subtitle}
                 </Text>
               </Flex>
-              {params.length > 0 && (
+              {(params.length > 0 || sentinel2) && (
                 <Flex gap={1} flexWrap="wrap" alignItems="center">
                   {params.map((p) => (
                     <ParamChip
@@ -201,9 +212,36 @@ export function ImageryLegendEntry(
                       maxValueWidth={p.maxValueWidth}
                     />
                   ))}
+                  {sentinel2 && (
+                    <ImageryFilterPopover
+                      request={sentinel2.request}
+                      onApply={requestImagery}
+                      preview={previewSentinel2}
+                    >
+                      <Button
+                        variant="plain"
+                        size="xs"
+                        h="20px"
+                        px={1}
+                        fontSize="xs"
+                        color="primary.500"
+                        textDecoration="underline"
+                        aria-label="Edit imagery date, window and cloud cover"
+                      >
+                        Edit
+                      </Button>
+                    </ImageryFilterPopover>
+                  )}
                 </Flex>
               )}
               {note && <Text fontSize="xs">{note}</Text>}
+              {sentinel2 && (
+                <QuickFixes
+                  request={sentinel2.request}
+                  status={sentinel2.status}
+                  onRequest={requestImagery}
+                />
+              )}
               {captures.length > 0 && (
                 <>
                   <Box h="1px" bg="border" mx={-4} />
@@ -419,8 +457,57 @@ function ImageryThumbnail(props: {
   );
 }
 
-/** Body shown while the agent is rebuilding the mosaic (Figma 1473:8197). */
-function UpdatingBody() {
+/**
+ * One-click fixes under a capture that showed nothing: widen the window or
+ * loosen the cloud limit when no scene matched, retry when the search
+ * failed. A too-large area has no fix here (the area comes from the AOI).
+ */
+function QuickFixes(props: {
+  request: Sentinel2Request;
+  status: CaptureStatus;
+  onRequest: (request: Sentinel2Request) => void;
+}) {
+  const { request, status, onRequest } = props;
+  const fixes: { label: string; request: Sentinel2Request }[] = [];
+  if (status === "no_scenes") {
+    if (request.windowDays < 30) {
+      fixes.push({
+        label: "Widen to ±30 days",
+        request: { ...request, windowDays: 30 },
+      });
+    }
+    if (request.maxCloudCover < 50) {
+      fixes.push({
+        label: "Allow 50% cloud",
+        request: { ...request, maxCloudCover: 50 },
+      });
+    }
+  }
+  if (status === "error") fixes.push({ label: "Try again", request });
+  if (fixes.length === 0) return null;
+  return (
+    <Flex gap={1} flexWrap="wrap">
+      {fixes.map((fix) => (
+        <Button
+          key={fix.label}
+          size="xs"
+          variant="outline"
+          h="22px"
+          fontSize="xs"
+          onClick={() => onRequest(fix.request)}
+        >
+          {fix.label}
+        </Button>
+      ))}
+    </Flex>
+  );
+}
+
+/**
+ * Body shown while the agent is rebuilding the mosaic (Figma 1473:8197), or
+ * while the browser searches the scenes of a client-rendered capture.
+ */
+function UpdatingBody({ searching = false }: { searching?: boolean }) {
   return (
     <Flex flexDir="column" gap={2} pt={2} pr={4}>
       <Flex gap={2} alignItems="center" pl={3}>
@@ -434,7 +521,7 @@ function UpdatingBody() {
           flexShrink={0}
         />
         <Text fontSize="xs" color="#737C94">
-          Updating mosaic…
+          {searching ? "Searching Sentinel-2 scenes…" : "Updating mosaic…"}
         </Text>
       </Flex>
       <Flex
