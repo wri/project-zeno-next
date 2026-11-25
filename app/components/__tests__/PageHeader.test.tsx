@@ -342,18 +342,35 @@ describe("PageHeader prompt meter", () => {
     expect(screen.queryByTestId("prompt-quota-meter")).toBeNull();
   });
 
-  it("orders meter, What's new, avatar when both states are true", () => {
+  it("orders meter, What's new, language, avatar when both states are true", () => {
     useAuthStore.getState().setPromptUsage(15, 20);
     renderHeader("/app");
 
     const meter = screen.getByTestId("prompt-quota-meter");
     const whatsNew = screen.getByRole("button", { name: /what's new/i });
+    const language = screen.getByRole("button", { name: "Language: English" });
     const avatar = screen.getByRole("button", { name: "Account menu" });
 
     // Unread updates: the What's new dot is showing.
     expect(screen.getByTestId("whats-new-header-dot")).toBeTruthy();
     expect(precedes(meter, whatsNew)).toBe(true);
-    expect(precedes(whatsNew, avatar)).toBe(true);
+    expect(precedes(whatsNew, language)).toBe(true);
+    expect(precedes(language, avatar)).toBe(true);
+  });
+});
+
+describe("PageHeader language selector", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    useSidebarStore.setState({ menuOpen: false });
+  });
+
+  it("shows the selector to signed-out visitors too", () => {
+    useAuthStore.getState().clearAuth();
+    renderHeader("/app");
+    expect(
+      screen.getByRole("button", { name: "Language: English" })
+    ).toBeTruthy();
   });
 });
 

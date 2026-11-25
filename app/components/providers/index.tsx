@@ -86,9 +86,8 @@ function AuthBootstrapper() {
 }
 
 /**
- * Keeps the UI locale resolved: signed-in profile, then the `gnw_locale`
- * cookie, then English (English always on the landing pages). Re-resolves
- * when the profile language loads or changes.
+ * Keeps the UI locale resolved (see `resolveLocale`; English always on the
+ * landing pages). Re-resolves when the profile language loads or changes.
  */
 function LocaleSync() {
   const profile = useAuthStore((s) => s.preferredLanguageCode);

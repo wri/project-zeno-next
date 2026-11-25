@@ -41,13 +41,15 @@ import {
   ProfileReminderDot,
   ProfileReminderMenuItem,
 } from "@/src/features/front-door";
+import { LocaleSwitcher } from "@/src/features/locale-switcher";
 
 const DISCLAIMER_STORAGE_KEY = "gnw_disclaimer_dismissed_v2";
 
 /**
  * The app's slim header (Figma "Header states, Phase 5"): menu button, logo
  * with the PREVIEW badge and the Map / Dashboards tabs on the left; state
- * items (quota meter, What's new) and the avatar on the right.
+ * items (quota meter, What's new), the language selector and the avatar on
+ * the right.
  */
 function PageHeader() {
   const { t } = useTranslation();
@@ -273,7 +275,8 @@ function PageHeader() {
         </Flex>
       </Flex>
       <Flex gap="4" alignItems="center" hideBelow="md">
-        {/* State items (quota meter, What's new) sit left of the avatar. */}
+        {/* State items (quota meter, What's new) and the language selector
+            sit left of the avatar. */}
         <PromptQuotaMeter />
         {whatsNewUnread && (
           <Tooltip content={t("nav.whatsNew")} showArrow>
@@ -306,6 +309,7 @@ function PageHeader() {
             </IconButton>
           </Tooltip>
         )}
+        <LocaleSwitcher />
         {isAuthenticated ? (
           <Menu.Root
             ids={{ trigger: accountTriggerId }}

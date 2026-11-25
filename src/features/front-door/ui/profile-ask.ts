@@ -5,6 +5,7 @@ import { trackEvent } from "@/app/lib/track-event";
 import { queryClient } from "@/app/lib/query-client";
 import useAuthStore from "@/app/store/authStore";
 import useChatStore from "@/app/store/chatStore";
+import { followPreferredLocale } from "@/src/shared/lib/i18n";
 import { patchProfile } from "../api/profile";
 import { PREFILL_NOT_FOUND, type ProfilePrefill } from "../api/profile-prefill";
 import { profileOptionsQuery, profilePrefillQuery } from "../api/queries";
@@ -225,8 +226,12 @@ export async function saveProfileFromCard(
   patch: ProfileCardPatch,
   prefill: ProfilePrefill = PREFILL_NOT_FOUND
 ): Promise<void> {
+  const before = useAuthStore.getState().preferredLanguageCode;
   const { status } = await patchProfile(patch);
-  if (status) useAuthStore.getState().setAuthStatus(status);
+  if (status) {
+    useAuthStore.getState().setAuthStatus(status);
+    followPreferredLocale(before, status.preferredLanguageCode);
+  }
 
   const auth = useAuthStore.getState();
   useChatStore.getState().removeMessage(messageId);

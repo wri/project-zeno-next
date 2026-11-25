@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 /**
- * The chat panel header: "AI ASSISTANT", the language selector and four
- * controls in order (New conversation, Conversation history, size toggle,
- * Collapse), each with a tooltip. Collapse from full-size lands on the collapsed compact panel, and
+ * The chat panel header: "AI ASSISTANT" and four controls in order (New
+ * conversation, Conversation history, size toggle, Collapse), each with a
+ * tooltip. Collapse from full-size lands on the collapsed compact panel, and
  * a collapsed panel reopens from a click on its bar.
  */
 import { ChakraProvider } from "@chakra-ui/react";
@@ -62,7 +62,7 @@ describe("ChatPanelHeader", () => {
     });
   });
 
-  it("shows AI ASSISTANT, the language selector and the four controls in order", () => {
+  it("shows AI ASSISTANT and the four controls in order", () => {
     renderHeader();
 
     expect(screen.getByText("AI Assistant")).toBeTruthy();
@@ -70,7 +70,6 @@ describe("ChatPanelHeader", () => {
       .getAllByRole("button")
       .map((b) => b.getAttribute("aria-label"));
     expect(labels).toEqual([
-      "Language: English",
       "New conversation",
       "Conversation history",
       "Switch to full-size view",

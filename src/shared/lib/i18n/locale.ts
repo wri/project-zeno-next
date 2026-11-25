@@ -1,6 +1,10 @@
 /**
  * Pure UI-locale resolution. No React, no router, no `document`: callers pass
  * the profile code and the cookie string in.
+ *
+ * Two settings (PZB-1722): the preferred language lives on the profile (comms,
+ * and the default display language); the display language is a per-device
+ * choice in the `gnw_locale` cookie, made in the header selector.
  */
 
 /** Same codes as the backend's `preferred_language_code`. */
@@ -53,18 +57,18 @@ function localeFromCookie(cookie: string | null | undefined): Locale | null {
 }
 
 /**
- * The preferred language: the signed-in profile's, else the one chosen in the
- * `gnw_locale` cookie, else English. The browser's language list is not
- * consulted: with no choice made the UI is English (PZB-960). Pass `profile`
- * only for a signed-in user.
+ * The display language: this device's choice in the `gnw_locale` cookie, else
+ * the signed-in profile's preferred language, else English. The browser's
+ * language list is not consulted: with no choice made the UI is English
+ * (PZB-960). Pass `profile` only for a signed-in user.
  */
 export function resolveLocale(input: {
   profile?: string | null;
   cookie?: string | null;
 }): Locale {
   return (
-    matchLocale(input.profile) ??
     localeFromCookie(input.cookie) ??
+    matchLocale(input.profile) ??
     DEFAULT_LOCALE
   );
 }
@@ -76,4 +80,9 @@ export function htmlLang(locale: Locale): string {
 
 export function localeCookieAssignment(locale: Locale): string {
   return `${LOCALE_COOKIE}=${locale}; Path=/; Max-Age=${ONE_YEAR_SECONDS}; SameSite=Lax`;
+}
+
+/** Expires the `gnw_locale` cookie, dropping this device's display choice. */
+export function localeCookieRemoval(): string {
+  return `${LOCALE_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
 }

@@ -1,13 +1,14 @@
 // @vitest-environment happy-dom
 /**
  * The chat header's language selector: a globe button naming the active
- * language, a menu of the six languages in their own names, and a choice
- * that switches the UI at once and is saved.
+ * language, a menu of the six languages in their own names with the user's
+ * preferred one badged, and a choice that switches the UI at once.
  */
 import { ChakraProvider } from "@chakra-ui/react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import system from "@/app/theme";
+import useAuthStore from "@/app/store/authStore";
 import { i18n } from "@/src/shared/lib/i18n";
 
 const changeLocale = vi.hoisted(() =>
@@ -16,6 +17,15 @@ const changeLocale = vi.hoisted(() =>
 vi.mock("../change-locale", () => ({ changeLocale }));
 
 import { LocaleSwitcher } from "../LocaleSwitcher";
+
+const signIn = (preferredLanguageCode: string | null) =>
+  useAuthStore.getState().setAuthStatus({
+    email: "a@b.c",
+    id: "u1",
+    hasProfile: true,
+    userType: null,
+    preferredLanguageCode,
+  });
 
 function renderSwitcher() {
   return render(
@@ -33,7 +43,10 @@ async function openMenu() {
 }
 
 describe("LocaleSwitcher", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    useAuthStore.getState().clearAuth();
+  });
   afterEach(async () => {
     await act(() => i18n.changeLanguage("en"));
   });
@@ -68,19 +81,26 @@ describe("LocaleSwitcher", () => {
     ).toBeTruthy();
   });
 
-  it("marks English as preferred in the active language, on English only", async () => {
+  it("marks the signed-in user's preferred language, in the active language", async () => {
+    signIn("pt");
     renderSwitcher();
     await openMenu();
     expect(screen.getAllByText("Preferred")).toHaveLength(1);
     expect(
-      screen.getByRole("menuitemradio", { name: /English/ }).textContent
+      screen.getByRole("menuitemradio", { name: /Português/ }).textContent
     ).toContain("Preferred");
 
     await act(() => i18n.changeLanguage("es"));
     expect(screen.getAllByText("Preferido")).toHaveLength(1);
     expect(
-      screen.getByRole("menuitemradio", { name: /English/ }).textContent
+      screen.getByRole("menuitemradio", { name: /Português/ }).textContent
     ).toContain("Preferido");
+  });
+
+  it("shows no preferred badge when signed out", async () => {
+    renderSwitcher();
+    await openMenu();
+    expect(screen.queryByText("Preferred")).toBeNull();
   });
 
   it("gives the English name under every other language", async () => {

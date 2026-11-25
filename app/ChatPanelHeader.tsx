@@ -1,5 +1,4 @@
-import { useRef } from "react";
-import { Box, Flex, IconButton, Text } from "@chakra-ui/react";
+import { Flex, IconButton, Text } from "@chakra-ui/react";
 import {
   CaretDownIcon,
   CaretUpIcon,
@@ -8,7 +7,6 @@ import {
   SidebarSimpleIcon,
   SparkleIcon,
 } from "@phosphor-icons/react";
-import { LocaleSwitcher } from "@/src/features/locale-switcher";
 import { useTranslation } from "@/src/shared/lib/i18n";
 import { Tooltip } from "./components/ui/tooltip";
 import { useStartNewConversation } from "./hooks/useStartNewConversation";
@@ -55,9 +53,8 @@ function PanelIconButton({
 }
 
 /**
- * The chat panel's own header: "AI ASSISTANT", the language selector and,
- * after a divider, New conversation, Conversation history, the size toggle
- * and Collapse. Collapse
+ * The chat panel's own header: "AI ASSISTANT" and, in order, New
+ * conversation, Conversation history, the size toggle and Collapse. Collapse
  * from full-size lands on the collapsed compact panel; while collapsed, a
  * click anywhere on the bar opens the panel again.
  */
@@ -72,7 +69,6 @@ function ChatPanelHeader({
   const chatHistoryOpen = useSidebarStore((s) => s.chatHistoryOpen);
   const setChatHistoryOpen = useSidebarStore((s) => s.setChatHistoryOpen);
   const isCollapsed = !isFullSize && isChatCollapsed;
-  const headerRef = useRef<HTMLDivElement>(null);
 
   return (
     <Flex
@@ -87,7 +83,6 @@ function ChatPanelHeader({
       cursor={isCollapsed ? "pointer" : undefined}
       onClick={isCollapsed ? () => setChatCollapsed(false) : undefined}
       data-testid="chat-panel-header"
-      ref={headerRef}
     >
       <SparkleIcon size={16} color="var(--chakra-colors-neutral-500)" />
       <Text
@@ -102,8 +97,6 @@ function ChatPanelHeader({
         {t("chat.header.title")}
       </Text>
       <Flex ml="auto" gap={1} alignItems="center">
-        <LocaleSwitcher anchorRef={headerRef} />
-        <Box w="1px" h="16px" mx={1} bg="neutral.300" aria-hidden />
         <PanelIconButton
           label={t("chat.header.newConversation")}
           onClick={() => {
