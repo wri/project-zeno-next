@@ -39,7 +39,10 @@ export function buildPreviousAnalysesMap(
 }
 
 export function aoiSearchResultToRow(
-  result: AoiSearchResult,
+  result: Pick<
+    AoiSearchResult,
+    "source" | "src_id" | "subtype" | "name" | "bbox"
+  >,
   typeLabel: string,
   analysesMap: Map<string, number>
 ): AreaPickerRow {
@@ -74,16 +77,11 @@ export function userAoiToRow(
   userAoi: UserAoi,
   analysesMap: Map<string, number>
 ): AreaPickerRow {
-  return {
-    source: userAoi.source,
-    src_id: userAoi.src_id,
-    subtype: userAoi.subtype,
-    name: userAoi.name,
-    typeLabel: areaSourceLabel(userAoi.source),
-    previousAnalyses:
-      analysesMap.get(analysesKey(userAoi.source, userAoi.src_id)) ?? 0,
-    ...(userAoi.bbox ? { bbox: userAoi.bbox } : {}),
-  };
+  return aoiSearchResultToRow(
+    { ...userAoi, bbox: userAoi.bbox ?? undefined },
+    areaSourceLabel(userAoi.source),
+    analysesMap
+  );
 }
 
 /**
