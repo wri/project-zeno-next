@@ -2,6 +2,7 @@
 import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
+import { StrictMode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/app/lib/api-client", () => ({ apiFetch: vi.fn() }));
@@ -34,17 +35,20 @@ const saved: UserAoi = {
   subtype: "country",
 };
 
-function renderThumbnail(userAoi: UserAoi) {
+function renderThumbnail(
+  userAoi: UserAoi,
+  queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  })
+) {
   return render(
-    <QueryClientProvider
-      client={
-        new QueryClient({ defaultOptions: { queries: { retry: false } } })
-      }
-    >
-      <ChakraProvider value={defaultSystem}>
-        <UserAoiThumbnail userAoi={userAoi} />
-      </ChakraProvider>
-    </QueryClientProvider>
+    <StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <ChakraProvider value={defaultSystem}>
+          <UserAoiThumbnail userAoi={userAoi} />
+        </ChakraProvider>
+      </QueryClientProvider>
+    </StrictMode>
   );
 }
 
@@ -68,6 +72,28 @@ describe("UserAoiThumbnail", () => {
     const img = await screen.findByRole("img", { name: userAoi.name });
     expect(img.getAttribute("src")).toBe("blob:outline");
     expect(mockedFetch.mock.calls[0][0]).toContain(path);
+  });
+
+  // StrictMode replays effects, as React does when a component remounts.
+  it("keeps the outline's image URL alive when a card mounts with it cached", async () => {
+    let created = 0;
+    URL.createObjectURL = vi.fn(() => `blob:outline-${++created}`);
+    mockedFetch.mockResolvedValue(
+      new Response(new Blob(["png"], { type: "image/png" }), { status: 200 })
+    );
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    const first = renderThumbnail(owned, queryClient);
+    await screen.findByRole("img", { name: owned.name });
+    first.unmount();
+    renderThumbnail(owned, queryClient);
+
+    const img = await screen.findByRole("img", { name: owned.name });
+    expect(URL.revokeObjectURL).not.toHaveBeenCalledWith(
+      img.getAttribute("src")
+    );
   });
 
   it("falls back to the plain thumbnail when the backend has none", async () => {

@@ -34,22 +34,7 @@ export default function ConversationAreaActionsMenu({
     const results = await Promise.allSettled(
       savable.map((area) => saveUserAoiAsync(area))
     );
-    const failed = results.filter((r) => r.status === "rejected").length;
-    toaster.create(
-      failed === 0
-        ? {
-            title: "Area saved",
-            description: `"${name}" is now in your areas.`,
-            type: "success",
-            duration: 3000,
-          }
-        : {
-            title: "Couldn't save this area",
-            description: "Please try again.",
-            type: "error",
-            duration: 4000,
-          }
-    );
+    toaster.create(saveResultToast(results, name));
   };
 
   const handleRemove = () => {
@@ -74,4 +59,40 @@ export default function ConversationAreaActionsMenu({
       </Menu.Item>
     </AreaCardMenu>
   );
+}
+
+/** Choose the toast for saving a layer's source areas. */
+function saveResultToast(
+  results: PromiseSettledResult<unknown>[],
+  name: string
+): Parameters<typeof toaster.create>[0] {
+  const rejected = results.flatMap((r) =>
+    r.status === "rejected" ? [r.reason] : []
+  );
+  // A 409 means the area was saved elsewhere since the list was loaded.
+  const failed = rejected.filter(
+    (reason) => (reason as { status?: number }).status !== 409
+  );
+  if (failed.length > 0) {
+    return {
+      title: "Couldn't save this area",
+      description: "Please try again.",
+      type: "error",
+      duration: 4000,
+    };
+  }
+  if (rejected.length === results.length) {
+    return {
+      title: "Already in your areas",
+      description: `"${name}" is already in your areas.`,
+      type: "info",
+      duration: 4000,
+    };
+  }
+  return {
+    title: "Area saved",
+    description: `"${name}" is now in your areas.`,
+    type: "success",
+    duration: 3000,
+  };
 }

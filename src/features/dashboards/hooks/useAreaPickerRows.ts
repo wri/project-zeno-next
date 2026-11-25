@@ -4,8 +4,9 @@ import { useAoiBrowse } from "./useAoiBrowse";
 import {
   aoiSearchResultToRow,
   buildPreviousAnalysesMap,
-  userAoiToRow,
   filterRowsBySearch,
+  mergeUserAoiRows,
+  userAoiToRow,
   type AreaPickerRow,
 } from "../model/area-picker-rows";
 import {
@@ -143,10 +144,10 @@ export function useAreaPickerRows(
     };
   }
 
-  const merged = [
-    ...REFERENCE_AOI_SOURCES.flatMap((source) => referenceRows[source]),
-    ...filterRowsBySearch(customRows, search),
-  ];
+  const merged = mergeUserAoiRows(
+    REFERENCE_AOI_SOURCES.flatMap((source) => referenceRows[source]),
+    filterRowsBySearch(customRows, search)
+  );
 
   return {
     rows: merged,

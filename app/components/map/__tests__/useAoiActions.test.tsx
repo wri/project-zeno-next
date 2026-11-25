@@ -151,6 +151,12 @@ describe("useAoiActions", () => {
     expect(render().result.current?.canSaveArea).toBe(false);
   });
 
+  it("cannot save an area without a src id", () => {
+    expect(render({ srcId: undefined }).result.current?.canSaveArea).toBe(
+      false
+    );
+  });
+
   it("hides the dashboard action when the area resolved no src id", () => {
     expect(render({ srcId: undefined }).result.current?.canUseDashboard).toBe(
       false

@@ -218,7 +218,19 @@ export function MonitoredAreaCard({ userAoi }: { userAoi: UserAoi }) {
 
   function handleLocate() {
     const bounds = aoiFlyBounds([aoi]);
-    if (bounds) flyToBounds(bounds);
+    if (bounds) {
+      flyToBounds(bounds);
+      return;
+    }
+    // Without a bbox, fly to the geometry the layer put on the map.
+    const { geoJsonRegistry, flyToGeoJson } = useMapStore.getState();
+    for (const ref of layer?.featureRefs ?? []) {
+      const entry = findRegistryEntry(geoJsonRegistry, ref);
+      if (entry) {
+        flyToGeoJson(entry.data);
+        return;
+      }
+    }
   }
 
   return (

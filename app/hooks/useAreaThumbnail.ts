@@ -1,18 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo } from "react";
 
 import { apiFetch } from "@/app/lib/api-client";
 
-async function fetchAreaThumbnail(
+async function fetchAreaThumbnailUrl(
   source: string,
   srcId: string
-): Promise<Blob> {
+): Promise<string> {
   const path = `/api/geometry/${encodeURIComponent(source)}/${encodeURIComponent(srcId)}/thumbnail`;
   // The route pads the outline by 40px, more than a card-sized image can fit,
   // so this takes the route's default size and the card scales it down.
   const res = await apiFetch(path);
   if (!res.ok) throw new Error(`Thumbnail request failed: ${res.status}`);
-  return res.blob();
+  return URL.createObjectURL(await res.blob());
 }
 
 /**
@@ -21,19 +20,14 @@ async function fetchAreaThumbnail(
  * header, which an `<img src>` can't send, so the image is fetched here.
  */
 export function useAreaThumbnail(source: string, srcId: string): string | null {
-  const { data: blob } = useQuery({
+  const { data: url } = useQuery({
     queryKey: ["areaThumbnail", source, srcId],
-    queryFn: () => fetchAreaThumbnail(source, srcId),
-    // An area's outline doesn't change while it keeps its id.
+    queryFn: () => fetchAreaThumbnailUrl(source, srcId),
+    // One object URL per area for the session: an outline doesn't change while
+    // the area keeps its id, and a URL kept in the cache is never revoked
+    // while a card still shows it.
     staleTime: Infinity,
+    gcTime: Infinity,
   });
-  const url = useMemo(() => (blob ? URL.createObjectURL(blob) : null), [blob]);
-
-  // Release the image once the card stops showing it.
-  useEffect(() => {
-    if (!url) return;
-    return () => URL.revokeObjectURL(url);
-  }, [url]);
-
-  return url;
+  return url ?? null;
 }

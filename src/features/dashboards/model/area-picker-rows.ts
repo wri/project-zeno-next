@@ -5,6 +5,7 @@ import type { AoiSearchResult } from "@/src/entities/aoi";
 import type { UserAoi } from "@/src/entities/user-aoi";
 
 import type { Dashboard } from "../api/schemas";
+import { areaRowKey } from "./area-tree";
 
 /** A single row in the new-dashboard area picker table. */
 export interface AreaPickerRow {
@@ -83,6 +84,27 @@ export function userAoiToRow(
       analysesMap.get(analysesKey(userAoi.source, userAoi.src_id)) ?? 0,
     ...(userAoi.bbox ? { bbox: userAoi.bbox } : {}),
   };
+}
+
+/**
+ * Merge reference rows with the user's rows, listing each area once. A saved
+ * area takes its reference row's place, with the user's own label.
+ */
+export function mergeUserAoiRows(
+  referenceRows: AreaPickerRow[],
+  userAoiRows: AreaPickerRow[]
+): AreaPickerRow[] {
+  const userRowsByKey = new Map(
+    userAoiRows.map((row) => [areaRowKey(row), row])
+  );
+  const merged = referenceRows.map(
+    (row) => userRowsByKey.get(areaRowKey(row)) ?? row
+  );
+  const listed = new Set(merged.map(areaRowKey));
+  return [
+    ...merged,
+    ...userAoiRows.filter((row) => !listed.has(areaRowKey(row))),
+  ];
 }
 
 /** Client-side, case-insensitive substring filter over already-loaded rows. */

@@ -191,7 +191,8 @@ export function useAoiActions(
     canViewAnalysis,
     canSaveArea:
       source.toLowerCase() !== "custom" &&
-      !(srcId && isUserAoi(userAois, source, srcId)),
+      !!srcId &&
+      !isUserAoi(userAois, source, srcId),
     canUseDashboard: dashboardInput !== null && !isResolvingDashboards,
     dashboardLabel: existingDashboard ? "Open Dashboard" : "Create Dashboard",
     isCreatingDashboard,

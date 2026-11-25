@@ -4,7 +4,12 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
+import { useEffect } from "react";
 
+import {
+  showApiError,
+  showServiceUnavailableError,
+} from "@/app/hooks/useErrorHandler";
 import { apiFetch } from "@/app/lib/api-client";
 
 import { UserAoiSchema, type UserAoi } from "../model/user-aoi";
@@ -13,11 +18,25 @@ import { responseError } from "./http";
 
 export const USER_AOIS_QUERY_KEY = ["userAois"] as const;
 
+/** Load the user's areas, with a toast when they can't be loaded. */
 export function useUserAois() {
-  return useQuery({
+  const query = useQuery({
     queryKey: USER_AOIS_QUERY_KEY,
     queryFn: ({ signal }) => fetchUserAois(signal),
   });
+  const { error } = query;
+
+  useEffect(() => {
+    if (!error) return;
+    const status = (error as { status?: number }).status;
+    if (status === 400 || status === 401 || status === 403) {
+      showServiceUnavailableError("My areas");
+    } else if (status !== undefined && status >= 400 && status < 500) {
+      showApiError(error, { title: "Unable to Load Areas" });
+    }
+  }, [error]);
+
+  return query;
 }
 
 export function useUserAoisSuspense() {
@@ -72,7 +91,9 @@ export function useSaveUserAoi() {
 
   const mutation = useMutation({
     mutationFn: createUserAoi,
-    onSuccess: () => {
+    // A 409 means the cached list missed an area saved elsewhere, so the
+    // list is refreshed after a failure too.
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: USER_AOIS_QUERY_KEY });
     },
   });

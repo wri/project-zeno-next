@@ -132,6 +132,32 @@ describe("useAreaPickerRows", () => {
     expect(result.current.rows[2].typeLabel).toBe("Custom area");
   });
 
+  it("lists a saved area once in 'all', with the user's label in the reference row's place", async () => {
+    userAoisState.data.push({
+      id: "userAoi-2",
+      relationship: "saved",
+      name: "Home country",
+      source: "gadm",
+      src_id: "BRA",
+      subtype: "country",
+      bbox: null,
+      created_at: "2026-01-02",
+    });
+    try {
+      const { result } = renderHook(() => useAreaPickerRows("all", ""));
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      expect(result.current.rows.map((r) => r.src_id)).toEqual([
+        "BRA",
+        "KBA-1",
+        "area-1",
+      ]);
+      expect(result.current.rows[0].name).toBe("Home country");
+    } finally {
+      userAoisState.data.pop();
+    }
+  });
+
   it("reports hasNextPage true when any source still has a next page", () => {
     const { result } = renderHook(() => useAreaPickerRows("all", ""));
     expect(result.current.hasNextPage).toBe(true);
