@@ -263,6 +263,10 @@ export interface ImageryInfo {
   // Absent on payloads written before wri/project-zeno#800, which were all
   // Sentinel-2.
   provider?: ImageryProvider | null;
+  // "client": Sentinel-2 searched and drawn in the browser from the recipe
+  // token in mosaic_id; there is no tile_url. "tiler" (or absent, on older
+  // payloads): drawn from tile_url.
+  render?: "client" | "tiler" | null;
   // Absent on a Sentinel-2 capture rendered in the browser (no tiler).
   tile_url?: string | null;
   tilejson_url?: string | null;

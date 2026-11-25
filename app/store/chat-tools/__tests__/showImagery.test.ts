@@ -334,4 +334,50 @@ describe("showImageryTool", () => {
       expect(mapState.addLayer).toHaveBeenCalled();
     });
   });
+
+  describe("with a client payload (render: client)", () => {
+    const recipe = {
+      aois: [{ source: "gadm", srcId: "PER.11.3_1" }],
+      aoiNames: [],
+      targetDate: "2026-06-15",
+      windowDays: 7,
+      maxCloudCover: 20,
+      maxItems: 50,
+    };
+    const clientImageryPayload: ImageryInfo = {
+      provider: "sentinel-2",
+      render: "client",
+      mosaic_id: encodeRecipe(recipe),
+      target_date: "2026-06-15",
+      window_days: 7,
+      max_cloud_cover: 20,
+      aoi_names: ["Paracas National Reserve"],
+    };
+
+    beforeEach(() => {
+      clientImagery.enabled = false;
+      showSentinel2Capture.mockClear();
+    });
+
+    it("renders in the browser even without the flag", async () => {
+      const fetchMock = mockFetch({ json: async () => tileJson });
+      await showImageryTool(baseMsg({ imagery: clientImageryPayload }));
+      expect(showSentinel2Capture).toHaveBeenCalledWith({
+        ...recipe,
+        aoiNames: ["Paracas National Reserve"],
+      });
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(mapState.addLayer).not.toHaveBeenCalled();
+    });
+
+    it("shows nothing when the id is not a recipe", async () => {
+      const fetchMock = mockFetch({ json: async () => tileJson });
+      await showImageryTool(
+        baseMsg({ imagery: { ...clientImageryPayload, mosaic_id: "abc" } })
+      );
+      expect(showSentinel2Capture).not.toHaveBeenCalled();
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(mapState.addLayer).not.toHaveBeenCalled();
+    });
+  });
 });

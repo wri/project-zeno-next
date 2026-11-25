@@ -33,7 +33,56 @@ export interface Sentinel2LayersProps {
   captures: Sentinel2LayerCapture[];
   /** MapLibre layer the imagery is drawn below. */
   beforeId?: string;
+  /**
+   * Called when every scene in view has drawn its tiles. The dashboard
+   * export waits for it before printing.
+   */
+  onViewportLoad?: () => void;
 }
+
+/**
+ * Tracks when the imagery in view is drawn. A MosaicLayer's own
+ * onViewportLoad fires once its scenes' GeoTIFF headers are open, before
+ * any tile is decoded, so it is too early for printing. Each rank's mosaic
+ * reports which scenes are in view; each scene's COGLayer reports when its
+ * tiles have loaded. Done when every rank has reported and every scene in
+ * view has loaded.
+ */
+interface DrawTracker {
+  sourcesInView: (mosaicId: string, sceneIds: string[]) => void;
+  sceneDrawn: (sceneId: string) => void;
+}
+
+function createDrawTracker(
+  mosaicIds: string[],
+  onDrawn: () => void
+): DrawTracker {
+  const inView = new Map<string, string[]>();
+  const drawn = new Set<string>();
+  const check = () => {
+    if (inView.size < mosaicIds.length) return;
+    const ids = [...inView.values()].flat();
+    if (ids.every((id) => drawn.has(id))) onDrawn();
+  };
+  return {
+    sourcesInView: (mosaicId, sceneIds) => {
+      inView.set(mosaicId, sceneIds);
+      check();
+    },
+    sceneDrawn: (sceneId) => {
+      drawn.add(sceneId);
+      check();
+    },
+  };
+}
+
+/** The MosaicLayer ids of a capture: one per scene rank, worst rank first. */
+function captureRanks(capture: Sentinel2LayerCapture): number[] {
+  return [...new Set(capture.scenes.map((s) => s.rank))].sort((a, b) => b - a);
+}
+
+const mosaicId = (capture: Sentinel2LayerCapture, rank: number) =>
+  `sentinel2-${capture.id}-rank-${rank}`;
 
 /**
  * deck.gl 9.4 interleaved mode reads `map.transform.height` and
@@ -98,43 +147,54 @@ function DeckOverlay({ layers, device }: { layers: Layer[]; device: Device }) {
 
 function captureLayers(
   capture: Sentinel2LayerCapture,
-  beforeId: string | undefined
+  beforeId: string | undefined,
+  tracker: DrawTracker | undefined
 ): Layer[] {
   // MosaicLayer collects its sources through a spatial index, so the order
   // of `sources` does not decide what is on top. One MosaicLayer per rank,
   // worst rank first, puts rank 0 (the scene nearest the date) on top; the
   // others only show through its nodata gaps.
-  const ranks = [...new Set(capture.scenes.map((s) => s.rank))].sort(
-    (a, b) => b - a
-  );
-  return ranks.map(
-    (rank) =>
-      new MosaicLayer<Scene, GeoTIFF>({
-        id: `sentinel2-${capture.id}-rank-${rank}`,
-        // Read by the interleaved MapboxOverlay; not typed on LayerProps.
-        ...({ beforeId } as object),
-        minZoom: SCENE_LIMITS.minZoom,
-        visible: capture.visible,
-        opacity: capture.opacity,
-        sources: capture.scenes.filter((s) => s.rank === rank),
-        getSource: (scene) => loadGeoTIFF(scene.visualHref),
-        renderSource: (scene, { data, signal }) =>
-          data
-            ? new COGLayer({
-                id: `sentinel2-cog-${scene.id}`,
-                geotiff: data,
-                epsgResolver,
-                signal,
-                opacity: capture.opacity,
-              })
-            : null,
-      })
-  );
+  return captureRanks(capture).map((rank) => {
+    const id = mosaicId(capture, rank);
+    return new MosaicLayer<Scene, GeoTIFF>({
+      id,
+      // Read by the interleaved MapboxOverlay; not typed on LayerProps.
+      ...({ beforeId } as object),
+      minZoom: SCENE_LIMITS.minZoom,
+      ...(tracker
+        ? {
+            onViewportLoad: (entries) =>
+              tracker.sourcesInView(
+                id,
+                entries.map((e) => e.source.id)
+              ),
+          }
+        : {}),
+      visible: capture.visible,
+      opacity: capture.opacity,
+      sources: capture.scenes.filter((s) => s.rank === rank),
+      getSource: (scene) => loadGeoTIFF(scene.visualHref),
+      renderSource: (scene, { data, signal }) =>
+        data
+          ? new COGLayer({
+              id: `sentinel2-cog-${scene.id}`,
+              geotiff: data,
+              epsgResolver,
+              signal,
+              opacity: capture.opacity,
+              ...(tracker
+                ? { onViewportLoad: () => tracker.sceneDrawn(scene.id) }
+                : {}),
+            })
+          : null,
+    });
+  });
 }
 
 export default function Sentinel2Layers({
   captures,
   beforeId,
+  onViewportLoad,
 }: Sentinel2LayersProps) {
   const { current: mapRef } = useMap();
   const [device, setDevice] = useState<Device | null>(null);
@@ -154,10 +214,21 @@ export default function Sentinel2Layers({
     };
   }, [mapRef]);
 
-  const layers = useMemo(
+  const layers = useMemo(() => {
+    const visible = captures.filter((c) => c.visible);
+    // Pass a stable callback (useCallback): a new one rebuilds the layers.
+    const tracker = onViewportLoad
+      ? createDrawTracker(
+          visible.flatMap((c) => captureRanks(c).map((r) => mosaicId(c, r))),
+          onViewportLoad
+        )
+      : undefined;
     // deck.gl draws later layers on top: oldest capture first.
-    () => [...captures].reverse().flatMap((c) => captureLayers(c, beforeId)),
-    [captures, beforeId]
-  );
+    return [...captures]
+      .reverse()
+      .flatMap((c) =>
+        captureLayers(c, beforeId, c.visible ? tracker : undefined)
+      );
+  }, [captures, beforeId, onViewportLoad]);
   return device ? <DeckOverlay layers={layers} device={device} /> : null;
 }

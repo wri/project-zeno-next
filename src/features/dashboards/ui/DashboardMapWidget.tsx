@@ -1,6 +1,13 @@
 import "maplibre-gl/dist/maplibre-gl.css";
 import "@/app/utils/maplibreWorker";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Box, Flex, Tag } from "@chakra-ui/react";
 import { PolygonIcon } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
@@ -25,6 +32,11 @@ import { createBboxPolygon } from "@/app/utils/bboxUtils";
 import { fetchGeometry } from "@/app/utils/geometryClient";
 import { registerPrimaryForestProtocol } from "@/app/utils/primaryForestTileProtocol";
 import type { MapAreaAoi, MapWidgetLayer } from "../lib/mapWidgets";
+import {
+  Sentinel2Layers,
+  useSentinel2Scenes,
+  type AoiGeometryLoader,
+} from "@/src/features/imagery";
 import DashboardMapLegend, {
   type MapWidgetOpacity,
 } from "./DashboardMapLegend";
@@ -34,6 +46,14 @@ const MAPBOX_ACCESS_TOKEN = import.meta.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 const BASEMAP_STYLE = "devseed/cmazl5ws500bz01scaa27dqi4";
 // The widget basemap is always light, and dashboards are single-area.
 const AOI_COLORS = aoiBoundaryColors("light");
+// An empty layer above the basemap and below the area outline: deck.gl draws
+// client-rendered imagery just under it.
+const IMAGERY_ANCHOR_ID = "widget-imagery-anchor";
+
+// Geometries are immutable, so the query cache key is enough (shared with
+// the area outline's query below).
+const loadAoiGeometry: AoiGeometryLoader = async ({ source, srcId }) =>
+  (await fetchGeometry(source, srcId)).geometry;
 
 /**
  * Set on an export map's container: "false" while it is still fitting its area
@@ -132,11 +152,37 @@ export default function DashboardMapWidget({
   // completes last (the effect covers late bounds, onLoad covers late maps).
   useEffect(fitToBounds, [bounds]);
 
+  // Client-rendered Sentinel-2 imagery: search the scenes of the saved
+  // request; deck.gl draws them (Sentinel2Layers below).
+  const scenes = useSentinel2Scenes(layer.sentinel2, loadAoiGeometry);
+  const imageryCaptures = useMemo(
+    () =>
+      layer.sentinel2 && scenes
+        ? [
+            {
+              id: "widget-imagery",
+              scenes: scenes.scenes,
+              visible: true,
+              opacity: opacity.main / 100,
+            },
+          ]
+        : [],
+    [layer.sentinel2, scenes, opacity.main]
+  );
+  // The export also waits for the imagery: its search, then the scenes in
+  // view (MapLibre's idle event does not cover deck.gl's tiles).
+  const [imageryDrawn, setImageryDrawn] = useState(false);
+  const onImageryLoad = useCallback(() => setImageryDrawn(true), []);
+  const imagerySettled =
+    !layer.sentinel2 ||
+    (!!scenes && (scenes.scenes.length === 0 || imageryDrawn));
+
   // An export map is drawn once it knows its bounds (or that it has none) and
   // then goes idle: every tile loaded or failed. Printing any earlier saves
   // the world view, or blank tiles.
   const [loaded, setLoaded] = useState(false);
-  const [drawn, setDrawn] = useState(false);
+  const [mapDrawn, setDrawn] = useState(false);
+  const drawn = mapDrawn && imagerySettled;
   const boundsSettled = !aoi || geometryFetched;
   useEffect(() => {
     const map = mapRef.current?.getMap();
@@ -235,6 +281,24 @@ export default function DashboardMapWidget({
         >
           <Layer id="widget-basemap" type="raster" />
         </Source>
+        {/* Anchor for client-rendered imagery: above the basemap, below
+            the context/main rasters and the outline. */}
+        <Source
+          id={IMAGERY_ANCHOR_ID}
+          type="geojson"
+          data={{ type: "FeatureCollection", features: [] }}
+        >
+          <Layer id={IMAGERY_ANCHOR_ID} type="line" paint={{}} />
+        </Source>
+        {imageryCaptures.length > 0 && (
+          <Suspense fallback={null}>
+            <Sentinel2Layers
+              captures={imageryCaptures}
+              beforeId={IMAGERY_ANCHOR_ID}
+              onViewportLoad={onImageryLoad}
+            />
+          </Suspense>
+        )}
         {/* Declaration order is stacking order: context under main, outline on top. */}
         {layer.context && (
           <Source
@@ -253,19 +317,21 @@ export default function DashboardMapWidget({
         {/* Keyed on the URL: a re-dated layer (the alerts widget's date
             range) is a fresh source, not a `setTiles` on the live one, which
             MapLibre renders through in a broken state. */}
-        <Source
-          key={layer.tileUrl}
-          id="widget-tiles"
-          type="raster"
-          tiles={[layer.tileUrl]}
-          tileSize={256}
-        >
-          <Layer
+        {layer.tileUrl && (
+          <Source
+            key={layer.tileUrl}
             id="widget-tiles"
             type="raster"
-            paint={{ "raster-opacity": opacity.main / 100 }}
-          />
-        </Source>
+            tiles={[layer.tileUrl]}
+            tileSize={256}
+          >
+            <Layer
+              id="widget-tiles"
+              type="raster"
+              paint={{ "raster-opacity": opacity.main / 100 }}
+            />
+          </Source>
+        )}
         {geometry?.geometry && (
           <Source id="widget-aoi" type="geojson" data={geometry.geometry}>
             {/* The explorer's boundary treatment: contrasting casing under

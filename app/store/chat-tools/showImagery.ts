@@ -68,15 +68,23 @@ export async function showImageryTool(streamMessage: StreamMessage) {
 
   // Client rendering: a Sentinel-2 mosaic_id is the recipe token, so the
   // request decodes from it and the browser searches and draws the scenes
-  // itself. The backend's tile_url is not used. Planet, and Sentinel-2
-  // payloads whose id is not a recipe, keep the tiler path below.
+  // itself. The backend marks these `render: "client"` and sends no
+  // tile_url, so they always take this path. Older Sentinel-2 payloads
+  // (with a tile_url) take it too when ?ff=client-imagery is on. Planet,
+  // and payloads whose id is not a recipe, keep the tiler path below.
+  const isClient = imagery.render === "client";
   if (
-    isClientImageryEnabled() &&
-    (imagery.provider ?? "sentinel-2") === "sentinel-2"
+    isClient ||
+    (isClientImageryEnabled() &&
+      (imagery.provider ?? "sentinel-2") === "sentinel-2")
   ) {
     const request = decodeRecipe(imagery.mosaic_id, imagery.aoi_names);
     if (request) {
       await showSentinel2Capture(request);
+      return;
+    }
+    if (isClient) {
+      console.warn("Client imagery payload without a recipe; not shown");
       return;
     }
   }

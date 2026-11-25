@@ -44,6 +44,10 @@ export {
   ImageryFilterPopover,
   type ScenePreview,
 } from "./ui/ImageryFilterPopover";
+export {
+  useSentinel2Scenes,
+  type AoiGeometryLoader,
+} from "./ui/useSentinel2Scenes";
 
 /** The deck.gl imagery layers; must render inside react-map-gl's `<Map>`. */
 export const Sentinel2Layers = lazy(() => import("./ui/Sentinel2Layers"));
