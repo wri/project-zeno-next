@@ -9,11 +9,14 @@ import {
   type Sentinel2Request,
 } from "../request";
 
-// Tokens from the backend's encode_recipe (src/api/services/mosaic.py) for
+// Tokens from the backend's encode_recipe (src/shared/imagery_recipe.py) for
 // the same requests, so a capture made here gets the agent's layer id.
 const BACKEND_TOKEN_TWO_AREAS =
   "eyJhIjpbWyJnYWRtIiwiUEVSLjExLjNfMSJdLFsia2JhIiwiUGFjYXlhLVNhbWlyaWEgXHUwMGU5Il1dLCJjIjo1MCwiZCI6IjIwMjYtMDYtMTUiLCJuIjo1MCwidyI6MzB9";
 const BACKEND_TOKEN_CUSTOM =
+  "eyJhIjpbWyJjdXN0b20iLCJhYmMiXV0sImMiOjUwLCJkIjoiMjAyNi0wNi0xNSIsIm4iOjUwLCJ3Ijo3fQ";
+// An older token that carries the owner of a custom area ("u").
+const OLD_TOKEN_WITH_OWNER =
   "eyJhIjpbWyJjdXN0b20iLCJhYmMiXV0sImMiOjIwLCJkIjoiMjAyNi0wNi0xNSIsIm4iOjUwLCJ1IjoidS0xIiwidyI6N30";
 
 const twoAreas: Sentinel2Request = {
@@ -34,16 +37,15 @@ describe("encodeRecipe", () => {
     expect(encodeRecipe(twoAreas)).toBe(BACKEND_TOKEN_TWO_AREAS);
   });
 
-  it("includes the custom-area owner", () => {
+  it("matches the backend token for a custom area", () => {
     expect(
       encodeRecipe({
         aois: [{ source: "custom", srcId: "abc" }],
         aoiNames: ["My area"],
         targetDate: "2026-06-15",
         windowDays: 7,
-        maxCloudCover: 20,
+        maxCloudCover: 50,
         maxItems: 50,
-        userId: "u-1",
       })
     ).toBe(BACKEND_TOKEN_CUSTOM);
   });
@@ -81,8 +83,10 @@ describe("decodeRecipe", () => {
     ]);
   });
 
-  it("keeps the custom-area owner", () => {
-    expect(decodeRecipe(BACKEND_TOKEN_CUSTOM)?.userId).toBe("u-1");
+  it("decodes an older token with an owner and drops the owner", () => {
+    const decoded = decodeRecipe(OLD_TOKEN_WITH_OWNER);
+    expect(decoded?.aois).toEqual([{ source: "custom", srcId: "abc" }]);
+    expect(decoded).not.toHaveProperty("userId");
   });
 
   it("returns null for ids that are not recipes", () => {

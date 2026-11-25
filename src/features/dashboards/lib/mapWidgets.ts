@@ -14,8 +14,8 @@ export type MapAreaAoi = Pick<DashboardAoi, "source" | "src_id" | "name">;
  * (dashboards-map-widgets-handoff.md). Configs are self-contained snapshots:
  * exactly one of `config.dataset` / `config.imagery`, each carrying a fully
  * resolved `tile_url` to render directly — no catalog lookup. Client-rendered
- * Sentinel-2 imagery (`render: "client"`) carries its search request (the
- * recipe token in `mosaic_id`) instead of a tile URL.
+ * Sentinel-2 imagery carries its search request (the recipe token in
+ * `mosaic_id`) instead of a tile URL.
  */
 export interface MapWidgetLayer {
   kind: "dataset" | "imagery";
@@ -24,7 +24,7 @@ export interface MapWidgetLayer {
   /** Raster tiles to draw. Empty for client-rendered imagery (`sentinel2`). */
   tileUrl: string;
   /**
-   * Set on Sentinel-2 imagery rendered in the browser (`render: "client"`):
+   * Set on Sentinel-2 imagery, which renders in the browser:
    * the request decoded from the recipe token in `mosaic_id`. The widget
    * searches the scenes and draws them with deck.gl.
    */
@@ -121,14 +121,16 @@ export function mapWidgetLayer(
     const title =
       titleOverride ??
       (targetDate ? `Sentinel-2 imagery, ${targetDate}` : "Sentinel-2 imagery");
-    if (im.render === "client") {
+    // Sentinel-2 renders in the browser from the recipe token in
+    // mosaic_id, also for widgets saved with a tile URL to a server mosaic.
+    if ((str(im.provider) ?? "sentinel-2") === "sentinel-2") {
       const names = Array.isArray(im.aoi_names)
         ? im.aoi_names.filter((n): n is string => typeof n === "string")
         : [];
       const request = decodeRecipe(str(im.mosaic_id) ?? "", names);
-      return request
-        ? { kind: "imagery", title, tileUrl: "", sentinel2: request }
-        : null;
+      if (request) {
+        return { kind: "imagery", title, tileUrl: "", sentinel2: request };
+      }
     }
     const tileUrl = str(im.tile_url);
     if (!tileUrl) return null;

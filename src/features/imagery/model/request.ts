@@ -30,8 +30,6 @@ export interface Sentinel2Request {
    * default, as in every token the backend writes.
    */
   sort?: SceneSort;
-  /** Owner of a custom area; the backend scopes its geometry lookup by it. */
-  userId?: string;
 }
 
 export type SceneSort = "cloud" | "date";
@@ -81,7 +79,7 @@ export function defaultRequest(
 const clamp = (value: number, min: number, max: number): number =>
   Math.min(Math.max(Math.round(value), min), max);
 
-/** The same limits the backend applies (decode_recipe in mosaic.py). */
+/** The same limits the backend applies (decode_recipe in src/shared/imagery_recipe.py). */
 export function normalizeRequest(request: Sentinel2Request): Sentinel2Request {
   return {
     ...request,
@@ -127,7 +125,6 @@ export function encodeRecipe(request: Sentinel2Request): string {
     // Only the non-default sort is written, so a default request's token
     // equals the backend's (which never sets a sort).
     ...(r.sort !== DEFAULT_SORT ? { s: r.sort } : {}),
-    ...(r.userId ? { u: r.userId } : {}),
     w: r.windowDays,
   };
   return toBase64Url(escapeNonAscii(JSON.stringify(payload)));
@@ -175,7 +172,6 @@ export function decodeRecipe(
       maxCloudCover: numberOr(payload.c, DEFAULT_MAX_CLOUD_COVER),
       maxItems: numberOr(payload.n, DEFAULT_MAX_ITEMS),
       sort: payload.s === "date" ? "date" : DEFAULT_SORT,
-      ...(typeof payload.u === "string" ? { userId: payload.u } : {}),
     });
   } catch {
     return null;

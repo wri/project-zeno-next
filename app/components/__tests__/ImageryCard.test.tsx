@@ -10,7 +10,6 @@ import type { ImageryCardData } from "@/app/utils/imagery";
 
 const card: ImageryCardData = {
   provider: "sentinel-2",
-  render: "client",
   mosaic_id: "tok",
   target_date: "2026-06-15",
   window_days: 7,
