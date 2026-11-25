@@ -6,11 +6,13 @@
  * Loaded lazily (see the barrel), so deck.gl, the GeoTIFF decoders and their
  * WASM stay out of the main bundle and out of the SSR prerender.
  */
-import { useMemo } from "react";
-import { useControl } from "react-map-gl/maplibre";
+import { useEffect, useMemo, useState } from "react";
+import { useControl, useMap } from "react-map-gl/maplibre";
 import type { Map as MaplibreMap } from "maplibre-gl";
 import { MapboxOverlay } from "@deck.gl/mapbox";
 import type { Layer } from "@deck.gl/core";
+import type { Device } from "@luma.gl/core";
+import { webgl2Adapter } from "@luma.gl/webgl";
 import { COGLayer, MosaicLayer } from "@developmentseed/deck.gl-geotiff";
 import type { GeoTIFF } from "@developmentseed/geotiff";
 import { epsgResolver } from "@developmentseed/proj";
@@ -48,12 +50,47 @@ function shimTransform(map: MaplibreMap) {
   });
 }
 
-function DeckOverlay({ layers }: { layers: Layer[] }) {
+/**
+ * One luma.gl device per map, attached to MapLibre's WebGL context once.
+ *
+ * Every interleaved Deck otherwise attaches its own device to that context.
+ * luma.gl's attach is async (it awaits an import before it checks the context
+ * for a device), so two Decks created close together, as when React's
+ * StrictMode mounts the overlay twice or the last capture is removed and a new
+ * one added, both find none and the second throws "WebGL context already
+ * attached to device". A shared promise attaches once; Deck.finalize does not
+ * destroy a device it was given, so the device outlives each overlay.
+ */
+const devices = new WeakMap<MaplibreMap, Promise<Device>>();
+
+function mapDevice(map: MaplibreMap): Promise<Device> {
+  let device = devices.get(map);
+  if (!device) {
+    // The same context MapboxOverlay draws into in interleaved mode.
+    const gl: WebGL2RenderingContext = map.painter.context.gl;
+    device = webgl2Adapter
+      .attach(gl, {
+        // The settings Deck uses when it attaches a device itself; without
+        // them interleaved mode rebuilds its pipelines on every frame.
+        _cacheShaders: true,
+        _cachePipelines: true,
+      })
+      .catch((error: unknown) => {
+        // Forget the failure so the next mount tries again.
+        devices.delete(map);
+        throw error;
+      });
+    devices.set(map, device);
+  }
+  return device;
+}
+
+function DeckOverlay({ layers, device }: { layers: Layer[]; device: Device }) {
   const overlay = useControl<MapboxOverlay>(({ map }) => {
     shimTransform(map.getMap());
     // Interleaved: deck.gl draws inside MapLibre's layer stack, so `beforeId`
     // keeps the imagery below dataset rasters and AOI outlines.
-    return new MapboxOverlay({ interleaved: true, layers: [] });
+    return new MapboxOverlay({ interleaved: true, device, layers: [] });
   });
   overlay.setProps({ layers });
   return null;
@@ -99,10 +136,28 @@ export default function Sentinel2Layers({
   captures,
   beforeId,
 }: Sentinel2LayersProps) {
+  const { current: mapRef } = useMap();
+  const [device, setDevice] = useState<Device | null>(null);
+  useEffect(() => {
+    const map = mapRef?.getMap();
+    if (!map) return;
+    let cancelled = false;
+    mapDevice(map)
+      .then((d) => {
+        if (!cancelled) setDevice(d);
+      })
+      .catch((error: unknown) => {
+        console.warn("Satellite imagery: WebGL device unavailable", error);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [mapRef]);
+
   const layers = useMemo(
     // deck.gl draws later layers on top: oldest capture first.
     () => [...captures].reverse().flatMap((c) => captureLayers(c, beforeId)),
     [captures, beforeId]
   );
-  return <DeckOverlay layers={layers} />;
+  return device ? <DeckOverlay layers={layers} device={device} /> : null;
 }

@@ -72,6 +72,9 @@ importers:
       '@luma.gl/core':
         specifier: ^9.4.2
         version: 9.4.2
+      '@luma.gl/webgl':
+        specifier: 9.4.2
+        version: 9.4.2(@luma.gl/core@9.4.2)
       '@phosphor-icons/react':
         specifier: ^2.1.9
         version: 2.1.10(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
