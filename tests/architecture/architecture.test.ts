@@ -1,12 +1,8 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { cruise } from "dependency-cruiser";
 import { describe, expect, it } from "vitest";
-import {
-  forbiddenFor,
-  forbiddenForEntity,
-  options,
-} from "./dependency-cruiser.config";
+import { forbiddenFor, forbiddenForEntity } from "./dependency-cruiser.config";
+import { formatEdges, runCruise } from "./fsd-check";
 
 /** Directory paths of the slices under an FSD layer root (e.g. src/features). */
 function discoverSlices(root: string): string[] {
@@ -22,10 +18,19 @@ function discoverSlices(root: string): string[] {
 }
 
 // Discover every FSD slice so a new one is governed automatically — registration
-// can't be forgotten. Features and entities share the segment-direction rules;
-// entities additionally may not import "up" into features/widgets/pages.
+// can't be forgotten. Features, widgets and pages share the segment-direction
+// rules; entities additionally may not import "up" into features/widgets/pages.
+// (Widgets and pages have no slices yet; they're governed as soon as one lands.)
 const SLICE_CASES = [
   ...discoverSlices("src/features").map((dir) => ({
+    dir,
+    forbidden: forbiddenFor(dir),
+  })),
+  ...discoverSlices("src/widgets").map((dir) => ({
+    dir,
+    forbidden: forbiddenFor(dir),
+  })),
+  ...discoverSlices("src/pages").map((dir) => ({
     dir,
     forbidden: forbiddenFor(dir),
   })),
@@ -39,24 +44,8 @@ describe.each(SLICE_CASES)(
   "architecture fitness — $dir (ADR 0010)",
   ({ dir, forbidden }) => {
     it("honors the FSD segment dependency direction", async () => {
-      const result = await cruise(
-        [dir],
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        { ruleSet: { forbidden }, outputType: "json", ...options } as any
-      );
-
-      // `cruise()` serializes its result to a JSON string; parse it back.
-      const out = result.output;
-      const parsed = typeof out === "string" ? JSON.parse(out) : out;
-      const violations: Array<{
-        rule: { name: string };
-        from: string;
-        to: string;
-      }> = parsed.summary.violations;
-
-      const report = violations
-        .map((v) => `  [${v.rule.name}] ${v.from} → ${v.to}`)
-        .join("\n");
+      const violations = await runCruise([dir], forbidden);
+      const report = formatEdges(violations);
 
       expect(
         violations,

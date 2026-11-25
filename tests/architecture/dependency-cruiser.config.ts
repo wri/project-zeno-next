@@ -11,8 +11,13 @@
  *   lib    → model                         pure helpers / generic impls
  *   api    → model, lib                    backend adapters (HTTP allowed)
  *   ui     → model, api, lib               React edge + composition root
+ *   hooks  → treated exactly like ui       (used by features/dashboards/hooks)
  *
- * Cross-slice imports must go through the slice's public API (`index.ts`).
+ * Layer order (a lower layer never imports a higher one; see `forbiddenLayerDirection`):
+ *   shared < entities < features < widgets < pages < app
+ * Same-layer rules (see `forbiddenSameLayer`, ADR 0012): slices of one layer import each
+ * other only through the target's `index.ts` (entities: its `@x/<consumer>.ts`).
+ * `src/shared` is one unit — its files may import each other.
  *
  * Limitation: dependency-cruiser sees the import graph, not global calls. The
  * `fetch()` / `XMLHttpRequest` guard lives as a source scan in the test file.
@@ -25,7 +30,12 @@ const FORBIDDEN_PKGS_CORE =
   "@chakra-ui|@ark-ui|@tanstack|framer-motion|motion)(/|$)";
 
 // Higher FSD layers an entity (a low layer) must never import "up" into.
-const HIGHER_LAYERS = ["^src/features", "^src/widgets", "^src/pages"];
+const HIGHER_LAYERS = [
+  "^src/features",
+  "^src/widgets",
+  "^src/pages",
+  "^src/app",
+];
 
 /** FSD dependency-direction rules for one slice, e.g. "src/features/analysis". */
 export function forbiddenFor(featureDir: string) {
@@ -39,7 +49,7 @@ export function forbiddenFor(featureDir: string) {
       from: { path: `${feature}/model` },
       to: {
         path: [
-          `${feature}/(ui|api|lib)`,
+          `${feature}/(ui|hooks|api|lib)`,
           FORBIDDEN_PKGS_CORE,
           "^src/shared/lib/router",
           "^app/store",
@@ -55,7 +65,7 @@ export function forbiddenFor(featureDir: string) {
       from: { path: `${feature}/lib` },
       to: {
         path: [
-          `${feature}/(ui|api)`,
+          `${feature}/(ui|hooks|api)`,
           FORBIDDEN_PKGS_CORE,
           "^src/shared/lib/router",
           "^app/store",
@@ -68,7 +78,7 @@ export function forbiddenFor(featureDir: string) {
       comment: "A backend adapter must not import the screen (ui).",
       severity: "error",
       from: { path: `${feature}/api` },
-      to: { path: `${feature}/ui` },
+      to: { path: `${feature}/(ui|hooks)` },
     },
     {
       name: "core-makes-no-http",
@@ -98,8 +108,68 @@ export function forbiddenForEntity(entityDir: string) {
       comment:
         "FSD: an entity is a low layer — it must not import features/widgets/pages.",
       severity: "error",
-      from: { path: `${entity}/(model|lib|api|ui)` },
+      from: { path: `${entity}/(model|lib|api|ui|hooks)` },
       to: { path: HIGHER_LAYERS },
+    },
+  ];
+}
+
+/**
+ * Layer-direction rules for the layers `forbiddenForEntity` doesn't cover
+ * (entities-not-up is already there). Run on the whole `src` tree, so they
+ * apply even before a layer has any slice.
+ */
+export function forbiddenLayerDirection() {
+  const rule = (name: string, from: string, above: string) => ({
+    name,
+    comment: `FSD: ${from} is below ${above} and must not import it.`,
+    severity: "error",
+    from: { path: `^src/${from}/` },
+    to: { path: `^src/(${above})/` },
+  });
+  return [
+    rule(
+      "shared-imports-nothing-above",
+      "shared",
+      "entities|features|widgets|pages|app"
+    ),
+    rule("features-import-no-higher-layer", "features", "widgets|pages|app"),
+    rule("widgets-import-no-higher-layer", "widgets", "pages|app"),
+    rule("pages-import-no-app", "pages", "app"),
+  ];
+}
+
+/**
+ * Same-layer rules for one layer root (e.g. "src/features"):
+ *   1. A slice imports a sibling slice only through the target's `index.ts`.
+ *   3. (entities) a sibling entity is imported only through the target's
+ *      `@x/<consumer>.ts`, where <consumer> is the importing entity.
+ * Uses dependency-cruiser group matching: `$1` is the importing slice.
+ * `src/shared` has no slices and is not covered.
+ */
+export function forbiddenSameLayer(layerDir: string) {
+  const layer = layerDir.replace(/^src\//, "");
+  const root = `^src/${layer}`;
+  const isEntities = layer === "entities";
+  return [
+    {
+      name: isEntities
+        ? "entity-sibling-only-via-x"
+        : "same-layer-import-via-index",
+      comment: isEntities
+        ? "FSD: an entity imports a sibling only through that sibling's @x/<consumer>.ts."
+        : "FSD: a slice imports a sibling slice only through its index.ts.",
+      severity: "error",
+      from: { path: `${root}/([^/]+)/` },
+      to: {
+        path: `${root}/[^/]+/`,
+        pathNot: [
+          `${root}/$1/`,
+          isEntities
+            ? `${root}/[^/]+/@x/$1\\.tsx?$`
+            : `${root}/[^/]+/index\\.tsx?$`,
+        ],
+      },
     },
   ];
 }

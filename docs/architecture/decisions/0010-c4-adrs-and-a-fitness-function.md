@@ -3,6 +3,7 @@
 - **Status:** Accepted
 - **Date:** 2026-06-05
 - **Updated:** 2026-06-24 — the fitness function now asserts the Feature-Sliced Design direction instead of the hexagonal one (the C4/ADR + enforced-seam practice is unchanged).
+- **Extended:** 2026-11-25 — [ADR 0012](0012-fsd-layer-and-same-layer-rules.md) adds the layer, same-layer and cycle rules for every layer, with a temporary allow-list.
 
 ## Context
 
