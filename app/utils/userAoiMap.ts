@@ -46,11 +46,10 @@ export function findUserAoiLayer(
   return findPlaceLayer(layers, userAoiToAoi(userAoi));
 }
 
-/** Take a user AOI's layer off the map. */
+/**
+ * Take a user AOI's layer off the map, and clear the analysis selection if
+ * it's that area.
+ */
 export function removeUserAoiFromMap(layer: Layer, userAoi: UserAoi): void {
-  if (isOwned(userAoi)) {
-    useMapStore.getState().removeLayer(layer.id);
-    return;
-  }
   removePlaceFromMap(layer, userAoiToAoi(userAoi));
 }

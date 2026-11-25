@@ -250,9 +250,11 @@ export function MonitoredAreaCard({ userAoi }: { userAoi: UserAoi }) {
       actions={
         // Rename/delete act on the user AOI, so the kebab must show even
         // when the area isn't on the map; the locate button stays on-map only.
+        // It's hidden while the area is being added, or a delete in that time
+        // would let the add put the deleted area back on the map.
         <AreaCardActions
           onLocate={isVisible ? handleLocate : undefined}
-          menu={<UserAoiActionsMenu userAoi={userAoi} />}
+          menu={adding ? null : <UserAoiActionsMenu userAoi={userAoi} />}
         />
       }
     />

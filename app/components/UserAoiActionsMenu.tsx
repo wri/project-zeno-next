@@ -4,7 +4,7 @@ import { PencilSimpleIcon, TrashIcon } from "@phosphor-icons/react";
 
 import { toaster } from "@/app/components/ui/toaster";
 import useMapStore from "@/app/store/mapStore";
-import { findUserAoiLayer } from "@/app/utils/userAoiMap";
+import { findUserAoiLayer, removeUserAoiFromMap } from "@/app/utils/userAoiMap";
 import { renameCustomArea } from "@/app/utils/renameCustomArea";
 import {
   useDeleteUserAoi,
@@ -63,9 +63,8 @@ export default function UserAoiActionsMenu({ userAoi }: { userAoi: UserAoi }) {
       setDeleteOpen(false);
       if (isOwned) {
         // The area no longer exists, so it can't stay on the map.
-        const { layers, removeLayer } = useMapStore.getState();
-        const layer = findUserAoiLayer(layers, userAoi);
-        if (layer) removeLayer(layer.id);
+        const layer = findUserAoiLayer(useMapStore.getState().layers, userAoi);
+        if (layer) removeUserAoiFromMap(layer, userAoi);
       }
       toaster.create({
         title: isOwned ? "Area deleted" : "Area removed",

@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Flex, IconButton, Stack, Text } from "@chakra-ui/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { PolygonIcon, XIcon } from "@phosphor-icons/react";
@@ -21,6 +21,7 @@ import { AreaSearchResults } from "./AreaSearchResults";
 import { BoundariesList } from "./BoundariesList";
 import { PanelEmpty, PanelPills } from "./PanelList";
 import { PanelSearchInput } from "./PanelSearchInput";
+import { UserAoisBoundary } from "./UserAoisBoundary";
 
 /** Matches CatalogPanel compact/full-size enter & exit (slide from the left). */
 const areasPanelSlideTransition = {
@@ -173,9 +174,11 @@ function AreasPanelBody({
             ) : filter === "conversation" ? (
               <ConversationAreasList />
             ) : (
-              <Suspense fallback={<PanelEmpty>Loading your areas…</PanelEmpty>}>
+              <UserAoisBoundary
+                loading={<PanelEmpty>Loading your areas…</PanelEmpty>}
+              >
                 <MonitoredAreasList />
-              </Suspense>
+              </UserAoisBoundary>
             )}
           </Stack>
         </>

@@ -9,6 +9,7 @@ export { isUserAoi, userAoiToAoi } from "./lib/user-aoi";
 export { fetchUserAois } from "./api/fetch-user-aois";
 export {
   USER_AOIS_QUERY_KEY,
+  showUserAoisLoadError,
   useDeleteUserAoi,
   useRenameUserAoi,
   useSaveUserAoi,

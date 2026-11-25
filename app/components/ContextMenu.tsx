@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Card,
@@ -38,6 +38,7 @@ import { toaster } from "@/app/components/ui/toaster";
 import useMapStore from "../store/mapStore";
 import { datasetCardLayers } from "../utils/datasetCardLayerContext";
 import { addUserAoiToMap, findUserAoiLayer } from "../utils/userAoiMap";
+import { UserAoisBoundary } from "./UserAoisBoundary";
 import { useUserAoisSuspense } from "@/src/entities/user-aoi";
 
 const LAYER_CARDS = ORDERED_DATASET_CARDS;
@@ -173,8 +174,8 @@ function ContextMenu({
               {/* Modal Body */}
               {selectedContextType === "layer" && <LayerMenu />}
               {selectedContextType === "area" && (
-                <Suspense
-                  fallback={
+                <UserAoisBoundary
+                  loading={
                     <Flex w="full" alignItems="center" justifyContent="center">
                       <Box color="fg.muted" fontSize="sm">
                         Loading areas…
@@ -183,7 +184,7 @@ function ContextMenu({
                   }
                 >
                   <AreaMenu />
-                </Suspense>
+                </UserAoisBoundary>
               )}
               {selectedContextType === "date" && <DateMenu />}
             </Dialog.Body>

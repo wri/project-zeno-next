@@ -11,6 +11,7 @@ vi.mock("@/app/components/ui/toaster", () => ({
 
 import { toaster } from "@/app/components/ui/toaster";
 import { apiFetch } from "@/app/lib/api-client";
+import { queryClient as appQueryClient } from "@/app/lib/query-client";
 import {
   USER_AOIS_QUERY_KEY,
   useSaveUserAoi,
@@ -37,22 +38,29 @@ describe("useUserAois", () => {
   beforeEach(() => {
     mockedFetch.mockReset();
     vi.mocked(toaster.create).mockReset();
+    appQueryClient.clear();
+    // The app retries failed loads with backoff; the test needs the failure.
+    appQueryClient.setQueryDefaults(USER_AOIS_QUERY_KEY, { retry: false });
   });
 
-  it("tells the user when their areas can't be loaded", async () => {
+  // Several components read the list at once: the map menu and every
+  // conversation area card.
+  it("tells the user once when their areas can't be loaded", async () => {
     mockedFetch.mockResolvedValue(
       new Response("{}", { status: 403, statusText: "Forbidden" })
     );
+    const wrapper = wrapperWith(appQueryClient);
 
-    renderHook(() => useUserAois(), {
-      wrapper: wrapperWith(newQueryClient()),
-    });
-
-    await waitFor(() =>
-      expect(toaster.create).toHaveBeenCalledWith(
-        expect.objectContaining({ type: "error" })
-      )
+    renderHook(
+      () => {
+        useUserAois();
+        useUserAois();
+      },
+      { wrapper }
     );
+
+    await waitFor(() => expect(toaster.create).toHaveBeenCalled());
+    expect(toaster.create).toHaveBeenCalledTimes(1);
   });
 });
 

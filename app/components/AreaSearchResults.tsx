@@ -1,4 +1,4 @@
-import { Suspense, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Button, Stack, Text } from "@chakra-ui/react";
 
 import { toaster } from "@/app/components/ui/toaster";
@@ -26,6 +26,7 @@ import { EntityCard } from "@/src/shared/ui/entity-card";
 import { MonitoredAreaCard } from "./AreaLists";
 import { AreaThumbnail } from "./AreaThumbnail";
 import { PanelEmpty, PanelList, PanelPills, PanelSection } from "./PanelList";
+import { UserAoisBoundary } from "./UserAoisBoundary";
 
 /** What a search covers: every boundary set, one of them, or your own areas. */
 type SearchScope = "all" | ReferenceAoiSource | "mine";
@@ -77,9 +78,9 @@ function SavedMatches({
   showEmpty?: boolean;
 }) {
   return (
-    <Suspense fallback={null}>
+    <UserAoisBoundary loading={null}>
       <SavedMatchList term={term} showEmpty={showEmpty} />
-    </Suspense>
+    </UserAoisBoundary>
   );
 }
 

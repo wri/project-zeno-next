@@ -1,12 +1,19 @@
 // @vitest-environment happy-dom
 import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import type { Feature } from "geojson";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // The thumbnail and the actions menu fetch on their own; neither locates.
 vi.mock("../UserAoiThumbnail", () => ({ UserAoiThumbnail: () => null }));
-vi.mock("../UserAoiActionsMenu", () => ({ default: () => null }));
+vi.mock("../UserAoiActionsMenu", () => ({
+  default: () => <button>Area actions</button>,
+}));
+// Adding waits for the area's geometry; this one never arrives.
+vi.mock("@/app/utils/userAoiMap", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  addUserAoiToMap: () => new Promise(() => {}),
+}));
 
 import { customAreaRef } from "@/app/store/layerManagerSlice";
 import useMapStore from "@/app/store/mapStore";
@@ -70,5 +77,22 @@ describe("MonitoredAreaCard", () => {
     fireEvent.click(screen.getByRole("button", { name: "Center on map" }));
 
     expect(flyToGeoJson).toHaveBeenCalledWith(farmFeature);
+  });
+
+  // Deleting the area mid-add would let the add put it back on the map.
+  it("hides its actions while the area is being added", async () => {
+    useMapStore.setState({ layers: [], geoJsonRegistry: [] });
+    render(
+      <ChakraProvider value={defaultSystem}>
+        <MonitoredAreaCard userAoi={farm} />
+      </ChakraProvider>
+    );
+    expect(screen.getByRole("button", { name: "Area actions" })).toBeTruthy();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("checkbox"));
+    });
+
+    expect(screen.queryByRole("button", { name: "Area actions" })).toBeNull();
   });
 });

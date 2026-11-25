@@ -4,7 +4,6 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
-import { useEffect } from "react";
 
 import {
   showApiError,
@@ -18,25 +17,24 @@ import { responseError } from "./http";
 
 export const USER_AOIS_QUERY_KEY = ["userAois"] as const;
 
-/** Load the user's areas, with a toast when they can't be loaded. */
 export function useUserAois() {
-  const query = useQuery({
+  return useQuery({
     queryKey: USER_AOIS_QUERY_KEY,
     queryFn: ({ signal }) => fetchUserAois(signal),
   });
-  const { error } = query;
+}
 
-  useEffect(() => {
-    if (!error) return;
-    const status = (error as { status?: number }).status;
-    if (status === 400 || status === 401 || status === 403) {
-      showServiceUnavailableError("My areas");
-    } else if (status !== undefined && status >= 400 && status < 500) {
-      showApiError(error, { title: "Unable to Load Areas" });
-    }
-  }, [error]);
-
-  return query;
+/**
+ * Tell the user their areas couldn't be loaded. The shared query cache calls
+ * this once per failed load, however many components read the list.
+ */
+export function showUserAoisLoadError(error: Error): void {
+  const status = (error as { status?: number }).status;
+  if (status === 400 || status === 401 || status === 403) {
+    showServiceUnavailableError("My areas");
+  } else if (status !== undefined && status >= 400 && status < 500) {
+    showApiError(error, { title: "Unable to Load Areas" });
+  }
 }
 
 export function useUserAoisSuspense() {

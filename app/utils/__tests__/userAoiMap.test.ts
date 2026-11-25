@@ -92,6 +92,24 @@ describe("user AOIs on the map", () => {
     expect(findUserAoiLayer(layers, saved)?.id).toBe("Brazil");
   });
 
+  // A just-drawn area is the analysis selection; it must not outlive the area.
+  it("clears the analysis selection when it takes an owned area off", async () => {
+    await addUserAoiToMap(owned);
+    const layer = findUserAoiLayer(useMapStore.getState().layers, owned);
+    useMapStore.setState({
+      analysisSelection: {
+        name: owned.name,
+        source: "custom",
+        srcId: owned.src_id,
+        subtype: "custom-area",
+      },
+    });
+
+    removeUserAoiFromMap(layer!, owned);
+
+    expect(useMapStore.getState().analysisSelection).toBeNull();
+  });
+
   it("takes an area off the map again", async () => {
     await addUserAoiToMap(owned);
     const layer = findUserAoiLayer(useMapStore.getState().layers, owned);
