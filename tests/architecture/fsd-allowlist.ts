@@ -7,49 +7,26 @@
  * longer fires (delete it), so the list can only shrink. It is empty at the end
  * of the migration; PZB-1713 deletes this file.
  */
+import { SAME_LAYER_RULE } from "./dependency-cruiser.config";
 import type { CycleAllow, EdgeAllow } from "./fsd-check";
 
-const DEEP_IMPORT = "same-layer-import-via-index";
+/** insights-history → dashboards deep imports, removed by PZB-1706. */
+const deep = (from: string, to: string): EdgeAllow => ({
+  rule: SAME_LAYER_RULE,
+  from: `src/features/insights-history/ui/${from}`,
+  to: `src/features/dashboards/ui/${to}`,
+  ticket: "PZB-1706",
+});
 
 // TODO(fsd) PZB-1706: insights-history reaches into dashboards' ui/ instead of
 // going through F/dashboards/index.ts.
 export const EDGE_ALLOWLIST: EdgeAllow[] = [
-  {
-    rule: DEEP_IMPORT,
-    from: "src/features/insights-history/ui/curated-insights-list.tsx",
-    to: "src/features/dashboards/ui/RemoveAnalysisDialog.tsx",
-    ticket: "PZB-1706",
-  },
-  {
-    rule: DEEP_IMPORT,
-    from: "src/features/insights-history/ui/curated-insights-list.tsx",
-    to: "src/features/dashboards/ui/useAddCuratedAnalysisToDashboard.ts",
-    ticket: "PZB-1706",
-  },
-  {
-    rule: DEEP_IMPORT,
-    from: "src/features/insights-history/ui/insights-panel.tsx",
-    to: "src/features/dashboards/ui/CurrentDashboardAnalysisTemplates.tsx",
-    ticket: "PZB-1706",
-  },
-  {
-    rule: DEEP_IMPORT,
-    from: "src/features/insights-history/ui/insights-panel.tsx",
-    to: "src/features/dashboards/ui/RemoveAnalysisDialog.tsx",
-    ticket: "PZB-1706",
-  },
-  {
-    rule: DEEP_IMPORT,
-    from: "src/features/insights-history/ui/insights-panel.tsx",
-    to: "src/features/dashboards/ui/useAddInsightToDashboard.ts",
-    ticket: "PZB-1706",
-  },
-  {
-    rule: DEEP_IMPORT,
-    from: "src/features/insights-history/ui/insights-panel.tsx",
-    to: "src/features/dashboards/ui/useCurrentDashboardArea.ts",
-    ticket: "PZB-1706",
-  },
+  deep("curated-insights-list.tsx", "RemoveAnalysisDialog.tsx"),
+  deep("curated-insights-list.tsx", "useAddCuratedAnalysisToDashboard.ts"),
+  deep("insights-panel.tsx", "CurrentDashboardAnalysisTemplates.tsx"),
+  deep("insights-panel.tsx", "RemoveAnalysisDialog.tsx"),
+  deep("insights-panel.tsx", "useAddInsightToDashboard.ts"),
+  deep("insights-panel.tsx", "useCurrentDashboardArea.ts"),
 ];
 
 /** File-level import cycles (strongly connected components), by exact members. */

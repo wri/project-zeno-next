@@ -29,6 +29,17 @@ const FORBIDDEN_PKGS_CORE =
   "node_modules/(react|react-dom|react-router|maplibre-gl|react-map-gl|terra-draw|" +
   "@chakra-ui|@ark-ui|@tanstack|framer-motion|motion)(/|$)";
 
+/** Layers that hold slices (shared has none). */
+export const SLICE_LAYERS = [
+  "entities",
+  "features",
+  "widgets",
+  "pages",
+] as const;
+
+/** Name of the same-layer rule (non-entity layers); allow-list entries cite it. */
+export const SAME_LAYER_RULE = "same-layer-import-via-index";
+
 // Higher FSD layers an entity (a low layer) must never import "up" into.
 const HIGHER_LAYERS = [
   "^src/features",
@@ -141,8 +152,8 @@ export function forbiddenLayerDirection() {
 
 /**
  * Same-layer rules for one layer root (e.g. "src/features"):
- *   1. A slice imports a sibling slice only through the target's `index.ts`.
- *   3. (entities) a sibling entity is imported only through the target's
+ *   - A slice imports a sibling slice only through the target's `index.ts`.
+ *   - (entities) a sibling entity is imported only through the target's
  *      `@x/<consumer>.ts`, where <consumer> is the importing entity.
  * Uses dependency-cruiser group matching: `$1` is the importing slice.
  * `src/shared` has no slices and is not covered.
@@ -153,9 +164,7 @@ export function forbiddenSameLayer(layerDir: string) {
   const isEntities = layer === "entities";
   return [
     {
-      name: isEntities
-        ? "entity-sibling-only-via-x"
-        : "same-layer-import-via-index",
+      name: isEntities ? "entity-sibling-only-via-x" : SAME_LAYER_RULE,
       comment: isEntities
         ? "FSD: an entity imports a sibling only through that sibling's @x/<consumer>.ts."
         : "FSD: a slice imports a sibling slice only through its index.ts.",

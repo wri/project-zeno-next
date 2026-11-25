@@ -1,7 +1,11 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { forbiddenFor, forbiddenForEntity } from "./dependency-cruiser.config";
+import {
+  SLICE_LAYERS,
+  forbiddenFor,
+  forbiddenForEntity,
+} from "./dependency-cruiser.config";
 import { formatEdges, runCruise } from "./fsd-check";
 
 /** Directory paths of the slices under an FSD layer root (e.g. src/features). */
@@ -21,24 +25,12 @@ function discoverSlices(root: string): string[] {
 // can't be forgotten. Features, widgets and pages share the segment-direction
 // rules; entities additionally may not import "up" into features/widgets/pages.
 // (Widgets and pages have no slices yet; they're governed as soon as one lands.)
-const SLICE_CASES = [
-  ...discoverSlices("src/features").map((dir) => ({
+const SLICE_CASES = SLICE_LAYERS.flatMap((layer) =>
+  discoverSlices(`src/${layer}`).map((dir) => ({
     dir,
-    forbidden: forbiddenFor(dir),
-  })),
-  ...discoverSlices("src/widgets").map((dir) => ({
-    dir,
-    forbidden: forbiddenFor(dir),
-  })),
-  ...discoverSlices("src/pages").map((dir) => ({
-    dir,
-    forbidden: forbiddenFor(dir),
-  })),
-  ...discoverSlices("src/entities").map((dir) => ({
-    dir,
-    forbidden: forbiddenForEntity(dir),
-  })),
-];
+    forbidden: (layer === "entities" ? forbiddenForEntity : forbiddenFor)(dir),
+  }))
+);
 
 describe.each(SLICE_CASES)(
   "architecture fitness — $dir (ADR 0010)",

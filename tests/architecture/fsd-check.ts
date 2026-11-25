@@ -1,5 +1,6 @@
 import { cruise } from "dependency-cruiser";
-import { options } from "./dependency-cruiser.config";
+import { expect } from "vitest";
+import { SLICE_LAYERS, options } from "./dependency-cruiser.config";
 
 /** One rule violation: `from` imports `to`, breaking `rule`. */
 export interface Edge {
@@ -114,7 +115,7 @@ export function toSliceGraph(
   graph: Map<string, string[]>
 ): Map<string, string[]> {
   const sliceOf = (file: string) =>
-    /^src\/(?:entities|features|widgets|pages)\/[^/]+/.exec(file)?.[0];
+    new RegExp(`^src/(?:${SLICE_LAYERS.join("|")})/[^/]+`).exec(file)?.[0];
   const out = new Map<string, Set<string>>();
   for (const [file, deps] of graph) {
     const from = sliceOf(file);
@@ -133,28 +134,53 @@ const edgeKey = (e: Edge) => `${e.rule}\u0000${e.from}\u0000${e.to}`;
 const cycleKey = (members: string[]) => [...members].sort().join("\u0000");
 
 /**
- * Split violations into `unexpected` (not allow-listed: the migration added
- * one) and `stale` (allow-listed but gone: delete the entry). Both must be
- * empty, so the allow-list can only shrink.
+ * Split `found` into `unexpected` (not allow-listed: the migration added one)
+ * and `stale` (allow-listed but gone: delete the entry). Both must be empty,
+ * so the allow-list can only shrink.
  */
-export function applyEdgeAllowList(violations: Edge[], allow: EdgeAllow[]) {
-  const allowed = new Set(allow.map(edgeKey));
-  const seen = new Set(violations.map(edgeKey));
+export function applyAllowList<T>(
+  found: T[],
+  allow: T[],
+  key: (t: T) => string
+) {
+  const allowed = new Set(allow.map(key));
+  const seen = new Set(found.map(key));
   return {
-    unexpected: violations.filter((v) => !allowed.has(edgeKey(v))),
-    stale: allow.filter((a) => !seen.has(edgeKey(a))),
+    unexpected: found.filter((f) => !allowed.has(key(f))),
+    stale: allow.filter((a) => !seen.has(key(a))),
   };
 }
 
-/** Same as `applyEdgeAllowList`, for cycles. */
-export function applyCycleAllowList(cycles: string[][], allow: CycleAllow[]) {
-  const allowed = new Set(allow.map((a) => cycleKey(a.members)));
-  const seen = new Set(cycles.map(cycleKey));
-  return {
-    unexpected: cycles.filter((c) => !allowed.has(cycleKey(c))),
-    stale: allow.filter((a) => !seen.has(cycleKey(a.members))),
-  };
-}
+export const applyEdgeAllowList = (violations: Edge[], allow: EdgeAllow[]) =>
+  applyAllowList(violations, allow, edgeKey);
+
+export const applyCycleAllowList = (cycles: string[][], allow: CycleAllow[]) =>
+  applyAllowList(
+    cycles,
+    allow.map((a) => a.members),
+    cycleKey
+  );
 
 export const formatEdges = (edges: Edge[]) =>
   edges.map((v) => `  [${v.rule}] ${v.from} → ${v.to}`).join("\n");
+
+/** Cruise `paths` with `rules` and assert nothing beyond the allow-list fires. */
+export async function expectOnlyAllowListed(
+  paths: string[],
+  rules: Array<{ name: string }>,
+  allow: EdgeAllow[]
+) {
+  const names = new Set(rules.map((r) => r.name));
+  const { unexpected, stale } = applyEdgeAllowList(
+    await runCruise(paths, rules),
+    allow.filter((a) => names.has(a.rule))
+  );
+  expect(
+    unexpected,
+    `New violations:\n${formatEdges(unexpected)}`
+  ).toHaveLength(0);
+  expect(
+    stale,
+    `Stale allow-list entries, delete them:\n${formatEdges(stale)}`
+  ).toHaveLength(0);
+}
