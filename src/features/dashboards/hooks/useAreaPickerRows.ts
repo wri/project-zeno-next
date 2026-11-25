@@ -58,11 +58,11 @@ export function useAreaPickerRows(
   activeCategory: AreaPickerSectionId | "all",
   search: string
 ): AreaPickerRowsResult {
-  const { data: libraryEntries, isLoading: customLoading } = useUserAois();
+  const { data: userAois, isLoading: customLoading } = useUserAois();
   const { data: dashboards } = useDashboards();
 
   // Reference sources are searched server-side (fuzzy, similarity-ranked) by
-  // threading `search` through to the /api/aois endpoint. The user's library
+  // threading `search` through to the /api/aois endpoint. The user's areas
   // is loaded whole and filtered client-side below.
   const gadm = useAoiBrowse("gadm", {
     enabled: isReferenceSourceEnabled(activeCategory, "gadm"),
@@ -88,9 +88,8 @@ export function useAreaPickerRows(
   );
 
   const customRows = useMemo(
-    () =>
-      (libraryEntries ?? []).map((entry) => userAoiToRow(entry, analysesMap)),
-    [libraryEntries, analysesMap]
+    () => (userAois ?? []).map((entry) => userAoiToRow(entry, analysesMap)),
+    [userAois, analysesMap]
   );
 
   const referenceRows = useMemo(() => {
@@ -119,7 +118,7 @@ export function useAreaPickerRows(
     return {
       rows: filterRowsBySearch(customRows, search),
       isLoading: customLoading,
-      // The library is filtered client-side, so there is never a search
+      // User AOIs are filtered client-side, so there is never a search
       // round-trip to wait on.
       isSearching: false,
       hasNextPage: false,

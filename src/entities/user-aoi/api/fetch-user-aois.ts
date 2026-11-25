@@ -16,7 +16,7 @@ export async function readApiError(
   return error;
 }
 
-/** Fetch every entry of the user's library, following `X-Next-Offset`. */
+/** Fetch every entry of the user's areas, following `X-Next-Offset`. */
 export async function fetchUserAois(): Promise<UserAoi[]> {
   const entries: UserAoi[] = [];
   let offset: number | null = 0;

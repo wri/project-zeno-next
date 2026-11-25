@@ -1,8 +1,8 @@
 import { z } from "zod";
 
-/** An area in the user's library: a custom area they own or a source area they saved. */
+/** An area in the user's areas: a custom area they own or a source area they saved. */
 export const UserAoiSchema = z.object({
-  /** The library entry's id, used to rename or remove it. */
+  /** The user AOI's id, used to rename or remove it. */
   id: z.string(),
   relationship: z.enum(["owner", "saved"]),
   /** The user's label for the area, else its own name. */

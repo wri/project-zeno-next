@@ -56,7 +56,7 @@ async function deleteUserAoi(entryId: string): Promise<void> {
   if (!res.ok) throw await readApiError(res, "Failed to delete area");
 }
 
-function useLibraryMutation<TArgs, TResult>(
+function useUserAoiMutation<TArgs, TResult>(
   mutationFn: (args: TArgs) => Promise<TResult>
 ) {
   const queryClient = useQueryClient();
@@ -67,14 +67,14 @@ function useLibraryMutation<TArgs, TResult>(
   });
 }
 
-/** Save a source area to the library by reference; 409 if already saved. */
-export const useSaveUserAoi = () => useLibraryMutation(postUserAoi);
+/** Save a source area to the user's areas by reference; 409 if already saved. */
+export const useSaveUserAoi = () => useUserAoiMutation(postUserAoi);
 
-/** Rename a library entry: a saved area's label, or an owned area itself. */
+/** Rename a user AOI: a saved area's label, or an owned area itself. */
 export const useRenameUserAoi = () =>
-  useLibraryMutation(({ entryId, name }: { entryId: string; name: string }) =>
+  useUserAoiMutation(({ entryId, name }: { entryId: string; name: string }) =>
     patchUserAoi(entryId, name)
   );
 
-/** Remove a library entry: unsave a saved area, or delete an owned one. */
-export const useDeleteUserAoi = () => useLibraryMutation(deleteUserAoi);
+/** Remove a user AOI: unsave a saved area, or delete an owned one. */
+export const useDeleteUserAoi = () => useUserAoiMutation(deleteUserAoi);

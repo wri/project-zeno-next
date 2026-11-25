@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { UserAoi } from "../../model/user-aoi";
-import { isInLibrary, userAoiToAoi } from "../user-aoi";
+import { isUserAoi, userAoiToAoi } from "../user-aoi";
 
 const saved: UserAoi = {
   id: "entry-1",
@@ -30,13 +30,13 @@ describe("userAoiToAoi", () => {
   });
 });
 
-describe("isInLibrary", () => {
+describe("isUserAoi", () => {
   // Map layers name a source by its layer id ("GADM"), the API in lowercase.
   it("matches an area whatever the source's casing", () => {
-    expect(isInLibrary([saved], "GADM", "BRA")).toBe(true);
+    expect(isUserAoi([saved], "GADM", "BRA")).toBe(true);
   });
 
   it("does not match another area of the same source", () => {
-    expect(isInLibrary([saved], "gadm", "ARG")).toBe(false);
+    expect(isUserAoi([saved], "gadm", "ARG")).toBe(false);
   });
 });

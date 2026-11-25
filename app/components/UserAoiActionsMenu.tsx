@@ -4,7 +4,7 @@ import { PencilSimpleIcon, TrashIcon } from "@phosphor-icons/react";
 
 import { toaster } from "@/app/components/ui/toaster";
 import useMapStore from "@/app/store/mapStore";
-import { findLibraryAreaLayer } from "@/app/utils/libraryAreaMap";
+import { findUserAoiLayer } from "@/app/utils/userAoiMap";
 import { renameCustomArea } from "@/app/utils/renameCustomArea";
 import {
   useDeleteUserAoi,
@@ -19,11 +19,11 @@ import { AreaCardMenu } from "./AreaCardMenu";
  * feedback and map synchronisation.
  *
  * An owned custom area is renamed or deleted itself, so the map's copies of
- * it follow. A saved source area only changes in the user's library: its
+ * it follow. A saved source area only changes in the user's areas: its
  * label, or whether it is listed. The area itself, and any map layer or
  * dashboard showing it, stay as they are.
  */
-export default function LibraryAreaActionsMenu({ entry }: { entry: UserAoi }) {
+export default function UserAoiActionsMenu({ entry }: { entry: UserAoi }) {
   const [renameOpen, setRenameOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
@@ -64,7 +64,7 @@ export default function LibraryAreaActionsMenu({ entry }: { entry: UserAoi }) {
       if (isOwned) {
         // The area no longer exists, so it can't stay on the map.
         const { layers, removeLayer } = useMapStore.getState();
-        const layer = findLibraryAreaLayer(layers, entry);
+        const layer = findUserAoiLayer(layers, entry);
         if (layer) removeLayer(layer.id);
       }
       toaster.create({

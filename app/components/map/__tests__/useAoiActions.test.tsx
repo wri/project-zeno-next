@@ -25,11 +25,11 @@ vi.mock("@/src/features/analysis", async (importOriginal) => ({
 }));
 
 const saveAoiAsync = vi.fn().mockResolvedValue({});
-let library: { source: string; src_id: string }[] = [];
+let userAois: { source: string; src_id: string }[] = [];
 vi.mock("@/src/entities/user-aoi", async (importOriginal) => ({
   ...(await importOriginal<object>()),
   useSaveUserAoi: () => ({ mutateAsync: saveAoiAsync, isPending: false }),
-  useUserAois: () => ({ data: library }),
+  useUserAois: () => ({ data: userAois }),
 }));
 
 const createDashboardForArea = vi.fn();
@@ -98,7 +98,7 @@ const render = (override: Partial<typeof target> | null = {}) =>
 describe("useAoiActions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    library = [];
+    userAois = [];
     analysisStatus = "idle";
     dashboardHookState = {
       existing: null,
@@ -146,8 +146,8 @@ describe("useAoiActions", () => {
     );
   });
 
-  it("cannot save an area already in the user's library", () => {
-    library = [{ source: "gadm", src_id: "BRA.16_1" }];
+  it("cannot save an area already in the user's areas", () => {
+    userAois = [{ source: "gadm", src_id: "BRA.16_1" }];
     expect(render().result.current?.canSaveArea).toBe(false);
   });
 
@@ -391,7 +391,7 @@ describe("useAoiActions", () => {
 
   it("says so when the area was already saved", async () => {
     saveAoiAsync.mockRejectedValueOnce(
-      Object.assign(new Error("Area is already in your library"), {
+      Object.assign(new Error("Area is already in your areas"), {
         status: 409,
       })
     );

@@ -37,10 +37,7 @@ import { useEnabledFlags } from "@/src/shared/lib/feature-flags";
 import { toaster } from "@/app/components/ui/toaster";
 import useMapStore from "../store/mapStore";
 import { datasetCardLayers } from "../utils/datasetCardLayerContext";
-import {
-  addLibraryAreaToMap,
-  findLibraryAreaLayer,
-} from "../utils/libraryAreaMap";
+import { addUserAoiToMap, findUserAoiLayer } from "../utils/userAoiMap";
 import { useUserAoisSuspense } from "@/src/entities/user-aoi";
 
 const LAYER_CARDS = ORDERED_DATASET_CARDS;
@@ -264,7 +261,7 @@ function AreaMenu() {
       .map((entry) => ({
         id: entry.id,
         name: entry.name,
-        selected: !!findLibraryAreaLayer(layers, entry),
+        selected: !!findUserAoiLayer(layers, entry),
       }));
   }, [entries, query, layers]);
 
@@ -272,7 +269,7 @@ function AreaMenu() {
     const entry = entries.find((e) => e.id === card.id);
     if (!entry) return;
     try {
-      await addLibraryAreaToMap(entry);
+      await addUserAoiToMap(entry);
     } catch (error) {
       console.error(`Failed to add "${entry.name}" to the map:`, error);
       toaster.create({

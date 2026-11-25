@@ -9,7 +9,7 @@ vi.mock("@/app/lib/api-client", () => ({ apiFetch: vi.fn() }));
 import { apiFetch } from "@/app/lib/api-client";
 import type { UserAoi } from "@/src/entities/user-aoi";
 
-import { LibraryAreaThumbnail } from "../LibraryAreaThumbnail";
+import { UserAoiThumbnail } from "../UserAoiThumbnail";
 
 const mockedFetch = vi.mocked(apiFetch);
 
@@ -42,13 +42,13 @@ function renderThumbnail(entry: UserAoi) {
       }
     >
       <ChakraProvider value={defaultSystem}>
-        <LibraryAreaThumbnail entry={entry} />
+        <UserAoiThumbnail entry={entry} />
       </ChakraProvider>
     </QueryClientProvider>
   );
 }
 
-describe("LibraryAreaThumbnail", () => {
+describe("UserAoiThumbnail", () => {
   beforeEach(() => {
     mockedFetch.mockReset();
     URL.createObjectURL = vi.fn(() => "blob:outline");

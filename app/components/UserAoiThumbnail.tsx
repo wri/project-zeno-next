@@ -8,10 +8,10 @@ import { AreaThumbnail } from "./AreaThumbnail";
 
 /**
  * Thumbnail for a "My areas" card: the area's outline, drawn by the backend
- * because the library list carries no geometry. Until it loads, or if it
+ * because the user AOI list carries no geometry. Until it loads, or if it
  * can't, the plain area thumbnail stands in.
  */
-export function LibraryAreaThumbnail({ entry }: { entry: UserAoi }) {
+export function UserAoiThumbnail({ entry }: { entry: UserAoi }) {
   const outlineUrl = useAreaThumbnail(entry.source, entry.src_id);
   const aoiSelection = useMemo(() => {
     const aoi = userAoiToAoi(entry);

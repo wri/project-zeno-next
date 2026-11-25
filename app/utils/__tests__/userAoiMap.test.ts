@@ -11,10 +11,10 @@ import { apiFetch } from "@/app/lib/api-client";
 import useMapStore from "@/app/store/mapStore";
 import type { UserAoi } from "@/src/entities/user-aoi";
 import {
-  addLibraryAreaToMap,
-  findLibraryAreaLayer,
-  removeLibraryAreaFromMap,
-} from "../libraryAreaMap";
+  addUserAoiToMap,
+  findUserAoiLayer,
+  removeUserAoiFromMap,
+} from "../userAoiMap";
 
 const mockedFetch = vi.mocked(apiFetch);
 
@@ -42,7 +42,7 @@ const saved: UserAoi = {
 
 const geometry = { type: "FeatureCollection", features: [] };
 
-describe("library areas on the map", () => {
+describe("user AOIs on the map", () => {
   beforeEach(() => {
     mockedFetch.mockReset();
     mockedFetch.mockResolvedValue(
@@ -66,13 +66,13 @@ describe("library areas on the map", () => {
       featureRefs: [{ name: "Pará", source: "gadm" }],
     });
 
-    await addLibraryAreaToMap(owned);
+    await addUserAoiToMap(owned);
 
     const { layers, analysisSelection } = useMapStore.getState();
     expect(layers.map((l) => l.id)).toEqual(["Pará", "ca-1"]);
     expect(mockedFetch.mock.calls[0][0]).toContain("/api/geometry/custom/ca-1");
     expect(analysisSelection).toBeNull();
-    expect(findLibraryAreaLayer(layers, owned)?.id).toBe("ca-1");
+    expect(findUserAoiLayer(layers, owned)?.id).toBe("ca-1");
   });
 
   it("adds a saved area as the one reference area, like a searched place", async () => {
@@ -84,19 +84,19 @@ describe("library areas on the map", () => {
       featureRefs: [{ name: "Pará", source: "gadm" }],
     });
 
-    await addLibraryAreaToMap(saved);
+    await addUserAoiToMap(saved);
 
     const { layers, analysisSelection } = useMapStore.getState();
     expect(layers.map((l) => l.id)).toEqual(["Brazil"]);
     expect(analysisSelection).toMatchObject({ source: "gadm", srcId: "BRA" });
-    expect(findLibraryAreaLayer(layers, saved)?.id).toBe("Brazil");
+    expect(findUserAoiLayer(layers, saved)?.id).toBe("Brazil");
   });
 
   it("takes an area off the map again", async () => {
-    await addLibraryAreaToMap(owned);
-    const layer = findLibraryAreaLayer(useMapStore.getState().layers, owned);
+    await addUserAoiToMap(owned);
+    const layer = findUserAoiLayer(useMapStore.getState().layers, owned);
 
-    removeLibraryAreaFromMap(layer!, owned);
+    removeUserAoiFromMap(layer!, owned);
 
     expect(useMapStore.getState().layers).toEqual([]);
   });

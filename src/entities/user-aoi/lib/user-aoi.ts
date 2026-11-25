@@ -2,7 +2,7 @@ import type { AOI } from "@/app/types/chat";
 
 import type { UserAoi } from "../model/user-aoi";
 
-/** Address a library entry as the area it is, by its own source and id. */
+/** Address a user AOI as the area it is, by its own source and id. */
 export function userAoiToAoi(entry: UserAoi): AOI {
   return {
     name: entry.name,
@@ -13,8 +13,8 @@ export function userAoiToAoi(entry: UserAoi): AOI {
   };
 }
 
-/** Whether an area is in the user's library. */
-export function isInLibrary(
+/** Whether an area is one of the user's AOIs. */
+export function isUserAoi(
   entries: readonly UserAoi[],
   source: string,
   srcId: string

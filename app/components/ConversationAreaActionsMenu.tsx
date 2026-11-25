@@ -14,9 +14,9 @@ import { AreaCardMenu } from "./AreaCardMenu";
  * user's areas, and remove it from the conversation.
  *
  * "Save area" mirrors the on-map AOI menu (`useAoiActions.saveArea`): it saves
- * each source area on the layer to the user's library by reference, so no
+ * each source area on the layer to the user's areas by reference, so no
  * geometry is copied. It only appears while the layer has a source area that
- * isn't saved yet; drawn and uploaded areas are already in the library.
+ * isn't saved yet; drawn and uploaded areas are already in "My areas".
  */
 export default function ConversationAreaActionsMenu({
   layer,
@@ -24,10 +24,10 @@ export default function ConversationAreaActionsMenu({
   layer: Layer;
 }) {
   const saveUserAoi = useSaveUserAoi();
-  const { data: library = [] } = useUserAois();
+  const { data: userAois = [] } = useUserAois();
 
   const name = layer.aoiSelection?.name ?? layer.name;
-  const savable = listSavableAreas(layer, library);
+  const savable = listSavableAreas(layer, userAois);
 
   const handleSave = async () => {
     if (saveUserAoi.isPending || savable.length === 0) return;

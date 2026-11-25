@@ -2,7 +2,7 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const libraryState = vi.hoisted(() => ({
+const userAoisState = vi.hoisted(() => ({
   data: [
     {
       id: "entry-1",
@@ -92,7 +92,7 @@ const REFERENCE_SOURCES = ["gadm", "kba", "wdpa", "landmark"] as const;
 const browseCalls = vi.hoisted(() => [] as { source: string; name?: string }[]);
 
 vi.mock("@/src/entities/user-aoi", () => ({
-  useUserAois: () => libraryState,
+  useUserAois: () => userAoisState,
 }));
 
 vi.mock("../useAoiBrowse", () => ({

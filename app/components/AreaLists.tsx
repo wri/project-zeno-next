@@ -15,10 +15,10 @@ import type { AOISelection } from "@/app/types/chat";
 import { areaSourceLabel } from "@/app/utils/areaSourceLabel";
 import { aoiFlyBounds } from "@/app/utils/bboxUtils";
 import {
-  addLibraryAreaToMap,
-  findLibraryAreaLayer,
-  removeLibraryAreaFromMap,
-} from "@/app/utils/libraryAreaMap";
+  addUserAoiToMap,
+  findUserAoiLayer,
+  removeUserAoiFromMap,
+} from "@/app/utils/userAoiMap";
 import { placeMeta } from "@/src/entities/aoi";
 import {
   userAoiToAoi,
@@ -30,14 +30,14 @@ import { ENTITY_KINDS, EntityCard } from "@/src/shared/ui/entity-card";
 import { areaActionIconProps } from "./AreaCardMenu";
 import { AreaThumbnail } from "./AreaThumbnail";
 import ConversationAreaActionsMenu from "./ConversationAreaActionsMenu";
-import LibraryAreaActionsMenu from "./LibraryAreaActionsMenu";
-import { LibraryAreaThumbnail } from "./LibraryAreaThumbnail";
+import UserAoiActionsMenu from "./UserAoiActionsMenu";
+import { UserAoiThumbnail } from "./UserAoiThumbnail";
 import { PanelEmpty, PanelList } from "./PanelList";
 import { Tooltip } from "./ui/tooltip";
 
 /**
  * The Areas panel's own lists and rows: areas on the map ("In this
- * conversation") and the user's library ("My areas"). The panel's search
+ * conversation") and the user's areas ("My areas"). The panel's search
  * results reuse the rows, so a match behaves as it does in its tab.
  */
 
@@ -184,16 +184,16 @@ export function MonitoredAreasList() {
 export function MonitoredAreaCard({ entry }: { entry: UserAoi }) {
   const setLayerVisibility = useMapStore((s) => s.setLayerVisibility);
   const flyToBounds = useMapStore((s) => s.flyToBounds);
-  const layer = useMapStore((s) => findLibraryAreaLayer(s.layers, entry));
+  const layer = useMapStore((s) => findUserAoiLayer(s.layers, entry));
   const [adding, setAdding] = useState(false);
 
-  // A library area hidden from "In this conversation" is still on the map.
+  // A user AOI hidden from "In this conversation" is still on the map.
   const isVisible = !!layer?.visible;
   const aoi = useMemo(() => userAoiToAoi(entry), [entry]);
 
   async function handleToggle(checked: boolean) {
     if (!checked) {
-      if (layer) removeLibraryAreaFromMap(layer, entry);
+      if (layer) removeUserAoiFromMap(layer, entry);
       return;
     }
     if (layer) {
@@ -202,7 +202,7 @@ export function MonitoredAreaCard({ entry }: { entry: UserAoi }) {
     }
     setAdding(true);
     try {
-      await addLibraryAreaToMap(entry);
+      await addUserAoiToMap(entry);
     } catch (error) {
       console.error(`Failed to add "${entry.name}" to the map:`, error);
       toaster.create({
@@ -223,7 +223,7 @@ export function MonitoredAreaCard({ entry }: { entry: UserAoi }) {
   return (
     <EntityCard
       kind="area"
-      thumbnail={<LibraryAreaThumbnail entry={entry} />}
+      thumbnail={<UserAoiThumbnail entry={entry} />}
       title={entry.name}
       meta={placeMeta(aoi)}
       interaction={{
@@ -235,11 +235,11 @@ export function MonitoredAreaCard({ entry }: { entry: UserAoi }) {
         dataPanel: "areas",
       }}
       actions={
-        // Rename/delete act on the library entry, so the kebab must show even
+        // Rename/delete act on the user AOI, so the kebab must show even
         // when the area isn't on the map; the locate button stays on-map only.
         <AreaCardActions
           onLocate={isVisible ? handleLocate : undefined}
-          menu={<LibraryAreaActionsMenu entry={entry} />}
+          menu={<UserAoiActionsMenu entry={entry} />}
         />
       }
     />

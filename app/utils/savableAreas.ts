@@ -1,22 +1,22 @@
 import type { Layer } from "@/app/store/layerManagerSlice";
 import {
-  isInLibrary,
+  isUserAoi,
   type SourceAreaRef,
   type UserAoi,
 } from "@/src/entities/user-aoi";
 
 /**
  * List the source areas on a map layer that can be saved to the user's
- * library: each one with an id, not a custom area, and not saved yet.
+ * areas: each one with an id, not a custom area, and not saved yet.
  */
 export function listSavableAreas(
   layer: Layer,
-  library: readonly UserAoi[]
+  userAois: readonly UserAoi[]
 ): SourceAreaRef[] {
   return (layer.featureRefs ?? []).flatMap(({ source, srcId }) => {
     const canonical = source.toLowerCase();
     if (srcId === undefined || canonical === "custom") return [];
-    if (isInLibrary(library, canonical, srcId)) return [];
+    if (isUserAoi(userAois, canonical, srcId)) return [];
     return [{ source: canonical, src_id: srcId }];
   });
 }

@@ -68,7 +68,7 @@ export function customAreaToRow(
   };
 }
 
-/** A library entry as a row, addressed by the area's own source and id. */
+/** A user AOI as a row, addressed by the area's own source and id. */
 export function userAoiToRow(
   entry: UserAoi,
   analysesMap: Map<string, number>

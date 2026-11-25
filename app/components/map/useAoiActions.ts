@@ -14,7 +14,7 @@ import {
 } from "@/src/features/analysis";
 import { useCreateDashboardForArea } from "@/src/features/dashboards";
 import {
-  isInLibrary,
+  isUserAoi,
   useSaveUserAoi,
   useUserAois,
 } from "@/src/entities/user-aoi";
@@ -75,7 +75,7 @@ export function useAoiActions(
   const dateRange = useChatStore((state) => state.dateRange);
   const { run: runDirectAnalysis, status: analysisStatus } = useAnalysis();
   const saveUserAoi = useSaveUserAoi();
-  const { data: library = [] } = useUserAois();
+  const { data: userAois = [] } = useUserAois();
 
   const datasetId = datasetLayer?.datasetId;
   // Prefer the canonical catalogue name — it matches what sendMessage puts in
@@ -191,7 +191,7 @@ export function useAoiActions(
     canViewAnalysis,
     canSaveArea:
       source.toLowerCase() !== "custom" &&
-      !(srcId && isInLibrary(library, source, srcId)),
+      !(srcId && isUserAoi(userAois, source, srcId)),
     canUseDashboard: dashboardInput !== null && !isResolvingDashboards,
     dashboardLabel: existingDashboard ? "Open Dashboard" : "Create Dashboard",
     isCreatingDashboard,
