@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { renderHook, act } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/app/components/ui/toaster", () => ({
   toaster: { create: vi.fn() },
@@ -42,6 +42,13 @@ vi.mock("@/src/features/dashboards", () => ({
     lastDashboardInput = input;
     return dashboardHookState;
   },
+}));
+
+const clientImagery = { enabled: false };
+const showSentinel2Capture = vi.fn();
+vi.mock("@/app/store/sentinel2Captures", () => ({
+  isClientImageryEnabled: () => clientImagery.enabled,
+  showSentinel2Capture: (...args: unknown[]) => showSentinel2Capture(...args),
 }));
 
 import { toaster } from "@/app/components/ui/toaster";
@@ -484,5 +491,37 @@ describe("useAoiActions", () => {
     expect(state.geoJsonRegistry).toHaveLength(0);
     // The dataset layer is untouched — only the area is removed.
     expect(state.layers.map((l) => l.id)).toEqual(["dataset-4"]);
+  });
+
+  describe("satellite imagery", () => {
+    afterEach(() => {
+      clientImagery.enabled = false;
+    });
+
+    it("is not offered without the client-imagery flag", () => {
+      expect(render().result.current?.canShowImagery).toBe(false);
+    });
+
+    it("is not offered for an area without a backend id", () => {
+      clientImagery.enabled = true;
+      expect(render({ srcId: undefined }).result.current?.canShowImagery).toBe(
+        false
+      );
+    });
+
+    it("shows the past two weeks for the area, by its lowercase source", () => {
+      clientImagery.enabled = true;
+      const { result } = render();
+      expect(result.current?.canShowImagery).toBe(true);
+      result.current?.showImagery();
+      expect(showSentinel2Capture).toHaveBeenCalledWith(
+        expect.objectContaining({
+          aois: [{ source: "gadm", srcId: "BRA.16_1" }],
+          aoiNames: ["Paraná, Brazil"],
+          windowDays: 7,
+          maxCloudCover: 50,
+        })
+      );
+    });
   });
 });

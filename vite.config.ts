@@ -13,4 +13,8 @@ export default defineConfig({
   envPrefix: "NEXT_PUBLIC_",
   server: { port: 3000 },
   preview: { port: 3000 },
+  // The GeoTIFF decoder worker of the client-side imagery
+  // (@developmentseed/geotiff) uses top-level await, which the default iife
+  // worker format does not support.
+  worker: { format: "es" },
 });

@@ -15,6 +15,11 @@ import {
   resolveAnalysisWindow,
 } from "@/src/features/analysis";
 import { useCreateDashboardForArea } from "@/src/features/dashboards";
+import { defaultRequest } from "@/src/features/imagery";
+import {
+  isClientImageryEnabled,
+  showSentinel2Capture,
+} from "@/app/store/sentinel2Captures";
 
 /**
  * The area an actions menu is attached to.
@@ -42,6 +47,11 @@ export interface AoiActions {
   canViewAnalysis: boolean;
   /** False for areas the user already owns — a custom area is already saved. */
   canSaveArea: boolean;
+  /**
+   * True when client-rendered imagery is on (`?ff=client-imagery`) and the
+   * area has a backend id to fetch its geometry by.
+   */
+  canShowImagery: boolean;
   /** False when the AOI has no resolvable id, or while dashboards resolve. */
   canUseDashboard: boolean;
   dashboardLabel: "Open Dashboard" | "Create Dashboard";
@@ -51,6 +61,8 @@ export interface AoiActions {
   viewAnalysis: () => void;
   openOrCreateDashboard: () => void;
   saveArea: () => Promise<void>;
+  /** Add a Sentinel-2 capture of this area for the past two weeks. */
+  showImagery: () => void;
   removeFromMap: () => void;
 }
 
@@ -190,6 +202,7 @@ export function useAoiActions(
     hasDataset: activeDataset !== null,
     canViewAnalysis,
     canSaveArea: source.toLowerCase() !== "custom",
+    canShowImagery: isClientImageryEnabled() && !!srcId,
     canUseDashboard: dashboardInput !== null && !isResolvingDashboards,
     dashboardLabel: existingDashboard ? "Open Dashboard" : "Create Dashboard",
     isCreatingDashboard,
@@ -238,5 +251,17 @@ export function useAoiActions(
     },
     saveArea,
     removeFromMap,
+    showImagery: () => {
+      if (!srcId) return;
+      void showSentinel2Capture(
+        defaultRequest(
+          // Canonical lowercase source, as the agent's AOIs carry it, so the
+          // recipe token (layer id) matches the agent's for the same area.
+          [{ source: source.toLowerCase(), srcId }],
+          [areaName],
+          new Date().toISOString().slice(0, 10)
+        )
+      );
+    },
   };
 }

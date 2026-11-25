@@ -2,9 +2,11 @@ import { describe, it, expect } from "vitest";
 import type { MapRef } from "react-map-gl/maplibre";
 
 import {
+  buildVisibleImagery,
   enrichMapViewContext,
   type InsightWorkspaceState,
 } from "../viewContext";
+import type { Layer } from "@/app/store/layerManagerSlice";
 import type { InsightWidget } from "@/app/types/chat";
 
 function fakeMapRef(bounds: {
@@ -212,5 +214,76 @@ describe("enrichMapViewContext", () => {
     expect(
       enrichMapViewContext({ page: "map" }, null, state)
     ).not.toHaveProperty("focused_insight");
+  });
+});
+
+describe("buildVisibleImagery", () => {
+  const layer = (overrides: Partial<Layer>): Layer => ({
+    id: "imagery-x",
+    name: "Satellite Imagery",
+    type: "raster",
+    visible: true,
+    imagery: {
+      provider: "sentinel-2",
+      mosaic_id: "x",
+      target_date: "2026-06-15",
+      window_days: 7,
+      max_cloud_cover: 20,
+      aoi_names: ["Paracas"],
+      item_count: 9,
+      start_date: "2026-06-10",
+      end_date: "2026-06-18",
+    },
+    ...overrides,
+  });
+
+  it("reports a client capture with its search status", () => {
+    const request = {
+      aois: [{ source: "gadm", srcId: "X" }],
+      aoiNames: ["Paracas"],
+      targetDate: "2026-06-15",
+      windowDays: 7,
+      maxCloudCover: 20,
+      maxItems: 50,
+    };
+    expect(
+      buildVisibleImagery([
+        layer({ sentinel2: { request, status: "no_scenes", scenes: [] } }),
+      ])
+    ).toEqual([
+      {
+        imagery_id: "x",
+        provider: "sentinel-2",
+        render: "client",
+        status: "no_scenes",
+        aoi_names: ["Paracas"],
+        target_date: "2026-06-15",
+        window_days: 7,
+        max_cloud_cover: 20,
+        item_count: 9,
+        start_date: "2026-06-10",
+        end_date: "2026-06-18",
+      },
+    ]);
+  });
+
+  it("reports tiler captures and skips hidden ones and non-imagery layers", () => {
+    const result = buildVisibleImagery([
+      layer({ tileUrl: "https://tiles/{z}/{x}/{y}.png" }),
+      layer({ id: "hidden", visible: false }),
+      { id: "d", name: "Tree cover loss", type: "raster", visible: true },
+    ]);
+    expect(result).toHaveLength(1);
+    expect(result?.[0].render).toBe("tiler");
+  });
+
+  it("is sent with the map view context", () => {
+    const result = enrichMapViewContext(
+      { page: "map" },
+      null,
+      { insights: [], focusedWidgetId: null, isWorkspaceCollapsed: false },
+      [layer({})]
+    );
+    expect(result).toMatchObject({ visible_imagery: [{ imagery_id: "x" }] });
   });
 });

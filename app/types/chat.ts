@@ -93,6 +93,7 @@ export interface InsightWidget extends ChartColorFields {
     | "bar"
     | "table"
     | "dataset-card"
+    | "imagery-card"
     | "pie"
     | "stacked-bar"
     | "grouped-bar"
@@ -263,7 +264,9 @@ export interface ImageryInfo {
   // Absent on payloads written before wri/project-zeno#800, which were all
   // Sentinel-2.
   provider?: ImageryProvider | null;
-  tile_url: string;
+  // Absent on Sentinel-2, which the browser searches and draws from the
+  // recipe token in mosaic_id. Older Sentinel-2 payloads still carry one.
+  tile_url?: string | null;
   tilejson_url?: string | null;
   bounds?: [number, number, number, number] | null;
   min_zoom?: number | null;

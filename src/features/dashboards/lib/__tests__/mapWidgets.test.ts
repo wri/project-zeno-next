@@ -267,3 +267,63 @@ describe("withTileDates", () => {
     expect(dated.context).toEqual(withContext.context);
   });
 });
+
+describe("mapWidgetLayer: client-rendered imagery", () => {
+  // A recipe token (gadm PER.11.3_1 + kba, 2026-06-15, ±30 days, <50%).
+  const TOKEN =
+    "eyJhIjpbWyJnYWRtIiwiUEVSLjExLjNfMSJdLFsia2JhIiwiUGFjYXlhLVNhbWlyaWEgXHUwMGU5Il1dLCJjIjo1MCwiZCI6IjIwMjYtMDYtMTUiLCJuIjo1MCwidyI6MzB9";
+
+  it("decodes the request from the recipe token, with no tile URL", () => {
+    const layer = mapWidgetLayer({
+      imagery: {
+        provider: "sentinel-2",
+        mosaic_id: TOKEN,
+        target_date: "2026-06-15",
+        aoi_names: ["Paracas", "Pacaya-Samiria"],
+      },
+    });
+    expect(layer).toMatchObject({
+      kind: "imagery",
+      title: "Sentinel-2 imagery, 2026-06-15",
+      tileUrl: "",
+      sentinel2: {
+        aois: [
+          { source: "gadm", srcId: "PER.11.3_1" },
+          { source: "kba", srcId: "Pacaya-Samiria é" },
+        ],
+        aoiNames: ["Paracas", "Pacaya-Samiria"],
+        targetDate: "2026-06-15",
+        windowDays: 30,
+        maxCloudCover: 50,
+      },
+    });
+  });
+
+  it("is null when the token is not a recipe and there are no tiles", () => {
+    expect(mapWidgetLayer({ imagery: { mosaic_id: "abc" } })).toBeNull();
+  });
+
+  it("renders a legacy widget with a server mosaic in the browser", () => {
+    const layer = mapWidgetLayer({
+      imagery: {
+        tile_url: "https://tiles.example.org/mosaic/{z}/{x}/{y}",
+        mosaic_id: TOKEN,
+        target_date: "2026-06-15",
+      },
+    });
+    expect(layer?.tileUrl).toBe("");
+    expect(layer?.sentinel2?.windowDays).toBe(30);
+  });
+
+  it("keeps Planet on its tile URL", () => {
+    const layer = mapWidgetLayer({
+      imagery: {
+        provider: "planet",
+        tile_url: "https://planet.example.org/{z}/{x}/{y}.png",
+        mosaic_id: "planet:2026-08",
+      },
+    });
+    expect(layer?.tileUrl).toBe("https://planet.example.org/{z}/{x}/{y}.png");
+    expect(layer?.sentinel2).toBeUndefined();
+  });
+});

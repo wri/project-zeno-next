@@ -39,7 +39,14 @@ vi.mock("@/app/lib/api-client", () => ({
   getAuthHeaders: () => ({ Authorization: "Bearer test-token" }),
 }));
 
+// The capture flow has its own tests (sentinel2Captures.test.ts).
+const showSentinel2Capture = vi.fn();
+vi.mock("@/app/store/sentinel2Captures", () => ({
+  showSentinel2Capture: (...args: unknown[]) => showSentinel2Capture(...args),
+}));
+
 import { showImageryTool } from "../showImagery";
+import { encodeRecipe } from "@/src/features/imagery";
 import { API_CONFIG } from "@/app/config/api";
 import type { ImageryInfo, StreamMessage } from "@/app/types/chat";
 
@@ -268,5 +275,149 @@ describe("showImageryTool", () => {
 
     await expect(showImageryTool(baseMsg())).resolves.toBeUndefined();
     expect(mapState.addLayer).not.toHaveBeenCalled();
+  });
+
+  describe("Sentinel-2 in the browser", () => {
+    const recipe = {
+      aois: [{ source: "gadm", srcId: "PER.11.3_1" }],
+      aoiNames: [],
+      targetDate: "2026-06-15",
+      windowDays: 30,
+      maxCloudCover: 50,
+      maxItems: 50,
+    };
+    const decoded = {
+      ...recipe,
+      aoiNames: ["Paracas National Reserve"],
+      sort: "cloud",
+    };
+
+    beforeEach(() => {
+      showSentinel2Capture.mockClear();
+    });
+
+    it("decodes the recipe from mosaic_id, with no tile URL", async () => {
+      const fetchMock = mockFetch({ json: async () => tileJson });
+      await showImageryTool(
+        baseMsg({
+          imagery: {
+            provider: "sentinel-2",
+            mosaic_id: encodeRecipe(recipe),
+            target_date: "2026-06-15",
+            aoi_names: ["Paracas National Reserve"],
+          },
+        })
+      );
+      expect(showSentinel2Capture).toHaveBeenCalledWith(
+        decoded,
+        encodeRecipe(recipe)
+      );
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(mapState.addLayer).not.toHaveBeenCalled();
+    });
+
+    it("renders an older payload with a server mosaic in the browser", async () => {
+      const fetchMock = mockFetch({ json: async () => tileJson });
+      await showImageryTool(
+        baseMsg({ imagery: { ...imagery, mosaic_id: encodeRecipe(recipe) } })
+      );
+      expect(showSentinel2Capture).toHaveBeenCalledWith(
+        decoded,
+        encodeRecipe(recipe)
+      );
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(mapState.addLayer).not.toHaveBeenCalled();
+    });
+
+    it("keeps the tiler path for Planet", async () => {
+      mockFetch({ json: async () => tileJson });
+      await showImageryTool(
+        baseMsg({
+          imagery: {
+            ...imagery,
+            provider: "planet",
+            mosaic_id: encodeRecipe(recipe),
+          },
+        })
+      );
+      expect(showSentinel2Capture).not.toHaveBeenCalled();
+      expect(mapState.addLayer).toHaveBeenCalled();
+    });
+
+    it("keeps the tiler path when mosaic_id is not a recipe", async () => {
+      mockFetch({ json: async () => tileJson });
+      await showImageryTool(baseMsg());
+      expect(showSentinel2Capture).not.toHaveBeenCalled();
+      expect(mapState.addLayer).toHaveBeenCalled();
+    });
+
+    it("shows nothing without a recipe or tiles", async () => {
+      const fetchMock = mockFetch({ json: async () => tileJson });
+      await showImageryTool(
+        baseMsg({
+          imagery: { provider: "sentinel-2", mosaic_id: "abc", aoi_names: [] },
+        })
+      );
+      expect(showSentinel2Capture).not.toHaveBeenCalled();
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(mapState.addLayer).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("chat card", () => {
+    beforeEach(() => {
+      showSentinel2Capture.mockClear();
+    });
+
+    it("adds an imagery card for a client capture, before the search", async () => {
+      const recipe = {
+        aois: [{ source: "gadm", srcId: "X" }],
+        aoiNames: [],
+        targetDate: "2026-06-15",
+        windowDays: 7,
+        maxCloudCover: 50,
+        maxItems: 50,
+      };
+      const addMessage = vi.fn();
+      const order: string[] = [];
+      addMessage.mockImplementation(() => order.push("card"));
+      showSentinel2Capture.mockImplementation(async () => {
+        order.push("capture");
+      });
+      await showImageryTool(
+        baseMsg({
+          imagery: {
+            provider: "sentinel-2",
+            mosaic_id: encodeRecipe(recipe),
+            target_date: "2026-06-15",
+            max_cloud_cover: 50,
+            aoi_names: ["Paracas"],
+          },
+        }),
+        addMessage
+      );
+      expect(order).toEqual(["card", "capture"]);
+      const [{ type, widgets }] = addMessage.mock.calls[0];
+      expect(type).toBe("widget");
+      expect(widgets[0].type).toBe("imagery-card");
+      expect(widgets[0].data.mosaic_id).toBe(encodeRecipe(recipe));
+      showSentinel2Capture.mockReset();
+    });
+
+    it("adds a card with a tile thumbnail once a tiler layer is shown", async () => {
+      mockFetch({ json: async () => tileJson });
+      const addMessage = vi.fn();
+      await showImageryTool(baseMsg(), addMessage);
+      const [{ widgets }] = addMessage.mock.calls[0];
+      expect(widgets[0].type).toBe("imagery-card");
+      expect(widgets[0].data.thumbnail_url).toMatch(/^https:\/\/tiles/);
+    });
+
+    it("adds no card when the tiler layer is not shown", async () => {
+      mockFetch({ ok: false, status: 404 });
+      const addMessage = vi.fn();
+      await showImageryTool(baseMsg(), addMessage);
+      expect(addMessage).not.toHaveBeenCalled();
+    });
   });
 });

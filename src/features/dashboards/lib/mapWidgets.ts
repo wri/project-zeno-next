@@ -3,6 +3,7 @@ import type { DatasetParameter } from "@/app/types/chat";
 import { legendParameters } from "@/app/utils/datasetLayerContext";
 import { patchPrimaryForestTileUrl } from "@/app/utils/primaryForestTileProtocol";
 import type { DateRange } from "@/src/shared/lib/iso-date";
+import { decodeRecipe, type Sentinel2Request } from "@/src/features/imagery";
 import type { DashboardAoi } from "../api/schemas";
 
 /** The dashboard's area as a map body needs it: outline, label and viewport fit. */
@@ -12,13 +13,22 @@ export type MapAreaAoi = Pick<DashboardAoi, "source" | "src_id" | "name">;
  * A renderable map-widget layer parsed from a `widget_type: "map"` config
  * (dashboards-map-widgets-handoff.md). Configs are self-contained snapshots:
  * exactly one of `config.dataset` / `config.imagery`, each carrying a fully
- * resolved `tile_url` to render directly — no catalog lookup.
+ * resolved `tile_url` to render directly — no catalog lookup. Client-rendered
+ * Sentinel-2 imagery carries its search request (the recipe token in
+ * `mosaic_id`) instead of a tile URL.
  */
 export interface MapWidgetLayer {
   kind: "dataset" | "imagery";
   /** Card header: `config.title` override, else a kind-specific fallback. */
   title: string;
+  /** Raster tiles to draw. Empty for client-rendered imagery (`sentinel2`). */
   tileUrl: string;
+  /**
+   * Set on Sentinel-2 imagery, which renders in the browser:
+   * the request decoded from the recipe token in `mosaic_id`. The widget
+   * searches the scenes and draws them with deck.gl.
+   */
+  sentinel2?: Sentinel2Request;
   /** The active context sub-layer: its tiles render beneath the main layer. */
   context?: { tileUrl: string; name: string };
   // Dataset-kind fields that drive the widget's legend (DashboardMapLegend).
@@ -107,18 +117,24 @@ export function mapWidgetLayer(
   const imagery = config.imagery;
   if (imagery && typeof imagery === "object") {
     const im = imagery as Record<string, unknown>;
+    const targetDate = str(im.target_date);
+    const title =
+      titleOverride ??
+      (targetDate ? `Sentinel-2 imagery, ${targetDate}` : "Sentinel-2 imagery");
+    // Sentinel-2 renders in the browser from the recipe token in
+    // mosaic_id, also for widgets saved with a tile URL to a server mosaic.
+    if ((str(im.provider) ?? "sentinel-2") === "sentinel-2") {
+      const names = Array.isArray(im.aoi_names)
+        ? im.aoi_names.filter((n): n is string => typeof n === "string")
+        : [];
+      const request = decodeRecipe(str(im.mosaic_id) ?? "", names);
+      if (request) {
+        return { kind: "imagery", title, tileUrl: "", sentinel2: request };
+      }
+    }
     const tileUrl = str(im.tile_url);
     if (!tileUrl) return null;
-    const targetDate = str(im.target_date);
-    return {
-      kind: "imagery",
-      title:
-        titleOverride ??
-        (targetDate
-          ? `Sentinel-2 imagery, ${targetDate}`
-          : "Sentinel-2 imagery"),
-      tileUrl,
-    };
+    return { kind: "imagery", title, tileUrl };
   }
 
   return null;

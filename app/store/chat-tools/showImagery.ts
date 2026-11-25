@@ -1,15 +1,26 @@
-import { StreamMessage } from "@/app/types/chat";
+import type {
+  ChatMessage,
+  ImageryInfo,
+  InsightWidget,
+  StreamMessage,
+} from "@/app/types/chat";
 import useMapStore from "../mapStore";
 import { API_CONFIG } from "@/app/config/api";
 import { getAuthHeaders } from "@/app/lib/api-client";
 import { showApiError } from "@/app/hooks/useErrorHandler";
 import {
+  IMAGERY_LAYER_NAME,
   imageryAttribution,
+  imageryCardDescription,
   imageryLayerId,
   imageryLayerTitle,
-  isImageryLayerId,
+  imageryThumbnailUrl,
   toImageryMeta,
+  type ImageryCardData,
 } from "@/app/utils/imagery";
+import { decodeRecipe } from "@/src/features/imagery";
+import { showSentinel2Capture } from "../sentinel2Captures";
+import { promoteImageryLayer } from "./imageryLayers";
 
 interface TileJson {
   bounds?: [number, number, number, number];
@@ -57,12 +68,43 @@ async function fetchTileJson(
  * zoom range. Providers without TileJSON may supply bounds / min_zoom /
  * max_zoom directly in the imagery payload instead.
  */
-export async function showImageryTool(streamMessage: StreamMessage) {
+export async function showImageryTool(
+  streamMessage: StreamMessage,
+  addMessage?: (message: Omit<ChatMessage, "id">) => void
+) {
   const imagery = streamMessage.imagery;
   if (!imagery) return;
 
-  const { addLayer, setLayerVisibility, reorderLayers } =
-    useMapStore.getState();
+  // The "Satellite Imagery" data card in the chat (dataset-card pattern).
+  const addCard = (card: ImageryCardData) =>
+    addMessage?.({
+      type: "widget",
+      message: "",
+      widgets: [imageryCardWidget(card)],
+      timestamp: streamMessage.timestamp,
+    });
+
+  // Client rendering: a Sentinel-2 mosaic_id is the recipe token, so the
+  // request decodes from it and the browser searches and draws the scenes
+  // itself. This covers new payloads (no tile_url) and older ones that still
+  // carry a tile URL to a server mosaic. Planet, and Sentinel-2 ids that are
+  // not a recipe, keep the tiler path below.
+  if ((imagery.provider ?? "sentinel-2") === "sentinel-2") {
+    const request = decodeRecipe(imagery.mosaic_id, imagery.aoi_names);
+    if (request) {
+      // Added before the search: the card follows the capture's layer, so
+      // it shows "Searching scenes…" and then the result.
+      addCard(imagery);
+      await showSentinel2Capture(request, imagery.mosaic_id);
+      return;
+    }
+    if (!imagery.tile_url) {
+      console.warn("Sentinel-2 payload without a recipe or tiles; not shown");
+      return;
+    }
+  }
+
+  const { addLayer } = useMapStore.getState();
 
   // Normalize once at the boundary (ImageryLegendMeta's raw nulls/legacy
   // field names never leak past this call) — see toImageryMeta.
@@ -110,19 +152,12 @@ export async function showImageryTool(streamMessage: StreamMessage) {
 
   const id = imageryLayerId(imagery.mosaic_id);
 
-  // Newest capture wins: hide earlier captures so the map shows the mosaic
-  // the agent just produced. They stay in the legend for toggling back.
-  useMapStore
-    .getState()
-    .layers.filter((l) => isImageryLayerId(l.id) && l.id !== id && l.visible)
-    .forEach((l) => setLayerVisibility(l.id, false));
-
   addLayer({
     id,
     name: imageryLayerTitle(meta.targetDate),
     type: "raster",
     visible: true,
-    tileUrl: imagery.tile_url,
+    tileUrl: imagery.tile_url ?? undefined,
     minzoom: tileMetadata.minzoom,
     maxzoom: tileMetadata.maxzoom,
     bounds: tileMetadata.bounds,
@@ -132,20 +167,36 @@ export async function showImageryTool(streamMessage: StreamMessage) {
     imagery,
   });
 
-  // addLayer appends, which would leave the new mosaic underneath any
-  // earlier ones it overlaps. Reorder so the newest imagery layer sits at
-  // the top of the imagery group (which itself stays below dataset rasters —
-  // see DynamicTileLayers).
-  const layers = useMapStore.getState().layers;
-  const nonImageryIds = layers
-    .filter((l) => !isImageryLayerId(l.id))
-    .map((l) => l.id);
-  const olderImageryIds = layers
-    .filter((l) => isImageryLayerId(l.id) && l.id !== id)
-    .map((l) => l.id);
-  reorderLayers([...nonImageryIds, id, ...olderImageryIds]);
+  // Newest capture wins: earlier captures are hidden (not removed) and the
+  // new one moves to the top of the imagery group.
+  promoteImageryLayer(id);
+
+  // Only once the layer is on the map, so the card never advertises imagery
+  // the map does not show.
+  addCard({
+    ...imagery,
+    thumbnail_url: imagery.tile_url
+      ? imageryThumbnailUrl(
+          imagery.tile_url,
+          tileMetadata.bounds,
+          tileMetadata.minzoom,
+          tileMetadata.maxzoom
+        )
+      : undefined,
+  });
 
   // No camera movement here: the viewport was already positioned by
   // pick_aoi, and re-fitting to the mosaic bounds would yank the map
   // away from wherever the user is looking.
+}
+
+function imageryCardWidget(card: ImageryCardData): InsightWidget {
+  return {
+    type: "imagery-card",
+    title: IMAGERY_LAYER_NAME,
+    description: imageryCardDescription(toImageryMeta(card as ImageryInfo)),
+    data: card,
+    xAxis: "",
+    yAxis: "",
+  };
 }

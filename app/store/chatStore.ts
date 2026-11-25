@@ -557,7 +557,7 @@ async function processStreamMessage(
       // legend swaps "Updating mosaic…" → capture in a single render.
       void Promise.resolve().then(async () => {
         // Non-blocking: TileJSON fetch shouldn't stall the stream
-        await showImageryTool(streamMessage);
+        await showImageryTool(streamMessage, addMessage);
         useChatStore.getState().setImageryUpdating(false);
       });
       return;
@@ -845,7 +845,8 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     const viewContext = enrichMapViewContext(
       useViewContextStore.getState().viewContext,
       useMapStore.getState().mapRef,
-      useInsightStore.getState()
+      useInsightStore.getState(),
+      useMapStore.getState().layers
     );
     const ff = chatFeatureFlag(
       useAgentProfileStore.getState().agentProfile,

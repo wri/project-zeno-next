@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 
 import {
   buildImageryGroup,
+  imageryCardDescription,
   captureDateLabel,
   captureMetaLabel,
   formatCaptureDate,
@@ -21,6 +22,7 @@ import {
 } from "@/app/utils/imagery";
 import type { ImageryLegendMeta } from "@/app/utils/imagery";
 import type { Layer } from "@/app/store/layerManagerSlice";
+import type { CaptureStatus } from "@/src/features/imagery";
 import { PLANET_METADATA } from "@/app/constants/planet-metadata";
 
 describe("toImageryMeta", () => {
@@ -229,14 +231,14 @@ describe("provider display", () => {
 
 describe("imageryCloudNote", () => {
   it("returns a note above the default cloud limit", () => {
-    expect(imageryCloudNote(toImageryMeta({ max_cloud_cover: 50 }))).toBe(
-      "Searched with a loosened cloud-cover limit (50%) — imagery may contain clouds."
+    expect(imageryCloudNote(toImageryMeta({ max_cloud_cover: 80 }))).toBe(
+      "Searched with a loosened cloud-cover limit (80%) — imagery may contain clouds."
     );
   });
 
   it("returns undefined at or below the default, or when unknown", () => {
     expect(
-      imageryCloudNote(toImageryMeta({ max_cloud_cover: 20 }))
+      imageryCloudNote(toImageryMeta({ max_cloud_cover: 50 }))
     ).toBeUndefined();
     expect(
       imageryCloudNote(toImageryMeta({ max_cloud_cover: 10 }))
@@ -457,6 +459,88 @@ describe("buildImageryGroup", () => {
   });
 });
 
+describe("buildImageryGroup with a client-rendered capture", () => {
+  const request = {
+    aois: [{ source: "gadm", srcId: "PER.11.3_1" }],
+    aoiNames: ["Paracas"],
+    targetDate: "2026-06-15",
+    windowDays: 7,
+    maxCloudCover: 20,
+    maxItems: 50,
+  };
+  const scene = {
+    id: "s",
+    bbox: [0, 0, 1, 1] as [number, number, number, number],
+    datetime: "2026-06-14T15:00:00Z",
+    cloudCover: 4,
+    gridCode: "MGRS-18LTM",
+    visualHref: "https://cogs/TCI.tif",
+    thumbnailHref: "https://cogs/preview.jpg",
+    rank: 0,
+  };
+  const clientLayer = (status: CaptureStatus, scenes = [scene]): Layer => ({
+    id: "imagery-token",
+    name: "Satellite Imagery",
+    type: "raster",
+    visible: true,
+    minzoom: 8,
+    imagery: {
+      provider: "sentinel-2",
+      mosaic_id: "token",
+      target_date: "2026-06-15",
+      window_days: 7,
+      max_cloud_cover: 20,
+      aoi_names: ["Paracas"],
+      item_count: scenes.length,
+    },
+    sentinel2: { request, status, scenes },
+  });
+
+  it("exposes the live request for the Edit popover", () => {
+    const group = buildImageryGroup([clientLayer("ok")], false)!;
+    expect(group.sentinel2).toEqual({ request, status: "ok" });
+    expect(group.updating).toBe(false);
+  });
+
+  it("shows which scenes are on top as a chip", () => {
+    const group = buildImageryGroup([clientLayer("ok")], false)!;
+    expect(group.params).toContainEqual({
+      label: "ON TOP",
+      value: "least cloudy",
+    });
+  });
+
+  it("uses the best scene's preview image as the thumbnail", () => {
+    const group = buildImageryGroup([clientLayer("ok")], false)!;
+    expect(group.captures[0].thumbnailUrl).toBe("https://cogs/preview.jpg");
+    expect(group.thumbnailUrl).toBe("https://cogs/preview.jpg");
+  });
+
+  it("shows the updating state while the scene search runs", () => {
+    expect(
+      buildImageryGroup([clientLayer("searching", [])], false)!.updating
+    ).toBe(true);
+  });
+
+  it("explains an empty or failed search in the note", () => {
+    expect(
+      buildImageryGroup([clientLayer("no_scenes", [])], false)!.note
+    ).toMatch(/No Sentinel-2 scenes/);
+    expect(
+      buildImageryGroup([clientLayer("too_large", [])], false)!.note
+    ).toMatch(/too large/);
+  });
+
+  it("leaves tiler captures without Edit state", () => {
+    const tiler: Layer = {
+      ...clientLayer("ok"),
+      sentinel2: undefined,
+      tileUrl: "https://tiles/{z}/{x}/{y}.png",
+    };
+    expect(buildImageryGroup([tiler], false)!.sentinel2).toBeUndefined();
+  });
+});
+
 describe("imageryCitation", () => {
   const accessedOn = new Date(2026, 9, 6);
 
@@ -567,5 +651,30 @@ describe("imageryThumbnailUrl", () => {
   it("returns undefined without bounds or with a degenerate extent", () => {
     expect(imageryThumbnailUrl(template)).toBeUndefined();
     expect(imageryThumbnailUrl(template, [10, 10, 10, 10])).toBeUndefined();
+  });
+});
+
+describe("imageryCardDescription", () => {
+  const meta = toImageryMeta({
+    provider: "sentinel-2",
+    start_date: "2026-06-12",
+    end_date: "2026-06-16",
+    target_date: "2026-06-15",
+    max_cloud_cover: 50,
+  });
+
+  it("gives the acquired dates, cloud limit and provider", () => {
+    expect(imageryCardDescription(meta)).toBe(
+      "Jun 12–16 · cloud <50% · Sentinel-2"
+    );
+  });
+
+  it("shows the search state while there are no dates", () => {
+    expect(imageryCardDescription(meta, "searching")).toBe(
+      "Searching scenes… · cloud <50% · Sentinel-2"
+    );
+    expect(imageryCardDescription(meta, "no_scenes")).toBe(
+      "No scenes found · cloud <50% · Sentinel-2"
+    );
   });
 });

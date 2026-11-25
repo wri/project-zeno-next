@@ -29,6 +29,9 @@ import DynamicTileLayers, {
   RASTER_TOP_SENTINEL_ID,
 } from "./map/layers/DynamicTileLayers";
 import VectorDataLayers from "./map/layers/VectorDataLayers";
+import ClientImageryLayers, {
+  ImageryAnchorLayer,
+} from "./map/layers/ClientImageryLayers";
 import AoiVectorTileLayers from "./map/layers/AoiVectorTileLayers";
 import SelectAreaLayer from "./map/layers/select-area-layer";
 import { useLegendHook } from "@/app/components/legend/useLegendHook";
@@ -277,6 +280,9 @@ function Map({
             />
           </Box>
         </Flex>
+        {/* Anchor for client-rendered imagery (deck.gl): mounted before the
+            raster-top sentinel, so every raster layer sits above it. */}
+        <ImageryAnchorLayer />
         {/* Sentinel layer: caps raster layers below AOI/GeoJSON outlines.
             Must be added before DynamicTileLayers so the sentinel exists
             when the topmost raster layer references it as beforeId. */}
@@ -288,6 +294,7 @@ function Map({
           <Layer id={RASTER_TOP_SENTINEL_ID} type="line" paint={{}} />
         </Source>
         <DynamicTileLayers />
+        <ClientImageryLayers />
         <VectorDataLayers />
         <AoiVectorTileLayers basemapTheme={basemapTheme} />
         <GeoJsonLayers basemapTheme={basemapTheme} />
