@@ -24,6 +24,7 @@ import { LayerInfoButton } from "@/src/shared/ui/LayerInfoButton";
 import { OpacityControl } from "./OpacityControl";
 import { ImageryInfoDialog } from "./ImageryInfoDialog";
 import type {
+  CaptureThumbnail,
   ImageryLegendCapture,
   ImageryLegendGroup,
   LayerActionHandler,
@@ -31,6 +32,8 @@ import type {
 import { ParamChip } from "@/app/components/ui/ParamChip";
 import {
   ImageryFilterPopover,
+  ImageryPlaceholder,
+  SceneThumbnail,
   type CaptureStatus,
   type Sentinel2Request,
 } from "@/src/features/imagery";
@@ -195,7 +198,12 @@ export function ImageryLegendEntry(
             <Flex flexDir="column" gap={2} pt={2} pr={4}>
               {/* Summary row: thumbnail + source/rendering label */}
               <Flex gap={2} alignItems="center" pl={3}>
-                <ImageryThumbnail src={thumbnailUrl} size={32} captioned />
+                <ImageryThumbnail
+                  src={thumbnailUrl}
+                  thumbnail={props.thumbnail}
+                  size={32}
+                  captioned
+                />
                 <Text fontSize="xs" color="#44505A" truncate>
                   {subtitle}
                 </Text>
@@ -336,7 +344,11 @@ function CaptureRow(props: {
   return (
     <Flex alignItems="center" justifyContent="space-between" pl={2} gap={2}>
       <Flex gap={2} alignItems="center" minW={0}>
-        <ImageryThumbnail src={capture.thumbnailUrl} size={24} />
+        <ImageryThumbnail
+          src={capture.thumbnailUrl}
+          thumbnail={capture.thumbnail}
+          size={24}
+        />
         <Flex flexDir="column" gap="2px" minW={0}>
           <Text
             fontSize="xs"
@@ -400,16 +412,18 @@ function CaptureRow(props: {
 }
 
 /**
- * Mosaic preview: a single tile from the mosaic itself, with the Figma
- * "IMAGERY" caption strip on the 32px summary variant. Falls back to a plain
- * swatch when there is no URL (or the tile fails to load).
+ * Imagery preview with the Figma "IMAGERY" caption strip on the 32px summary
+ * variant: the best scene cropped to the area (client-rendered imagery), or
+ * one tile of a tiler mosaic. Falls back to the imagery placeholder when
+ * there is nothing to show (or the image fails to load).
  */
 function ImageryThumbnail(props: {
   src?: string;
+  thumbnail?: CaptureThumbnail;
   size: number;
   captioned?: boolean;
 }) {
-  const { src, size, captioned } = props;
+  const { src, thumbnail, size, captioned } = props;
   const [failed, setFailed] = useState(false);
 
   return (
@@ -422,7 +436,13 @@ function ImageryThumbnail(props: {
       bg="#E0E2E5"
       flexShrink={0}
     >
-      {src && !failed && (
+      {thumbnail ? (
+        <SceneThumbnail
+          scenes={thumbnail.scenes}
+          bounds={thumbnail.bounds}
+          size={size}
+        />
+      ) : src && !failed ? (
         <Image
           src={src}
           alt=""
@@ -431,6 +451,8 @@ function ImageryThumbnail(props: {
           objectFit="cover"
           onError={() => setFailed(true)}
         />
+      ) : (
+        <ImageryPlaceholder size={size} />
       )}
       {captioned && (
         <Flex

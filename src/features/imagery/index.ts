@@ -48,6 +48,8 @@ export {
   SORT_LABELS,
   type ScenePreview,
 } from "./ui/ImageryFilterPopover";
+export { ImageryPlaceholder } from "./ui/ImageryPlaceholder";
+export { SceneThumbnail } from "./ui/SceneThumbnail";
 export {
   useSentinel2Scenes,
   type AoiGeometryLoader,

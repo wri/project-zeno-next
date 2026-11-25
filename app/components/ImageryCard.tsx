@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Image, Popover, Portal, Text } from "@chakra-ui/react";
 import { InfoIcon } from "@phosphor-icons/react";
 import { InfoCard } from "./InfoCard";
+import { ImageryPlaceholder, SceneThumbnail } from "@/src/features/imagery";
 import useMapStore from "@/app/store/mapStore";
 import type { Layer } from "@/app/store/layerManagerSlice";
 import {
@@ -38,22 +39,27 @@ export function ImageryCard({ imagery }: ImageryCardProps) {
 
   const meta = toImageryMeta(layer?.imagery ?? imagery);
   const status = layer?.sentinel2?.status;
-  const thumbnailUrl = layer?.sentinel2
-    ? layer.sentinel2.scenes[0]?.thumbnailHref
-    : imagery.thumbnail_url;
-  const showThumb = thumbnailUrl && thumbnailUrl !== failedUrl;
+  const tileThumbnail = !layer?.sentinel2 ? imagery.thumbnail_url : undefined;
 
-  const thumbnail = showThumb ? (
+  // Client-rendered imagery: the best scene cropped to the area. Tiler
+  // imagery: one tile of the mosaic. Otherwise the imagery placeholder.
+  const thumbnail = layer?.sentinel2 ? (
+    <SceneThumbnail
+      scenes={layer.sentinel2.scenes}
+      bounds={layer.bounds}
+      size={80}
+    />
+  ) : tileThumbnail && tileThumbnail !== failedUrl ? (
     <Image
       objectFit="cover"
       width="80px"
       height="80px"
-      src={thumbnailUrl}
+      src={tileThumbnail}
       alt={IMAGERY_LAYER_NAME}
-      onError={() => setFailedUrl(thumbnailUrl)}
+      onError={() => setFailedUrl(tileThumbnail)}
     />
   ) : (
-    <Image width="40px" height="40px" src="/globe.svg" alt="" />
+    <ImageryPlaceholder size={80} />
   );
 
   const infoAction = (

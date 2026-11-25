@@ -14,9 +14,18 @@ export interface StacItem {
     datetime?: string;
     "eo:cloud_cover"?: number;
     "grid:code"?: string;
+    "proj:epsg"?: number;
     [key: string]: unknown;
   };
-  assets: Record<string, { href: string } | undefined>;
+  assets: Record<
+    string,
+    | {
+        href: string;
+        "proj:transform"?: number[];
+        "proj:shape"?: number[];
+      }
+    | undefined
+  >;
 }
 
 export interface Scene {
@@ -30,6 +39,13 @@ export interface Scene {
   /** The 8-bit true-colour COG (`visual` asset). */
   visualHref: string;
   thumbnailHref?: string;
+  /** EPSG code of the scene's UTM zone, e.g. 32720. */
+  epsg?: number;
+  /**
+   * The tile's extent in its UTM projection, [minX, minY, maxX, maxY] in
+   * metres. The preview image (thumbnailHref) covers exactly this extent.
+   */
+  extent?: [number, number, number, number];
   /**
    * 0 for the best scene of its MGRS tile, 1 for the next, and so on. The
    * map draws rank 0 on top; higher ranks only fill its nodata gaps.
@@ -92,6 +108,8 @@ export function selectScenes(
         gridCode: item.properties["grid:code"] ?? item.id,
         visualHref,
         thumbnailHref: item.assets.thumbnail?.href,
+        epsg: item.properties["proj:epsg"],
+        extent: assetExtent(item.assets.visual),
         rank: 0,
       },
     ];
@@ -159,3 +177,25 @@ export type CaptureStatus =
   | "no_scenes"
   | "too_large"
   | "error";
+
+/**
+ * An asset's extent from its affine transform and shape (projection
+ * extension): [minX, minY, maxX, maxY] in the asset's CRS.
+ */
+function assetExtent(
+  asset: StacItem["assets"][string]
+): [number, number, number, number] | undefined {
+  const t = asset?.["proj:transform"];
+  const shape = asset?.["proj:shape"];
+  if (!t || t.length < 6 || !shape || shape.length < 2) return undefined;
+  const [xRes, , x0, , yRes, y0] = t;
+  const [rows, cols] = shape;
+  const x1 = x0 + xRes * cols;
+  const y1 = y0 + yRes * rows;
+  return [
+    Math.min(x0, x1),
+    Math.min(y0, y1),
+    Math.max(x0, x1),
+    Math.max(y0, y1),
+  ];
+}

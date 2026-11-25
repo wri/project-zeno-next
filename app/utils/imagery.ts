@@ -432,6 +432,14 @@ export function buildImageryGroup(
       visible: layer.visible,
       live: index === 0,
       thumbnailUrl: captureThumbnailUrl(layer),
+      ...(layer.sentinel2
+        ? {
+            thumbnail: {
+              scenes: layer.sentinel2.scenes,
+              bounds: layer.bounds,
+            },
+          }
+        : {}),
     };
   });
 
@@ -473,6 +481,7 @@ export function buildImageryGroup(
       ? { request: liveSentinel2.request, status: liveSentinel2.status }
       : undefined,
     thumbnailUrl: captures[0]?.thumbnailUrl,
+    thumbnail: captures[0]?.thumbnail,
   };
 }
 

@@ -61,6 +61,7 @@
     "jwt-decode": "^4.0.0",
     "maplibre-gl": "^6.15.0",
     "motion": "^12.23.12",
+    "proj4": "2.23.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-i18next": "^17.1.13",

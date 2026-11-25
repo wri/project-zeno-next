@@ -1,6 +1,10 @@
 import { ReactNode } from "react";
 import type { ImageryMetadata } from "@/app/constants/planet-metadata";
-import type { CaptureStatus, Sentinel2Request } from "@/src/features/imagery";
+import type {
+  CaptureStatus,
+  Scene,
+  Sentinel2Request,
+} from "@/src/features/imagery";
 
 /**
  * A single read-only parameter chip shown beneath a layer title.
@@ -64,6 +68,16 @@ export interface ImageryLegendCapture {
   /** The most recent capture — the one the agent updates in place. */
   live: boolean;
   thumbnailUrl?: string;
+  /**
+   * Client-rendered capture: its scenes and the area's bounds, for a
+   * thumbnail cropped to the area (SceneThumbnail). Replaces thumbnailUrl.
+   */
+  thumbnail?: CaptureThumbnail;
+}
+
+export interface CaptureThumbnail {
+  scenes: Scene[];
+  bounds?: [number, number, number, number];
 }
 
 /**
@@ -90,6 +104,8 @@ export interface ImageryLegendGroup {
   /** show_imagery announced but its result not yet streamed. */
   updating: boolean;
   thumbnailUrl?: string;
+  /** The live capture's scene thumbnail (client-rendered imagery). */
+  thumbnail?: CaptureThumbnail;
   /**
    * Set when the live capture is rendered in the browser (Sentinel-2,
    * `?ff=client-imagery`): its request, which the Edit popover starts from,

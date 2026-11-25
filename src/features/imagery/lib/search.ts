@@ -66,6 +66,7 @@ export function buildSearchBody(
         "properties.datetime",
         "properties.eo:cloud_cover",
         "properties.grid:code",
+        "properties.proj:epsg",
         "assets.visual",
         "assets.thumbnail",
       ],

@@ -106,7 +106,7 @@ describe("ImageryCard", () => {
       screen.getByText("Jun 12–16 · cloud <50% · Sentinel-2")
     ).toBeTruthy();
     expect(
-      (screen.getByAltText("Satellite Imagery") as HTMLImageElement).src
+      (screen.getByAltText("Satellite imagery") as HTMLImageElement).src
     ).toBe("https://cogs/preview.jpg");
   });
 
@@ -149,7 +149,7 @@ describe("ImageryCard", () => {
     renderCard();
     expect(screen.getByText("Jun 1–3 · cloud <80% · Sentinel-2")).toBeTruthy();
     expect(
-      (screen.getByAltText("Satellite Imagery") as HTMLImageElement).src
+      (screen.getByAltText("Satellite imagery") as HTMLImageElement).src
     ).toBe("https://cogs/fixed.jpg");
   });
 
