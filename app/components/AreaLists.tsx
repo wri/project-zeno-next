@@ -161,9 +161,9 @@ function ConversationAreaCard({ layer }: { layer: Layer }) {
 }
 
 export function MonitoredAreasList() {
-  const { data: entries } = useUserAoisSuspense();
+  const { data: userAois } = useUserAoisSuspense();
 
-  if (entries.length === 0) {
+  if (userAois.length === 0) {
     return (
       <PanelEmpty>
         No saved areas yet. Upload or draw an area, or save one from the map, to
@@ -174,26 +174,26 @@ export function MonitoredAreasList() {
 
   return (
     <PanelList>
-      {entries.map((entry) => (
-        <MonitoredAreaCard key={entry.id} entry={entry} />
+      {userAois.map((userAoi) => (
+        <MonitoredAreaCard key={userAoi.id} userAoi={userAoi} />
       ))}
     </PanelList>
   );
 }
 
-export function MonitoredAreaCard({ entry }: { entry: UserAoi }) {
+export function MonitoredAreaCard({ userAoi }: { userAoi: UserAoi }) {
   const setLayerVisibility = useMapStore((s) => s.setLayerVisibility);
   const flyToBounds = useMapStore((s) => s.flyToBounds);
-  const layer = useMapStore((s) => findUserAoiLayer(s.layers, entry));
+  const layer = useMapStore((s) => findUserAoiLayer(s.layers, userAoi));
   const [adding, setAdding] = useState(false);
 
   // A user AOI hidden from "In this conversation" is still on the map.
   const isVisible = !!layer?.visible;
-  const aoi = useMemo(() => userAoiToAoi(entry), [entry]);
+  const aoi = useMemo(() => userAoiToAoi(userAoi), [userAoi]);
 
   async function handleToggle(checked: boolean) {
     if (!checked) {
-      if (layer) removeUserAoiFromMap(layer, entry);
+      if (layer) removeUserAoiFromMap(layer, userAoi);
       return;
     }
     if (layer) {
@@ -202,13 +202,13 @@ export function MonitoredAreaCard({ entry }: { entry: UserAoi }) {
     }
     setAdding(true);
     try {
-      await addUserAoiToMap(entry);
+      await addUserAoiToMap(userAoi);
     } catch (error) {
-      console.error(`Failed to add "${entry.name}" to the map:`, error);
+      console.error(`Failed to add "${userAoi.name}" to the map:`, error);
       toaster.create({
         type: "error",
         title: "Couldn't add this area",
-        description: `"${entry.name}" couldn't be loaded. Please try again.`,
+        description: `"${userAoi.name}" couldn't be loaded. Please try again.`,
       });
     } finally {
       setAdding(false);
@@ -223,8 +223,8 @@ export function MonitoredAreaCard({ entry }: { entry: UserAoi }) {
   return (
     <EntityCard
       kind="area"
-      thumbnail={<UserAoiThumbnail entry={entry} />}
-      title={entry.name}
+      thumbnail={<UserAoiThumbnail userAoi={userAoi} />}
+      title={userAoi.name}
       meta={placeMeta(aoi)}
       interaction={{
         mode: "toggle",
@@ -239,7 +239,7 @@ export function MonitoredAreaCard({ entry }: { entry: UserAoi }) {
         // when the area isn't on the map; the locate button stays on-map only.
         <AreaCardActions
           onLocate={isVisible ? handleLocate : undefined}
-          menu={<UserAoiActionsMenu entry={entry} />}
+          menu={<UserAoiActionsMenu userAoi={userAoi} />}
         />
       }
     />

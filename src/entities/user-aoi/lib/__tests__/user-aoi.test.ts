@@ -4,7 +4,7 @@ import type { UserAoi } from "../../model/user-aoi";
 import { isUserAoi, userAoiToAoi } from "../user-aoi";
 
 const saved: UserAoi = {
-  id: "entry-1",
+  id: "userAoi-1",
   relationship: "saved",
   name: "Project country",
   source: "gadm",

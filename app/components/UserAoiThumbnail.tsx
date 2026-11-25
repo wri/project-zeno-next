@@ -11,20 +11,20 @@ import { AreaThumbnail } from "./AreaThumbnail";
  * because the user AOI list carries no geometry. Until it loads, or if it
  * can't, the plain area thumbnail stands in.
  */
-export function UserAoiThumbnail({ entry }: { entry: UserAoi }) {
-  const outlineUrl = useAreaThumbnail(entry.source, entry.src_id);
+export function UserAoiThumbnail({ userAoi }: { userAoi: UserAoi }) {
+  const outlineUrl = useAreaThumbnail(userAoi.source, userAoi.src_id);
   const aoiSelection = useMemo(() => {
-    const aoi = userAoiToAoi(entry);
+    const aoi = userAoiToAoi(userAoi);
     return { name: aoi.name, aois: [aoi] };
-  }, [entry]);
+  }, [userAoi]);
 
   if (!outlineUrl) {
-    return <AreaThumbnail aoiSelection={aoiSelection} alt={entry.name} />;
+    return <AreaThumbnail aoiSelection={aoiSelection} alt={userAoi.name} />;
   }
   return (
     <Image
       src={outlineUrl}
-      alt={entry.name}
+      alt={userAoi.name}
       w="100%"
       h="100%"
       objectFit="cover"

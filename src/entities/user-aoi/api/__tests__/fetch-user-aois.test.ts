@@ -9,7 +9,7 @@ import { fetchUserAois } from "../fetch-user-aois";
 
 const mockedFetch = vi.mocked(apiFetch);
 
-function entry(id: string, over: object = {}) {
+function userAoi(id: string, over: object = {}) {
   return {
     id,
     relationship: "owner",
@@ -23,10 +23,10 @@ function entry(id: string, over: object = {}) {
   };
 }
 
-function page(entries: object[], nextOffset?: number): Response {
+function page(userAois: object[], nextOffset?: number): Response {
   const headers = new Headers({ "Content-Type": "application/json" });
   if (nextOffset !== undefined) headers.set("X-Next-Offset", `${nextOffset}`);
-  return new Response(JSON.stringify(entries), { status: 200, headers });
+  return new Response(JSON.stringify(userAois), { status: 200, headers });
 }
 
 describe("fetchUserAois", () => {
@@ -36,12 +36,12 @@ describe("fetchUserAois", () => {
 
   it("follows X-Next-Offset until the last page", async () => {
     mockedFetch
-      .mockResolvedValueOnce(page([entry("a"), entry("b")], 100))
-      .mockResolvedValueOnce(page([entry("c")]));
+      .mockResolvedValueOnce(page([userAoi("a"), userAoi("b")], 100))
+      .mockResolvedValueOnce(page([userAoi("c")]));
 
-    const entries = await fetchUserAois();
+    const userAois = await fetchUserAois();
 
-    expect(entries.map((e) => e.id)).toEqual(["a", "b", "c"]);
+    expect(userAois.map((e) => e.id)).toEqual(["a", "b", "c"]);
     expect(mockedFetch.mock.calls.map(([path]) => path)).toEqual([
       "/api/user_aois?limit=100&offset=0",
       "/api/user_aois?limit=100&offset=100",
@@ -52,7 +52,7 @@ describe("fetchUserAois", () => {
   it("reads every source id as a string", async () => {
     mockedFetch.mockResolvedValueOnce(
       page([
-        entry("k", { relationship: "saved", source: "kba", src_id: 12345 }),
+        userAoi("k", { relationship: "saved", source: "kba", src_id: 12345 }),
       ])
     );
 

@@ -23,23 +23,23 @@ import { AreaCardMenu } from "./AreaCardMenu";
  * label, or whether it is listed. The area itself, and any map layer or
  * dashboard showing it, stay as they are.
  */
-export default function UserAoiActionsMenu({ entry }: { entry: UserAoi }) {
+export default function UserAoiActionsMenu({ userAoi }: { userAoi: UserAoi }) {
   const [renameOpen, setRenameOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
-  const rename = useRenameUserAoi();
-  const remove = useDeleteUserAoi();
-  const isOwned = entry.relationship === "owner";
+  const { renameUserAoiAsync, isRenaming } = useRenameUserAoi();
+  const { deleteUserAoiAsync, isDeleting } = useDeleteUserAoi();
+  const isOwned = userAoi.relationship === "owner";
 
   // Dialogs stay open on failure so the user can retry; success closes them.
   const handleRename = async (newName: string) => {
-    if (newName === entry.name) {
+    if (newName === userAoi.name) {
       setRenameOpen(false);
       return;
     }
     try {
-      await rename.mutateAsync({ entryId: entry.id, name: newName });
-      if (isOwned) renameCustomArea({ id: entry.src_id, name: newName });
+      await renameUserAoiAsync({ userAoiId: userAoi.id, name: newName });
+      if (isOwned) renameCustomArea({ id: userAoi.src_id, name: newName });
       setRenameOpen(false);
       toaster.create({
         title: "Area renamed",
@@ -59,17 +59,17 @@ export default function UserAoiActionsMenu({ entry }: { entry: UserAoi }) {
 
   const handleDelete = async () => {
     try {
-      await remove.mutateAsync(entry.id);
+      await deleteUserAoiAsync(userAoi.id);
       setDeleteOpen(false);
       if (isOwned) {
         // The area no longer exists, so it can't stay on the map.
         const { layers, removeLayer } = useMapStore.getState();
-        const layer = findUserAoiLayer(layers, entry);
+        const layer = findUserAoiLayer(layers, userAoi);
         if (layer) removeLayer(layer.id);
       }
       toaster.create({
         title: isOwned ? "Area deleted" : "Area removed",
-        description: `“${entry.name}” was removed from your areas.`,
+        description: `“${userAoi.name}” was removed from your areas.`,
         type: "success",
         duration: 4000,
       });
@@ -85,7 +85,7 @@ export default function UserAoiActionsMenu({ entry }: { entry: UserAoi }) {
 
   return (
     <>
-      <AreaCardMenu label={`Actions for ${entry.name}`}>
+      <AreaCardMenu label={`Actions for ${userAoi.name}`}>
         <Menu.Item
           value="rename"
           color="fg.muted"
@@ -105,27 +105,27 @@ export default function UserAoiActionsMenu({ entry }: { entry: UserAoi }) {
         </Menu.Item>
       </AreaCardMenu>
       {renameOpen && (
-        <CustomAreaRenameDialog
-          name={entry.name}
+        <UserAoiRenameDialog
+          name={userAoi.name}
           onClose={() => setRenameOpen(false)}
           onRename={handleRename}
-          isPending={rename.isPending}
+          isPending={isRenaming}
         />
       )}
       {deleteOpen && (
-        <CustomAreaDeleteDialog
-          areaName={entry.name}
+        <UserAoiDeleteDialog
+          areaName={userAoi.name}
           isOwned={isOwned}
           onClose={() => setDeleteOpen(false)}
           onConfirm={handleDelete}
-          isPending={remove.isPending}
+          isPending={isDeleting}
         />
       )}
     </>
   );
 }
 
-function CustomAreaRenameDialog({
+function UserAoiRenameDialog({
   name,
   onClose,
   onRename,
@@ -192,7 +192,7 @@ function CustomAreaRenameDialog({
   );
 }
 
-function CustomAreaDeleteDialog({
+function UserAoiDeleteDialog({
   areaName,
   isOwned,
   onClose,

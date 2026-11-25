@@ -88,7 +88,7 @@ export function useAreaPickerRows(
   );
 
   const customRows = useMemo(
-    () => (userAois ?? []).map((entry) => userAoiToRow(entry, analysesMap)),
+    () => (userAois ?? []).map((userAoi) => userAoiToRow(userAoi, analysesMap)),
     [userAois, analysesMap]
   );
 

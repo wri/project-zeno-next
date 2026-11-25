@@ -14,7 +14,7 @@ import { UserAoiThumbnail } from "../UserAoiThumbnail";
 const mockedFetch = vi.mocked(apiFetch);
 
 const owned: UserAoi = {
-  id: "entry-1",
+  id: "userAoi-1",
   relationship: "owner",
   name: "Borena",
   source: "custom",
@@ -26,7 +26,7 @@ const owned: UserAoi = {
 
 const saved: UserAoi = {
   ...owned,
-  id: "entry-2",
+  id: "userAoi-2",
   relationship: "saved",
   name: "Ethiopia",
   source: "gadm",
@@ -34,7 +34,7 @@ const saved: UserAoi = {
   subtype: "country",
 };
 
-function renderThumbnail(entry: UserAoi) {
+function renderThumbnail(userAoi: UserAoi) {
   return render(
     <QueryClientProvider
       client={
@@ -42,7 +42,7 @@ function renderThumbnail(entry: UserAoi) {
       }
     >
       <ChakraProvider value={defaultSystem}>
-        <UserAoiThumbnail entry={entry} />
+        <UserAoiThumbnail userAoi={userAoi} />
       </ChakraProvider>
     </QueryClientProvider>
   );
@@ -58,14 +58,14 @@ describe("UserAoiThumbnail", () => {
   it.each([
     ["an owned area", owned, "/api/geometry/custom/ca-1/thumbnail"],
     ["a saved area", saved, "/api/geometry/gadm/ETH/thumbnail"],
-  ])("shows the outline the backend draws for %s", async (_, entry, path) => {
+  ])("shows the outline the backend draws for %s", async (_, userAoi, path) => {
     mockedFetch.mockResolvedValue(
       new Response(new Blob(["png"], { type: "image/png" }), { status: 200 })
     );
 
-    renderThumbnail(entry);
+    renderThumbnail(userAoi);
 
-    const img = await screen.findByRole("img", { name: entry.name });
+    const img = await screen.findByRole("img", { name: userAoi.name });
     expect(img.getAttribute("src")).toBe("blob:outline");
     expect(mockedFetch.mock.calls[0][0]).toContain(path);
   });

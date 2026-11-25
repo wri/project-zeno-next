@@ -8,18 +8,22 @@ import {
 import { apiFetch } from "@/app/lib/api-client";
 
 import { UserAoiSchema, type UserAoi } from "../model/user-aoi";
-import { fetchUserAois, readApiError } from "./fetch-user-aois";
+import { fetchUserAois } from "./fetch-user-aois";
+import { responseError } from "./http";
 
 export const USER_AOIS_QUERY_KEY = ["userAois"] as const;
 
 export function useUserAois() {
-  return useQuery({ queryKey: USER_AOIS_QUERY_KEY, queryFn: fetchUserAois });
+  return useQuery({
+    queryKey: USER_AOIS_QUERY_KEY,
+    queryFn: ({ signal }) => fetchUserAois(signal),
+  });
 }
 
 export function useUserAoisSuspense() {
   return useSuspenseQuery({
     queryKey: USER_AOIS_QUERY_KEY,
-    queryFn: fetchUserAois,
+    queryFn: ({ signal }) => fetchUserAois(signal),
   });
 }
 
@@ -29,52 +33,89 @@ export interface SourceAreaRef {
   src_id: string;
 }
 
-async function postUserAoi(area: SourceAreaRef): Promise<UserAoi> {
+async function createUserAoi(area: SourceAreaRef): Promise<UserAoi> {
   const res = await apiFetch("/api/user_aois", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(area),
   });
-  if (!res.ok) throw await readApiError(res, "Failed to save area");
+  if (!res.ok) throw await responseError(res);
   return UserAoiSchema.parse(await res.json());
 }
 
-async function patchUserAoi(entryId: string, name: string): Promise<UserAoi> {
-  const res = await apiFetch(`/api/user_aois/${entryId}`, {
+async function updateUserAoiName({
+  userAoiId,
+  name,
+}: {
+  userAoiId: string;
+  name: string;
+}): Promise<UserAoi> {
+  const res = await apiFetch(`/api/user_aois/${userAoiId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name }),
   });
-  if (!res.ok) throw await readApiError(res, "Failed to rename area");
+  if (!res.ok) throw await responseError(res);
   return UserAoiSchema.parse(await res.json());
 }
 
-async function deleteUserAoi(entryId: string): Promise<void> {
-  const res = await apiFetch(`/api/user_aois/${entryId}`, {
+async function deleteUserAoi(userAoiId: string): Promise<void> {
+  const res = await apiFetch(`/api/user_aois/${userAoiId}`, {
     method: "DELETE",
   });
-  if (!res.ok) throw await readApiError(res, "Failed to delete area");
-}
-
-function useUserAoiMutation<TArgs, TResult>(
-  mutationFn: (args: TArgs) => Promise<TResult>
-) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn,
-    onSettled: () =>
-      queryClient.invalidateQueries({ queryKey: USER_AOIS_QUERY_KEY }),
-  });
+  if (!res.ok) throw await responseError(res);
 }
 
 /** Save a source area to the user's areas by reference; 409 if already saved. */
-export const useSaveUserAoi = () => useUserAoiMutation(postUserAoi);
+export function useSaveUserAoi() {
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: createUserAoi,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: USER_AOIS_QUERY_KEY });
+    },
+  });
+
+  return {
+    saveUserAoi: mutation.mutate,
+    saveUserAoiAsync: mutation.mutateAsync,
+    isSaving: mutation.isPending,
+  };
+}
 
 /** Rename a user AOI: a saved area's label, or an owned area itself. */
-export const useRenameUserAoi = () =>
-  useUserAoiMutation(({ entryId, name }: { entryId: string; name: string }) =>
-    patchUserAoi(entryId, name)
-  );
+export function useRenameUserAoi() {
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: updateUserAoiName,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: USER_AOIS_QUERY_KEY });
+    },
+  });
+
+  return {
+    renameUserAoi: mutation.mutate,
+    renameUserAoiAsync: mutation.mutateAsync,
+    isRenaming: mutation.isPending,
+  };
+}
 
 /** Remove a user AOI: unsave a saved area, or delete an owned one. */
-export const useDeleteUserAoi = () => useUserAoiMutation(deleteUserAoi);
+export function useDeleteUserAoi() {
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: deleteUserAoi,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: USER_AOIS_QUERY_KEY });
+    },
+  });
+
+  return {
+    deleteUserAoi: mutation.mutate,
+    deleteUserAoiAsync: mutation.mutateAsync,
+    isDeleting: mutation.isPending,
+  };
+}

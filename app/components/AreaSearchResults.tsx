@@ -90,11 +90,11 @@ function SavedMatchList({
   term: string;
   showEmpty: boolean;
 }) {
-  const { data: entries } = useUserAoisSuspense();
+  const { data: userAois } = useUserAoisSuspense();
   const matches = useMemo(() => {
     const q = term.toLowerCase();
-    return entries.filter((entry) => entry.name.toLowerCase().includes(q));
-  }, [entries, term]);
+    return userAois.filter((userAoi) => userAoi.name.toLowerCase().includes(q));
+  }, [userAois, term]);
 
   if (matches.length === 0) {
     return showEmpty ? (
@@ -104,8 +104,8 @@ function SavedMatchList({
   return (
     <PanelSection label="My areas">
       <PanelList>
-        {matches.map((entry) => (
-          <MonitoredAreaCard key={entry.id} entry={entry} />
+        {matches.map((userAoi) => (
+          <MonitoredAreaCard key={userAoi.id} userAoi={userAoi} />
         ))}
       </PanelList>
     </PanelSection>

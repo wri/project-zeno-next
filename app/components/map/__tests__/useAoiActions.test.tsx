@@ -28,7 +28,7 @@ const saveAoiAsync = vi.fn().mockResolvedValue({});
 let userAois: { source: string; src_id: string }[] = [];
 vi.mock("@/src/entities/user-aoi", async (importOriginal) => ({
   ...(await importOriginal<object>()),
-  useSaveUserAoi: () => ({ mutateAsync: saveAoiAsync, isPending: false }),
+  useSaveUserAoi: () => ({ saveUserAoiAsync: saveAoiAsync, isSaving: false }),
   useUserAois: () => ({ data: userAois }),
 }));
 

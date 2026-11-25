@@ -74,7 +74,7 @@ export function useAoiActions(
   );
   const dateRange = useChatStore((state) => state.dateRange);
   const { run: runDirectAnalysis, status: analysisStatus } = useAnalysis();
-  const saveUserAoi = useSaveUserAoi();
+  const { saveUserAoiAsync, isSaving } = useSaveUserAoi();
   const { data: userAois = [] } = useUserAois();
 
   const datasetId = datasetLayer?.datasetId;
@@ -160,7 +160,7 @@ export function useAoiActions(
       return;
     }
     try {
-      await saveUserAoi.mutateAsync({
+      await saveUserAoiAsync({
         source: source.toLowerCase(),
         src_id: srcId,
       });
@@ -195,7 +195,7 @@ export function useAoiActions(
     canUseDashboard: dashboardInput !== null && !isResolvingDashboards,
     dashboardLabel: existingDashboard ? "Open Dashboard" : "Create Dashboard",
     isCreatingDashboard,
-    isSavingArea: saveUserAoi.isPending,
+    isSavingArea: isSaving,
     generateInsights: () => {
       if (!activeDataset) return;
       runAnalysis({

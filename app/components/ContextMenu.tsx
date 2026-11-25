@@ -250,32 +250,32 @@ function AreaCardList({
 }
 
 function AreaMenu() {
-  const { data: entries } = useUserAoisSuspense();
+  const { data: userAois } = useUserAoisSuspense();
   const layers = useMapStore((s) => s.layers);
   const [query, setQuery] = useState("");
 
   const cards = useMemo(() => {
     const q = query.toLowerCase();
-    return entries
-      .filter((entry) => !q || entry.name.toLowerCase().includes(q))
-      .map((entry) => ({
-        id: entry.id,
-        name: entry.name,
-        selected: !!findUserAoiLayer(layers, entry),
+    return userAois
+      .filter((userAoi) => !q || userAoi.name.toLowerCase().includes(q))
+      .map((userAoi) => ({
+        id: userAoi.id,
+        name: userAoi.name,
+        selected: !!findUserAoiLayer(layers, userAoi),
       }));
-  }, [entries, query, layers]);
+  }, [userAois, query, layers]);
 
   const handleSelectArea = async (card: { id: string; name: string }) => {
-    const entry = entries.find((e) => e.id === card.id);
-    if (!entry) return;
+    const userAoi = userAois.find((e) => e.id === card.id);
+    if (!userAoi) return;
     try {
-      await addUserAoiToMap(entry);
+      await addUserAoiToMap(userAoi);
     } catch (error) {
-      console.error(`Failed to add "${entry.name}" to the map:`, error);
+      console.error(`Failed to add "${userAoi.name}" to the map:`, error);
       toaster.create({
         type: "error",
         title: "Couldn't add this area",
-        description: `"${entry.name}" couldn't be loaded. Please try again.`,
+        description: `"${userAoi.name}" couldn't be loaded. Please try again.`,
       });
     }
   };

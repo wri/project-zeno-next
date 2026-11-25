@@ -132,8 +132,8 @@ describe("row mappers", () => {
 });
 
 describe("userAoiToRow", () => {
-  const entry = {
-    id: "entry-1",
+  const userAoi = {
+    id: "user-aoi-1",
     relationship: "saved" as const,
     name: "Project country",
     source: "gadm",
@@ -145,7 +145,7 @@ describe("userAoiToRow", () => {
 
   // Picking it creates the same dashboard as picking Brazil from the GADM tab.
   it("maps a saved area to a row under its own source", () => {
-    const row = userAoiToRow(entry, new Map([["gadm:BRA", 2]]));
+    const row = userAoiToRow(userAoi, new Map([["gadm:BRA", 2]]));
 
     expect(row).toEqual<AreaPickerRow>({
       source: "gadm",
@@ -161,7 +161,7 @@ describe("userAoiToRow", () => {
   it("maps an owned area to a custom area row", () => {
     const row = userAoiToRow(
       {
-        ...entry,
+        ...userAoi,
         relationship: "owner",
         source: "custom",
         src_id: "area-1",

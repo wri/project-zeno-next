@@ -23,16 +23,16 @@ export default function ConversationAreaActionsMenu({
 }: {
   layer: Layer;
 }) {
-  const saveUserAoi = useSaveUserAoi();
+  const { saveUserAoiAsync, isSaving } = useSaveUserAoi();
   const { data: userAois = [] } = useUserAois();
 
   const name = layer.aoiSelection?.name ?? layer.name;
   const savable = listSavableAreas(layer, userAois);
 
   const handleSave = async () => {
-    if (saveUserAoi.isPending || savable.length === 0) return;
+    if (isSaving || savable.length === 0) return;
     const results = await Promise.allSettled(
-      savable.map((area) => saveUserAoi.mutateAsync(area))
+      savable.map((area) => saveUserAoiAsync(area))
     );
     const failed = results.filter((r) => r.status === "rejected").length;
     toaster.create(

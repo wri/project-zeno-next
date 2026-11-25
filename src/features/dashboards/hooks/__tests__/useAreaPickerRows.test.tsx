@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const userAoisState = vi.hoisted(() => ({
   data: [
     {
-      id: "entry-1",
+      id: "userAoi-1",
       relationship: "owner",
       name: "My farm",
       source: "custom",

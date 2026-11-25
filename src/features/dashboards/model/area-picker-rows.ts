@@ -70,18 +70,18 @@ export function customAreaToRow(
 
 /** A user AOI as a row, addressed by the area's own source and id. */
 export function userAoiToRow(
-  entry: UserAoi,
+  userAoi: UserAoi,
   analysesMap: Map<string, number>
 ): AreaPickerRow {
   return {
-    source: entry.source,
-    src_id: entry.src_id,
-    subtype: entry.subtype,
-    name: entry.name,
-    typeLabel: areaSourceLabel(entry.source),
+    source: userAoi.source,
+    src_id: userAoi.src_id,
+    subtype: userAoi.subtype,
+    name: userAoi.name,
+    typeLabel: areaSourceLabel(userAoi.source),
     previousAnalyses:
-      analysesMap.get(analysesKey(entry.source, entry.src_id)) ?? 0,
-    ...(entry.bbox ? { bbox: entry.bbox } : {}),
+      analysesMap.get(analysesKey(userAoi.source, userAoi.src_id)) ?? 0,
+    ...(userAoi.bbox ? { bbox: userAoi.bbox } : {}),
   };
 }
 

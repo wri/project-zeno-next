@@ -52,7 +52,7 @@ const PLACES = [
 
 const SAVED = [
   {
-    id: "entry-1",
+    id: "user-aoi-1",
     relationship: "owner",
     name: "Santa Cruz plots",
     source: "custom",

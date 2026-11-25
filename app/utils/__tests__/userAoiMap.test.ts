@@ -19,7 +19,7 @@ import {
 const mockedFetch = vi.mocked(apiFetch);
 
 const owned: UserAoi = {
-  id: "entry-1",
+  id: "userAoi-1",
   relationship: "owner",
   name: "Farm plot",
   source: "custom",
@@ -30,7 +30,7 @@ const owned: UserAoi = {
 };
 
 const saved: UserAoi = {
-  id: "entry-2",
+  id: "userAoi-2",
   relationship: "saved",
   name: "Brazil",
   source: "gadm",

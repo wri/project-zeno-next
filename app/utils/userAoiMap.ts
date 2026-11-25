@@ -15,12 +15,12 @@ import { userAoiToAoi, type UserAoi } from "@/src/entities/user-aoi";
  * others, keyed by its id. Geometry is fetched on demand for both.
  */
 
-const isOwned = (entry: UserAoi) => entry.relationship === "owner";
+const isOwned = (userAoi: UserAoi) => userAoi.relationship === "owner";
 
 /** Put a user AOI on the map and fly to it. */
-export async function addUserAoiToMap(entry: UserAoi): Promise<void> {
-  const aoi = userAoiToAoi(entry);
-  if (!isOwned(entry)) {
+export async function addUserAoiToMap(userAoi: UserAoi): Promise<void> {
+  const aoi = userAoiToAoi(userAoi);
+  if (!isOwned(userAoi)) {
     await addPlaceToMap(aoi);
     return;
   }
@@ -28,11 +28,11 @@ export async function addUserAoiToMap(entry: UserAoi): Promise<void> {
     useMapStore.getState();
   const geometry = await fetchAndRegisterAoi(aoi, addToRegistry);
   addLayer({
-    id: entry.src_id,
-    name: entry.name,
+    id: userAoi.src_id,
+    name: userAoi.name,
     type: "geojson",
     visible: true,
-    featureRefs: [customAreaRef({ id: entry.src_id, name: entry.name })],
+    featureRefs: [customAreaRef({ id: userAoi.src_id, name: userAoi.name })],
   });
   flyToGeoJsonWithRetry(geometry);
 }
@@ -40,17 +40,17 @@ export async function addUserAoiToMap(entry: UserAoi): Promise<void> {
 /** Find the map layer showing a user AOI, if it's on the map. */
 export function findUserAoiLayer(
   layers: Layer[],
-  entry: UserAoi
+  userAoi: UserAoi
 ): Layer | undefined {
-  if (isOwned(entry)) return layers.find((l) => l.id === entry.src_id);
-  return findPlaceLayer(layers, userAoiToAoi(entry));
+  if (isOwned(userAoi)) return layers.find((l) => l.id === userAoi.src_id);
+  return findPlaceLayer(layers, userAoiToAoi(userAoi));
 }
 
 /** Take a user AOI's layer off the map. */
-export function removeUserAoiFromMap(layer: Layer, entry: UserAoi): void {
-  if (isOwned(entry)) {
+export function removeUserAoiFromMap(layer: Layer, userAoi: UserAoi): void {
+  if (isOwned(userAoi)) {
     useMapStore.getState().removeLayer(layer.id);
     return;
   }
-  removePlaceFromMap(layer, userAoiToAoi(entry));
+  removePlaceFromMap(layer, userAoiToAoi(userAoi));
 }
