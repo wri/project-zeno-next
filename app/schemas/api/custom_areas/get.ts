@@ -11,9 +11,4 @@ export const CustomAreaSchema = z.object({
   updated_at: z.string(),
 });
 
-export const ListCustomAreasResponseSchema = z.array(CustomAreaSchema);
-
 export type CustomArea = z.infer<typeof CustomAreaSchema>;
-export type ListCustomAreasResponse = z.infer<
-  typeof ListCustomAreasResponseSchema
->;

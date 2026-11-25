@@ -104,7 +104,7 @@ describe("useAreaUpload", () => {
         { id: "a2", name: "South" },
       ],
     });
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["customAreas"] });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["userAois"] });
   });
 
   it("shows every backend row error and returns to the drop zone", async () => {

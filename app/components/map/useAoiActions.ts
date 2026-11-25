@@ -3,11 +3,9 @@ import { useRouter } from "@/src/shared/lib/router";
 
 import { toaster } from "@/app/components/ui/toaster";
 import { DATASET_BY_ID, isViewOnlyDataset } from "@/app/constants/datasets";
-import { useCustomAreasCreate } from "@/app/hooks/useCustomAreasCreate";
 import { runAnalysis } from "@/app/lib/analysis/runAnalysis";
 import useChatStore from "@/app/store/chatStore";
 import useMapStore from "@/app/store/mapStore";
-import { toPolygons } from "@/app/utils/selectionPolygons";
 import {
   isAnalysableForSource,
   useAnalysis,
@@ -15,6 +13,11 @@ import {
   resolveAnalysisWindow,
 } from "@/src/features/analysis";
 import { useCreateDashboardForArea } from "@/src/features/dashboards";
+import {
+  isUserAoi,
+  useSaveUserAoi,
+  useUserAois,
+} from "@/src/entities/user-aoi";
 
 /**
  * The area an actions menu is attached to.
@@ -71,7 +74,8 @@ export function useAoiActions(
   );
   const dateRange = useChatStore((state) => state.dateRange);
   const { run: runDirectAnalysis, status: analysisStatus } = useAnalysis();
-  const { createAreaAsync, isCreating: isSavingArea } = useCustomAreasCreate();
+  const { saveUserAoiAsync, isSaving } = useSaveUserAoi();
+  const { data: userAois = [] } = useUserAois();
 
   const datasetId = datasetLayer?.datasetId;
   // Prefer the canonical catalogue name — it matches what sendMessage puts in
@@ -131,22 +135,6 @@ export function useAoiActions(
     !isViewOnlyDataset(activeDataset.id) &&
     isAnalysableForSource(activeDataset.id, source);
 
-  /**
-   * The registry entry for this area, for `saveArea`. Source matches
-   * case-insensitively because `VectorAreasLayer` registers `ref.source` as
-   * the map layer id ("GADM") while the selection lowercases it ("gadm"). The
-   * src id must match too: same-name parcels each keep their own entry.
-   */
-  const registryEntry = () =>
-    useMapStore
-      .getState()
-      .geoJsonRegistry.find(
-        (e) =>
-          e.ref.name === areaName &&
-          e.ref.source.toLowerCase() === source.toLowerCase() &&
-          e.srcId === srcId
-      );
-
   const removeFromMap = () => {
     const { clearAnalysis, removeLayer, analysisSelection } =
       useMapStore.getState();
@@ -160,28 +148,40 @@ export function useAoiActions(
     }
   };
 
+  // A saved area is a link to the source area, so it needs the area's id.
   const saveArea = async () => {
-    const entry = registryEntry();
-    const geometries = entry ? toPolygons(entry.data) : [];
-    if (geometries.length === 0) {
+    if (!srcId) {
       toaster.create({
         title: "Couldn't save this area",
-        description: "Its boundary isn't available yet. Try reselecting it.",
+        description: "We couldn't match this area to our records.",
         type: "error",
         duration: 4000,
       });
       return;
     }
     try {
-      await createAreaAsync({ name: areaName, geometries });
+      await saveUserAoiAsync({
+        source: source.toLowerCase(),
+        src_id: srcId,
+      });
       toaster.create({
         title: "Area saved",
         description: `"${areaName}" is now in your areas.`,
         type: "success",
         duration: 3000,
       });
-    } catch {
-      // useCustomAreasCreate's own onError already surfaces the API failure.
+    } catch (error) {
+      const alreadySaved = (error as { status?: number }).status === 409;
+      toaster.create({
+        title: alreadySaved
+          ? "Already in your areas"
+          : "Couldn't save this area",
+        description: alreadySaved
+          ? `"${areaName}" is already in your areas.`
+          : "Please try again.",
+        type: alreadySaved ? "info" : "error",
+        duration: 4000,
+      });
     }
   };
 
@@ -189,11 +189,14 @@ export function useAoiActions(
     areaName,
     hasDataset: activeDataset !== null,
     canViewAnalysis,
-    canSaveArea: source.toLowerCase() !== "custom",
+    canSaveArea:
+      source.toLowerCase() !== "custom" &&
+      !!srcId &&
+      !isUserAoi(userAois, source, srcId),
     canUseDashboard: dashboardInput !== null && !isResolvingDashboards,
     dashboardLabel: existingDashboard ? "Open Dashboard" : "Create Dashboard",
     isCreatingDashboard,
-    isSavingArea,
+    isSavingArea: isSaving,
     generateInsights: () => {
       if (!activeDataset) return;
       runAnalysis({

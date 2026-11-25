@@ -4,6 +4,7 @@ import type { Polygon } from "geojson";
 
 import { useCustomAreasCreate } from "@/app/hooks/useCustomAreasCreate";
 import { generateRandomName } from "@/app/utils/generateRandomName";
+import { USER_AOIS_QUERY_KEY } from "@/src/entities/user-aoi";
 import {
   AreaUploadError,
   uploadCustomAreasFile,
@@ -121,7 +122,7 @@ export function useAreaUpload(): AreaUpload {
           return;
         }
         // The GeoJSON create hook invalidates this itself.
-        queryClient.invalidateQueries({ queryKey: ["customAreas"] });
+        queryClient.invalidateQueries({ queryKey: USER_AOIS_QUERY_KEY });
       }
 
       setFile(null);
