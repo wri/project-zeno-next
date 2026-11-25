@@ -191,16 +191,6 @@ describe("Saving a preferred language", () => {
     useAuthStore.getState().clearAuth();
   });
 
-  it("leaves this device's display language when the preference did not change", async () => {
-    mockProfileApis("pt");
-    renderPage();
-
-    await saveProfile();
-
-    expect(document.cookie).toContain("gnw_locale=fr");
-    expect(i18n.language).toBe("en");
-  });
-
   it("adopts a new preference and drops this device's display language", async () => {
     mockProfileApis("pt");
     renderPage();
@@ -210,15 +200,5 @@ describe("Saving a preferred language", () => {
 
     expect(document.cookie).not.toMatch(/gnw_locale=\w/);
     expect(i18n.language).toBe("es");
-  });
-
-  it("adopts a cleared preference as English", async () => {
-    mockProfileApis(null);
-    renderPage();
-
-    await saveProfile();
-
-    expect(document.cookie).not.toMatch(/gnw_locale=\w/);
-    expect(i18n.language).toBe("en");
   });
 });

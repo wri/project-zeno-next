@@ -1,4 +1,4 @@
-import { useId, type RefObject } from "react";
+import { useId } from "react";
 import { Box, Button, Flex, Menu, Portal, Text } from "@chakra-ui/react";
 import { CaretDownIcon, CheckIcon, GlobeIcon } from "@phosphor-icons/react";
 import { Tooltip } from "@/app/components/ui/tooltip";
@@ -32,9 +32,6 @@ const MENU_ORDER = [...LOCALES].sort((a, b) =>
   LANGUAGES[a].native.localeCompare(LANGUAGES[b].native, "en")
 );
 
-/** Gap between the menu and the panel's right edge, as designed. */
-const MENU_EDGE_INSET = 10;
-
 // Values from the design's menu component. Its secondary text and selected-row
 // tints are not in the app theme's palette, so they are named here.
 const SECONDARY_TEXT = "#565E7B";
@@ -42,59 +39,37 @@ const SELECTED_ROW = "#F0F4FF";
 const MENU_BORDER = "#E0E2E5";
 
 /**
- * The chat header's display-language selector: a globe button showing the
+ * The global header's display-language selector: a globe button showing the
  * active language code, opening a menu of the supported languages. A choice
  * applies at once and is remembered on this device only (see `changeLocale`);
  * the signed-in user's preferred language is marked with a badge.
  */
-export function LocaleSwitcher({
-  anchorRef,
-}: {
-  /** The panel header the menu hangs from; the button itself when omitted. */
-  anchorRef?: RefObject<HTMLElement | null>;
-}) {
+export function LocaleSwitcher() {
   const locale = useLocale();
-  const preferred = useAuthStore((s) =>
-    s.isAuthenticated ? matchLocale(s.preferredLanguageCode) : null
-  );
+  const preferred = useAuthStore((s) => matchLocale(s.preferredLanguageCode));
   const { t } = useTranslation();
   const triggerId = useId();
-  const current = t("chat.header.languageCurrent", {
+  const current = t("header.language.current", {
     language: LANGUAGES[locale].native,
   });
 
   return (
     <Menu.Root
       ids={{ trigger: triggerId }}
-      positioning={{
-        placement: "bottom-end",
-        // As designed, the menu hangs from the panel's right edge, not the
-        // button's.
-        getAnchorRect: (trigger) => {
-          const anchor =
-            anchorRef?.current ??
-            (trigger instanceof HTMLElement ? trigger : null);
-          if (!anchor) return null;
-          const { x, y, width, height } = anchor.getBoundingClientRect();
-          return { x, y, width: width - MENU_EDGE_INSET, height };
-        },
-      }}
+      positioning={{ placement: "bottom-end" }}
     >
-      <Tooltip
-        ids={{ trigger: triggerId }}
-        content={current}
-        variant="dark"
-        positioning={{ placement: "top" }}
-        showArrow
-      >
+      <Tooltip ids={{ trigger: triggerId }} content={current} showArrow>
         <Menu.Trigger asChild>
+          {/* Sized and tinted like the header's other icon buttons. */}
           <Button
-            size="2xs"
-            h="24px"
-            px="6px"
+            h="32px"
+            minW="32px"
+            px="8px"
             gap="4px"
-            variant="ghost"
-            color="neutral.600"
+            borderRadius="4px"
+            bg="#F4F5F6"
+            color={SECONDARY_TEXT}
+            _hover={{ bg: MENU_BORDER }}
             fontWeight="medium"
             aria-label={current}
           >
@@ -118,7 +93,7 @@ export function LocaleSwitcher({
             bg="white"
             boxShadow="0 8px 24px 0 rgba(18, 23, 26, 0.12)"
             overflow="hidden"
-            // Above the chat panel overlay.
+            // Above the map and the chat panel.
             zIndex="popover"
           >
             <Menu.RadioItemGroup
@@ -126,7 +101,7 @@ export function LocaleSwitcher({
               onValueChange={({ value }) => {
                 if (isLocale(value) && value !== locale) changeLocale(value);
               }}
-              aria-label={t("chat.header.language")}
+              aria-label={t("header.language.menu")}
             >
               {MENU_ORDER.map((code) => {
                 const { native, english } = LANGUAGES[code];
@@ -171,7 +146,7 @@ export function LocaleSwitcher({
                             lineHeight="13px"
                             fontWeight="medium"
                           >
-                            {t("chat.language.preferred")}
+                            {t("header.language.preferred")}
                           </Text>
                         )}
                       </Flex>
@@ -207,7 +182,7 @@ export function LocaleSwitcher({
               borderColor={MENU_BORDER}
             >
               <Text fontSize="xs" lineHeight="16px" color={SECONDARY_TEXT}>
-                {t("chat.language.scopeNote")}
+                {t("header.language.scopeNote")}
               </Text>
             </Box>
           </Menu.Content>

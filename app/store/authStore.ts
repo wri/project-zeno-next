@@ -6,8 +6,9 @@ interface AuthState {
   userId: string | null;
   userEmail: string | null;
   userType: UserType | null;
-  // Profile language preference (ISO code, e.g. "pt"); the signed-in user's
-  // UI locale, which dictation follows. Null until /api/auth/me resolves.
+  // Profile language preference (ISO code, e.g. "pt"): comms, and the UI
+  // locale on a device with no display choice (see resolveLocale). Null
+  // until /api/auth/me resolves, and when signed out.
   preferredLanguageCode: string | null;
   isAuthenticated: boolean;
   hasProfile: boolean;

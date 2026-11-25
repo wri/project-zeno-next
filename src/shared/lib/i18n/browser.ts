@@ -23,10 +23,16 @@ export function rememberLocale(locale: Locale): void {
 }
 
 /**
- * A preferred language was just saved (user settings, onboarding): drop this
- * device's display choice so the UI follows the new preference at once.
+ * After a profile save: when the preferred language changed, drop this
+ * device's display choice so the UI follows it at once, or nothing would
+ * visibly change after saving (PZB-1722).
  */
-export function adoptPreferredLocale(code: string | null | undefined): void {
+export function followPreferredLocale(
+  before: string | null,
+  after: string | null
+): void {
+  const next = matchLocale(after);
+  if (next === matchLocale(before)) return;
   document.cookie = localeCookieRemoval();
-  applyLocale(matchLocale(code) ?? DEFAULT_LOCALE);
+  applyLocale(next ?? DEFAULT_LOCALE);
 }
