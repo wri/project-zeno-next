@@ -23,9 +23,21 @@ export interface Sentinel2Request {
   maxCloudCover: number;
   /** The most scenes the STAC search returns, before the scene limits. */
   maxItems: number;
+  /**
+   * Which scenes win: "cloud" (default) puts the least cloudy scenes of the
+   * window on top, so cloudy regions still get full coverage; "date" puts
+   * the scenes nearest the target date on top. Optional: absent means the
+   * default, as in every token the backend writes.
+   */
+  sort?: SceneSort;
   /** Owner of a custom area; the backend scopes its geometry lookup by it. */
   userId?: string;
 }
+
+export type SceneSort = "cloud" | "date";
+export const DEFAULT_SORT: SceneSort = "cloud";
+/** Sort choices offered in the legend. */
+export const SORT_OPTIONS: readonly SceneSort[] = ["cloud", "date"];
 
 /** Window choices offered in the legend, in days. */
 export const WINDOW_OPTIONS = [7, 15, 30, 60] as const;
@@ -34,7 +46,9 @@ export const CLOUD_OPTIONS = [10, 20, 30, 50, 80] as const;
 
 /** The backend defaults of show_imagery (src/agent/imagery/sentinel2.py). */
 export const DEFAULT_WINDOW_DAYS = 7;
-export const DEFAULT_MAX_CLOUD_COVER = 20;
+// Loose on purpose: scenes are ranked least cloudy first, so a high limit
+// only adds fallback scenes for tiles that have no clearer one.
+export const DEFAULT_MAX_CLOUD_COVER = 50;
 export const DEFAULT_MAX_ITEMS = 50;
 
 /**
@@ -45,8 +59,8 @@ export const FIRST_SCENE_DATE = "2016-11-01";
 
 /**
  * The request show_imagery makes when the user gives no date: about the past
- * two weeks (target one week ago, ±7 days), less than 20 % cloud. Used by
- * the area menu's "Show satellite imagery".
+ * two weeks (target one week ago, ±7 days), less than 50 % cloud, least
+ * cloudy first. Used by the area menu's "Show satellite imagery".
  */
 export function defaultRequest(
   aois: AoiRef[],
@@ -60,6 +74,7 @@ export function defaultRequest(
     windowDays: DEFAULT_WINDOW_DAYS,
     maxCloudCover: DEFAULT_MAX_CLOUD_COVER,
     maxItems: DEFAULT_MAX_ITEMS,
+    sort: DEFAULT_SORT,
   };
 }
 
@@ -73,6 +88,7 @@ export function normalizeRequest(request: Sentinel2Request): Sentinel2Request {
     windowDays: clamp(request.windowDays, 1, 183),
     maxCloudCover: clamp(request.maxCloudCover, 1, 100),
     maxItems: clamp(request.maxItems, 1, 100),
+    sort: request.sort ?? DEFAULT_SORT,
   };
 }
 
@@ -108,6 +124,9 @@ export function encodeRecipe(request: Sentinel2Request): string {
     c: r.maxCloudCover,
     d: r.targetDate,
     n: r.maxItems,
+    // Only the non-default sort is written, so a default request's token
+    // equals the backend's (which never sets a sort).
+    ...(r.sort !== DEFAULT_SORT ? { s: r.sort } : {}),
     ...(r.userId ? { u: r.userId } : {}),
     w: r.windowDays,
   };
@@ -134,7 +153,9 @@ export function decodeRecipe(
         (pair: unknown) =>
           Array.isArray(pair) &&
           pair.length === 2 &&
-          pair.every((part) => typeof part === "string")
+          typeof pair[0] === "string" &&
+          // Older backend tokens can carry a numeric src_id.
+          (typeof pair[1] === "string" || typeof pair[1] === "number")
       ) ||
       typeof payload.d !== "string" ||
       !ISO_DATE.test(payload.d)
@@ -144,15 +165,16 @@ export function decodeRecipe(
     const numberOr = (value: unknown, fallback: number) =>
       typeof value === "number" && Number.isFinite(value) ? value : fallback;
     return normalizeRequest({
-      aois: aois.map(([source, srcId]: [string, string]) => ({
+      aois: aois.map(([source, srcId]: [string, string | number]) => ({
         source,
-        srcId,
+        srcId: String(srcId),
       })),
       aoiNames,
       targetDate: payload.d,
       windowDays: numberOr(payload.w, DEFAULT_WINDOW_DAYS),
       maxCloudCover: numberOr(payload.c, DEFAULT_MAX_CLOUD_COVER),
       maxItems: numberOr(payload.n, DEFAULT_MAX_ITEMS),
+      sort: payload.s === "date" ? "date" : DEFAULT_SORT,
       ...(typeof payload.u === "string" ? { userId: payload.u } : {}),
     });
   } catch {

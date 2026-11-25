@@ -476,10 +476,10 @@ function QuickFixes(props: {
         request: { ...request, windowDays: 30 },
       });
     }
-    if (request.maxCloudCover < 50) {
+    if (request.maxCloudCover < 80) {
       fixes.push({
-        label: "Allow 50% cloud",
-        request: { ...request, maxCloudCover: 50 },
+        label: "Allow 80% cloud",
+        request: { ...request, maxCloudCover: 80 },
       });
     }
   }

@@ -93,6 +93,7 @@ export interface InsightWidget extends ChartColorFields {
     | "bar"
     | "table"
     | "dataset-card"
+    | "imagery-card"
     | "pie"
     | "stacked-bar"
     | "grouped-bar"

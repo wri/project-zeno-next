@@ -519,7 +519,7 @@ describe("useAoiActions", () => {
           aois: [{ source: "gadm", srcId: "BRA.16_1" }],
           aoiNames: ["Paraná, Brazil"],
           windowDays: 7,
-          maxCloudCover: 20,
+          maxCloudCover: 50,
         })
       );
     });

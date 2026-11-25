@@ -1,13 +1,22 @@
-import { StreamMessage } from "@/app/types/chat";
+import type {
+  ChatMessage,
+  ImageryInfo,
+  InsightWidget,
+  StreamMessage,
+} from "@/app/types/chat";
 import useMapStore from "../mapStore";
 import { API_CONFIG } from "@/app/config/api";
 import { getAuthHeaders } from "@/app/lib/api-client";
 import { showApiError } from "@/app/hooks/useErrorHandler";
 import {
+  IMAGERY_LAYER_NAME,
   imageryAttribution,
+  imageryCardDescription,
   imageryLayerId,
   imageryLayerTitle,
+  imageryThumbnailUrl,
   toImageryMeta,
+  type ImageryCardData,
 } from "@/app/utils/imagery";
 import { decodeRecipe } from "@/src/features/imagery";
 import {
@@ -62,9 +71,21 @@ async function fetchTileJson(
  * zoom range. Providers without TileJSON may supply bounds / min_zoom /
  * max_zoom directly in the imagery payload instead.
  */
-export async function showImageryTool(streamMessage: StreamMessage) {
+export async function showImageryTool(
+  streamMessage: StreamMessage,
+  addMessage?: (message: Omit<ChatMessage, "id">) => void
+) {
   const imagery = streamMessage.imagery;
   if (!imagery) return;
+
+  // The "Satellite Imagery" data card in the chat (dataset-card pattern).
+  const addCard = (card: ImageryCardData) =>
+    addMessage?.({
+      type: "widget",
+      message: "",
+      widgets: [imageryCardWidget(card)],
+      timestamp: streamMessage.timestamp,
+    });
 
   // Client rendering: a Sentinel-2 mosaic_id is the recipe token, so the
   // request decodes from it and the browser searches and draws the scenes
@@ -80,7 +101,10 @@ export async function showImageryTool(streamMessage: StreamMessage) {
   ) {
     const request = decodeRecipe(imagery.mosaic_id, imagery.aoi_names);
     if (request) {
-      await showSentinel2Capture(request);
+      // Added before the search: the card follows the capture's layer, so
+      // it shows "Searching scenes…" and then the result.
+      addCard(imagery);
+      await showSentinel2Capture(request, imagery.mosaic_id);
       return;
     }
     if (isClient) {
@@ -156,7 +180,32 @@ export async function showImageryTool(streamMessage: StreamMessage) {
   // new one moves to the top of the imagery group.
   promoteImageryLayer(id);
 
+  // Only once the layer is on the map, so the card never advertises imagery
+  // the map does not show.
+  addCard({
+    ...imagery,
+    thumbnail_url: imagery.tile_url
+      ? imageryThumbnailUrl(
+          imagery.tile_url,
+          tileMetadata.bounds,
+          tileMetadata.minzoom,
+          tileMetadata.maxzoom
+        )
+      : undefined,
+  });
+
   // No camera movement here: the viewport was already positioned by
   // pick_aoi, and re-fitting to the mosaic bounds would yank the map
   // away from wherever the user is looking.
+}
+
+function imageryCardWidget(card: ImageryCardData): InsightWidget {
+  return {
+    type: "imagery-card",
+    title: IMAGERY_LAYER_NAME,
+    description: imageryCardDescription(toImageryMeta(card as ImageryInfo)),
+    data: card,
+    xAxis: "",
+    yAxis: "",
+  };
 }

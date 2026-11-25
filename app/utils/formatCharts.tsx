@@ -173,6 +173,7 @@ export default function formatChartData(
     | "bar"
     | "table"
     | "dataset-card"
+    | "imagery-card"
     | "pie"
     | "stacked-bar"
     | "grouped-bar"

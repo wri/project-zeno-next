@@ -16,8 +16,10 @@ export {
   CLOUD_OPTIONS,
   DEFAULT_MAX_CLOUD_COVER,
   DEFAULT_MAX_ITEMS,
+  DEFAULT_SORT,
   DEFAULT_WINDOW_DAYS,
   FIRST_SCENE_DATE,
+  SORT_OPTIONS,
   WINDOW_OPTIONS,
   decodeRecipe,
   defaultRequest,
@@ -25,6 +27,7 @@ export {
   normalizeRequest,
   searchRange,
   type AoiRef,
+  type SceneSort,
   type Sentinel2Request,
 } from "./model/request";
 export {
@@ -42,6 +45,7 @@ export type {
 } from "./ui/Sentinel2Layers";
 export {
   ImageryFilterPopover,
+  SORT_LABELS,
   type ScenePreview,
 } from "./ui/ImageryFilterPopover";
 export {

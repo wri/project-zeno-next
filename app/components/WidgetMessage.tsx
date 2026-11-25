@@ -33,6 +33,8 @@ import { AI_PROVIDER_ICONS } from "@/app/components/ui/AIProviderIcons";
 import { Tooltip } from "@/app/components/ui/tooltip";
 import TableWidget from "./widgets/TableWidget";
 import DatasetCardWidget from "./widgets/DatasetCardWidget";
+import { ImageryCard } from "./ImageryCard";
+import type { ImageryCardData } from "@/app/utils/imagery";
 import ChartWidget, { AXIS_FIT_TYPES } from "./widgets/ChartWidget";
 import {
   fluxTreeTableProps,
@@ -175,6 +177,10 @@ export default function WidgetMessage({
 
   if (widget.type === "dataset-card") {
     return <DatasetCardWidget dataset={widget.data as DatasetInfo} />;
+  }
+
+  if (widget.type === "imagery-card") {
+    return <ImageryCard imagery={widget.data as ImageryCardData} />;
   }
 
   const handleOpen = () => {

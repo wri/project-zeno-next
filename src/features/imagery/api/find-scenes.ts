@@ -51,7 +51,12 @@ export function findScenes(
       buildSearchBody(request, geometry, todayIso()),
       request.maxItems
     );
-    const scenes = selectScenes(items, request.targetDate, limits);
+    const scenes = selectScenes(
+      items,
+      request.targetDate,
+      limits,
+      request.sort
+    );
     return {
       status: scenes.length > 0 ? "ok" : "no_scenes",
       scenes,

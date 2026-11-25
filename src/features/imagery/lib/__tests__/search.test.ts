@@ -68,4 +68,22 @@ describe("buildSearchBody", () => {
       intersects: square(1),
     });
   });
+
+  it("asks for the least cloudy scenes first, unless sorted by date", () => {
+    const request = {
+      aois: [{ source: "gadm", srcId: "X" }],
+      aoiNames: [],
+      targetDate: "2026-06-15",
+      windowDays: 7,
+      maxCloudCover: 50,
+      maxItems: 50,
+    };
+    expect(buildSearchBody(request, square(1), "2026-11-25").sortby).toEqual([
+      { field: "properties.eo:cloud_cover", direction: "asc" },
+    ]);
+    expect(
+      buildSearchBody({ ...request, sort: "date" }, square(1), "2026-11-25")
+        .sortby
+    ).toBeUndefined();
+  });
 });

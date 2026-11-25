@@ -76,9 +76,14 @@ function imageryInfo(request: Sentinel2Request, mosaicId: string): ImageryInfo {
  * always upserts the same layer.
  */
 export async function showSentinel2Capture(
-  request: Sentinel2Request
+  request: Sentinel2Request,
+  /**
+   * The capture's id (recipe token) when it came with one: the agent's
+   * mosaic_id. Kept as is, so the chat card finds the layer even when the
+   * token does not re-encode identically (e.g. an older numeric src_id).
+   */
+  token: string = encodeRecipe(request)
 ): Promise<void> {
-  const token = encodeRecipe(request);
   const id = imageryLayerId(token);
   const { addLayer, updateLayer } = useMapStore.getState();
   const existing = useMapStore.getState().layers.find((l) => l.id === id);
@@ -111,6 +116,8 @@ export async function showSentinel2Capture(
   }
 
   const [west, south, east, north] = turfBbox(aoi);
+  // Bounds before the search, so the map can mark the area while it runs.
+  updateLayer(id, { bounds: [west, south, east, north] });
   const result = await findScenes(request, aoi);
   const { summary } = result;
   // updateLayer is a no-op if the user removed the capture meanwhile.

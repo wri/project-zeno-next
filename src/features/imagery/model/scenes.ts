@@ -1,3 +1,5 @@
+import { DEFAULT_SORT, type SceneSort } from "./request";
+
 /**
  * Scene selection for a client-rendered Sentinel-2 capture: which of the STAC
  * search results the browser opens, in which order, and what the legend says
@@ -61,15 +63,19 @@ export const SCENE_LIMITS: SceneLimits = {
 const DAY_MS = 86_400_000;
 
 /**
- * Sort the items as the backend mosaic did (days from the target date, then
- * cloud cover), keep the best `maxScenesPerTile` per MGRS tile, then cap the
- * total at `maxScenes`. The cap drops the worst ranks first, so no tile
+ * Rank the items, keep the best `maxScenesPerTile` per MGRS tile, then cap
+ * the total at `maxScenes`. The cap drops the worst ranks first, so no tile
  * loses its best scene to another tile's second-best.
+ *
+ * `sort` decides "best": "cloud" (default) is least cloudy first, then
+ * nearest the target date; "date" is nearest the date first, then least
+ * cloudy (what the backend mosaic did).
  */
 export function selectScenes(
   items: StacItem[],
   targetDate: string,
-  limits: Pick<SceneLimits, "maxScenesPerTile" | "maxScenes"> = SCENE_LIMITS
+  limits: Pick<SceneLimits, "maxScenesPerTile" | "maxScenes"> = SCENE_LIMITS,
+  sort: SceneSort = DEFAULT_SORT
 ): Scene[] {
   const target = Date.parse(`${targetDate}T12:00:00Z`);
   const candidates = items.flatMap((item): Scene[] => {
@@ -92,11 +98,13 @@ export function selectScenes(
   });
   const daysFromTarget = (scene: Scene) =>
     Math.round(Math.abs(Date.parse(scene.datetime) - target) / DAY_MS);
+  const byDate = (a: Scene, b: Scene) => daysFromTarget(a) - daysFromTarget(b);
+  const byCloud = (a: Scene, b: Scene) => a.cloudCover - b.cloudCover;
   candidates.sort(
     (a, b) =>
-      daysFromTarget(a) - daysFromTarget(b) ||
-      a.cloudCover - b.cloudCover ||
-      a.id.localeCompare(b.id)
+      (sort === "date"
+        ? byDate(a, b) || byCloud(a, b)
+        : byCloud(a, b) || byDate(a, b)) || a.id.localeCompare(b.id)
   );
 
   const perTile = new Map<string, number>();

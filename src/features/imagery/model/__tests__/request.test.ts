@@ -48,6 +48,15 @@ describe("encodeRecipe", () => {
     ).toBe(BACKEND_TOKEN_CUSTOM);
   });
 
+  it("writes the sort only when it is not the default", () => {
+    expect(encodeRecipe({ ...twoAreas, sort: "cloud" })).toBe(
+      BACKEND_TOKEN_TWO_AREAS
+    );
+    const byDate = encodeRecipe({ ...twoAreas, sort: "date" });
+    expect(byDate).not.toBe(BACKEND_TOKEN_TWO_AREAS);
+    expect(decodeRecipe(byDate)?.sort).toBe("date");
+  });
+
   it("ignores display names", () => {
     expect(encodeRecipe({ ...twoAreas, aoiNames: [] })).toBe(
       BACKEND_TOKEN_TWO_AREAS
@@ -58,8 +67,18 @@ describe("encodeRecipe", () => {
 describe("decodeRecipe", () => {
   it("round-trips a backend token", () => {
     const decoded = decodeRecipe(BACKEND_TOKEN_TWO_AREAS, twoAreas.aoiNames);
-    expect(decoded).toEqual(twoAreas);
+    // A backend token has no sort: it decodes to the default.
+    expect(decoded).toEqual({ ...twoAreas, sort: "cloud" });
     expect(encodeRecipe(decoded!)).toBe(BACKEND_TOKEN_TWO_AREAS);
+  });
+
+  it("accepts an older token with a numeric src_id", () => {
+    // encode_recipe for aois=(("wdpa", 555555),): the id is a JSON number.
+    const token =
+      "eyJhIjpbWyJ3ZHBhIiw1NTU1NTVdXSwiYyI6NTAsImQiOiIyMDI2LTExLTEwIiwibiI6NTAsInciOjd9";
+    expect(decodeRecipe(token)?.aois).toEqual([
+      { source: "wdpa", srcId: "555555" },
+    ]);
   });
 
   it("keeps the custom-area owner", () => {
@@ -114,7 +133,7 @@ describe("searchRange", () => {
 });
 
 describe("defaultRequest", () => {
-  it("is the agent's no-date default: the past two weeks, < 20% cloud", () => {
+  it("is the agent's no-date default: the past two weeks, < 50% cloud", () => {
     expect(
       defaultRequest([{ source: "gadm", srcId: "X" }], ["X"], "2026-11-25")
     ).toEqual({
@@ -122,8 +141,9 @@ describe("defaultRequest", () => {
       aoiNames: ["X"],
       targetDate: "2026-11-18",
       windowDays: 7,
-      maxCloudCover: 20,
+      maxCloudCover: 50,
       maxItems: 50,
+      sort: "cloud",
     });
   });
 });

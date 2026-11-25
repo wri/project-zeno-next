@@ -25,6 +25,7 @@ export const WidgetIconComponent: Record<InsightWidget["type"], Icon> = {
   scatter: ChartScatterIcon,
   table: ListNumbersIcon,
   "dataset-card": StackIcon,
+  "imagery-card": StackIcon,
   "stacked-bar-with-line": ChartBarIcon,
   "hierarchical-bar": ChartBarIcon,
 };
@@ -39,6 +40,7 @@ export const WidgetIcons = {
   pie: <ChartPieSliceIcon />,
   insight: <PresentationChartIcon />,
   "dataset-card": <StackIcon />,
+  "imagery-card": <StackIcon />,
   scatter: <ChartScatterIcon />,
   area: <ChartPolarIcon />,
   "stacked-bar-with-line": <ChartBarIcon />,

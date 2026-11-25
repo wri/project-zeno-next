@@ -11,6 +11,9 @@ import {
 import { MagnifyingGlassIcon } from "@phosphor-icons/react";
 import {
   CLOUD_OPTIONS,
+  DEFAULT_SORT,
+  SORT_OPTIONS,
+  type SceneSort,
   FIRST_SCENE_DATE,
   WINDOW_OPTIONS,
   type Sentinel2Request,
@@ -27,6 +30,12 @@ export interface ScenePreview {
 }
 
 const PREVIEW_DEBOUNCE_MS = 400;
+
+/** How each scene ranking reads in the legend. */
+export const SORT_LABELS: Record<SceneSort, string> = {
+  cloud: "Least cloudy",
+  date: "Nearest date",
+};
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
@@ -54,7 +63,7 @@ function FieldLabel({ children }: { children: ReactNode }) {
   );
 }
 
-function Segmented<T extends number>(props: {
+function Segmented<T extends string | number>(props: {
   label: string;
   options: readonly T[];
   value: T;
@@ -204,6 +213,16 @@ export function ImageryFilterPopover(props: {
                 onChange={(maxCloudCover) => set({ maxCloudCover })}
               />
             </div>
+            <div>
+              <FieldLabel>ON TOP</FieldLabel>
+              <Segmented
+                label="On top"
+                options={SORT_OPTIONS}
+                value={draft.sort ?? DEFAULT_SORT}
+                format={(v: SceneSort) => SORT_LABELS[v]}
+                onChange={(sort) => set({ sort })}
+              />
+            </div>
             <Flex
               alignItems="center"
               gap={1.5}
@@ -225,7 +244,10 @@ export function ImageryFilterPopover(props: {
               )}
             </Flex>
             <Text fontSize="10px" color="fg.muted" mt={-2}>
-              Up to {SCENE_LIMITS.maxScenes} scenes, the nearest to the date.
+              Up to {SCENE_LIMITS.maxScenes} scenes,{" "}
+              {(draft.sort ?? DEFAULT_SORT) === "cloud"
+                ? "the least cloudy of the window first."
+                : "the nearest to the date first."}
             </Text>
             <Flex justifyContent="flex-end" gap={2}>
               <Button

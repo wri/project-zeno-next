@@ -7,7 +7,13 @@ import type {
   LegendParam,
 } from "@/app/components/legend/types";
 import type { Layer } from "@/app/store/layerManagerSlice";
-import { SCENE_LIMITS, type CaptureStatus } from "@/src/features/imagery";
+import {
+  DEFAULT_MAX_CLOUD_COVER,
+  DEFAULT_SORT,
+  SCENE_LIMITS,
+  SORT_LABELS,
+  type CaptureStatus,
+} from "@/src/features/imagery";
 import {
   PLANET_METADATA,
   type ImageryMetadata,
@@ -143,8 +149,8 @@ export function imageryAttribution(provider: ImageryProvider): string {
 }
 
 // Backend default for show_imagery's max_cloud_cover; anything above it
-// means the agent loosened the search and clouds are expected.
-export const IMAGERY_DEFAULT_MAX_CLOUD_COVER = 20;
+// means the search was loosened and clouds are expected.
+export const IMAGERY_DEFAULT_MAX_CLOUD_COVER = DEFAULT_MAX_CLOUD_COVER;
 
 export function imageryLayerId(mosaicId: string): string {
   return `${IMAGERY_LAYER_ID_PREFIX}${mosaicId}`;
@@ -329,6 +335,65 @@ export function imageryCitation(
     .replace("[DATE]", format(accessedOn, "d MMMM yyyy"));
 }
 
+/**
+ * Payload of an imagery-card chat widget: the streamed ImageryInfo plus,
+ * for tiler imagery, a single-tile preview. A client-rendered capture's
+ * card reads its live state (scenes, dates, thumbnail) from the map layer.
+ */
+export type ImageryCardData = ImageryInfo & { thumbnail_url?: string };
+
+// Tight acquired-date range for the chat card, e.g. "Jun 12–16" within one
+// month, "May 28 – Jun 3" across months, full dates across years.
+function formatCardDateRange(startIso: string, endIso: string): string {
+  try {
+    const start = parseISO(startIso);
+    const end = parseISO(endIso);
+    if (format(start, "yyyy-MM") === format(end, "yyyy-MM")) {
+      return format(start, "d") === format(end, "d")
+        ? format(start, "MMM d")
+        : `${format(start, "MMM d")}–${format(end, "d")}`;
+    }
+    if (format(start, "yyyy") === format(end, "yyyy")) {
+      return `${format(start, "MMM d")} – ${format(end, "MMM d")}`;
+    }
+    return `${format(start, "MMM d, yyyy")} – ${format(end, "MMM d, yyyy")}`;
+  } catch {
+    return `${startIso} – ${endIso}`;
+  }
+}
+
+const CARD_STATUS_TEXT: Partial<Record<CaptureStatus, string>> = {
+  searching: "Searching scenes…",
+  no_scenes: "No scenes found",
+  too_large: "Area too large",
+  error: "Search failed",
+};
+
+/**
+ * The chat card's caption, e.g. "Jun 12–16 · cloud <50% · Sentinel-2".
+ * Falls back to the target date when the acquired range is unknown; a
+ * client capture's search state replaces the dates while it has none.
+ */
+export function imageryCardDescription(
+  meta: ImageryMeta,
+  status?: CaptureStatus
+): string {
+  const parts: string[] = [];
+  const statusText = status ? CARD_STATUS_TEXT[status] : undefined;
+  if (statusText) {
+    parts.push(statusText);
+  } else if (meta.startDate && meta.endDate) {
+    parts.push(formatCardDateRange(meta.startDate, meta.endDate));
+  } else if (meta.targetDate) {
+    parts.push(formatImageryDate(meta.targetDate));
+  }
+  if (meta.maxCloudCover !== undefined) {
+    parts.push(`cloud <${meta.maxCloudCover}%`);
+  }
+  parts.push(meta.provider === "planet" ? "Planet" : "Sentinel-2");
+  return parts.join(" · ");
+}
+
 /** Capture-row meta line, e.g. "cloud <50% · 9 scenes". */
 export function captureMetaLabel(meta: ImageryMeta): string {
   const parts: string[] = [];
@@ -376,7 +441,21 @@ export function buildImageryGroup(
     title: IMAGERY_LAYER_NAME,
     subtitle: imagerySubtitle(liveMeta?.provider ?? "sentinel-2"),
     opacity: (live?.opacity ?? 1) * 100,
-    params: liveMeta ? imageryLegendParams(liveMeta) : [],
+    params: [
+      ...(liveMeta ? imageryLegendParams(liveMeta) : []),
+      // Which scenes win, for imagery searched in the browser.
+      ...(liveSentinel2
+        ? [
+            {
+              label: "ON TOP",
+              value:
+                SORT_LABELS[
+                  liveSentinel2.request.sort ?? DEFAULT_SORT
+                ].toLowerCase(),
+            },
+          ]
+        : []),
+    ],
     info: liveMeta ? imageryLegendInfo(liveMeta) : undefined,
     note:
       (liveSentinel2 && sentinel2StatusNote(liveSentinel2.status)) ??

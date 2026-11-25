@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 
 import {
   buildImageryGroup,
+  imageryCardDescription,
   captureDateLabel,
   captureMetaLabel,
   formatCaptureDate,
@@ -230,14 +231,14 @@ describe("provider display", () => {
 
 describe("imageryCloudNote", () => {
   it("returns a note above the default cloud limit", () => {
-    expect(imageryCloudNote(toImageryMeta({ max_cloud_cover: 50 }))).toBe(
-      "Searched with a loosened cloud-cover limit (50%) — imagery may contain clouds."
+    expect(imageryCloudNote(toImageryMeta({ max_cloud_cover: 80 }))).toBe(
+      "Searched with a loosened cloud-cover limit (80%) — imagery may contain clouds."
     );
   });
 
   it("returns undefined at or below the default, or when unknown", () => {
     expect(
-      imageryCloudNote(toImageryMeta({ max_cloud_cover: 20 }))
+      imageryCloudNote(toImageryMeta({ max_cloud_cover: 50 }))
     ).toBeUndefined();
     expect(
       imageryCloudNote(toImageryMeta({ max_cloud_cover: 10 }))
@@ -501,6 +502,14 @@ describe("buildImageryGroup with a client-rendered capture", () => {
     expect(group.updating).toBe(false);
   });
 
+  it("shows which scenes are on top as a chip", () => {
+    const group = buildImageryGroup([clientLayer("ok")], false)!;
+    expect(group.params).toContainEqual({
+      label: "ON TOP",
+      value: "least cloudy",
+    });
+  });
+
   it("uses the best scene's preview image as the thumbnail", () => {
     const group = buildImageryGroup([clientLayer("ok")], false)!;
     expect(group.captures[0].thumbnailUrl).toBe("https://cogs/preview.jpg");
@@ -642,5 +651,30 @@ describe("imageryThumbnailUrl", () => {
   it("returns undefined without bounds or with a degenerate extent", () => {
     expect(imageryThumbnailUrl(template)).toBeUndefined();
     expect(imageryThumbnailUrl(template, [10, 10, 10, 10])).toBeUndefined();
+  });
+});
+
+describe("imageryCardDescription", () => {
+  const meta = toImageryMeta({
+    provider: "sentinel-2",
+    start_date: "2026-06-12",
+    end_date: "2026-06-16",
+    target_date: "2026-06-15",
+    max_cloud_cover: 50,
+  });
+
+  it("gives the acquired dates, cloud limit and provider", () => {
+    expect(imageryCardDescription(meta)).toBe(
+      "Jun 12–16 · cloud <50% · Sentinel-2"
+    );
+  });
+
+  it("shows the search state while there are no dates", () => {
+    expect(imageryCardDescription(meta, "searching")).toBe(
+      "Searching scenes… · cloud <50% · Sentinel-2"
+    );
+    expect(imageryCardDescription(meta, "no_scenes")).toBe(
+      "No scenes found · cloud <50% · Sentinel-2"
+    );
   });
 });

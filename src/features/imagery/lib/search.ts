@@ -1,7 +1,11 @@
 import area from "@turf/area";
 import convex from "@turf/convex";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
-import { searchRange, type Sentinel2Request } from "../model/request";
+import {
+  DEFAULT_SORT,
+  searchRange,
+  type Sentinel2Request,
+} from "../model/request";
 
 export const SENTINEL2_COLLECTION = "sentinel-2-l2a";
 
@@ -46,6 +50,13 @@ export function buildSearchBody(
     intersects: geometry,
     datetime: `${start}T00:00:00Z/${end}T23:59:59Z`,
     query: { "eo:cloud_cover": { lt: request.maxCloudCover } },
+    // Least cloudy first, so the item cap (maxItems) keeps the clearest
+    // scenes of a long window. Nearest-date ranking happens client-side.
+    ...((request.sort ?? DEFAULT_SORT) === "cloud"
+      ? {
+          sortby: [{ field: "properties.eo:cloud_cover", direction: "asc" }],
+        }
+      : {}),
     limit: Math.min(request.maxItems, 100),
     // Only what selectScenes reads; full items are ~10 kB each.
     fields: {

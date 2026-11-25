@@ -557,7 +557,7 @@ async function processStreamMessage(
       // legend swaps "Updating mosaic…" → capture in a single render.
       void Promise.resolve().then(async () => {
         // Non-blocking: TileJSON fetch shouldn't stall the stream
-        await showImageryTool(streamMessage);
+        await showImageryTool(streamMessage, addMessage);
         useChatStore.getState().setImageryUpdating(false);
       });
       return;
