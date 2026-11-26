@@ -141,8 +141,10 @@ This lets the workflow get short-lived AWS credentials, so no access keys are st
 
 The trust policy must allow two OIDC subjects:
 
-- The deploy job declares a per-PR GitHub `environment` (which gives the PR its "View deployment" button), so its subject is `repo:wri/project-zeno-next:environment:pr-<N>-preview`.
+- The publish job declares a per-PR GitHub `environment` (which gives the PR its "View deployment" button), so its subject is `repo:wri/project-zeno-next:environment:pr-<N>-preview`.
 - The cleanup job has no environment, so its subject is `repo:wri/project-zeno-next:pull_request`.
+
+The build job, which runs `pnpm install` and `pnpm build`, has only `contents: read` and no credentials. It hands `dist/` to the publish job as an artifact. That way no dependency code runs while an OIDC token or a writable `GITHUB_TOKEN` is available.
 
 The console warns about the `*` in the subject. It is safe here: the repository is fixed, the `*` only matches the PR number, and the role can only write to `pr-*` in one bucket.
 
@@ -222,6 +224,8 @@ These let the preview talk to the backends and log in:
 - **Backend CORS:** the staging API, the analytics API and eoAPI must allow the origin `https://*.<preview-domain>`.
 - **Login:** the RW API must accept `callbackUrl=https://pr-<N>.<preview-domain>/auth/callback`.
 - **Mapbox:** if the token has URL restrictions, add `*.<preview-domain>`.
+
+Once these allowlists include `*.<preview-domain>`, every preview origin is trusted with login tokens. That is why only same-repo PRs deploy, and why the build job gets no credentials.
 
 ## Troubleshooting
 
