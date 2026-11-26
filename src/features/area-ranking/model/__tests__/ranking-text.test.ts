@@ -69,13 +69,23 @@ describe("tooltipLines", () => {
 });
 
 describe("barValueText", () => {
-  it("shortens hectares and keeps the exact emissions figure", () => {
+  it("shortens both hectares and emissions", () => {
     expect(barValueText(area(), ranking([area()]))).toBe("72.1K ha");
     const emissions = ranking([area()], {
       measure: "emissions",
       unit: "MgCO₂e",
     });
-    expect(barValueText(area(), emissions)).toBe("72,050.31 MgCO₂e");
+    expect(barValueText(area(), emissions)).toBe("72.1K MgCO₂e");
+    expect(barValueText(area({ value: 531609390.59 }), emissions)).toBe(
+      "531.6M MgCO₂e"
+    );
+    // The tooltip keeps the exact figure.
+    expect(
+      tooltipLines(
+        area({ value: 531609390.59, share: undefined }),
+        emissions
+      )[1]
+    ).toBe("531,609,390.59 MgCO₂e");
   });
 });
 
@@ -116,13 +126,13 @@ describe("valueReserve", () => {
     const small = Array.from({ length: 20 }, (_, i) =>
       area({ aoiId: `s${i}`, value: 1200, share: undefined })
     );
-    const big = area({ aoiId: "big", value: 1234567890.12 });
+    const big = area({ aoiId: "big", value: 123456789.12 });
     const emissions = ranking([...small, big], {
       measure: "emissions",
       unit: "MgCO₂e",
     });
-    // "1,234,567,890.12 MgCO₂e" is 23 characters, on page 3 of the ranking.
-    expect(valueReserve(emissions, false)).toBe("25ch");
+    // "123.5M MgCO₂e" is 13 characters (the small ones are 11), on page 3.
+    expect(valueReserve(emissions, false)).toBe("15ch");
   });
 
   it("counts the share in print", () => {

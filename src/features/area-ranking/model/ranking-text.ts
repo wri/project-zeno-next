@@ -1,4 +1,7 @@
-import { formatHectares } from "@/app/utils/boundaryFeatureDetails";
+import {
+  formatCompactNumber,
+  formatHectares,
+} from "@/app/utils/boundaryFeatureDetails";
 import { formatTooltipValue } from "@/app/utils/formatCharts";
 
 import type { RankedArea, Ranking } from "./ranking";
@@ -51,14 +54,14 @@ export function tooltipLines(
 }
 
 /**
- * The value at the bar's end. Loss is hectares, shortened; emissions have no
- * short form here, so they read as the exact figure.
+ * The value at the bar's end, shortened ("72.1K ha", "531.6M MgCO₂e") so the
+ * bar keeps its width. The tooltip carries the exact figure.
  */
 export function barValueText(area: RankedArea, ranking: Ranking): string {
   const exact = exactValue(area, ranking);
-  return ranking.measure === "loss"
-    ? (formatHectares(area.value) ?? exact)
-    : exact;
+  if (ranking.measure === "loss") return formatHectares(area.value) ?? exact;
+  const compact = formatCompactNumber(area.value);
+  return compact === undefined ? exact : `${compact} ${ranking.unit}`;
 }
 
 /** What the row prints after the bar: the value and, in print, the share. */
