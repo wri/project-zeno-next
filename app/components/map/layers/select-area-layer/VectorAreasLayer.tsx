@@ -92,7 +92,8 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
   useEffect(() => {
     let hoverId: string | number | undefined;
     let tooltipTimer: ReturnType<typeof setTimeout> | undefined;
-    // Where the pointer is over this layer, in map pixels; unset once it leaves.
+    // Where the pointer is over the map, in map pixels, whether or not a
+    // boundary is under it; unset once it leaves the map.
     let pointer: Point | undefined;
 
     if (map) {
@@ -132,7 +133,6 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
       const onMouseMove = (e: MapMouseEvent) => {
         if (e.features && e.features.length > 0) {
           const feature = e.features.at(-1)!;
-          pointer = e.point;
           map.getCanvas().style.cursor = "pointer";
 
           // Hide while moving; show at the resting point once still. A pause
@@ -146,7 +146,6 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
       };
 
       const onMouseLeave = () => {
-        pointer = undefined;
         map.getCanvas().style.cursor = "";
         hideTooltip();
         if (hoverId !== undefined) {
@@ -161,6 +160,13 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
       // A pan or zoom moves the map under a still pointer without firing
       // mousemove: hide the card when the move starts, and once the map
       // settles, treat the pointer as resting on whatever is now under it.
+      const onPointerMove = (e: MapMouseEvent) => {
+        pointer = e.point;
+      };
+      const onPointerOut = () => {
+        pointer = undefined;
+      };
+
       const onMoveEnd = () => {
         if (!pointer) return;
         const feature = map
@@ -170,6 +176,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
           onMouseLeave();
           return;
         }
+        map.getCanvas().style.cursor = "pointer";
         highlight(feature.id);
         showTooltipAfterRest(feature.properties, map.unproject(pointer));
       };
@@ -266,6 +273,8 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
       map.on("mousemove", fillLayerName, onMouseMove);
       map.on("mouseleave", fillLayerName, onMouseLeave);
       map.on("click", fillLayerName, onClick);
+      map.on("mousemove", onPointerMove);
+      map.on("mouseout", onPointerOut);
       map.on("movestart", hideTooltip);
       map.on("moveend", onMoveEnd);
 
@@ -273,6 +282,8 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
         map.off("mousemove", fillLayerName, onMouseMove);
         map.off("mouseleave", fillLayerName, onMouseLeave);
         map.off("click", fillLayerName, onClick);
+        map.off("mousemove", onPointerMove);
+        map.off("mouseout", onPointerOut);
         map.off("movestart", hideTooltip);
         map.off("moveend", onMoveEnd);
         map.getCanvas().style.cursor = "";

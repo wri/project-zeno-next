@@ -3,11 +3,14 @@ import { act, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 type Handler = (e: unknown) => void;
+// Layer events pass (type, layerId, fn); map events pass (type, fn). Both
+// kinds listen for mousemove, so each kind has its own table.
 const handlers: Record<string, Handler> = {};
+const mapHandlers: Record<string, Handler> = {};
 const fakeMap = {
-  // Layer events pass (type, layerId, fn); map events pass (type, fn).
   on: (type: string, layerOrFn: string | Handler, fn?: Handler) => {
-    handlers[type] = fn ?? (layerOrFn as Handler);
+    if (fn) handlers[type] = fn;
+    else mapHandlers[type] = layerOrFn as Handler;
   },
   off: vi.fn(),
   isMoving: vi.fn(() => false),
@@ -32,12 +35,20 @@ vi.mock("@/app/components/ui/AreaTooltip", () => ({
 
 import VectorAreasLayer from "../VectorAreasLayer";
 
+const POINT = { x: 100, y: 100 };
+
+/** Moves the pointer over the map where no boundary is under it. */
+function moveOverEmptyMap() {
+  act(() => mapHandlers.mousemove({ point: POINT }));
+}
+
 function hover(name: string, lng = 0, lat = 0) {
+  moveOverEmptyMap();
   act(() => {
     handlers.mousemove({
       features: [{ id: name, properties: { intname: name } }],
       lngLat: { lng, lat },
-      point: { x: 100, y: 100 },
+      point: POINT,
     });
   });
 }
@@ -105,14 +116,14 @@ describe("VectorAreasLayer hover tooltip", () => {
     advance(500);
     expect(tooltip()).not.toBeNull();
 
-    act(() => handlers.movestart({}));
+    act(() => mapHandlers.movestart({}));
     expect(tooltip()).toBeNull();
   });
 
   it("cancels a pending show when the map starts to move", () => {
     hover("Lake Natron");
     advance(300);
-    act(() => handlers.movestart({}));
+    act(() => mapHandlers.movestart({}));
     advance(1000);
     expect(tooltip()).toBeNull();
   });
@@ -126,11 +137,11 @@ describe("VectorAreasLayer hover tooltip", () => {
 
   it("shows the area now under a still pointer once the map settles", () => {
     hover("Lake Natron");
-    act(() => handlers.movestart({}));
+    act(() => mapHandlers.movestart({}));
     fakeMap.queryRenderedFeatures.mockReturnValue([
       { id: "Serengeti", properties: { intname: "Serengeti" } },
     ]);
-    act(() => handlers.moveend({}));
+    act(() => mapHandlers.moveend({}));
     expect(fakeMap.setFeatureState).toHaveBeenLastCalledWith(
       expect.objectContaining({ id: "Serengeti" }),
       { hover: true }
@@ -142,11 +153,46 @@ describe("VectorAreasLayer hover tooltip", () => {
     expect(tooltip()?.textContent).toBe("Serengeti");
   });
 
-  it("stays hidden after a move if the pointer has left the layer", () => {
+  it("shows an area that a move brings under a pointer resting on empty map", () => {
+    moveOverEmptyMap();
+    act(() => mapHandlers.movestart({}));
+    fakeMap.queryRenderedFeatures.mockReturnValue([
+      { id: "Serengeti", properties: { intname: "Serengeti" } },
+    ]);
+    act(() => mapHandlers.moveend({}));
+    expect(fakeMap.queryRenderedFeatures).toHaveBeenCalledWith(
+      POINT,
+      expect.anything()
+    );
+    expect(fakeMap.setFeatureState).toHaveBeenLastCalledWith(
+      expect.objectContaining({ id: "Serengeti" }),
+      { hover: true }
+    );
+
+    advance(499);
+    expect(tooltip()).toBeNull();
+    advance(1);
+    expect(tooltip()?.textContent).toBe("Serengeti");
+  });
+
+  it("shows an area that a move brings back under a pointer that left the layer", () => {
     hover("Lake Natron");
     act(() => handlers.mouseleave({}));
-    act(() => handlers.movestart({}));
-    act(() => handlers.moveend({}));
+    act(() => mapHandlers.movestart({}));
+    fakeMap.queryRenderedFeatures.mockReturnValue([
+      { id: "Lake Natron", properties: { intname: "Lake Natron" } },
+    ]);
+    act(() => mapHandlers.moveend({}));
+    advance(500);
+    expect(tooltip()?.textContent).toBe("Lake Natron");
+  });
+
+  it("stays hidden after a move if the pointer has left the map", () => {
+    hover("Lake Natron");
+    act(() => handlers.mouseleave({}));
+    act(() => mapHandlers.mouseout({}));
+    act(() => mapHandlers.movestart({}));
+    act(() => mapHandlers.moveend({}));
     advance(1000);
     expect(tooltip()).toBeNull();
     expect(fakeMap.queryRenderedFeatures).not.toHaveBeenCalled();
@@ -154,8 +200,8 @@ describe("VectorAreasLayer hover tooltip", () => {
 
   it("stays hidden after a move if no area is under the pointer", () => {
     hover("Lake Natron");
-    act(() => handlers.movestart({}));
-    act(() => handlers.moveend({}));
+    act(() => mapHandlers.movestart({}));
+    act(() => mapHandlers.moveend({}));
     advance(1000);
     expect(tooltip()).toBeNull();
   });
