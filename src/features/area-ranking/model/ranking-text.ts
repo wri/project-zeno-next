@@ -13,6 +13,15 @@ function fullName({ name, parent }: RankedArea): string {
   return parent === undefined ? name : `${name}, ${parent}`;
 }
 
+/**
+ * What names the area in a list: the name, and for a name that repeats the
+ * qualifier after a " · ", as the bars show it ("Bom Jesus · Piauí"). Not the
+ * tooltip's comma form, which would read as two areas inside a comma list.
+ */
+export function displayName({ name, qualifier }: RankedArea): string {
+  return qualifier === undefined ? name : `${name} · ${qualifier}`;
+}
+
 /** The exact figure: "72,050 ha". */
 function exactValue(area: RankedArea, { unit }: Ranking): string {
   return `${formatTooltipValue(area.value)} ${unit}`;
@@ -83,9 +92,7 @@ export function valueReserve(ranking: Ranking, print: boolean): string {
 
 /** The areas with no value, named in one line instead of drawn as bars. */
 export function noValueText(ranking: Ranking, areas: RankedArea[]): string {
-  const names = areas.map((area) =>
-    area.qualifier === undefined ? area.name : fullName(area)
-  );
+  const names = areas.map(displayName);
   const count = `${areas.length} ${areas.length === 1 ? "area" : "areas"}`;
   return `${NO_VALUE_PHRASE[ranking.measure]} in ${count}: ${names.join(", ")}.`;
 }

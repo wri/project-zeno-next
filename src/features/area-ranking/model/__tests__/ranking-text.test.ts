@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { RankedArea, Ranking } from "../ranking";
 import {
   barValueText,
+  displayName,
   noValueText,
   shareText,
   tooltipLines,
@@ -76,6 +77,13 @@ describe("barValueText", () => {
   });
 });
 
+describe("displayName", () => {
+  it("gives the name, and the qualifier after a dot when there is one", () => {
+    expect(displayName(area())).toBe("Bom Jesus");
+    expect(displayName(area({ qualifier: "Piauí" }))).toBe("Bom Jesus · Piauí");
+  });
+});
+
 describe("noValueText", () => {
   const empty = [
     area({ value: 0, name: "Belém" }),
@@ -84,7 +92,7 @@ describe("noValueText", () => {
 
   it("names the areas, with the parent where the name repeats", () => {
     expect(noValueText(ranking(empty), empty)).toBe(
-      "No tree cover loss in 2 areas: Belém, Bom Jesus, Piauí."
+      "No tree cover loss in 2 areas: Belém, Bom Jesus · Piauí."
     );
   });
 
