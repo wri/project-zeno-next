@@ -27,6 +27,7 @@ export const WidgetIconComponent: Record<InsightWidget["type"], Icon> = {
   "dataset-card": StackIcon,
   "stacked-bar-with-line": ChartBarIcon,
   "hierarchical-bar": ChartBarIcon,
+  "ranked-bar": ChartBarIcon,
 };
 
 /** Element-instance map for inline rendering without size/color overrides. */
@@ -43,4 +44,5 @@ export const WidgetIcons = {
   area: <ChartPolarIcon />,
   "stacked-bar-with-line": <ChartBarIcon />,
   "hierarchical-bar": <ChartBarIcon />,
+  "ranked-bar": <ChartBarIcon />,
 };

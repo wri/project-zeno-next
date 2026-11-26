@@ -320,6 +320,20 @@ describe("dashboardWidgetToInsightWidgets", () => {
     expect(cards[1].title).toBe("Renamed B");
   });
 
+  it("keeps the ranked-bar type on a saved card", () => {
+    const cards = dashboardWidgetToInsightWidgets(
+      widget({
+        insight: {
+          id: "ins-1",
+          insight_text: null,
+          codeact_parts: null,
+          charts: [chart({ chart_type: "ranked-bar" })],
+        },
+      })
+    );
+    expect(cards[0].type).toBe("ranked-bar");
+  });
+
   it("falls back to table for unknown chart types", () => {
     const cards = dashboardWidgetToInsightWidgets(
       widget({
