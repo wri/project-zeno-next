@@ -111,9 +111,21 @@ describe("RankingBody", () => {
     renderBody(rows(12));
     const first = screen.getAllByRole("listitem")[0];
 
+    // What a phone sends for one tap: the lift, then the click and the leave.
+    fireEvent.pointerDown(first, { pointerType: "touch" });
     fireEvent.pointerUp(first, { pointerType: "touch" });
     expect(
       await screen.findByText("1,000 ha · 2.5% of all loss in the 12 areas")
+    ).toBeTruthy();
+    await vi.waitFor(() =>
+      expect(first.getAttribute("data-state")).toBe("open")
+    );
+    fireEvent.click(first, { pointerType: "touch" });
+    fireEvent.pointerLeave(first, { pointerType: "touch" });
+    // Past the tooltip's close delay, it is still open.
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    expect(
+      screen.queryByText("1,000 ha · 2.5% of all loss in the 12 areas")
     ).toBeTruthy();
 
     fireEvent.pointerDown(document.body, { pointerType: "touch" });

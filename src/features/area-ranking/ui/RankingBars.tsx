@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Box, Flex, Text } from "@chakra-ui/react";
 
 import { Tooltip } from "@/app/components/ui/tooltip";
@@ -27,15 +27,23 @@ const VALUE_RESERVE = { loss: "4.5rem", emissions: "8rem" };
  * A tap opens the row's tooltip and a tap elsewhere closes it: Ark's tooltip
  * does not open on touch. Only touch is handled here, so a mouse hover and
  * keyboard focus keep the tooltip's own behavior.
+ *
+ * The same tap would close it again: the tooltip closes on `click` and on the
+ * `pointerleave` a touch sends after the finger lifts. So while the tooltip is
+ * open from a tap, the tooltip's own close requests are ignored and only a
+ * pointer down outside the row closes it.
  */
 function useTouchTooltip(rowId: string) {
   const [open, setOpen] = useState(false);
+  const openedByTouch = useRef(false);
 
   useEffect(() => {
     if (!open) return;
     const closeOutside = (event: PointerEvent) => {
       const row = (event.target as Element).closest(`[${ROW_ATTRIBUTE}]`);
-      if (row?.getAttribute(ROW_ATTRIBUTE) !== rowId) setOpen(false);
+      if (row?.getAttribute(ROW_ATTRIBUTE) === rowId) return;
+      openedByTouch.current = false;
+      setOpen(false);
     };
     document.addEventListener("pointerdown", closeOutside);
     return () => document.removeEventListener("pointerdown", closeOutside);
@@ -43,9 +51,14 @@ function useTouchTooltip(rowId: string) {
 
   return {
     open,
-    onOpenChange: ({ open }: { open: boolean }) => setOpen(open),
+    onOpenChange: ({ open }: { open: boolean }) => {
+      if (!open && openedByTouch.current) return;
+      setOpen(open);
+    },
     onPointerUp: (event: React.PointerEvent) => {
-      if (event.pointerType === "touch") setOpen(true);
+      if (event.pointerType !== "touch") return;
+      openedByTouch.current = true;
+      setOpen(true);
     },
   };
 }
