@@ -80,6 +80,14 @@ describe("RankingBody", () => {
     expect(screen.getByText(/No tree cover loss in 2 areas/)).toBeTruthy();
   });
 
+  it("shows the page share above the bars only when there is more than one page", () => {
+    const { unmount } = renderBody(rows(12));
+    expect(screen.getByText(/Top 10 areas: .* of all loss/)).toBeTruthy();
+    unmount();
+    renderBody(rows(10));
+    expect(screen.queryByText(/of all loss/)).toBeNull();
+  });
+
   it("gives each row the tooltip text as its label, and a tab stop", () => {
     renderBody(rows(12));
 

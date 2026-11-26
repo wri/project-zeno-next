@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Button, Flex, Text } from "@chakra-ui/react";
+import { Box, Button, Flex, Text } from "@chakra-ui/react";
 
 import type { InsightWidget } from "@/app/types/chat";
 import getChartColors from "@/app/utils/ChartColors";
@@ -7,7 +7,7 @@ import { resolveSeriesColor } from "@/app/utils/formatCharts";
 import { widgetViewKey } from "@/src/shared/lib/widget-view-key";
 
 import { parseRanking } from "../model/ranking";
-import { noValueText, topNoteText } from "../model/ranking-text";
+import { noValueText, pageShare, topNoteText } from "../model/ranking-text";
 import { PAGE_SIZE, rankingView } from "../model/ranking-view";
 import useRankingViewStore from "../model/ranking-view-store";
 import { RankingBars } from "./RankingBars";
@@ -52,6 +52,7 @@ export function RankingBody({
   const color =
     resolveSeriesColor(widget.seriesColor, widget.datasetName) ??
     getChartColors()[0];
+  const share = print ? undefined : pageShare(ranking, view);
   const showNoValue =
     view.noValue.length > 0 && (print ? view.pageCount === 1 : !view.hasNext);
 
@@ -63,6 +64,32 @@ export function RankingBody({
       w="full"
       css={{ containerType: "inline-size" }}
     >
+      {share && (
+        <Flex direction="column" gap="4px">
+          <Text fontSize="12px" lineHeight="16px">
+            <Text as="span" fontWeight="bold">
+              {share.lead}
+            </Text>{" "}
+            <Text as="span" color="fg.muted">
+              {share.tail}
+            </Text>
+          </Text>
+          <Flex
+            aria-hidden="true"
+            h="6px"
+            borderRadius="3px"
+            overflow="hidden"
+            bg="gray.200"
+          >
+            <Box
+              w={`${share.beforePct}%`}
+              bg={`color-mix(in srgb, ${color} 45%, white)`}
+            />
+            <Box w={`${share.pagePct}%`} bg={color} />
+          </Flex>
+        </Flex>
+      )}
+
       <RankingBars
         rows={view.rows}
         ranking={ranking}
