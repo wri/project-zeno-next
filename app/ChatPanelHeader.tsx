@@ -7,7 +7,6 @@ import {
   SidebarSimpleIcon,
   SparkleIcon,
 } from "@phosphor-icons/react";
-import { LocaleSwitcher } from "@/src/features/locale-switcher";
 import { useTranslation } from "@/src/shared/lib/i18n";
 import { Tooltip } from "./components/ui/tooltip";
 import { useStartNewConversation } from "./hooks/useStartNewConversation";
@@ -54,8 +53,8 @@ function PanelIconButton({
 }
 
 /**
- * The chat panel's own header: "AI ASSISTANT", the translation-review
- * language switcher (only with `?ff=i18n`) and, in order, New conversation, Conversation history, the size toggle and Collapse. Collapse
+ * The chat panel's own header: "AI ASSISTANT" and, in order, New
+ * conversation, Conversation history, the size toggle and Collapse. Collapse
  * from full-size lands on the collapsed compact panel; while collapsed, a
  * click anywhere on the bar opens the panel again.
  */
@@ -98,7 +97,6 @@ function ChatPanelHeader({
         {t("chat.header.title")}
       </Text>
       <Flex ml="auto" gap={1} alignItems="center">
-        <LocaleSwitcher />
         <PanelIconButton
           label={t("chat.header.newConversation")}
           onClick={() => {

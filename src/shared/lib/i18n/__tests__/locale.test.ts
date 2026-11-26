@@ -50,38 +50,28 @@ describe("resolveLocale", () => {
 
   it.each([
     {
-      name: "a signed-in profile beats the cookie and the browser",
-      input: { profile: "es", cookie: cookie("fr"), languages: ["pt-BR"] },
-      expected: "es",
-    },
-    {
-      name: "the cookie beats the browser",
-      input: { profile: null, cookie: cookie("fr"), languages: ["pt-BR"] },
+      name: "this device's display choice beats the preferred language",
+      input: { profile: "es", cookie: cookie("fr") },
       expected: "fr",
     },
     {
-      name: "an unsupported profile falls through to the cookie",
-      input: { profile: "de", cookie: cookie("id"), languages: ["pt-BR"] },
-      expected: "id",
+      name: "the preferred language is used with no display choice",
+      input: { profile: "es", cookie: "other=1" },
+      expected: "es",
     },
     {
-      name: "the browser is used when there is no profile or cookie",
-      input: { profile: null, cookie: "", languages: ["pt-PT"] },
+      name: "the cookie is used when there is no profile",
+      input: { profile: null, cookie: cookie("fr") },
+      expected: "fr",
+    },
+    {
+      name: "an unsupported cookie falls through to the profile",
+      input: { profile: "pt", cookie: cookie("de") },
       expected: "pt",
     },
     {
-      name: "the first supported browser language wins",
-      input: { cookie: null, languages: ["de-DE", "zh-Hans-CN", "fr"] },
-      expected: "zh",
-    },
-    {
-      name: "Traditional Chinese falls back to English",
-      input: { languages: ["zh-TW"] },
-      expected: "en",
-    },
-    {
-      name: "nothing supported resolves to English",
-      input: { profile: null, cookie: null, languages: ["de-DE", "ja"] },
+      name: "no preference resolves to English",
+      input: { profile: null, cookie: "" },
       expected: "en",
     },
     {
@@ -91,13 +81,13 @@ describe("resolveLocale", () => {
     },
     {
       name: "a malformed cookie is ignored",
-      input: { cookie: cookie("%E0%A4%A"), languages: ["es"] },
-      expected: "es",
+      input: { cookie: cookie("%E0%A4%A") },
+      expected: "en",
     },
     {
       name: "an unsupported cookie is ignored",
-      input: { cookie: cookie("de"), languages: ["es"] },
-      expected: "es",
+      input: { cookie: cookie("de") },
+      expected: "en",
     },
   ])("$name", ({ input, expected }) => {
     expect(resolveLocale(input)).toBe(expected);

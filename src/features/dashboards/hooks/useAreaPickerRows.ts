@@ -1,12 +1,12 @@
 import { useMemo } from "react";
-import { useCustomAreasList } from "@/app/hooks/useCustomAreasList";
 import { useDashboards } from "./useDashboards";
 import { useAoiBrowse } from "./useAoiBrowse";
 import {
   aoiSearchResultToRow,
   buildPreviousAnalysesMap,
-  customAreaToRow,
   filterRowsBySearch,
+  mergeUserAoiRows,
+  userAoiToRow,
   type AreaPickerRow,
 } from "../model/area-picker-rows";
 import {
@@ -14,6 +14,7 @@ import {
   REFERENCE_AOI_SOURCES,
   type ReferenceAoiSource,
 } from "@/src/entities/aoi";
+import { useUserAois } from "@/src/entities/user-aoi";
 import type { AreaPickerSectionId } from "../model/dashboard-area";
 
 function isReferenceSourceEnabled(
@@ -58,12 +59,12 @@ export function useAreaPickerRows(
   activeCategory: AreaPickerSectionId | "all",
   search: string
 ): AreaPickerRowsResult {
-  const { customAreas, isLoading: customLoading } = useCustomAreasList();
+  const { data: userAois, isLoading: customLoading } = useUserAois();
   const { data: dashboards } = useDashboards();
 
   // Reference sources are searched server-side (fuzzy, similarity-ranked) by
-  // threading `search` through to the /api/aois endpoint. Custom areas are all
-  // loaded locally and filtered client-side below.
+  // threading `search` through to the /api/aois endpoint. The user's areas
+  // is loaded whole and filtered client-side below.
   const gadm = useAoiBrowse("gadm", {
     enabled: isReferenceSourceEnabled(activeCategory, "gadm"),
     name: search,
@@ -88,8 +89,8 @@ export function useAreaPickerRows(
   );
 
   const customRows = useMemo(
-    () => (customAreas ?? []).map((area) => customAreaToRow(area, analysesMap)),
-    [customAreas, analysesMap]
+    () => (userAois ?? []).map((userAoi) => userAoiToRow(userAoi, analysesMap)),
+    [userAois, analysesMap]
   );
 
   const referenceRows = useMemo(() => {
@@ -118,7 +119,7 @@ export function useAreaPickerRows(
     return {
       rows: filterRowsBySearch(customRows, search),
       isLoading: customLoading,
-      // Custom areas are filtered client-side, so there is never a search
+      // User AOIs are filtered client-side, so there is never a search
       // round-trip to wait on.
       isSearching: false,
       hasNextPage: false,
@@ -143,10 +144,10 @@ export function useAreaPickerRows(
     };
   }
 
-  const merged = [
-    ...REFERENCE_AOI_SOURCES.flatMap((source) => referenceRows[source]),
-    ...filterRowsBySearch(customRows, search),
-  ];
+  const merged = mergeUserAoiRows(
+    REFERENCE_AOI_SOURCES.flatMap((source) => referenceRows[source]),
+    filterRowsBySearch(customRows, search)
+  );
 
   return {
     rows: merged,

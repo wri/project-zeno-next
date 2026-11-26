@@ -24,9 +24,12 @@ vi.mock("@/src/features/analysis", async (importOriginal) => ({
   useAnalysis: () => ({ run: runDirectAnalysis, status: analysisStatus }),
 }));
 
-const createAreaAsync = vi.fn().mockResolvedValue({});
-vi.mock("@/app/hooks/useCustomAreasCreate", () => ({
-  useCustomAreasCreate: () => ({ createAreaAsync, isCreating: false }),
+const saveAoiAsync = vi.fn().mockResolvedValue({});
+let userAois: { source: string; src_id: string }[] = [];
+vi.mock("@/src/entities/user-aoi", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  useSaveUserAoi: () => ({ saveUserAoiAsync: saveAoiAsync, isSaving: false }),
+  useUserAois: () => ({ data: userAois }),
 }));
 
 const createDashboardForArea = vi.fn();
@@ -95,6 +98,7 @@ const render = (override: Partial<typeof target> | null = {}) =>
 describe("useAoiActions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    userAois = [];
     analysisStatus = "idle";
     dashboardHookState = {
       existing: null,
@@ -138,6 +142,17 @@ describe("useAoiActions", () => {
 
   it("cannot save an area the user already owns", () => {
     expect(render({ source: "custom" }).result.current?.canSaveArea).toBe(
+      false
+    );
+  });
+
+  it("cannot save an area already in the user's areas", () => {
+    userAois = [{ source: "gadm", src_id: "BRA.16_1" }];
+    expect(render().result.current?.canSaveArea).toBe(false);
+  });
+
+  it("cannot save an area without a src id", () => {
+    expect(render({ srcId: undefined }).result.current?.canSaveArea).toBe(
       false
     );
   });
@@ -358,69 +373,40 @@ describe("useAoiActions", () => {
     expect(runDirectAnalysis).not.toHaveBeenCalled();
   });
 
-  it("saves the area from its registered geometry", async () => {
-    useMapStore.setState({
-      geoJsonRegistry: [
-        {
-          // Registered with the map's layer id casing, not the selection's.
-          ref: { name: "Paraná, Brazil", source: "GADM", srcId: "BRA.16_1" },
-          data: { type: "Feature", properties: {}, geometry: polygon },
-          srcId: "BRA.16_1",
-        },
-      ],
-    });
+  it("saves the area by reference to its source area, not as geometry", async () => {
     const { result } = render();
 
     await act(() => result.current!.saveArea());
 
-    expect(createAreaAsync).toHaveBeenCalledWith({
-      name: "Paraná, Brazil",
-      geometries: [polygon],
+    expect(saveAoiAsync).toHaveBeenCalledWith({
+      source: "gadm",
+      src_id: "BRA.16_1",
     });
   });
 
-  it("saves this parcel's geometry when another parcel shares its name", async () => {
-    const other = {
-      ...polygon,
-      coordinates: [
-        [
-          [1, 1],
-          [2, 1],
-          [2, 2],
-          [1, 1],
-        ],
-      ],
-    };
-    const parcel = (srcId: string, geometry: typeof polygon) => ({
-      ref: { name: "Mining concession, IDN", source: "MINING", srcId },
-      data: { type: "Feature" as const, properties: {}, geometry },
-      srcId,
-    });
-    useMapStore.setState({
-      geoJsonRegistry: [parcel("101", other), parcel("102", polygon)],
-    });
-    const { result } = render({
-      areaName: "Mining concession, IDN",
-      source: "MINING",
-      srcId: "102",
-    });
+  it("explains rather than saves an area without a backend id", async () => {
+    const { result } = render({ srcId: undefined });
 
     await act(() => result.current!.saveArea());
 
-    expect(createAreaAsync).toHaveBeenCalledWith({
-      name: "Mining concession, IDN",
-      geometries: [polygon],
-    });
-  });
-
-  it("warns instead of saving when no geometry is registered", async () => {
-    const { result } = render();
-
-    await act(() => result.current!.saveArea());
-
-    expect(createAreaAsync).not.toHaveBeenCalled();
+    expect(saveAoiAsync).not.toHaveBeenCalled();
     expect(toaster.create).toHaveBeenCalledWith(
       expect.objectContaining({ type: "error" })
+    );
+  });
+
+  it("says so when the area was already saved", async () => {
+    saveAoiAsync.mockRejectedValueOnce(
+      Object.assign(new Error("Area is already in your areas"), {
+        status: 409,
+      })
+    );
+    const { result } = render();
+
+    await act(() => result.current!.saveArea());
+
+    expect(toaster.create).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "Already in your areas" })
     );
   });
 

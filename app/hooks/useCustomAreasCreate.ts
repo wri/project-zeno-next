@@ -5,6 +5,7 @@ import {
 } from "../schemas/api/custom_areas/post";
 import { useErrorHandler } from "./useErrorHandler";
 import { apiFetch } from "@/app/lib/api-client";
+import { USER_AOIS_QUERY_KEY } from "@/src/entities/user-aoi";
 
 async function createCustomArea(
   data: CreateCustomAreaRequest
@@ -39,7 +40,7 @@ export function useCustomAreasCreate() {
   } = useMutation({
     mutationFn: createCustomArea,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["customAreas"] });
+      queryClient.invalidateQueries({ queryKey: USER_AOIS_QUERY_KEY });
     },
     onError: (error: Error & { status?: number }) => {
       if (

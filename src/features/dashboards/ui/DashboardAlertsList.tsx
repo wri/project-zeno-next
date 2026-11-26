@@ -6,7 +6,6 @@ import InsightCaption from "@/app/components/InsightCaption";
 import DownloadMenu from "@/app/components/widgets/DownloadMenu";
 import { DATASET_CARD_BY_ID } from "@/app/constants/datasets";
 import type { DateRange } from "@/src/shared/lib/iso-date";
-import { InfoTooltip } from "@/src/shared/ui/InfoTooltip";
 import { Pill } from "@/src/shared/ui/Pill";
 import { isRetryable, type AlertsListError } from "../api/alerts";
 import {
@@ -206,29 +205,6 @@ function Headline({ headline }: { headline: AlertsHeadline }) {
         tone="since"
         px="24px"
       />
-    </Flex>
-  );
-}
-
-/**
- * The latest alert date every pill counts back from, in the dashboards
- * list's words, for the card's params row.
- */
-export function LatestAlertDetected({ date }: { date: string }) {
-  return (
-    <Flex align="center" gap="4px" color="#565E7B">
-      <InfoTooltip about="the alerts data" size={14}>
-        Alerts are dated by when they were detected and reach Global Nature
-        Watch a few days after that.
-      </InfoTooltip>
-      <Text
-        fontFamily="mono"
-        fontSize="10px"
-        lineHeight="16px"
-        whiteSpace="nowrap"
-      >
-        LATEST ALERT DETECTED {formatAlertDate(date).toUpperCase()}
-      </Text>
     </Flex>
   );
 }

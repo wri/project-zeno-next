@@ -10,6 +10,7 @@ import {
   ProfilePromptCard,
   type ProfilePromptCardProps,
 } from "../ProfilePromptCard";
+import { i18n } from "@/src/shared/lib/i18n";
 
 // React Router's Link needs a router; a plain anchor is enough here.
 vi.mock("@/src/shared/lib/router", async (importOriginal) => ({
@@ -149,15 +150,47 @@ describe("ProfilePromptCard", () => {
     });
   });
 
-  it("leaves out confirm rows GFW had no value for", () => {
+  it("fills a language GFW had no value for from the UI language", async () => {
     const { preferred_language_code, ...rest } = fullGfw;
     void preferred_language_code;
-    const { container } = renderCard({ suggestion: rest });
-    expect(confirmRows(container)).toEqual([
-      ["Country", "Brazil"],
-      ["Sector", "Government"],
-      ["Organisation", "State environment agency"],
-    ]);
+    await act(() => i18n.changeLanguage("pt"));
+    try {
+      const { container, onSave } = renderCard({ suggestion: rest });
+      expect(confirmRows(container)).toEqual([
+        ["Country", "Brazil"],
+        ["Language", "Português"],
+        ["Sector", "Government"],
+        ["Organisation", "State environment agency"],
+      ]);
+      fireEvent.click(screen.getByRole("button", { name: "Looks right" }));
+      expect(onSave.mock.calls[0][0]).toMatchObject({
+        preferred_language_code: "pt",
+      });
+    } finally {
+      await act(() => i18n.changeLanguage("en"));
+    }
+  });
+
+  it("leaves out the language row when the UI language is not an option", async () => {
+    const { preferred_language_code, ...rest } = fullGfw;
+    void preferred_language_code;
+    await act(() => i18n.changeLanguage("zh"));
+    try {
+      const { container } = renderCard({ suggestion: rest });
+      expect(confirmRows(container)).toEqual([
+        ["Country", "Brazil"],
+        ["Sector", "Government"],
+        ["Organisation", "State environment agency"],
+      ]);
+    } finally {
+      await act(() => i18n.changeLanguage("en"));
+    }
+  });
+
+  it("keeps the language GFW had over the UI language", async () => {
+    await act(() => i18n.changeLanguage("en"));
+    const { container } = renderCard({ suggestion: fullGfw });
+    expect(confirmRows(container)).toContainEqual(["Language", "Português"]);
   });
 
   it("switches to the fields on Edit details, all prefilled", () => {

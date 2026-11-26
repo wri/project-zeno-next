@@ -112,8 +112,12 @@ describe("alertsWidgetSpec", () => {
       "district-county",
       { kind: "gadm", gadmId: "BRA.16.137" },
     ],
-    // Below a district the analytics API has no GADM areas.
-    ["gadm", "BRA.16.137.1_1", "municipality", undefined],
+    [
+      "gadm",
+      "BRA.16.137.1_1",
+      "municipality",
+      { kind: "gadm", gadmId: "BRA.16.137.1" },
+    ],
     ["kba", "12345", "key-biodiversity-area", undefined],
     ["wdpa", "555", "protected-area", undefined],
     ["landmark", "88", "indigenous-and-community-land", undefined],

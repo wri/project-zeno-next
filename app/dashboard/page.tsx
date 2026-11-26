@@ -34,7 +34,7 @@ import { getSettingsFormSchema } from "@/app/dashboard/schema";
 import RequirementHint from "@/app/components/RequirementHint";
 import { TopicPills, toggleTopic } from "@/app/components/TopicPills";
 import { ACCOUNT_DELETION_URL } from "@/app/dashboard/account-deletion";
-import { useTranslation } from "@/src/shared/lib/i18n";
+import { followPreferredLocale, useTranslation } from "@/src/shared/lib/i18n";
 
 /**
  * Every sector's "Other:" role. Choosing it relabels Job title as "Your role",
@@ -209,6 +209,7 @@ export default function UserProfilePage() {
         has_profile: true,
       });
 
+      const previousLanguage = useAuthStore.getState().preferredLanguageCode;
       const res = await apiFetch(`/api/auth/profile`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -220,7 +221,10 @@ export default function UserProfilePage() {
       // This page is where "Complete your profile" leads, so the reminder
       // (menu item, in-chat asks) must stop without a reload.
       const { status } = parseAuthMe(await res.json());
-      if (status) useAuthStore.getState().setAuthStatus(status);
+      if (status) {
+        useAuthStore.getState().setAuthStatus(status);
+        followPreferredLocale(previousLanguage, status.preferredLanguageCode);
+      }
 
       // Submit to Ortto directly from client (no secrets needed)
       await submitOrttoProfile({

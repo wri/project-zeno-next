@@ -2,15 +2,17 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const customAreasState = vi.hoisted(() => ({
-  customAreas: [
+const userAoisState = vi.hoisted(() => ({
+  data: [
     {
-      id: "area-1",
-      user_id: "u1",
+      id: "userAoi-1",
+      relationship: "owner",
       name: "My farm",
-      geometries: [],
+      source: "custom",
+      src_id: "area-1",
+      subtype: "custom-area",
+      bbox: null,
       created_at: "2026-01-01",
-      updated_at: "2026-01-01",
     },
   ],
   isLoading: false,
@@ -89,8 +91,8 @@ const REFERENCE_SOURCES = ["gadm", "kba", "wdpa", "landmark"] as const;
 
 const browseCalls = vi.hoisted(() => [] as { source: string; name?: string }[]);
 
-vi.mock("@/app/hooks/useCustomAreasList", () => ({
-  useCustomAreasList: () => customAreasState,
+vi.mock("@/src/entities/user-aoi", () => ({
+  useUserAois: () => userAoisState,
 }));
 
 vi.mock("../useAoiBrowse", () => ({
@@ -128,6 +130,32 @@ describe("useAreaPickerRows", () => {
       "area-1",
     ]);
     expect(result.current.rows[2].typeLabel).toBe("Custom area");
+  });
+
+  it("lists a saved area once in 'all', with the user's label in the reference row's place", async () => {
+    userAoisState.data.push({
+      id: "userAoi-2",
+      relationship: "saved",
+      name: "Home country",
+      source: "gadm",
+      src_id: "BRA",
+      subtype: "country",
+      bbox: null,
+      created_at: "2026-01-02",
+    });
+    try {
+      const { result } = renderHook(() => useAreaPickerRows("all", ""));
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      expect(result.current.rows.map((r) => r.src_id)).toEqual([
+        "BRA",
+        "KBA-1",
+        "area-1",
+      ]);
+      expect(result.current.rows[0].name).toBe("Home country");
+    } finally {
+      userAoisState.data.pop();
+    }
   });
 
   it("reports hasNextPage true when any source still has a next page", () => {
