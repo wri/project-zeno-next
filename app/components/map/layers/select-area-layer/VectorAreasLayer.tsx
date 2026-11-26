@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { LngLat, MapGeoJSONFeature, Point } from "maplibre-gl";
 import { Layer, MapMouseEvent, Source, useMap } from "react-map-gl/maplibre";
 import { union } from "@turf/union";
 import {
@@ -91,45 +92,63 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
   useEffect(() => {
     let hoverId: string | number | undefined;
     let tooltipTimer: ReturnType<typeof setTimeout> | undefined;
+    // Where the pointer is over this layer, in map pixels; unset once it leaves.
+    let pointer: Point | undefined;
 
     if (map) {
-      const onMouseMove = (e: MapMouseEvent) => {
-        if (e.features && e.features.length > 0) {
-          const feature = e.features.at(-1);
-          const { lat, lng } = e.lngLat;
-          const properties = feature!.properties;
-          map.getCanvas().style.cursor = "pointer";
+      const hideTooltip = () => {
+        clearTimeout(tooltipTimer);
+        setHoverInfo(undefined);
+      };
 
-          // Hide while moving; show at the resting point once still.
-          clearTimeout(tooltipTimer);
-          setHoverInfo(undefined);
-          tooltipTimer = setTimeout(() => {
-            setHoverInfo({
-              lat,
-              lng,
-              name: getFeatureName(layerId, properties),
-              details: getBoundaryFeatureDetails(layerId, properties),
-            });
-          }, TOOLTIP_DEBOUNCE_MS);
+      const showTooltipAfterRest = (
+        properties: MapGeoJSONFeature["properties"],
+        { lng, lat }: LngLat
+      ) => {
+        tooltipTimer = setTimeout(() => {
+          setHoverInfo({
+            lat,
+            lng,
+            name: getFeatureName(layerId, properties),
+            details: getBoundaryFeatureDetails(layerId, properties),
+          });
+        }, TOOLTIP_DEBOUNCE_MS);
+      };
 
-          if (hoverId !== undefined) {
-            map.setFeatureState(
-              { source: sourceId, sourceLayer, id: hoverId },
-              { hover: false }
-            );
-          }
-          hoverId = feature!.id;
+      const highlight = (id: string | number | undefined) => {
+        if (hoverId !== undefined) {
           map.setFeatureState(
             { source: sourceId, sourceLayer, id: hoverId },
-            { hover: true }
+            { hover: false }
           );
+        }
+        hoverId = id;
+        map.setFeatureState(
+          { source: sourceId, sourceLayer, id: hoverId },
+          { hover: true }
+        );
+      };
+
+      const onMouseMove = (e: MapMouseEvent) => {
+        if (e.features && e.features.length > 0) {
+          const feature = e.features.at(-1)!;
+          pointer = e.point;
+          map.getCanvas().style.cursor = "pointer";
+
+          // Hide while moving; show at the resting point once still. A pause
+          // in the middle of a drag or zoom doesn't count as resting.
+          hideTooltip();
+          if (!map.isMoving()) {
+            showTooltipAfterRest(feature.properties, e.lngLat);
+          }
+          highlight(feature.id);
         }
       };
 
       const onMouseLeave = () => {
+        pointer = undefined;
         map.getCanvas().style.cursor = "";
-        clearTimeout(tooltipTimer);
-        setHoverInfo(undefined);
+        hideTooltip();
         if (hoverId !== undefined) {
           map.setFeatureState(
             { source: sourceId, sourceLayer, id: hoverId },
@@ -137,6 +156,22 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
           );
         }
         hoverId = undefined;
+      };
+
+      // A pan or zoom moves the map under a still pointer without firing
+      // mousemove: hide the card when the move starts, and once the map
+      // settles, treat the pointer as resting on whatever is now under it.
+      const onMoveEnd = () => {
+        if (!pointer) return;
+        const feature = map
+          .queryRenderedFeatures(pointer, { layers: [fillLayerName] })
+          .at(-1);
+        if (!feature) {
+          onMouseLeave();
+          return;
+        }
+        highlight(feature.id);
+        showTooltipAfterRest(feature.properties, map.unproject(pointer));
       };
 
       const onClick = (e: MapMouseEvent) => {
@@ -231,11 +266,15 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
       map.on("mousemove", fillLayerName, onMouseMove);
       map.on("mouseleave", fillLayerName, onMouseLeave);
       map.on("click", fillLayerName, onClick);
+      map.on("movestart", hideTooltip);
+      map.on("moveend", onMoveEnd);
 
       return () => {
         map.off("mousemove", fillLayerName, onMouseMove);
         map.off("mouseleave", fillLayerName, onMouseLeave);
         map.off("click", fillLayerName, onClick);
+        map.off("movestart", hideTooltip);
+        map.off("moveend", onMoveEnd);
         map.getCanvas().style.cursor = "";
         clearTimeout(tooltipTimer);
       };
