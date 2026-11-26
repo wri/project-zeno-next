@@ -3,6 +3,7 @@ import { Button, Flex, Text } from "@chakra-ui/react";
 
 import type { InsightWidget } from "@/app/types/chat";
 import getChartColors from "@/app/utils/ChartColors";
+import { resolveSeriesColor } from "@/app/utils/formatCharts";
 import { widgetViewKey } from "@/src/shared/lib/widget-view-key";
 
 import { parseRanking } from "../model/ranking";
@@ -46,8 +47,11 @@ export function RankingBody({
   const setPage = useRankingViewStore((s) => s.setPage);
   const view = rankingView(ranking, print ? 0 : storedPage);
 
-  // The chart's own color, else the first of the default chart colors.
-  const color = widget.seriesColor ?? getChartColors()[0];
+  // The same rule as the one-area chart: the chart's own color, else the
+  // dataset's, else the first of the default chart colors.
+  const color =
+    resolveSeriesColor(widget.seriesColor, widget.datasetName) ??
+    getChartColors()[0];
   const showNoValue =
     view.noValue.length > 0 && (print ? view.pageCount === 1 : !view.hasNext);
 

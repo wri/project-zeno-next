@@ -6,6 +6,22 @@ import CHART_COLOR_MAPPING, {
 import type { ChartColorFields } from "@/app/types/chartColors";
 import type { InsightWidget } from "@/app/types/chat";
 
+/**
+ * A single series' color from what is known about it: the backend's
+ * `seriesColor`, else the dataset's own color. Absent when neither is set, and
+ * the caller falls back to its default, so one-area charts and rankings of the
+ * same dataset agree.
+ */
+export function resolveSeriesColor(
+  seriesColor: string | undefined,
+  datasetName: string | undefined
+): string | undefined {
+  return (
+    seriesColor ??
+    (datasetName ? DATASET_SERIES_COLORS[datasetName] : undefined)
+  );
+}
+
 interface InputData {
   [key: string]: unknown | unknown;
 }
@@ -331,9 +347,10 @@ export default function formatChartData(
       name: item[nameKey],
     }));
 
-    const datasetColor =
-      colorOverrides?.seriesColor ??
-      (datasetName ? DATASET_SERIES_COLORS[datasetName] : undefined);
+    const datasetColor = resolveSeriesColor(
+      colorOverrides?.seriesColor,
+      datasetName
+    );
     const series: ChartSeries[] = [
       {
         name: nameKey, // The series name can be derived from the label key
@@ -365,9 +382,10 @@ export default function formatChartData(
     const divergent =
       colorOverrides?.divergentColors ??
       (datasetName ? DATASET_DIVERGENT_COLORS[datasetName] : undefined);
-    const datasetColor =
-      colorOverrides?.seriesColor ??
-      (datasetName ? DATASET_SERIES_COLORS[datasetName] : undefined);
+    const datasetColor = resolveSeriesColor(
+      colorOverrides?.seriesColor,
+      datasetName
+    );
 
     // For bar charts with divergent colors, add per-bar _barColor based on value sign
     if (type === "bar" && divergent && chartValueKeys.length === 1) {
