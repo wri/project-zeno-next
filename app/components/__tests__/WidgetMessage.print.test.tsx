@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/app/components/ui/toaster", () => ({
@@ -96,5 +96,54 @@ describe("WidgetMessage print", () => {
     expect(screen.getByTestId("table-scroller")).toBeTruthy();
     const header = screen.getAllByRole("columnheader")[0];
     expect(getComputedStyle(header).whiteSpace).toBe("pre");
+  });
+
+  describe("a ranking of areas", () => {
+    const ranking: InsightWidget = {
+      id: "w-ranking",
+      type: "ranked-bar",
+      title: "Tree Cover Loss by Area",
+      description: "",
+      data: Array.from({ length: 12 }, (_, i) => ({
+        rank: i + 1,
+        aoi_id: `KEN.${i}`,
+        name: `County ${i}`,
+        parent: "Kenya",
+        area_ha: 1000 - i,
+      })),
+      xAxis: "name",
+      yAxis: "area_ha",
+    };
+
+    it("draws its own bars in the card and in the export, not ChartWidget", () => {
+      for (const print of [false, true]) {
+        const { unmount } = renderCard(ranking, print);
+        expect(screen.queryByTestId("chart")).toBeNull();
+        expect(screen.getByRole("list", { name: /areas/i })).toBeTruthy();
+        unmount();
+      }
+    });
+
+    it("prints the first ten areas with the note, and no controls", () => {
+      renderCard(ranking, true);
+
+      expect(screen.getAllByRole("listitem")).toHaveLength(10);
+      expect(screen.getByText("Top 10 of 12 areas.")).toBeTruthy();
+      for (const name of CONTROLS) {
+        expect(screen.queryByRole("button", { name })).toBeNull();
+      }
+    });
+
+    it("shows its table without the area id", () => {
+      renderCard(ranking, false);
+      fireEvent.click(screen.getByRole("button", { name: /^table$/i }));
+
+      const headers = screen
+        .getAllByRole("columnheader")
+        .map((header) => header.textContent ?? "");
+      expect(headers.some((text) => /aoi id/i.test(text))).toBe(false);
+      expect(headers[0]).toMatch(/rank/i);
+      expect(headers[1]).toMatch(/name/i);
+    });
   });
 });

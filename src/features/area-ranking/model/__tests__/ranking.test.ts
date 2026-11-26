@@ -34,7 +34,7 @@ const ROWS = [
 ];
 
 const withoutShare = (rows: Record<string, unknown>[]) =>
-  rows.map(({ share_pct: _share, ...rest }) => rest);
+  rows.map((r) => ({ ...r, share_pct: undefined }));
 
 describe("parseRanking", () => {
   it("reads every field of every row, in the wire order", () => {

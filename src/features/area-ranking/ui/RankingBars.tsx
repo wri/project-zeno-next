@@ -1,0 +1,189 @@
+import { useEffect, useState } from "react";
+import { Box, Flex, Text } from "@chakra-ui/react";
+
+import { Tooltip } from "@/app/components/ui/tooltip";
+
+import type { RankedArea, Ranking } from "../model/ranking";
+import { barValueText, shareText, tooltipLines } from "../model/ranking-text";
+
+/**
+ * Width of the name column by the width of the chart's own box (a container
+ * query, so a card on a narrow chat panel and one on a wide dashboard each get
+ * the name column that fits).
+ */
+export const NAME_WIDTH = { base: "112px", wide: "160px", wider: "220px" };
+const NAME_COLUMN = "--ranking-name-width";
+/** Marks a row, so a tap can tell its own row from another place. */
+const ROW_ATTRIBUTE = "data-ranking-row";
+
+/**
+ * Width kept beside the longest bar for its printed value. Every bar is a share
+ * of the same row width less this, so all rows, on every page, share one track.
+ * Emissions print the exact figure, which is longer than a shortened hectares.
+ */
+const VALUE_RESERVE = { loss: "4.5rem", emissions: "8rem" };
+
+/**
+ * A tap opens the row's tooltip and a tap elsewhere closes it: Ark's tooltip
+ * does not open on touch. Only touch is handled here, so a mouse hover and
+ * keyboard focus keep the tooltip's own behavior.
+ */
+function useTouchTooltip(rowId: string) {
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const closeOutside = (event: PointerEvent) => {
+      const row = (event.target as Element).closest(`[${ROW_ATTRIBUTE}]`);
+      if (row?.getAttribute(ROW_ATTRIBUTE) !== rowId) setOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOutside);
+    return () => document.removeEventListener("pointerdown", closeOutside);
+  }, [open, rowId]);
+
+  return {
+    open,
+    onOpenChange: ({ open }: { open: boolean }) => setOpen(open),
+    onPointerUp: (event: React.PointerEvent) => {
+      if (event.pointerType === "touch") setOpen(true);
+    },
+  };
+}
+
+function RankingRow({
+  area,
+  ranking,
+  scaleMax,
+  color,
+  print,
+}: {
+  area: RankedArea;
+  ranking: Ranking;
+  scaleMax: number;
+  color: string;
+  print: boolean;
+}) {
+  const touch = useTouchTooltip(area.aoiId);
+  const [fullName, figures] = tooltipLines(area, ranking);
+
+  const row = (
+    <Box
+      as="li"
+      {...{ [ROW_ATTRIBUTE]: area.aoiId }}
+      listStyleType="none"
+      display="grid"
+      gridTemplateColumns={`20px var(${NAME_COLUMN}) minmax(0, 1fr)`}
+      columnGap="8px"
+      alignItems="center"
+      fontSize="12px"
+      lineHeight="16px"
+      rounded="2px"
+      tabIndex={print ? undefined : 0}
+      aria-label={print ? undefined : `${fullName}: ${figures}`}
+      onPointerUp={print ? undefined : touch.onPointerUp}
+      _focusVisible={{
+        outline: "2px solid",
+        outlineColor: "primary.focusRing",
+        outlineOffset: "2px",
+      }}
+      css={{ fontVariantNumeric: "tabular-nums" }}
+    >
+      <Text color="fg.muted" textAlign="end">
+        {area.rank}
+      </Text>
+      <Text color="neutral.700" truncate>
+        {area.name}
+        {area.showParent && area.parent !== null && (
+          <Text as="span" color="fg.muted">
+            {` · ${area.parent}`}
+          </Text>
+        )}
+      </Text>
+      <Flex align="center" gap="6px" minW={0}>
+        <Box
+          h="14px"
+          flexShrink={0}
+          rounded="2px"
+          style={{
+            width: `max(2px, calc((100% - ${VALUE_RESERVE[ranking.measure]}) * ${area.value / scaleMax}))`,
+            backgroundColor: color,
+          }}
+        />
+        <Text color="fg.muted" whiteSpace="nowrap">
+          {barValueText(area, ranking)}
+          {print && area.share !== undefined && ` · ${shareText(area.share)}`}
+        </Text>
+      </Flex>
+    </Box>
+  );
+
+  if (print) return row;
+  return (
+    <Tooltip
+      content={
+        <>
+          <Text fontWeight="medium">{fullName}</Text>
+          <Text>{figures}</Text>
+        </>
+      }
+      variant="dark"
+      showArrow
+      openDelay={150}
+      positioning={{ placement: "top-start" }}
+      lazyMount
+      unmountOnExit
+      open={touch.open}
+      onOpenChange={touch.onOpenChange}
+    >
+      {row}
+    </Tooltip>
+  );
+}
+
+/**
+ * Ranked area bars: rank, name, a bar as long as its share of `scaleMax`, and
+ * the value. In `print` every row is plain: no tooltip, no tab stop, and the
+ * share printed after the value.
+ */
+export function RankingBars({
+  rows,
+  ranking,
+  scaleMax,
+  color,
+  print = false,
+}: {
+  rows: RankedArea[];
+  ranking: Ranking;
+  scaleMax: number;
+  color: string;
+  print?: boolean;
+}) {
+  return (
+    <Flex
+      as="ol"
+      direction="column"
+      // 10 rows of 16px, the pager and a two-line no-loss note fit the
+      // chart's 280px: 160 + 9 * 5 + 8 + 24 + 8 + 32 = 277.
+      gap="5px"
+      m={0}
+      p={0}
+      aria-label="Areas, largest first"
+      css={{
+        [NAME_COLUMN]: NAME_WIDTH.base,
+        "@container (min-width: 560px)": { [NAME_COLUMN]: NAME_WIDTH.wide },
+        "@container (min-width: 900px)": { [NAME_COLUMN]: NAME_WIDTH.wider },
+      }}
+    >
+      {rows.map((area) => (
+        <RankingRow
+          key={area.aoiId}
+          area={area}
+          ranking={ranking}
+          scaleMax={scaleMax}
+          color={color}
+          print={print}
+        />
+      ))}
+    </Flex>
+  );
+}
