@@ -55,7 +55,7 @@ describe("RankingBody", () => {
       ).disabled
     ).toBe(true);
     // The areas with no loss are named on the last page only.
-    expect(screen.queryByText(/No tree cover loss/)).toBeNull();
+    expect(screen.queryByText(/No loss/)).toBeNull();
   });
 
   it("pages to the last bars, where the areas with no loss are named", () => {
@@ -67,9 +67,7 @@ describe("RankingBody", () => {
     expect(screen.getByText("Showing 41–44 of 44")).toBeTruthy();
     expect(screen.getAllByRole("listitem")).toHaveLength(4);
     expect(
-      screen.getByText(
-        "No tree cover loss in 3 areas: County 44, County 45, County 46."
-      )
+      screen.getByText("No loss in 3 areas: County 44, County 45, County 46.")
     ).toBeTruthy();
   });
 
@@ -77,7 +75,7 @@ describe("RankingBody", () => {
     renderBody(rows(10, 2));
 
     expect(screen.queryByText(/Showing/)).toBeNull();
-    expect(screen.getByText(/No tree cover loss in 2 areas/)).toBeTruthy();
+    expect(screen.getByText(/No loss in 2 areas/)).toBeTruthy();
   });
 
   it("shows the page share above the bars only when there is more than one page", () => {
@@ -178,13 +176,13 @@ describe("RankingBody", () => {
       expect(screen.getAllByText("1K ha · 2.5%").length).toBeGreaterThan(0);
       expect(screen.getByText("Top 10 of 47 areas.")).toBeTruthy();
       // The bars do not all fit, so the areas with no loss are not named.
-      expect(screen.queryByText(/No tree cover loss/)).toBeNull();
+      expect(screen.queryByText(/No loss/)).toBeNull();
     });
 
     it("names the areas with no loss only when every bar fits, and needs no note", () => {
       renderBody(rows(8, 2), true);
 
-      expect(screen.getByText(/No tree cover loss in 2 areas/)).toBeTruthy();
+      expect(screen.getByText(/No loss in 2 areas/)).toBeTruthy();
       expect(screen.queryByText(/^Top 10/)).toBeNull();
     });
 

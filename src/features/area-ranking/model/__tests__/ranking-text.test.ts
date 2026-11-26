@@ -104,7 +104,7 @@ describe("noValueText", () => {
 
   it("names the areas, with the parent where the name repeats", () => {
     expect(noValueText(ranking(empty), empty)).toBe(
-      "No tree cover loss in 2 areas: Belém, Bom Jesus · Piauí."
+      "No loss in 2 areas: Belém, Bom Jesus · Piauí."
     );
   });
 

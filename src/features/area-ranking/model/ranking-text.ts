@@ -8,7 +8,7 @@ import type { RankedArea, Ranking } from "./ranking";
 import type { RankingView } from "./ranking-view";
 
 const NO_VALUE_PHRASE = {
-  loss: "No tree cover loss",
+  loss: "No loss",
   emissions: "No emissions",
 } as const;
 
