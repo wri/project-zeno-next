@@ -5,11 +5,13 @@ import {
   barValueText,
   displayName,
   noValueText,
+  pageShare,
   shareText,
   tooltipLines,
   topNoteText,
   valueReserve,
 } from "../ranking-text";
+import { rankingView } from "../ranking-view";
 
 const area = (overrides: Partial<RankedArea> = {}): RankedArea => ({
   aoiId: "BRA.1",
@@ -130,5 +132,42 @@ describe("valueReserve", () => {
     expect(width(valueReserve(loss, true))).toBe(
       width(valueReserve(loss, false)) + 7
     );
+  });
+});
+
+describe("pageShare", () => {
+  const withAreas = (count: number) =>
+    ranking(
+      Array.from({ length: count }, (_, i) =>
+        area({ aoiId: `A${i}`, rank: i + 1, value: 100 - i * 5, share: 1 })
+      )
+    );
+  const twelve = withAreas(12);
+
+  it("leads with the first page's share and the sums", () => {
+    const share = pageShare(twelve, rankingView(twelve, 0));
+    expect(share?.lead).toBe("Top 10 areas: 89.1% of all loss");
+    expect(share?.beforePct).toBe(0);
+  });
+
+  it("names the ranks and the running total on a later page", () => {
+    const share = pageShare(twelve, rankingView(twelve, 1));
+    expect(share?.lead).toBe("Ranks 11–12: 10.9% of all loss");
+    expect(share?.tail).toBe("· top 12: 100.0%");
+  });
+
+  it("gives the last page's line for a stale page past the end", () => {
+    const share = pageShare(twelve, rankingView(twelve, 5));
+    expect(share?.lead).toBe("Ranks 11–12: 10.9% of all loss");
+  });
+
+  it("is absent for a one-page ranking", () => {
+    const few = withAreas(10);
+    expect(pageShare(few, rankingView(few, 0))).toBeUndefined();
+  });
+
+  it("is absent without shares", () => {
+    const none = ranking([area({ share: undefined })]);
+    expect(pageShare(none, rankingView(none, 0))).toBeUndefined();
   });
 });

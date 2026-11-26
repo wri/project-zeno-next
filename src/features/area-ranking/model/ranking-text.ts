@@ -2,6 +2,7 @@ import { formatHectares } from "@/app/utils/boundaryFeatureDetails";
 import { formatTooltipValue } from "@/app/utils/formatCharts";
 
 import type { RankedArea, Ranking } from "./ranking";
+import type { RankingView } from "./ranking-view";
 
 const NO_VALUE_PHRASE = {
   loss: "No tree cover loss",
@@ -100,4 +101,49 @@ export function noValueText(ranking: Ranking, areas: RankedArea[]): string {
 /** The PDF's note under a ranking cut to its first page. */
 export function topNoteText(shown: number, areaCount: number): string {
   return `Top ${shown} of ${areaCount} areas.`;
+}
+
+export interface PageShare {
+  lead: string;
+  tail: string;
+  /** Percent of the total: the ranks before the page, and the page. */
+  beforePct: number;
+  pagePct: number;
+}
+
+/**
+ * How much of the total the view's page holds, and the running total. Absent
+ * for a one-page ranking, where the line adds nothing, and when the areas can
+ * overlap (no shares), as a share of "all" would be false.
+ */
+export function pageShare(
+  ranking: Ranking,
+  view: RankingView
+): PageShare | undefined {
+  // The bars are a prefix of `ranking.areas`; the no-value areas come last.
+  const bars = ranking.areas.slice(0, view.total);
+  if (view.pageCount === 1 || bars.some((area) => area.share === undefined)) {
+    return undefined;
+  }
+  const sum = (areas: RankedArea[]) =>
+    areas.reduce((total, area) => total + area.value, 0);
+  const total = sum(bars);
+  const beforeSum = sum(bars.slice(0, view.start - 1));
+  const pageSum = sum(view.rows);
+  const pagePct = (pageSum / total) * 100;
+  const noun = `of all ${ranking.measure}`;
+  if (view.page === 0) {
+    return {
+      lead: `Top ${view.end} areas: ${shareText(pagePct)} ${noun}`,
+      tail: `(${barValueText({ ...bars[0], value: pageSum }, ranking)} of ${barValueText({ ...bars[0], value: total }, ranking)})`,
+      beforePct: 0,
+      pagePct,
+    };
+  }
+  return {
+    lead: `Ranks ${view.start}–${view.end}: ${shareText(pagePct)} ${noun}`,
+    tail: `· top ${view.end}: ${shareText(((beforeSum + pageSum) / total) * 100)}`,
+    beforePct: (beforeSum / total) * 100,
+    pagePct,
+  };
 }
