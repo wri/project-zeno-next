@@ -43,9 +43,10 @@ Read top to bottom for the narrative; each is one screen.
 
 Cross-cutting ADRs that are not part of the boundary-analysis design but live here because this folder is the repo's tracked ADR home.
 
-| ADR                                                  | Decision                                                              | Status                                                                                                                                       |
-| ---------------------------------------------------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| [0011](decisions/0011-map-workspace-state-in-url.md) | Map workspace state lives in the URL, independent of the conversation | Proposed 2026-10-23; spans project-zeno too (chat contract, insight parameters, layer registry). Supersedes ADR-003 in `.claude/docs/ADRs/`. |
+| ADR                                                      | Decision                                                                  | Status                                                                                                                                       |
+| -------------------------------------------------------- | ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| [0011](decisions/0011-map-workspace-state-in-url.md)     | Map workspace state lives in the URL, independent of the conversation     | Proposed 2026-10-23; spans project-zeno too (chat contract, insight parameters, layer registry). Supersedes ADR-003 in `.claude/docs/ADRs/`. |
+| [0012](decisions/0012-fsd-layer-and-same-layer-rules.md) | The architecture test guards every FSD layer, with a shrinking allow-list | Accepted 2026-11-25; PZB-1699, step 0 of the FSD migration (PZB-1698).                                                                       |
 
 ## Status
 
