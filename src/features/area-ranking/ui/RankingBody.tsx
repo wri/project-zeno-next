@@ -77,7 +77,8 @@ export function RankingBody({
           <Text fontSize="xs" color="fg.muted" aria-live="polite">
             Showing {view.start}–{view.end} of {view.total}
           </Text>
-          <Flex gap={1}>
+          {/* Left out of a downloaded image (see exportChartImage). */}
+          <Flex gap={1} data-export-exclude="">
             <Button
               size="xs"
               variant="ghost"

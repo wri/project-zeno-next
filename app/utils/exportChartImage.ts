@@ -31,6 +31,24 @@ function inlineComputedStyles(source: Element, target: Element) {
   }
 }
 
+/**
+ * Elements carrying this attribute (`data-export-exclude`) are left out of the
+ * image: controls that mean nothing in a picture, such as a pager's buttons.
+ */
+const EXCLUDE_SELECTOR = "[data-export-exclude]";
+
+/**
+ * The container as the image shows it: a clone with its computed styles inlined
+ * and the excluded elements removed. They go after the inlining, which walks
+ * the original and the clone in parallel and so needs both trees alike.
+ */
+export function cloneForExport(container: HTMLElement): HTMLElement {
+  const clone = container.cloneNode(true) as HTMLElement;
+  inlineComputedStyles(container, clone);
+  clone.querySelectorAll(EXCLUDE_SELECTOR).forEach((el) => el.remove());
+  return clone;
+}
+
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();
@@ -95,8 +113,7 @@ export async function exportChartImage(
     throw new Error("Chart is not visible, so there is nothing to export.");
   }
 
-  const clone = container.cloneNode(true) as HTMLElement;
-  inlineComputedStyles(container, clone);
+  const clone = cloneForExport(container);
   clone.setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
 
   const width = Math.ceil(rect.width);
