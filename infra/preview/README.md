@@ -85,13 +85,21 @@ There is no need to write a bucket policy; CloudFront writes it in step 4.
 
 Note the **distribution ID** (`E…`) and **domain name** (`dxxxx.cloudfront.net`).
 
-### 5. Attach the function
+### 5. Attach the function and the noindex header
 
-The wizard doesn't offer this, so do it afterwards:
+The wizard doesn't offer these, so do them afterwards.
+
+First create the response headers policy. Previews must not show up in search results next to globalnaturewatch.org, and a `robots.txt` alone isn't enough: a linked URL can still be indexed.
+
+1. **CloudFront → Policies → Response headers → Create response headers policy.** Name it `gnw-preview-noindex`.
+2. Under **Custom headers**, add `X-Robots-Tag` with value `noindex`, and tick **Origin override**. Leave everything else off and create it.
+
+Then attach both:
 
 1. On the distribution's **Behaviors** tab, select `Default (*)` and click **Edit**.
-2. Under **Function associations → Viewer request**, set the function type to **CloudFront Functions** and pick `gnw-preview-router`.
-3. Leave the other three function associations empty and save.
+2. Under **Cache key and origin requests → Response headers policy**, pick `gnw-preview-noindex`.
+3. Under **Function associations → Viewer request**, set the function type to **CloudFront Functions** and pick `gnw-preview-router`.
+4. Leave the other three function associations empty and save.
 
 To check it: the function's page should list the distribution with event type `viewer-request`.
 
@@ -119,7 +127,7 @@ In **Route 53 → the hosted zone → Create record**:
 
 | URL                                 | Expected                                                                      |
 | ----------------------------------- | ----------------------------------------------------------------------------- |
-| `https://pr-0.<preview-domain>/`    | 200, `hello pr-0`                                                             |
+| `https://pr-0.<preview-domain>/`    | 200, `hello pr-0`, and an `x-robots-tag: noindex` response header             |
 | `https://pr-0.<preview-domain>/x/y` | 403 AccessDenied (routed to `pr-0/_spa.html`, which the test doesn't include) |
 | `https://dxxxx.cloudfront.net/`     | 404 from the function (no `pr-` subdomain)                                    |
 
@@ -250,7 +258,7 @@ The order matters: several resources can't be deleted while something still uses
 2. **Remove the DNS records.** In Route 53, delete the `*.<preview subdomain>` A record, and the AAAA record if there is one. Leave the ACM validation CNAME for step 7.
 3. **Disable the distribution.** In **CloudFront → Distributions**, select it and click **Disable**. Wait until **Last modified** shows a date instead of "Deploying".
 4. **Delete the distribution.**
-5. **Delete the function.** In **CloudFront → Functions**, delete `gnw-preview-router`. This only works once no distribution uses it.
+5. **Delete the function and the headers policy.** In **CloudFront → Functions**, delete `gnw-preview-router`. In **CloudFront → Policies → Response headers**, delete `gnw-preview-noindex`. Both only work once no distribution uses them.
 6. **Delete the origin access control.** In **CloudFront → Origin access**, delete the OAC the wizard created. It's named after the bucket.
 7. **Delete the certificate.** In **Certificate Manager (us-east-1)**, delete the `*.<preview-domain>` certificate. This only works once no distribution uses it. Then delete its `_….<preview-domain>` validation CNAME from Route 53.
 8. **Empty and delete the bucket.** In **S3**, select the bucket, click **Empty**, then **Delete**.
@@ -271,11 +279,11 @@ Outside AWS:
 
 Everything this setup creates, for an account handover:
 
-| Where           | Resource                                                                                                                 |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| S3              | bucket `gnw-pr-previews`, with its lifecycle rule and the bucket policy CloudFront wrote                                 |
-| CloudFront      | the distribution, function `gnw-preview-router`, the origin access control                                               |
-| ACM (us-east-1) | certificate `*.<preview-domain>`                                                                                         |
-| Route 53        | the `*.<preview subdomain>` A (and AAAA) record, the certificate's validation CNAME                                      |
-| IAM             | role `gh-project-zeno-next-preview` with inline policy `gnw-pr-previews-write`; the GitHub OIDC provider (may be shared) |
-| GitHub          | the preview repo variables, the Mapbox secret, the `pr-<N>-preview` environments                                         |
+| Where           | Resource                                                                                                                  |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| S3              | bucket `gnw-pr-previews`, with its lifecycle rule and the bucket policy CloudFront wrote                                  |
+| CloudFront      | the distribution, function `gnw-preview-router`, response headers policy `gnw-preview-noindex`, the origin access control |
+| ACM (us-east-1) | certificate `*.<preview-domain>`                                                                                          |
+| Route 53        | the `*.<preview subdomain>` A (and AAAA) record, the certificate's validation CNAME                                       |
+| IAM             | role `gh-project-zeno-next-preview` with inline policy `gnw-pr-previews-write`; the GitHub OIDC provider (may be shared)  |
+| GitHub          | the preview repo variables, the Mapbox secret, the `pr-<N>-preview` environments                                          |
