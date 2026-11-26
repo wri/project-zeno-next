@@ -4,7 +4,11 @@ import { Box, Flex, Text } from "@chakra-ui/react";
 import { Tooltip } from "@/app/components/ui/tooltip";
 
 import type { RankedArea, Ranking } from "../model/ranking";
-import { barValueText, shareText, tooltipLines } from "../model/ranking-text";
+import {
+  rowValueText,
+  tooltipLines,
+  valueReserve,
+} from "../model/ranking-text";
 
 /**
  * Width of the name column by the width of the chart's own box (a container
@@ -15,13 +19,6 @@ export const NAME_WIDTH = { base: "112px", wide: "160px", wider: "220px" };
 const NAME_COLUMN = "--ranking-name-width";
 /** Marks a row, so a tap can tell its own row from another place. */
 const ROW_ATTRIBUTE = "data-ranking-row";
-
-/**
- * Width kept beside the longest bar for its printed value. Every bar is a share
- * of the same row width less this, so all rows, on every page, share one track.
- * Emissions print the exact figure, which is longer than a shortened hectares.
- */
-const VALUE_RESERVE = { loss: "4.5rem", emissions: "8rem" };
 
 /**
  * A tap opens the row's tooltip and a tap elsewhere closes it: Ark's tooltip
@@ -68,12 +65,14 @@ function RankingRow({
   ranking,
   scaleMax,
   color,
+  reserve,
   print,
 }: {
   area: RankedArea;
   ranking: Ranking;
   scaleMax: number;
   color: string;
+  reserve: string;
   print: boolean;
 }) {
   const touch = useTouchTooltip(area.aoiId);
@@ -118,13 +117,12 @@ function RankingRow({
           flexShrink={0}
           rounded="2px"
           style={{
-            width: `max(2px, calc((100% - ${VALUE_RESERVE[ranking.measure]}) * ${area.value / scaleMax}))`,
+            width: `max(2px, calc((100% - ${reserve}) * ${area.value / scaleMax}))`,
             backgroundColor: color,
           }}
         />
         <Text color="fg.muted" whiteSpace="nowrap">
-          {barValueText(area, ranking)}
-          {print && area.share !== undefined && ` · ${shareText(area.share)}`}
+          {rowValueText(area, ranking, print)}
         </Text>
       </Flex>
     </Box>
@@ -171,6 +169,7 @@ export function RankingBars({
   color: string;
   print?: boolean;
 }) {
+  const reserve = valueReserve(ranking, print);
   return (
     <Flex
       as="ol"
@@ -194,6 +193,7 @@ export function RankingBars({
           ranking={ranking}
           scaleMax={scaleMax}
           color={color}
+          reserve={reserve}
           print={print}
         />
       ))}

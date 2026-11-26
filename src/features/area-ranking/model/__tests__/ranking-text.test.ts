@@ -7,6 +7,7 @@ import {
   shareText,
   tooltipLines,
   topNoteText,
+  valueReserve,
 } from "../ranking-text";
 
 const area = (overrides: Partial<RankedArea> = {}): RankedArea => ({
@@ -98,5 +99,29 @@ describe("noValueText", () => {
 describe("topNoteText", () => {
   it("says how many of the areas are shown", () => {
     expect(topNoteText(10, 47)).toBe("Top 10 of 47 areas.");
+  });
+});
+
+describe("valueReserve", () => {
+  it("sizes the track from the longest value over every page", () => {
+    const small = Array.from({ length: 20 }, (_, i) =>
+      area({ aoiId: `s${i}`, value: 1200, share: undefined })
+    );
+    const big = area({ aoiId: "big", value: 1234567890.12 });
+    const emissions = ranking([...small, big], {
+      measure: "emissions",
+      unit: "MgCO₂e",
+    });
+    // "1,234,567,890.12 MgCO₂e" is 23 characters, on page 3 of the ranking.
+    expect(valueReserve(emissions, false)).toBe("25ch");
+  });
+
+  it("counts the share in print", () => {
+    const loss = ranking([area({ value: 5000, share: 8.84 })]);
+    const width = (reserve: string) => parseInt(reserve, 10);
+    // " · 8.8%" adds 7 characters.
+    expect(width(valueReserve(loss, true))).toBe(
+      width(valueReserve(loss, false)) + 7
+    );
   });
 });

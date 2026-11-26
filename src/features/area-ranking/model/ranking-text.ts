@@ -51,6 +51,36 @@ export function barValueText(area: RankedArea, ranking: Ranking): string {
     : exact;
 }
 
+/** What the row prints after the bar: the value and, in print, the share. */
+export function rowValueText(
+  area: RankedArea,
+  ranking: Ranking,
+  print: boolean
+): string {
+  const value = barValueText(area, ranking);
+  return print && area.share !== undefined
+    ? `${value} · ${shareText(area.share)}`
+    : value;
+}
+
+/** Room kept past the longest text: the gap to the bar and a little slack. */
+const RESERVE_MARGIN_CH = 2;
+
+/**
+ * Width kept beside the longest bar for its printed value, in `ch` (the row
+ * uses tabular figures, so a character is one width). Sized from the longest
+ * text over every bar of the ranking, not the page, so each page keeps one
+ * track and no value is cut off.
+ */
+export function valueReserve(ranking: Ranking, print: boolean): string {
+  const longest = Math.max(
+    ...ranking.areas
+      .filter((area) => area.value > 0)
+      .map((area) => rowValueText(area, ranking, print).length)
+  );
+  return `${longest + RESERVE_MARGIN_CH}ch`;
+}
+
 /** The areas with no value, named in one line instead of drawn as bars. */
 export function noValueText(ranking: Ranking, areas: RankedArea[]): string {
   const names = areas.map((area) =>
