@@ -50,10 +50,10 @@ export const FILE_CYCLE_ALLOWLIST: CycleAllow[] = [
     // import of chatStore is reversed (Split S3).
     ticket: "PZB-1708",
     members: [
-      "app/store/chat-tools/generateInsights.ts",
       "app/store/chat-tools/pickAoi.ts",
       "app/store/chat-tools/pickDataset.ts",
       "app/store/chat-tools/pullData.ts",
+      "app/store/chat-tools/showBoundaryLayer.ts",
       "app/store/chat-tools/showImagery.ts",
       "app/store/chatStore.ts",
       "app/store/layerManagerSlice.ts",
