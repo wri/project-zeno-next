@@ -13,6 +13,7 @@ const record: InsightRecord = {
   insightText: "Tree cover loss.",
   verification: "ai-generated",
   charts: [],
+  analysisInputs: { recorded: false },
 };
 
 function wrapper({ children }: { children: ReactNode }) {

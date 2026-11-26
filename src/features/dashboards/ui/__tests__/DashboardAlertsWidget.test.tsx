@@ -244,10 +244,10 @@ describe("DashboardAlertsWidget", () => {
       "105.7ha of alerts since 17 Sep17 SEP – 16 OCT 2026"
     );
     // The data dates sit at the right of the card's params row, level with
-    // Show params, outside the list's white card: the release, then the
-    // latest alert date the pills count back from.
+    // the "What was analyzed" toggle, outside the list's white card: the
+    // release, then the latest alert date the pills count back from.
     const paramsRow = screen.getByRole("button", {
-      name: "Show params",
+      name: "What was analyzed",
     }).parentElement!;
     expect(
       await within(paramsRow).findByText(
@@ -268,7 +268,7 @@ describe("DashboardAlertsWidget", () => {
     expect(mapPane().dataset.context).toBe("");
   });
 
-  it("keeps the params chips behind the card's Show params toggle, as an analysis card's", async () => {
+  it("keeps the params chips behind the card's What was analyzed toggle, as an analysis card's", async () => {
     mockedFetch.mockResolvedValue(toAlertsList(ALERTS_LIST_WIRE));
     renderWidget();
     await screen.findByText(NEW_WEEK_FOOTER);
@@ -276,11 +276,15 @@ describe("DashboardAlertsWidget", () => {
     expect(screen.queryByText("AREA")).toBeNull();
     expect(screen.queryByText("CONFIDENCE")).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "Show params" }));
+    const toggle = screen.getByRole("button", { name: "What was analyzed" });
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
     expect(chip("AREA")).toBe("AREAGuarapuava");
     expect(chip("DATA")).toBe("DATAIntegrated alerts");
     expect(chip("CONFIDENCE")).toBe("CONFIDENCEHigh · Highest");
-    fireEvent.click(screen.getByRole("button", { name: "Hide params" }));
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
     expect(screen.queryByText("AREA")).toBeNull();
   });
 
@@ -312,7 +316,7 @@ describe("DashboardAlertsWidget", () => {
     expect(
       screen.getByRole("button", { name: "Confidence: High" })
     ).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Show params" }));
+    fireEvent.click(screen.getByRole("button", { name: "What was analyzed" }));
     expect(chip("CONFIDENCE")).toBe("CONFIDENCEHigh");
 
     expect(mockedFetch).toHaveBeenCalledTimes(1);

@@ -6,6 +6,11 @@
  */
 export type { Chart } from "./model/chart";
 export type {
+  AnalysisInputs,
+  RecordedAnalysisInputs,
+} from "./model/analysis-inputs";
+export { soleDataset, toAnalysisInputs } from "./lib/analysis-inputs";
+export type {
   InsightRecord,
   InsightVerification,
 } from "./model/insight-record";

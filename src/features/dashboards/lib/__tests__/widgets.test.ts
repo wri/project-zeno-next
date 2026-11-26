@@ -348,7 +348,8 @@ describe("dashboardWidgetToInsightWidgets", () => {
     expect(cards[0].generation?.codeact_parts).toHaveLength(1);
   });
 
-  it("attaches the dashboard area as analysis params on every card", () => {
+  it("gives every card the insight's own recorded area, not the dashboard's", () => {
+    // An insight added from another area must not wear this dashboard's name.
     const cards = dashboardWidgetToInsightWidgets(
       widget({
         insight: {
@@ -356,17 +357,37 @@ describe("dashboardWidgetToInsightWidgets", () => {
           insight_text: null,
           codeact_parts: null,
           charts: [chart({ id: "c-1" }), chart({ id: "c-2", position: 1 })],
+          analysis_inputs: [
+            {
+              areas: [
+                { name: "Acre, Brazil", source: "gadm", src_id: "BRA.1" },
+              ],
+              dataset_id: 4,
+              dataset_name: "Tree cover loss",
+              pulled_start_date: "2001-01-01",
+              pulled_end_date: "2024-12-31",
+              canopy_cover: 30,
+              context_layer: null,
+            },
+          ],
         },
-      }),
-      { areaName: "Paraná, Brazil" }
+      })
     );
-    expect(cards[0].analysisParams).toEqual({ areas: ["Paraná, Brazil"] });
-    expect(cards[1].analysisParams).toEqual({ areas: ["Paraná, Brazil"] });
+    const recorded = {
+      recorded: true,
+      areas: [
+        { name: "Acre, Brazil", ref: { source: "gadm", srcId: "BRA.1" } },
+      ],
+      datasets: [{ name: "Tree cover loss", id: 4 }],
+      canopyCover: [30],
+      years: [{ start: 2001, end: 2024 }],
+    };
+    expect(cards.map((c) => c.analysisInputs)).toEqual([recorded, recorded]);
   });
 
-  it("omits analysis params when no area name is given", () => {
+  it("marks a card whose insight recorded no inputs as not recorded", () => {
     const [card] = dashboardWidgetToInsightWidgets(widget());
-    expect(card.analysisParams).toBeUndefined();
+    expect(card.analysisInputs).toEqual({ recorded: false });
   });
 });
 
@@ -561,14 +582,13 @@ describe("insightModule", () => {
             chart({ id: "c-2", position: 1, title: "Second" }),
           ],
         },
-      }),
-      { areaName: "Paraná, Brazil" }
+      })
     );
     expect(vm.title).toBe("First");
     expect(vm.summaryText).toBe("Narrative.");
     expect(vm.summaryShown).toBe(true);
     expect(vm.cards.map((c) => c.id)).toEqual(["c-2"]);
-    expect(vm.cards[0].analysisParams).toEqual({ areas: ["Paraná, Brazil"] });
+    expect(vm.cards[0].analysisInputs).toEqual({ recorded: false });
     expect(vm.allCharts).toEqual([
       { id: "c-1", title: "First", shown: false },
       { id: "c-2", title: "Renamed B", shown: true },

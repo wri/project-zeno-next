@@ -118,7 +118,12 @@ const chart: Chart = {
   data: [{ year: 2020, loss_ha: 5 }],
 };
 
-const RESULT: AnalysisResult = { id: "ins-1", charts: [chart] };
+const RESULT: AnalysisResult = {
+  id: "ins-1",
+  createdAt: "",
+  charts: [chart],
+  analysisInputs: { recorded: false },
+};
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -276,7 +281,12 @@ describe("useAddCuratedAnalysisToDashboard", () => {
 
   it("a run with no charts clears the module and adds nothing", async () => {
     const service = fakeService(() =>
-      Promise.resolve({ id: "ins-empty", charts: [] })
+      Promise.resolve({
+        id: "ins-empty",
+        createdAt: "",
+        charts: [],
+        analysisInputs: { recorded: false },
+      })
     );
     const { result } = renderHook(
       () => useAddCuratedAnalysisToDashboard(spec, area, service),

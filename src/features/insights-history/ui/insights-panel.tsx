@@ -11,7 +11,6 @@ import {
 } from "@chakra-ui/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChartLineIcon, XIcon } from "@phosphor-icons/react";
-import { format } from "date-fns";
 import { useShallow } from "zustand/react/shallow";
 
 import {
@@ -39,6 +38,7 @@ import { useCurrentDashboardArea } from "@/src/features/dashboards/ui/useCurrent
 import { useUserInsights } from "./use-user-insights";
 import { CuratedInsightsList } from "./curated-insights-list";
 import {
+  formatGeneratedAt,
   INSIGHT_LABEL_COLOR,
   INSIGHT_SELECTED_BG,
   InsightDetail,
@@ -107,16 +107,18 @@ interface InsightCardItem {
 
 function recordToItems(record: InsightRecord): InsightCardItem[] {
   const curated = record.verification === "verified";
-  return chartsToWidgets(record.charts, record.id).map((widget) => ({
-    widget: {
-      ...widget,
-      title: resolveInsightTitle(record, widget.title),
-      curated,
-    },
-    source: record.source ?? "",
-    createdAt: record.createdAt,
-    verification: record.verification,
-  }));
+  return chartsToWidgets(record.charts, record.id, record.analysisInputs).map(
+    (widget) => ({
+      widget: {
+        ...widget,
+        title: resolveInsightTitle(record, widget.title),
+        curated,
+      },
+      source: record.source ?? "",
+      createdAt: record.createdAt,
+      verification: record.verification,
+    })
+  );
 }
 
 function liveWidgetToItem(widget: InsightWidget): InsightCardItem {
@@ -144,12 +146,6 @@ function mergeById(...lists: InsightCardItem[][]): InsightCardItem[] {
     }
   }
   return out;
-}
-
-function formatGeneratedAt(createdAt: string): string {
-  if (!createdAt) return "";
-  const date = new Date(createdAt);
-  return Number.isNaN(date.getTime()) ? "" : format(date, "d MMM yyyy");
 }
 
 function cardDescription(item: InsightCardItem): string {
@@ -479,6 +475,7 @@ function InsightsList({
         onIndexChange={(i) => setSelectedId(itemId(items[i]))}
         onBack={() => setSelectedId(null)}
         unit="analysis"
+        createdAt={items[selectedIndex].createdAt}
       />
     );
   }

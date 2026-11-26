@@ -76,7 +76,9 @@ function applyDisplayTitle(widgets: InsightWidget[]): InsightWidget[] {
 }
 
 function pagerEntries() {
-  const widgets = applyDisplayTitle(chartsToWidgets(LGMS_CHARTS, INSIGHT_ID));
+  const widgets = applyDisplayTitle(
+    chartsToWidgets(LGMS_CHARTS, INSIGHT_ID, { recorded: false })
+  );
   return {
     widgets,
     entries: orderInsightsForPager(collapseNetFluxSiblings(widgets, {})),

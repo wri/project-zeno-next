@@ -78,7 +78,7 @@ export default function DashboardPendingInsightCard({
         </Flex>
       </Flex>
 
-      {/* Params row placeholder — the "Show params" toggle a curated card carries */}
+      {/* Params row placeholder — the "What was analyzed" toggle a curated card carries */}
       <Box px="8px" pb="8px">
         <Flex
           borderTopWidth="1px"

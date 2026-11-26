@@ -47,9 +47,8 @@ import InsightProvenanceDrawer from "./InsightProvenanceDrawer";
 import VisualizationDisclaimer from "./VisualizationDisclaimer";
 import WidgetErrorBoundary from "./widgets/WidgetErrorBoundary";
 import ScrollableTableWrapper from "./widgets/ScrollableTableWrapper";
-import { AnalysisParamsChips } from "./widgets/AnalysisParameters";
+import { AnalysisInputsChips } from "./widgets/AnalysisParameters";
 import DownloadMenu from "./widgets/DownloadMenu";
-import { buildChips } from "./widgets/analysis-params-utils";
 import { exportChartImage } from "@/app/utils/exportChartImage";
 import { csvFilename } from "@/app/utils/csvExport";
 import { downloadCsv, rowsToCsv } from "@/src/shared/lib/csv";
@@ -261,9 +260,6 @@ export default function WidgetMessage({
   const showDisclaimer = (isChartType || widget.type === "table") && hasData;
   const isCurated = isCuratedWidget(widget);
   const supportsAxisFit = AXIS_FIT_TYPES.has(widget.type);
-  const fullscreenChips = widget.analysisParams
-    ? buildChips(widget.analysisParams)
-    : [];
   return (
     <Box
       rounded="md"
@@ -301,10 +297,8 @@ export default function WidgetMessage({
       <Flex gap={3} px={print ? 0 : 4} py={2} flexDir="column">
         {/* Where the output came from (SOURCE DATA or AI-ASSISTED), above the
             chart toolbar on every surface (the caption hides "Learn more" in
-            print itself). No dataset name on purpose: the stream's name is
-            inferred from the map, not recorded with the chart, and the real
-            inputs of an analysis are not recorded yet. A later PR names the
-            dataset from the recorded analysis inputs. */}
+            print itself). No dataset name yet: a later PR names it from the
+            recorded analysis inputs. */}
         <InsightCaption curated={isCurated} />
         {/* Every surface with a shell of its own puts these pills above the
             card (see InsightChartPills); inline is the fallback for a host
@@ -596,7 +590,7 @@ export default function WidgetMessage({
                     </WidgetErrorBoundary>
                   </Box>
                   {(widget.description ||
-                    fullscreenChips.length > 0 ||
+                    widget.analysisInputs ||
                     widget.datasetName) && (
                     <Flex
                       direction="column"
@@ -620,12 +614,12 @@ export default function WidgetMessage({
                           </Text>
                         </Box>
                       )}
-                      {fullscreenChips.length > 0 && (
+                      {widget.analysisInputs && (
                         <Box>
                           <Heading size="xs" mb={2}>
-                            Analysis parameters
+                            What was analyzed
                           </Heading>
-                          <AnalysisParamsChips chips={fullscreenChips} />
+                          <AnalysisInputsChips inputs={widget.analysisInputs} />
                         </Box>
                       )}
                       {widget.datasetName && (

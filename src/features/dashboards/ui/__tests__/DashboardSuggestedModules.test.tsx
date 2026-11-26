@@ -114,7 +114,12 @@ const chart: Chart = {
   data: [{ year: 2020, loss_ha: 5 }],
 };
 
-const RESULT: AnalysisResult = { id: "ins-1", charts: [chart] };
+const RESULT: AnalysisResult = {
+  id: "ins-1",
+  createdAt: "",
+  charts: [chart],
+  analysisInputs: { recorded: false },
+};
 const TCL_LABEL = "Tree cover loss analysis";
 
 function deferred<T>() {

@@ -3,7 +3,8 @@ import { Box } from "@chakra-ui/react";
 import { useQuery } from "@tanstack/react-query";
 
 import {
-  buildChips,
+  areaChip,
+  datasetChip,
   type ParamChipData,
 } from "@/app/components/widgets/analysis-params-utils";
 import { downloadCsv } from "@/src/shared/lib/csv";
@@ -233,7 +234,8 @@ function AlertsCard({
   // chart carries, and the tier on show.
   const paramChips = useMemo<ParamChipData[]>(
     () => [
-      ...buildChips({ areas: [aoi.name], dataset: "Integrated alerts" }),
+      areaChip(aoi.name),
+      datasetChip("Integrated alerts"),
       {
         label: "CONFIDENCE",
         value: confidenceLabel(confidence),

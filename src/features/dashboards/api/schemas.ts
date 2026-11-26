@@ -47,6 +47,9 @@ export const DashboardInsightSchema = z.object({
   insight_text: z.string().nullable().optional(),
   codeact_parts: z.array(z.unknown()).nullable().optional(),
   charts: z.array(DashboardInsightChartSchema).default([]),
+  // Display-only: `toAnalysisInputs` validates it, so a bad one reads as
+  // "not recorded" instead of blanking the card.
+  analysis_inputs: z.unknown().optional(),
 });
 
 export const DashboardWidgetResponseSchema = z.object({

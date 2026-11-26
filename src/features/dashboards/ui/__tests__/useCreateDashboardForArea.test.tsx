@@ -22,7 +22,7 @@ vi.mock("@/src/features/analysis", async (importOriginal) => ({
 }));
 
 import { toaster } from "@/app/components/ui/toaster";
-import { analysisService } from "@/src/features/analysis";
+import { analysisService, type AnalysisResult } from "@/src/features/analysis";
 import {
   addInsightWidget,
   createDashboard,
@@ -93,7 +93,9 @@ describe("useCreateDashboardForArea", () => {
     vi.mocked(createDashboard).mockResolvedValue(dashboard());
     vi.mocked(analysisService.run).mockResolvedValue({
       id: "insight-1",
+      createdAt: "",
       charts: [],
+      analysisInputs: { recorded: false },
     });
   });
 
@@ -160,7 +162,7 @@ describe("useCreateDashboardForArea", () => {
   });
 
   it("surfaces the card before the analysis resolves", async () => {
-    let finishAnalysis: (r: { id: string; charts: [] }) => void = () => {};
+    let finishAnalysis: (r: AnalysisResult) => void = () => {};
     vi.mocked(analysisService.run).mockReturnValue(
       new Promise((resolve) => {
         finishAnalysis = resolve;
@@ -185,7 +187,12 @@ describe("useCreateDashboardForArea", () => {
     expect(addInsightWidget).not.toHaveBeenCalled();
 
     await act(async () => {
-      finishAnalysis({ id: "insight-1", charts: [] });
+      finishAnalysis({
+        id: "insight-1",
+        createdAt: "",
+        charts: [],
+        analysisInputs: { recorded: false },
+      });
     });
     await waitFor(() =>
       expect(addInsightWidget).toHaveBeenCalledWith("new-dash", "insight-1")

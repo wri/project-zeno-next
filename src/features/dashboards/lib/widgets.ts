@@ -3,6 +3,7 @@ import {
   firstChartTitle,
   isCuratedInsight,
   pivotByColorField,
+  toAnalysisInputs,
 } from "@/src/entities/insight";
 import type { InsightWidget } from "@/app/types/chat";
 import { pickChartColors } from "@/app/utils/pickChartColors";
@@ -293,10 +294,7 @@ export interface InsightModuleView {
   customizable: boolean;
 }
 
-export function insightModule(
-  widget: DashboardWidget,
-  { areaName }: { areaName?: string } = {}
-): InsightModuleView {
+export function insightModule(widget: DashboardWidget): InsightModuleView {
   const charts = [...(widget.insight?.charts ?? [])].sort(
     (a, b) => a.position - b.position
   );
@@ -318,7 +316,7 @@ export function insightModule(
     summaryText,
     summaryShown,
     curated: isCuratedInsight(widget.insight?.codeact_parts),
-    cards: dashboardWidgetToInsightWidgets(widget, { areaName }),
+    cards: dashboardWidgetToInsightWidgets(widget),
     allCharts: charts.map((chart) => ({
       id: chart.id,
       title: chartTitleOverride(widget.config, chart.id) ?? chart.title,
@@ -423,16 +421,15 @@ export function unresolvedPendingInsightWidgets(
  *
  * The widget's `config.title` override and the insight narrative apply to
  * the first chart (the card's visual header); provenance parts feed the
- * "view how this was generated" drawer. The API insight carries no analysis
- * parameters, but a dashboard is scoped to exactly one area — pass its name
- * as `areaName` so every card gets an AREA param chip.
+ * "view how this was generated" drawer. Every card carries the insight's own
+ * recorded inputs, never the dashboard's area: an insight added from another
+ * area must say so.
  *
  * The chart's registry colours go through `pickChartColors`, as on the chat
  * and Analyses paths, so a chart looks the same on all three.
  */
 export function dashboardWidgetToInsightWidgets(
-  widget: DashboardWidget,
-  { areaName }: { areaName?: string } = {}
+  widget: DashboardWidget
 ): InsightWidget[] {
   const insight = widget.insight;
   if (!insight?.charts?.length) return [];
@@ -443,7 +440,7 @@ export function dashboardWidgetToInsightWidgets(
     : undefined;
   const titleOverride =
     typeof widget.config.title === "string" ? widget.config.title : undefined;
-  const analysisParams = areaName ? { areas: [areaName] } : undefined;
+  const analysisInputs = toAnalysisInputs(insight.analysis_inputs, insight.id);
 
   const sorted = [...insight.charts].sort((a, b) => a.position - b.position);
   const shown = new Set(
@@ -488,7 +485,7 @@ export function dashboardWidgetToInsightWidgets(
           divergentColors: chart.divergent_colors,
         }),
         ...(generation ? { generation } : {}),
-        ...(analysisParams ? { analysisParams } : {}),
+        analysisInputs,
       };
     });
 }

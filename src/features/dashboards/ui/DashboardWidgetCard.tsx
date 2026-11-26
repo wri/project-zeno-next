@@ -20,12 +20,10 @@ import {
 } from "@phosphor-icons/react";
 
 import AnalysisParametersToggle, {
+  AnalysisInputsChips,
   AnalysisParamsChips,
 } from "@/app/components/widgets/AnalysisParameters";
-import {
-  buildChips,
-  type ParamChipData,
-} from "@/app/components/widgets/analysis-params-utils";
+import type { ParamChipData } from "@/app/components/widgets/analysis-params-utils";
 import { toaster } from "@/app/components/ui/toaster";
 import type { InsightWidget } from "@/app/types/chat";
 import type { MapAreaAoi, MapWidgetLayer } from "../lib/mapWidgets";
@@ -44,7 +42,7 @@ export const WIDGET_TITLE_PROPS = {
 /**
  * One dashboard card — the Figma "Analysis" container: a light-blue shell
  * with a header row (drag handle · insight title · owner actions), a
- * "Show params" row, and the white chart card (`WidgetMessage`) — or the
+ * "What was analyzed" row, and the white chart card (`WidgetMessage`) — or the
  * map body (`DashboardMapWidget`) for map widgets — inside. Every widget on
  * the page is one of these, so the blue shell is the only box a dashboard
  * widget ever draws.
@@ -93,7 +91,7 @@ export default function DashboardWidgetCard({
    */
   paramChips?: ParamChipData[];
   /**
-   * Rendered at the right of the params row, level with "Show params" (the
+   * Rendered at the right of the params row, level with "What was analyzed" (the
    * alerts widget's latest alert date).
    */
   paramsAside?: React.ReactNode;
@@ -159,9 +157,13 @@ export default function DashboardWidgetCard({
   // the prop is authoritative again. Runs before paint — no flash, no effect.
   if (pending !== null && title.trim() === pending) setPending(null);
   const displayTitle = pending ?? title;
-  const chips = card?.analysisParams
-    ? buildChips(card.analysisParams)
-    : (paramChips ?? []);
+  // An insight card shows its recorded inputs (or the not-recorded note);
+  // a widget with no insight, such as alerts, its caller's chips.
+  const inputsBody = card?.analysisInputs ? (
+    <AnalysisInputsChips inputs={card.analysisInputs} />
+  ) : paramChips?.length ? (
+    <AnalysisParamsChips chips={paramChips} />
+  ) : null;
 
   const commitRename = () => {
     const next = (draft ?? "").trim();
@@ -306,8 +308,8 @@ export default function DashboardWidgetCard({
         )}
       </Flex>
 
-      {/* Params row — "Show params" toggle over the analysis param chips */}
-      {chips.length > 0 && (
+      {/* Params row — the "What was analyzed" toggle over the input chips */}
+      {inputsBody && (
         <Box px="8px" pb="8px">
           <Flex
             borderTopWidth="1px"
@@ -323,11 +325,7 @@ export default function DashboardWidgetCard({
             />
             {paramsAside && <Box ml="auto">{paramsAside}</Box>}
           </Flex>
-          {paramsExpanded && (
-            <Box pt="8px">
-              <AnalysisParamsChips chips={chips} />
-            </Box>
-          )}
+          {paramsExpanded && <Box pt="8px">{inputsBody}</Box>}
         </Box>
       )}
 
