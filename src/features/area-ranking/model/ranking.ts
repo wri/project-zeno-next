@@ -153,9 +153,9 @@ export function parseRanking(data: unknown, yAxis: string): Ranking {
  * table needs live here too: rank, name, parent, the value, the share; the
  * area id is for the CSV only.
  */
-export function rankingTableProps(widget: InsightWidget) {
+export function rankingTableProps(yAxis: string) {
   return {
-    columnOrder: ["rank", "name", "parent", widget.yAxis, "share_pct"],
+    columnOrder: ["rank", "name", "parent", yAxis, "share_pct"],
     hiddenColumns: ["aoi_id"],
   };
 }

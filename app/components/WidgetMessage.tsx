@@ -267,7 +267,7 @@ export default function WidgetMessage({
     : isFluxTree
       ? fluxTreeTableProps()
       : isRankingWidget(widget)
-        ? rankingTableProps(widget)
+        ? rankingTableProps(widget.yAxis)
         : undefined;
   const hasData =
     Array.isArray(displayWidget.data) && displayWidget.data.length > 0;

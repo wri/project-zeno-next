@@ -15,7 +15,7 @@ import {
  * query, so a card on a narrow chat panel and one on a wide dashboard each get
  * the name column that fits).
  */
-export const NAME_WIDTH = { base: "112px", wide: "160px", wider: "220px" };
+const NAME_WIDTH = { base: "112px", wide: "160px", wider: "220px" };
 const NAME_COLUMN = "--ranking-name-width";
 /** Marks a row, so a tap can tell its own row from another place. */
 const ROW_ATTRIBUTE = "data-ranking-row";

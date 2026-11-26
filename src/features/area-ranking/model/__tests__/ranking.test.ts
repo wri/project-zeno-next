@@ -1,7 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import type { InsightWidget } from "@/app/types/chat";
-
 import { parseRanking, rankingTableProps } from "../ranking";
 
 const row = (overrides: Record<string, unknown> = {}) => ({
@@ -197,8 +195,7 @@ describe("parseRanking", () => {
 
 describe("rankingTableProps", () => {
   it("orders the table's columns by the chart's value column and hides the id", () => {
-    const widget = { yAxis: "area_ha" } as InsightWidget;
-    expect(rankingTableProps(widget)).toEqual({
+    expect(rankingTableProps("area_ha")).toEqual({
       columnOrder: ["rank", "name", "parent", "area_ha", "share_pct"],
       hiddenColumns: ["aoi_id"],
     });
