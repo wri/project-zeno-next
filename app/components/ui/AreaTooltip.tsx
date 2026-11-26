@@ -1,5 +1,5 @@
 import { Box, Flex, Text } from "@chakra-ui/react";
-import { Popup } from "react-map-gl/maplibre";
+import { Popup, useMap } from "react-map-gl/maplibre";
 
 import type { BoundaryFeatureDetails } from "@/app/utils/boundaryFeatureDetails";
 
@@ -28,7 +28,51 @@ const TOOLTIP = {
   sourceBg: "#F0F4FF",
 } as const;
 
+const CARD_WIDTH = 264;
+
+// Where the card's corner sits relative to the cursor, per anchor. The card
+// prefers below-right ("top-left" anchor), clear of the pointer hand. Not
+// `as const`: Popup's `offset` prop does not accept readonly tuples.
+const CURSOR_OFFSET = {
+  "top-left": [20, 24],
+  "top-right": [-20, 24],
+  "bottom-left": [20, -12],
+  "bottom-right": [-20, -12],
+} satisfies Record<string, [number, number]>;
+
+type TooltipAnchor = keyof typeof CURSOR_OFFSET;
+
+// The anchor is chosen before the card renders, so it works from the
+// card's expected size. The details card's height depends on the rows, so
+// this errs tall.
+const EXPECTED_SIZE = {
+  details: { width: CARD_WIDTH, height: 280 },
+  hint: { width: 200, height: 40 },
+} as const;
+
+interface Size {
+  width: number;
+  height: number;
+}
+
+/**
+ * Below-right of the cursor by default; flips to the left near the right
+ * edge and above near the bottom edge, so the card stays inside the map.
+ */
+export function pickTooltipAnchor(
+  cursor: { x: number; y: number },
+  map: Size,
+  card: Size
+): TooltipAnchor {
+  const [rightGap, belowGap] = CURSOR_OFFSET["top-left"];
+  const fitsBelow = cursor.y + belowGap + card.height <= map.height;
+  const fitsRight = cursor.x + rightGap + card.width <= map.width;
+  return `${fitsBelow ? "top" : "bottom"}-${fitsRight ? "left" : "right"}`;
+}
+
 function AreaTooltip({ hoverInfo }: AreaTooltipProps) {
+  const { current: map } = useMap();
+
   if (!hoverInfo) return null;
 
   // The area name is resolved synchronously from vector-tile properties, but a
@@ -38,13 +82,23 @@ function AreaTooltip({ hoverInfo }: AreaTooltipProps) {
   const resolvedName = hoverInfo.name?.trim();
   const { details } = hoverInfo;
 
+  const anchor: TooltipAnchor = map
+    ? pickTooltipAnchor(
+        map.project([hoverInfo.lng, hoverInfo.lat]),
+        {
+          width: map.getContainer().clientWidth,
+          height: map.getContainer().clientHeight,
+        },
+        details ? EXPECTED_SIZE.details : EXPECTED_SIZE.hint
+      )
+    : "top-left";
+
   return (
     <Popup
       longitude={hoverInfo.lng}
       latitude={hoverInfo.lat}
-      // No fixed anchor: MapLibre picks the side that keeps the card inside
-      // the map, so it flips near the right/bottom edges instead of clipping.
-      offset={16}
+      anchor={anchor}
+      offset={CURSOR_OFFSET[anchor]}
       closeButton={false}
       maxWidth="none"
       className={details ? "area-tooltip-popup" : undefined}
@@ -74,7 +128,7 @@ export function AreaDetailsCard({
     <Flex
       direction="column"
       gap="10px"
-      w="264px"
+      w={`${CARD_WIDTH}px`}
       px="16px"
       py="12px"
       bg="white"

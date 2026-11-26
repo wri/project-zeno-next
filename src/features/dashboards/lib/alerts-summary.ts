@@ -4,6 +4,11 @@ import type {
   DashboardAlertsSummaryResponse,
   IntegratedAlertsLatestResponse,
 } from "../api/schemas";
+import {
+  NRT_MONITORING,
+  templateStatus,
+  type TemplateStatus,
+} from "./analysis-templates";
 
 /**
  * The alerts summary as the dashboards pages consume it, settled once from
@@ -143,26 +148,93 @@ export function awaitingPeriodData(
 }
 
 /**
- * "Latest alert detected Oct 16, 2026 · updated Oct 18", with the release's
- * year only when it differs from the detection's.
+ * Month first ("Nov 15") on the dashboards list and banner, day first
+ * ("15 Nov") in the alerts widget, matching the dates already on each.
  */
-export function formatFreshness({
-  latestAlertDate,
-  updatedOn,
-}: AlertsFreshness): string {
-  const detected = parseISO(latestAlertDate);
-  const updated = parseISO(updatedOn);
-  const updatedFormat =
-    detected.getFullYear() === updated.getFullYear() ? "MMM d" : "MMM d, yyyy";
-  return `Latest alert detected ${format(detected, "MMM d, yyyy")} · updated ${format(updated, updatedFormat)}`;
+export type DateOrder = "month-first" | "day-first";
+
+const DAY_FORMATS: Record<DateOrder, { day: string; dayYear: string }> = {
+  "month-first": { day: "MMM d", dayYear: "MMM d, yyyy" },
+  "day-first": { day: "d MMM", dayYear: "d MMM yyyy" },
+};
+
+/**
+ * "Data updated Nov 15 · alerts to Nov 13, 2026": the release first, then
+ * the newest alert date the periods count back from. The year comes once,
+ * at the end, and on both dates when they differ in it. Either date alone
+ * ("Alerts to Nov 13, 2026") when the other is unknown; undefined for none.
+ */
+export function formatFreshness(
+  {
+    latestAlertDate,
+    updatedOn,
+  }: { latestAlertDate?: string; updatedOn?: string },
+  order: DateOrder = "month-first"
+): string | undefined {
+  const { dayYear } = DAY_FORMATS[order];
+  const alertsTo = latestAlertDate ? parseISO(latestAlertDate) : undefined;
+  if (updatedOn && alertsTo) {
+    return `${formatDataUpdated(updatedOn, latestAlertDate, order)} · alerts to ${format(alertsTo, dayYear)}`;
+  }
+  if (updatedOn) return formatDataUpdated(updatedOn, undefined, order);
+  if (alertsTo) return `Alerts to ${format(alertsTo, dayYear)}`;
+  return undefined;
 }
 
 /**
- * The strip's "2 charts can be updated." lead-in. With no countable chart
- * (older rows without `dataset_id`) the sentence drops the number rather
- * than claiming zero on a dashboard the backend did flag.
+ * "Data updated Nov 15": the one owner of the phrase. Without a year when
+ * `against` (the date it follows: the period's end, or the newest alert
+ * date) falls in the same year, with it otherwise or when there is nothing
+ * to compare to.
  */
-export function updatableChartsLabel(count: number): string {
-  if (count === 0) return "Charts can be updated.";
-  return `${count} ${count === 1 ? "chart" : "charts"} can be updated.`;
+export function formatDataUpdated(
+  updatedOn: string,
+  against?: string,
+  order: DateOrder = "month-first"
+): string {
+  const { day, dayYear } = DAY_FORMATS[order];
+  const updated = parseISO(updatedOn);
+  const sameYear =
+    against !== undefined &&
+    updated.getFullYear() === parseISO(against).getFullYear();
+  return `Data updated ${format(updated, sameYear ? day : dayYear)}`;
+}
+
+/**
+ * The control at the end of the alerts banner: a link to the dashboard's
+ * alerts list, else, for an owner, a button that adds the Near real-time
+ * monitoring section (alerts chart, list and imagery), else nothing.
+ */
+export type AlertsStripAction =
+  | { kind: "view"; widgetId: string }
+  | { kind: "add"; state: TemplateStatus }
+  | { kind: "none" };
+
+export function alertsStripAction({
+  alertsWidgetId,
+  canAdd,
+  templateNames,
+  pendingTemplates,
+}: {
+  /** The first alerts widget on screen (`firstAlertsWidgetId`). */
+  alertsWidgetId: string | undefined;
+  /** The viewer owns the dashboard, and it has an area for a template to use. */
+  canAdd: boolean;
+  /**
+   * The backend's template registry; undefined while it loads or when it
+   * failed, and then nothing is offered: a button that fails is worse than
+   * none.
+   */
+  templateNames: readonly string[] | undefined;
+  /** The templates being applied to this dashboard right now. */
+  pendingTemplates: readonly string[];
+}): AlertsStripAction {
+  if (alertsWidgetId) return { kind: "view", widgetId: alertsWidgetId };
+  if (!canAdd || !templateNames?.includes(NRT_MONITORING)) {
+    return { kind: "none" };
+  }
+  return {
+    kind: "add",
+    state: templateStatus(NRT_MONITORING, pendingTemplates),
+  };
 }

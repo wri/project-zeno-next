@@ -199,10 +199,11 @@ export function datasetMapLayers(dataset: DatasetInfo): Layer[] {
   });
 }
 
-// Whether a context layer's analysis ignores the canopy cover threshold. The
-// natural forest filter is a 2020 map independent of canopy density, so the
-// analytics API rejects a threshold alongside it — a CANOPY chip would
-// describe a filter the numbers never had.
+// Whether the map legend leaves out the canopy cover threshold under a context
+// layer. The analytics API now takes a threshold alongside the natural forest
+// filter (the backend sends 10% by default since wri/project-zeno#860), and
+// analysis chips show the one recorded, so the legend hiding it is a known
+// inconsistency for the legend work to settle.
 export function contextLayerIgnoresCanopy(
   contextLayer: string | null | undefined
 ): boolean {

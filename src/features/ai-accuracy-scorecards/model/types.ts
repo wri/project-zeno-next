@@ -6,7 +6,6 @@
  */
 
 import type { STAGE_ORDER } from "./config";
-import type { Release } from "./releases";
 
 export type StageKey = (typeof STAGE_ORDER)[number];
 
@@ -174,22 +173,19 @@ export interface BenchmarkPage {
   readonly questions: readonly Question[];
 }
 
-/** A released run (`model/releases.ts`), as the page lists it. */
-export interface BenchmarkRunRef extends Release {
-  /** "October 2026", or "28 October 2026" when another release shares
-   * the month. */
-  readonly label: string;
-}
-
 /** One run's headline on the accuracy-over-time chart. */
 export interface TrendPoint {
+  /** The release's name ("oct-2026"). */
+  readonly name: string;
   readonly runId: string;
   readonly started: string;
   readonly draft: boolean;
+  /** Questions the run scored: the denominator of its shares. */
+  readonly scored: number;
   /** Share right on every try, in [0, 1]. */
   readonly everyTime: number;
   /** Share right on at least 2 of 3 tries. */
-  readonly majority: number | null;
+  readonly majority: number;
   /** Share right on at least 1 of 3 tries. */
-  readonly anyTime: number | null;
+  readonly anyTime: number;
 }

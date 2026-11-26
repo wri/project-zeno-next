@@ -127,7 +127,12 @@ const chart: Chart = {
   data: [{ year: 2020, loss_ha: 5 }],
 };
 
-const RESULT: AnalysisResult = { id: "ins-1", charts: [chart] };
+const RESULT: AnalysisResult = {
+  id: "ins-1",
+  createdAt: "",
+  charts: [chart],
+  analysisInputs: { recorded: false },
+};
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -178,6 +183,8 @@ const setFlags = (...flags: string[]) =>
 /** An LGMS run: the four charts `charts/lgms.py` returns, in its order. */
 const LGMS_RESULT: AnalysisResult = {
   id: "ins-lgms",
+  createdAt: "",
+  analysisInputs: { recorded: false },
   charts: [
     {
       ...chart,
@@ -253,7 +260,7 @@ describe("CuratedInsightsList", () => {
     const service = fakeService(() => Promise.resolve(RESULT));
     renderList(service);
 
-    expect(screen.getAllByText("CURATED")).toHaveLength(10);
+    expect(screen.getAllByText("SOURCE DATA")).toHaveLength(10);
     expect(screen.getByText(TCL_TITLE)).toBeTruthy();
     expect(screen.getByText("Integrated alerts in Pará")).toBeTruthy();
     expect(
@@ -284,7 +291,7 @@ describe("CuratedInsightsList", () => {
       expect(screen.queryByText(LGMS_TITLE)).toBeNull();
       // Tree cover gain is withheld from a KBA too; the other nine stay.
       expect(screen.queryByText(/^Tree cover gain in /)).toBeNull();
-      expect(screen.getAllByText("CURATED")).toHaveLength(9);
+      expect(screen.getAllByText("SOURCE DATA")).toHaveLength(9);
     });
 
     it("appears for an administrative area once the flag is set", () => {
@@ -292,7 +299,7 @@ describe("CuratedInsightsList", () => {
       renderList(fakeService(() => Promise.resolve(RESULT)));
       expect(screen.getByText(LGMS_TITLE)).toBeTruthy();
       expect(screen.getByText(/^Tree cover gain in /)).toBeTruthy();
-      expect(screen.getAllByText("CURATED")).toHaveLength(11);
+      expect(screen.getAllByText("SOURCE DATA")).toHaveLength(11);
     });
 
     it("pages its detail through two charts, the three roll-ups folded into one", async () => {
@@ -388,7 +395,12 @@ describe("CuratedInsightsList", () => {
 
   it("shows a completed job with no charts as no data and adds nothing", async () => {
     const service = fakeService(() =>
-      Promise.resolve({ id: "ins-empty", charts: [] })
+      Promise.resolve({
+        id: "ins-empty",
+        createdAt: "",
+        charts: [],
+        analysisInputs: { recorded: false },
+      })
     );
     renderList(service);
 
@@ -471,7 +483,12 @@ describe("CuratedInsightsList", () => {
 
   it("never opens the chart pager for a run with no charts", async () => {
     const service = fakeService(() =>
-      Promise.resolve({ id: "ins-empty", charts: [] })
+      Promise.resolve({
+        id: "ins-empty",
+        createdAt: "",
+        charts: [],
+        analysisInputs: { recorded: false },
+      })
     );
     renderList(service);
 
@@ -484,6 +501,6 @@ describe("CuratedInsightsList", () => {
     // The quiet retry is still there, and Back returns to the cards.
     expect(screen.getByRole("button", { name: "Try again" })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /Back to analyses/ }));
-    expect(screen.getAllByText("CURATED")).toHaveLength(10);
+    expect(screen.getAllByText("SOURCE DATA")).toHaveLength(10);
   });
 });

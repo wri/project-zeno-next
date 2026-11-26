@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import {
   ANALYSIS_TEMPLATE_CARDS,
   templateErrorMessage,
+  templateStatus,
 } from "../analysis-templates";
 
 const withStatus = (status: number) =>
@@ -57,5 +58,20 @@ describe("templateErrorMessage", () => {
     expect(templateErrorMessage(undefined).description).toBe(
       "Please try again."
     );
+  });
+});
+
+describe("templateStatus", () => {
+  it("is idle when nothing is pending", () => {
+    expect(templateStatus("a", [])).toBe("idle");
+  });
+
+  it("is building when this template is pending", () => {
+    expect(templateStatus("a", ["a"])).toBe("building");
+    expect(templateStatus("a", ["b", "a"])).toBe("building");
+  });
+
+  it("is disabled while only another template is pending", () => {
+    expect(templateStatus("a", ["b"])).toBe("disabled");
   });
 });

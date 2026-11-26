@@ -4,6 +4,7 @@ import { pickChartColors } from "@/app/utils/pickChartColors";
 import {
   chartId,
   isCuratedInsight,
+  toAnalysisInputs,
   type Chart,
   type InsightRecord,
 } from "@/src/entities/insight";
@@ -36,13 +37,15 @@ const RawChartSchema = z.object({
 // so a sparse row still parses. Unknown keys (user_id, thread_id, is_public,
 // follow_up_suggestions, statistics_ids) are ignored by Zod. `codeact_parts`
 // is read only to classify the insight (see `isCuratedInsight`), so its
-// entries stay opaque here.
+// entries stay opaque here. `analysis_inputs` is display-only and validated by
+// its own parser, so a bad one never drops the row.
 const RawInsightSchema = z.object({
   id: z.string(),
   insight_text: z.string().default(""),
   created_at: z.string().default(""),
   codeact_parts: z.array(z.unknown()).nullable().optional(),
   charts: z.array(RawChartSchema).default([]),
+  analysis_inputs: z.unknown().optional(),
 });
 
 type RawInsight = z.infer<typeof RawInsightSchema>;
@@ -83,6 +86,7 @@ function toInsightRecord(raw: RawInsight): InsightRecord {
       ? "verified"
       : "ai-generated",
     charts,
+    analysisInputs: toAnalysisInputs(raw.analysis_inputs, raw.id),
   };
 }
 

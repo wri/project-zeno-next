@@ -1,11 +1,10 @@
 import { describe, it, expect } from "vitest";
 
 import {
-  INTEGRATED_ALERTS_DATASET_ID,
   chartTitleOverride,
-  countIntegratedAlertsCharts,
   dashboardWidgetToInsightWidgets,
   findCuratedWidgetForDataset,
+  firstAlertsWidgetId,
   hasDashboardContent,
   hasWidgetCustomization,
   unresolvedPendingInsightWidgets,
@@ -349,7 +348,8 @@ describe("dashboardWidgetToInsightWidgets", () => {
     expect(cards[0].generation?.codeact_parts).toHaveLength(1);
   });
 
-  it("attaches the dashboard area as analysis params on every card", () => {
+  it("gives every card the insight's own recorded area, not the dashboard's", () => {
+    // An insight added from another area must not wear this dashboard's name.
     const cards = dashboardWidgetToInsightWidgets(
       widget({
         insight: {
@@ -357,17 +357,37 @@ describe("dashboardWidgetToInsightWidgets", () => {
           insight_text: null,
           codeact_parts: null,
           charts: [chart({ id: "c-1" }), chart({ id: "c-2", position: 1 })],
+          analysis_inputs: [
+            {
+              areas: [
+                { name: "Acre, Brazil", source: "gadm", src_id: "BRA.1" },
+              ],
+              dataset_id: 4,
+              dataset_name: "Tree cover loss",
+              pulled_start_date: "2001-01-01",
+              pulled_end_date: "2024-12-31",
+              canopy_cover: 30,
+              context_layer: null,
+            },
+          ],
         },
-      }),
-      { areaName: "Paraná, Brazil" }
+      })
     );
-    expect(cards[0].analysisParams).toEqual({ areas: ["Paraná, Brazil"] });
-    expect(cards[1].analysisParams).toEqual({ areas: ["Paraná, Brazil"] });
+    const recorded = {
+      recorded: true,
+      areas: [
+        { name: "Acre, Brazil", ref: { source: "gadm", srcId: "BRA.1" } },
+      ],
+      datasets: [{ name: "Tree cover loss", id: 4 }],
+      canopyCover: [30],
+      years: [{ start: 2001, end: 2024 }],
+    };
+    expect(cards.map((c) => c.analysisInputs)).toEqual([recorded, recorded]);
   });
 
-  it("omits analysis params when no area name is given", () => {
+  it("marks a card whose insight recorded no inputs as not recorded", () => {
     const [card] = dashboardWidgetToInsightWidgets(widget());
-    expect(card.analysisParams).toBeUndefined();
+    expect(card.analysisInputs).toEqual({ recorded: false });
   });
 });
 
@@ -562,14 +582,13 @@ describe("insightModule", () => {
             chart({ id: "c-2", position: 1, title: "Second" }),
           ],
         },
-      }),
-      { areaName: "Paraná, Brazil" }
+      })
     );
     expect(vm.title).toBe("First");
     expect(vm.summaryText).toBe("Narrative.");
     expect(vm.summaryShown).toBe(true);
     expect(vm.cards.map((c) => c.id)).toEqual(["c-2"]);
-    expect(vm.cards[0].analysisParams).toEqual({ areas: ["Paraná, Brazil"] });
+    expect(vm.cards[0].analysisInputs).toEqual({ recorded: false });
     expect(vm.allCharts).toEqual([
       { id: "c-1", title: "First", shown: false },
       { id: "c-2", title: "Renamed B", shown: true },
@@ -882,35 +901,68 @@ describe("hasWidgetCustomization", () => {
   });
 });
 
-describe("countIntegratedAlertsCharts", () => {
-  const alerts = (id: string) =>
-    chart({ id, dataset_id: INTEGRATED_ALERTS_DATASET_ID });
-
-  it("counts integrated alerts charts across widgets, like the backend's rule", () => {
-    const widgets = [
-      widget({
-        id: "w-1",
-        insight: { id: "ins-1", charts: [alerts("c-1"), alerts("c-2")] },
-      }),
-      widget({
-        id: "w-2",
-        insight: { id: "ins-2", charts: [chart({ id: "c-3", dataset_id: 2 })] },
-      }),
-      widget({ id: "w-3", insight: { id: "ins-3", charts: [alerts("c-4")] } }),
-    ];
-    expect(countIntegratedAlertsCharts(widgets)).toBe(3);
+describe("firstAlertsWidgetId", () => {
+  const section = (id: string, position: number) => ({
+    id,
+    title: `Section ${id}`,
+    description: null,
+    position,
+    template: null,
+    created_at: "2026-07-01T00:00:00Z",
+  });
+  const alertsWidget = (
+    id: string,
+    sectionId: string | null,
+    position: number
+  ): DashboardWidget =>
+    widget({
+      id,
+      widget_type: "alerts",
+      section_id: sectionId,
+      position,
+      insight_id: null,
+      insight: null,
+    });
+  const dashboard = (widgets: DashboardWidget[]): Dashboard => ({
+    id: "d1",
+    user_id: "u1",
+    name: "Pará",
+    description: null,
+    is_public: false,
+    eligible_for_subscription: false,
+    created_at: "2026-07-01T00:00:00Z",
+    updated_at: "2026-07-01T00:00:00Z",
+    aois: [],
+    // Listed out of order: the grid sorts sections by position.
+    sections: [section("s2", 1), section("s1", 0)],
+    widgets,
   });
 
-  it("ignores charts without a dataset id and widgets without an insight", () => {
-    const widgets = [
-      widget({
-        insight: {
-          id: "ins-1",
-          charts: [chart({ dataset_id: null }), chart({ id: "c-2" })],
-        },
-      }),
-      widget({ id: "w-2", widget_type: "text", insight: null }),
-    ];
-    expect(countIntegratedAlertsCharts(widgets)).toBe(0);
+  it("finds the first alerts widget in the grid's order, not the array's", () => {
+    expect(
+      firstAlertsWidgetId(
+        dashboard([
+          alertsWidget("w-in-s2", "s2", 0),
+          alertsWidget("w-s1-second", "s1", 1),
+          widget({ id: "w-s1-first", section_id: "s1", position: 0 }),
+          widget({ id: "w-top", section_id: null, position: 0 }),
+        ])
+      )
+    ).toBe("w-s1-second");
+  });
+
+  it("puts the top-level widgets before every section", () => {
+    expect(
+      firstAlertsWidgetId(
+        dashboard([
+          alertsWidget("w-in-s1", "s1", 0),
+          alertsWidget("w-top", null, 3),
+        ])
+      )
+    ).toBe("w-top");
+  });
+
+  it("finds none on a dashboard without an alerts widget", () => {
+    expect(firstAlertsWidgetId(dashboard([widget()]))).toBeUndefined();
   });
 });

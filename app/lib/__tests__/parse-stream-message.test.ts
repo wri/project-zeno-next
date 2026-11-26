@@ -107,6 +107,21 @@ describe("parseStreamMessage — tool response_metadata write signals", () => {
     });
   });
 
+  it("carries the boundary layer through on tool messages", () => {
+    const boundary_layer = { source: "oil_palm", name: "Oil palm concessions" };
+    const update = {
+      ...toolUpdate("show_boundary_layer"),
+      boundary_layer,
+    } as unknown as LangChainUpdate;
+
+    const msg = parseStreamMessage(update, "tools", TS);
+    expect(msg).toMatchObject({
+      type: "tool",
+      name: "show_boundary_layer",
+      boundary_layer,
+    });
+  });
+
   it("finds the signal on an earlier message when the update ends with narration", () => {
     // The signal-bearing tool result and the agent's follow-up can arrive in
     // one update; only the last message decides the StreamMessage type, but
@@ -141,6 +156,22 @@ describe("parseStreamMessage — tool response_metadata write signals", () => {
     expect(msg?.type).toBe("tool");
     expect(msg?.insight_id).toBe("ins-1");
   });
+
+  it.each([
+    ["a list", [{ dataset_name: "Tree cover loss" }]],
+    ["null", null],
+  ])(
+    "passes analysis_inputs through unparsed when it is %s",
+    (_label, inputs) => {
+      // The generate_insights handler owns parsing it (toAnalysisInputs).
+      const update = toolUpdate("generate_insights");
+      (update as unknown as { analysis_inputs: unknown }).analysis_inputs =
+        inputs;
+
+      const msg = parseStreamMessage(update, "tools", TS);
+      expect(msg?.analysis_inputs).toEqual(inputs);
+    }
+  );
 
   it("carries insight_updated through on tool messages", () => {
     // update_insight_display (rename a chart, change its type) signals with

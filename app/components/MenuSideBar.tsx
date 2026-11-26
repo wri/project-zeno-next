@@ -10,6 +10,7 @@ import {
   chakra,
 } from "@chakra-ui/react";
 import {
+  BellIcon,
   ChartLineIcon,
   GearSixIcon,
   LifebuoyIcon,
@@ -25,6 +26,7 @@ import {
 import { Tooltip } from "./ui/tooltip";
 import AvailablePromptsCard from "./AvailablePromptsCard";
 import { WHATS_NEW_FEATURES } from "./whatsNewFeatures";
+import { useFeatureFlag, useWithFlags } from "@/src/shared/lib/feature-flags";
 import { Link, usePathname, useRouter } from "@/src/shared/lib/router";
 import { PREVIEW_HELP_CENTER_URL } from "@/app/constants/preview-content";
 import { useLogout } from "@/app/hooks/useLogout";
@@ -33,6 +35,7 @@ import useAuthStore from "@/app/store/authStore";
 import useChatStore from "@/app/store/chatStore";
 import useSidebarStore from "@/app/store/sidebarStore";
 import { isAppRoute, mapTabHref } from "@/app/utils/threadNavigation";
+import { useTranslation } from "@/src/shared/lib/i18n";
 
 const ACTIVE_COLOR = "#0049AA";
 
@@ -142,6 +145,7 @@ function MenuItem({
  * as do a click outside and Esc.
  */
 export default function MenuSideBar() {
+  const { t } = useTranslation();
   const menuOpen = useSidebarStore((s) => s.menuOpen);
   const setMenuOpen = useSidebarStore((s) => s.setMenuOpen);
   const areasPanelOpen = useSidebarStore((s) => s.areasPanelOpen);
@@ -151,6 +155,8 @@ export default function MenuSideBar() {
   const { logout, isLoggingOut } = useLogout();
   const whatsNewUnread = useWhatsNewUnread();
   const router = useRouter();
+  const emailBeta = useFeatureFlag("email-subscriptions");
+  const withFlags = useWithFlags();
   const pathname = usePathname() ?? "";
 
   const onMap = isAppRoute(pathname);
@@ -177,10 +183,10 @@ export default function MenuSideBar() {
             maxW="330px"
             w="330px"
             borderTop="4px solid #E3F37F"
-            aria-label="Menu"
+            aria-label={t("nav.menu")}
           >
             <Flex align="center" gap="3" h="40px" px="4" flexShrink={0}>
-              <Tooltip content="Close menu" showArrow>
+              <Tooltip content={t("sidebar.close")} showArrow>
                 <IconButton
                   w="32px"
                   h="32px"
@@ -189,7 +195,7 @@ export default function MenuSideBar() {
                   bg="#F4F5F6"
                   color="#565E7B"
                   _hover={{ bg: "#E0E2E5" }}
-                  aria-label="Close menu"
+                  aria-label={t("sidebar.close")}
                   onClick={() => setMenuOpen(false)}
                 >
                   <ListIcon size={16} />
@@ -204,7 +210,7 @@ export default function MenuSideBar() {
             </Flex>
             <Flex
               as="nav"
-              aria-label="Destinations"
+              aria-label={t("sidebar.destinations")}
               direction="column"
               flex="1"
               minH={0}
@@ -215,7 +221,7 @@ export default function MenuSideBar() {
             >
               <Stack gap="1">
                 <MenuItem
-                  label="Map"
+                  label={t("nav.map")}
                   icon={MapTrifoldIcon}
                   href={mapTabHref(currentThreadId)}
                   // On My areas the link points at the current page, so leave
@@ -229,13 +235,13 @@ export default function MenuSideBar() {
                   active={onMap && !myAreasActive}
                 />
                 <MenuItem
-                  label="Dashboards"
+                  label={t("nav.dashboards")}
                   icon={ChartLineIcon}
                   href="/dashboards"
                   active={pathname.startsWith("/dashboards")}
                 />
                 <MenuItem
-                  label="My areas"
+                  label={t("sidebar.myAreas")}
                   icon={PolygonIcon}
                   onClick={openMyAreas}
                   active={myAreasActive}
@@ -243,23 +249,31 @@ export default function MenuSideBar() {
               </Stack>
               <Stack gap="1" mt="auto">
                 <MenuItem
-                  label="Help"
+                  label={t("nav.help")}
                   icon={LifebuoyIcon}
                   href={PREVIEW_HELP_CENTER_URL}
                   external
                 />
                 <MenuItem
-                  label="What's new"
+                  label={t("nav.whatsNew")}
                   icon={ShootingStarIcon}
                   onClick={openWhatsNew}
                   badge={
                     whatsNewUnread
-                      ? `${updateCount} ${updateCount === 1 ? "item" : "items"}`
+                      ? t("sidebar.whatsNew.badge", { count: updateCount })
                       : undefined
                   }
                 />
+                {emailBeta && (
+                  <MenuItem
+                    label={t("nav.subscriptions")}
+                    icon={BellIcon}
+                    href={withFlags("/subscriptions")}
+                    active={pathname.startsWith("/subscriptions")}
+                  />
+                )}
                 <MenuItem
-                  label="User settings"
+                  label={t("nav.settings")}
                   icon={GearSixIcon}
                   href="/dashboard"
                   active={/^\/dashboard(\/|$)/.test(pathname)}
@@ -273,12 +287,12 @@ export default function MenuSideBar() {
                 <Text flex="1" fontSize="sm" truncate title={userEmail ?? ""}>
                   {userEmail}
                 </Text>
-                <Tooltip content="Sign out" showArrow>
+                <Tooltip content={t("account.signOut")} showArrow>
                   <IconButton
                     size="xs"
                     variant="ghost"
                     color="#565E7B"
-                    aria-label="Sign out"
+                    aria-label={t("account.signOut")}
                     loading={isLoggingOut}
                     onClick={logout}
                   >

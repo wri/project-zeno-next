@@ -1,14 +1,36 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
-// generateInsights reads the active dataset/area from mapStore and the date
-// range from chatStore. Both stores' import chains reach the Chakra toaster
-// (.tsx) — mock them to avoid JSX in the node test environment.
+// What is on screen is not what was analyzed. These stores hold an area, a
+// dataset and a date range that the chips must never pick up (they used to);
+// mocked also because their import chains reach the Chakra toaster (.tsx).
 vi.mock("@/app/store/mapStore", () => ({
-  default: { getState: () => ({ layers: [] }) },
+  default: {
+    getState: () => ({
+      layers: [
+        {
+          id: "a",
+          visible: true,
+          name: "Map area",
+          aoiSelection: { name: "Map area", aois: [] },
+        },
+        {
+          id: "d",
+          visible: true,
+          name: "Map dataset",
+          datasetId: 4,
+          parameters: { canopy_cover: 75 },
+        },
+      ],
+    }),
+  },
 }));
 
 vi.mock("@/app/store/chatStore", () => ({
-  default: { getState: () => ({ dateRange: null }) },
+  default: {
+    getState: () => ({
+      dateRange: { start: new Date("2010-01-01"), end: new Date("2011-12-31") },
+    }),
+  },
 }));
 
 import { generateInsightsTool } from "../generateInsights";
@@ -95,39 +117,73 @@ describe("generateInsightsTool", () => {
     expect(useInsightStore.getState().insights[0].insightId).toBeUndefined();
   });
 
-  it("sets the CANOPY threshold from the streamed dataset", () => {
+  const recordedPull = {
+    areas: [{ name: "Rondônia, Brazil", source: "gadm", src_id: "BRA.22" }],
+    dataset_id: 4,
+    dataset_name: "Tree cover loss",
+    pulled_start_date: "2001-01-01",
+    pulled_end_date: "2024-12-31",
+    canopy_cover: 30,
+    context_layer: null,
+  };
+
+  it("takes the inputs from the streamed analysis_inputs", () => {
     generateInsightsTool(
       baseMessage({
-        charts_data: [chartData()],
-        dataset: {
-          dataset_id: 4,
-          dataset_name: "Tree cover loss",
-          threshold: 30,
-        },
+        charts_data: [chartData(), chartData("By driver")],
+        insight_id: "ins-1",
+        analysis_inputs: [recordedPull],
       }),
       addMessage
     );
-    expect(
-      useInsightStore.getState().insights[0].analysisParams?.canopyThreshold
-    ).toBe(30);
+    const { insights } = useInsightStore.getState();
+    for (const widget of insights) {
+      expect(widget.analysisInputs).toEqual({
+        recorded: true,
+        areas: [
+          {
+            name: "Rondônia, Brazil",
+            ref: { source: "gadm", srcId: "BRA.22" },
+          },
+        ],
+        datasets: [{ name: "Tree cover loss", id: 4 }],
+        canopyCover: [30],
+        years: [{ start: 2001, end: 2024 }],
+      });
+      expect(widget.datasetName).toBe("Tree cover loss");
+    }
   });
 
-  it("omits the CANOPY threshold under the natural_forest context layer", () => {
+  it("says not recorded when the stream has no inputs, whatever the map shows", () => {
     generateInsightsTool(
       baseMessage({
         charts_data: [chartData()],
+        // A stream dataset is the agent's pick, not a record of the analysis.
         dataset: {
           dataset_id: 4,
           dataset_name: "Tree cover loss",
           threshold: 30,
-          context_layer: "natural_forest",
         },
       }),
       addMessage
     );
-    const params = useInsightStore.getState().insights[0].analysisParams;
-    expect(params?.dataset).toBe("Tree cover loss");
-    expect(params?.canopyThreshold).toBeUndefined();
+    const [widget] = useInsightStore.getState().insights;
+    expect(widget.analysisInputs).toEqual({ recorded: false });
+    expect(widget.datasetName).toBeUndefined();
+  });
+
+  it("names no dataset when the analysis pulled several", () => {
+    generateInsightsTool(
+      baseMessage({
+        charts_data: [chartData()],
+        analysis_inputs: [
+          recordedPull,
+          { ...recordedPull, dataset_id: 9, dataset_name: "Tree cover gain" },
+        ],
+      }),
+      addMessage
+    );
+    expect(useInsightStore.getState().insights[0].datasetName).toBeUndefined();
   });
 
   it("does nothing when charts_data is absent", () => {

@@ -1,25 +1,52 @@
-import { Box, Flex, IconButton, Text } from "@chakra-ui/react";
+import { Box, Button, Flex, IconButton, Text } from "@chakra-ui/react";
 import { XIcon } from "@phosphor-icons/react";
 
 import type { Dashboard } from "../api/schemas";
 import { useDashboardAlertsSummary } from "../hooks/useDashboardAlertsSummary";
 import { useDismissedAlertsWeek } from "../hooks/useDismissedAlertsWeek";
-import { formatAlertArea, updatableChartsLabel } from "../lib/alerts-summary";
-import { countIntegratedAlertsCharts } from "../lib/widgets";
+import { useIntegratedAlertsFreshness } from "../hooks/useIntegratedAlertsFreshness";
+import {
+  alertsStripAction,
+  formatAlertArea,
+  formatDataUpdated,
+  formatPeriodRange,
+  type AlertsSummary,
+} from "../lib/alerts-summary";
+import { NRT_MONITORING } from "../lib/analysis-templates";
+import { firstAlertsWidgetId } from "../lib/widgets";
+import { useAnalysisTemplates } from "./dashboardQueries";
+import { scrollToWidgetWhenRendered } from "./scrollToSection";
+import {
+  useApplyAnalysisTemplate,
+  usePendingAnalysisTemplates,
+} from "./useApplyAnalysisTemplate";
+
+const ACTION_BUTTON_PROPS = {
+  size: "xs",
+  variant: "outline",
+  bg: "white",
+  color: "#B91C1C",
+  borderColor: "#F8BABA",
+  flexShrink: 0,
+  _hover: { bg: "#FEE2E2" },
+} as const;
 
 /**
  * The Figma "Weekly alerts strip" (Playground 4549:3571): a red notice under
- * the dashboard title when the area had integrated alerts in the latest full
- * alert week, followed by a nudge: "· 2 charts can be updated. Ask the
- * assistant to update a chart". The design's per-chart Update control and
- * its "ask Zeno" link are deliberately not built yet, so the nudge is plain
- * text. Dismissing hides the strip for that week; it returns with the next
- * week's data.
+ * the dashboard title when the area had integrated alerts in the summary's
+ * period: "142 ha of new integrated alerts, Nov 7–13 · High and Highest
+ * confidence alerts · Data updated Nov 15". The area counts high and highest
+ * confidence alerts only, like the alerts list. The period is counted back from the
+ * newest alert; the data updated date says when GNW last got new alerts data,
+ * which is about weekly. Dismissing hides the strip for that period; it
+ * returns with the next one.
  */
 export default function WeeklyAlertsStrip({
   dashboard,
+  isOwner,
 }: {
   dashboard: Dashboard;
+  isOwner: boolean;
 }) {
   const { data: summary } = useDashboardAlertsSummary([dashboard.id]);
   const [dismissedWeek, dismiss] = useDismissedAlertsWeek(dashboard.id);
@@ -28,6 +55,55 @@ export default function WeeklyAlertsStrip({
   if (!summary || areaHa === undefined || dismissedWeek === summary.endDate) {
     return null;
   }
+
+  return (
+    <AlertsNotice
+      dashboard={dashboard}
+      isOwner={isOwner}
+      summary={summary}
+      areaHa={areaHa}
+      onDismiss={() => dismiss(summary.endDate)}
+    />
+  );
+}
+
+/**
+ * The strip itself, mounted only once there is something to announce, so a
+ * dashboard without alerts costs no freshness or template registry request.
+ *
+ * It ends on the alerts list: a View button that scrolls to the first one on
+ * screen, or, for an owner whose dashboard has none, an Add button that
+ * applies the Near real-time monitoring template: a section with the alerts
+ * chart, the alerts list and imagery (`useApplyAnalysisTemplate` shows its
+ * toasts and scrolls to the new section). Once the template's widgets reach
+ * the cache the same render offers View instead.
+ */
+function AlertsNotice({
+  dashboard,
+  isOwner,
+  summary,
+  areaHa,
+  onDismiss,
+}: {
+  dashboard: Dashboard;
+  isOwner: boolean;
+  summary: AlertsSummary;
+  areaHa: number;
+  onDismiss: () => void;
+}) {
+  const { data: freshness } = useIntegratedAlertsFreshness();
+  const alertsWidgetId = firstAlertsWidgetId(dashboard);
+  // The template uses the dashboard's first area; without one it would fail.
+  const canAdd = isOwner && dashboard.aois.length > 0;
+  const { data: templates } = useAnalysisTemplates(canAdd && !alertsWidgetId);
+  const apply = useApplyAnalysisTemplate(dashboard.id);
+  const pendingTemplates = usePendingAnalysisTemplates(dashboard.id);
+  const action = alertsStripAction({
+    alertsWidgetId,
+    canAdd,
+    templateNames: templates?.map((template) => template.name),
+    pendingTemplates,
+  });
 
   return (
     <Flex
@@ -50,17 +126,29 @@ export default function WeeklyAlertsStrip({
       />
       <Flex flex="1" minW={0} align="center" gap="12px" wrap="wrap">
         <Text fontSize="14px" fontWeight="medium" color="#B91C1C">
-          {formatAlertArea(areaHa)} of new integrated alerts
+          {`${formatAlertArea(areaHa)} of new integrated alerts, ${formatPeriodRange(summary.startDate, summary.endDate)}`}
         </Text>
         <Text fontSize="13px" color="#565E7B">
-          ·{" "}
-          {updatableChartsLabel(countIntegratedAlertsCharts(dashboard.widgets))}{" "}
-          Ask the assistant to{" "}
-          <Text as="span" fontWeight="semibold">
-            update a chart
-          </Text>
+          {`· High and Highest confidence alerts${freshness ? ` · ${formatDataUpdated(freshness.updatedOn, summary.endDate)}` : ""}`}
         </Text>
       </Flex>
+      {action.kind === "view" && (
+        <Button
+          {...ACTION_BUTTON_PROPS}
+          onClick={() => scrollToWidgetWhenRendered(action.widgetId)}
+        >
+          View alerts list
+        </Button>
+      )}
+      {action.kind === "add" && (
+        <Button
+          {...ACTION_BUTTON_PROPS}
+          disabled={action.state !== "idle"}
+          onClick={() => apply.mutate(NRT_MONITORING)}
+        >
+          {action.state === "building" ? "Adding…" : "Add monitoring section"}
+        </Button>
+      )}
       <IconButton
         aria-label="Dismiss alerts notice"
         size="xs"
@@ -69,7 +157,7 @@ export default function WeeklyAlertsStrip({
         minW="28px"
         h="28px"
         _hover={{ bg: "#FEE2E2" }}
-        onClick={() => dismiss(summary.endDate)}
+        onClick={onDismiss}
       >
         <XIcon size={16} />
       </IconButton>

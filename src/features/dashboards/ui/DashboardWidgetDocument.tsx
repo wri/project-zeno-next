@@ -17,8 +17,9 @@ const UNBROKEN = { breakInside: "avoid" };
 /**
  * An analysis chart or map widget as the export prints it — the read-only
  * counterpart of `DashboardWidgetCard`. No shell (fill, edge, inset) and no
- * controls, so the widget reads as part of the section it sits in; its params
- * show outright, since paper has no "Show params" to click.
+ * controls, so the widget reads as part of the section it sits in; its recorded
+ * inputs show outright, since paper has no "What was analyzed" toggle to
+ * click. Unrecorded inputs print nothing: the report header names the area.
  */
 export default function DashboardWidgetDocument({
   title,
@@ -40,7 +41,9 @@ export default function DashboardWidgetDocument({
   /** Rendered above the body — the analysis narrative and chart pills. */
   intro?: React.ReactNode;
 }) {
-  const chips = card?.analysisParams ? buildChips(card.analysisParams) : [];
+  const inputs = card?.analysisInputs;
+  // Every area, not a "+N": paper has no tooltip to reveal the rest.
+  const chips = inputs?.recorded ? buildChips(inputs, Infinity) : [];
 
   return (
     <Flex flexDir="column" css={UNBROKEN}>

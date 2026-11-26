@@ -1,21 +1,13 @@
-import {
-  ChatMessage,
-  StreamMessage,
-  InsightWidget,
-  AnalysisParams,
-  DatasetInfo,
-} from "@/app/types/chat";
-import useMapStore from "../mapStore";
-import { isAreaLayer } from "../layerManagerSlice";
+import { ChatMessage, StreamMessage, InsightWidget } from "@/app/types/chat";
 import useInsightStore from "../insightStore";
-import useChatStore from "../chatStore";
 import type { ChartColorFields } from "@/app/types/chartColors";
 import { pickChartColors } from "@/app/utils/pickChartColors";
-import { contextLayerIgnoresCanopy } from "@/app/utils/datasetLayerContext";
 import {
-  isCuratedInsight,
   codeActParts,
-} from "@/src/entities/insight/lib/is-curated-insight";
+  isCuratedInsight,
+  soleDataset,
+  toAnalysisInputs,
+} from "@/src/entities/insight";
 
 interface ChartData extends ChartColorFields {
   id: string;
@@ -40,74 +32,13 @@ export function generateInsightsTool(
 ) {
   try {
     if (streamMessage.charts_data && Array.isArray(streamMessage.charts_data)) {
-      // streamMessage carries the agent's authoritative selection for this
-      // analysis. Prefer it over the map layers, which are updated
-      // asynchronously by pickAoiTool/etc. and may not yet reflect this turn.
-      const mapLayers = useMapStore.getState().layers;
-      // The active dataset is the visible main dataset layer (skip context
-      // sub-layers). Stream data still wins; this is the fallback source.
-      const datasetLayer = mapLayers.find(
-        (l) => typeof l.datasetId === "number" && !l.parentLayerId
+      // Only what the backend recorded, never the map or the chat's date
+      // range: those show what is on screen now, not what was analyzed.
+      const analysisInputs = toAnalysisInputs(
+        streamMessage.analysis_inputs,
+        streamMessage.insight_id
       );
-      // The active area is the first visible area layer (the query scope).
-      const areaLayer = mapLayers.find((l) => l.visible && isAreaLayer(l));
-      const selectionFromLayer =
-        areaLayer?.aoiSelection?.name ?? areaLayer?.selectionName;
-      const dataset = streamMessage.dataset as DatasetInfo | undefined;
-      const analysisParams: AnalysisParams = {};
-
-      const aoiFromStream = streamMessage.aoi_selection?.aois;
-      const selectionFromStream = streamMessage.aoi_selection?.name;
-      // Prefer the selection name (one chip) over the per-AOI list so the
-      // chip matches the legend, which always shows one chip per selection.
-      // Falls back to the AOI list / layer name when no name is given.
-      if (selectionFromStream) {
-        analysisParams.areas = [selectionFromStream];
-      } else if (selectionFromLayer) {
-        analysisParams.areas = [selectionFromLayer];
-      } else if (aoiFromStream?.length) {
-        analysisParams.areas = aoiFromStream.map((a) => a.name);
-      } else if (areaLayer?.aoiSelection?.aois?.length) {
-        analysisParams.areas = areaLayer.aoiSelection.aois.map((a) => a.name);
-      } else if (areaLayer?.name) {
-        analysisParams.areas = [areaLayer.name];
-      }
-
-      if (dataset?.dataset_name) {
-        analysisParams.dataset = dataset.dataset_name;
-      } else if (datasetLayer?.name) {
-        analysisParams.dataset = datasetLayer.name;
-      }
-
-      // No CANOPY chip when the analysis ignored the threshold (natural forest).
-      if (!contextLayerIgnoresCanopy(dataset?.context_layer)) {
-        if (typeof dataset?.threshold === "number") {
-          analysisParams.canopyThreshold = dataset.threshold;
-        } else if (typeof datasetLayer?.parameters?.canopy_cover === "number") {
-          analysisParams.canopyThreshold = datasetLayer.parameters.canopy_cover;
-        }
-      }
-
-      const startStr = streamMessage.start_date ?? datasetLayer?.startDate;
-      const endStr = streamMessage.end_date ?? datasetLayer?.endDate;
-      if (startStr && endStr) {
-        const startYear = new Date(startStr).getUTCFullYear();
-        const endYear = new Date(endStr).getUTCFullYear();
-        if (!Number.isNaN(startYear) && !Number.isNaN(endYear)) {
-          analysisParams.startYear = startYear;
-          analysisParams.endYear = endYear;
-        }
-      } else {
-        const dateRange = useChatStore.getState().dateRange;
-        if (dateRange) {
-          analysisParams.startYear = dateRange.start.getFullYear();
-          analysisParams.endYear = dateRange.end.getFullYear();
-        }
-      }
-
-      const hasParams = Object.keys(analysisParams).length > 0;
-
-      const datasetName = dataset?.dataset_name ?? analysisParams.dataset;
+      const datasetName = soleDataset(analysisInputs)?.name;
 
       const widgets: InsightWidget[] = (
         streamMessage.charts_data as ChartData[]
@@ -135,7 +66,7 @@ export function generateInsightsTool(
                 },
               }
             : {}),
-          ...(hasParams ? { analysisParams } : {}),
+          analysisInputs,
           // Shared by all charts of the analysis — the handle for the
           // "Add to dashboard" toggle (REST widget add, no chat round trip).
           ...(streamMessage.insight_id

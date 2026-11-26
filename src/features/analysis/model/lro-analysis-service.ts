@@ -42,22 +42,10 @@ export class LROAnalysisService implements AnalysisService {
         }
 
         // Multiple-resource jobs are not yet supported — take the first.
-        const result = await this.gateway.fetchResult(
+        return this.gateway.fetchResult(
           outcome.resources[0].resourceUrl,
           signal
         );
-
-        // Enrich with provenance from the selection (the gateway doesn't have
-        // this context when fetchResult is called).
-        return {
-          ...result,
-          params: {
-            source: selection.area.source,
-            srcId: selection.area.srcId,
-            subtype: selection.area.subtype,
-            name: selection.area.name,
-          },
-        };
       }
 
       // Terminal failure: surface it at once. Without this branch a failed job

@@ -112,6 +112,8 @@ export function parseStreamMessage(
       insights: langChainMessage.insights || [],
       charts_data: langChainMessage.charts_data || [],
       insight_id: langChainMessage.insight_id || undefined,
+      // Passed through as sent (null included): the tool handler parses it.
+      analysis_inputs: langChainMessage.analysis_inputs,
       codeact_parts: langChainMessage.codeact_parts || [],
       source_urls: langChainMessage.source_urls || [],
       cited_articles: langChainMessage.cited_articles || undefined,
@@ -119,6 +121,7 @@ export function parseStreamMessage(
       aoi: langChainMessage.aoi || undefined,
       aoi_selection: langChainMessage.aoi_selection || undefined,
       imagery: langChainMessage.imagery || undefined,
+      boundary_layer: langChainMessage.boundary_layer || undefined,
       timestamp: timestamp.toISOString(),
       trace_id: traceId,
       // Write signals (e.g. dashboard_updated) ride along so the client can

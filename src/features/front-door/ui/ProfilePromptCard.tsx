@@ -13,11 +13,13 @@ import {
   Text,
 } from "@chakra-ui/react";
 import { ArrowUpRightIcon } from "@phosphor-icons/react";
+import { useLocale } from "@/src/shared/lib/i18n";
 import { Link } from "@/src/shared/lib/router";
 import type { PersonNames } from "../lib/person-names";
 import {
   draftFromSuggestion,
   isProfileDraftComplete,
+  known,
   profileCardMode,
   toProfilePatch,
   type ProfileCardMode,
@@ -46,21 +48,24 @@ export interface ProfilePromptCardProps {
 /** Where the full profile form lives (User Profile). */
 const FULL_PROFILE_HREF = "/dashboard";
 
+/**
+ * The suggestion, with the country from the request and the language from the
+ * current UI locale filling gaps, so a person who already picked a language
+ * in the header finds it preselected here.
+ */
 function initialDraft(
   suggestion: ProfileSuggestion | undefined,
   options: ProfileCardOptions,
   names: PersonNames | undefined,
-  defaultCountry: string | undefined
+  defaultCountry: string | undefined,
+  defaultLanguage: string
 ): ProfileDraft {
   const draft = draftFromSuggestion(suggestion, options, names);
-  if (
-    draft.country === "" &&
-    defaultCountry &&
-    defaultCountry in options.countries
-  ) {
-    return { ...draft, country: defaultCountry };
-  }
-  return draft;
+  return {
+    ...draft,
+    country: draft.country || known(defaultCountry, options.countries),
+    language: draft.language || known(defaultLanguage, options.languages),
+  };
 }
 
 function headingFor(
@@ -215,8 +220,9 @@ export function ProfilePromptCard({
   const [editing, setEditing] = useState(false);
   const [suggestedMode] = useState(() => profileCardMode(suggestion, options));
   const mode: ProfileCardMode = editing ? "fields" : suggestedMode;
+  const locale = useLocale();
   const [draft, setDraft] = useState<ProfileDraft>(() =>
-    initialDraft(suggestion, options, names, defaultCountry)
+    initialDraft(suggestion, options, names, defaultCountry, locale)
   );
   const privacy = usePrivacyTip();
   const { title, body } = headingFor(mode, suggestion, editing);

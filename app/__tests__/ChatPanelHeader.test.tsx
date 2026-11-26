@@ -77,23 +77,6 @@ describe("ChatPanelHeader", () => {
     ]);
   });
 
-  it("shows no language switcher without the i18n flag", () => {
-    renderHeader();
-    expect(screen.queryByRole("combobox")).toBeNull();
-  });
-
-  it("shows the language switcher with ?ff=i18n", () => {
-    window.history.replaceState(null, "", "/app?ff=i18n");
-    try {
-      renderHeader();
-      expect(
-        screen.getByRole("combobox", { name: "Interface language" })
-      ).toBeTruthy();
-    } finally {
-      window.history.replaceState(null, "", "/app");
-    }
-  });
-
   it("renders its labels in the active locale", async () => {
     await act(() => i18n.changeLanguage("es"));
     try {

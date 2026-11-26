@@ -32,6 +32,16 @@ function getAoiName(
 }
 
 /**
+ * The boundary layer id for an area source: a backend source key
+ * (`oil_palm` -> `OIL_PALM`, `landmark` -> `LandMark`) or a layer id
+ * itself. `undefined` when the map has no such layer.
+ */
+export function boundaryLayerId(source: string): LayerId | undefined {
+  const key = source.toUpperCase();
+  return selectLayerOptions.find((o) => o.id.toUpperCase() === key)?.id;
+}
+
+/**
  * The name of a clicked or hovered feature on a boundary layer. A concession
  * without a name or company falls back to its company group, then to its
  * type and country, as the backend names it ("Logging concession, CAN"):

@@ -3,7 +3,8 @@ import { Box } from "@chakra-ui/react";
 import { useQuery } from "@tanstack/react-query";
 
 import {
-  buildChips,
+  areaChip,
+  datasetChip,
   type ParamChipData,
 } from "@/app/components/widgets/analysis-params-utils";
 import { downloadCsv } from "@/src/shared/lib/csv";
@@ -11,6 +12,8 @@ import type { DateRange } from "@/src/shared/lib/iso-date";
 import { fetchAlertsList, type AlertsListError } from "../api/alerts";
 import type { Dashboard, DashboardWidget } from "../api/schemas";
 import { dashboardKeys } from "../hooks/dashboardKeys";
+import { useIntegratedAlertsFreshness } from "../hooks/useIntegratedAlertsFreshness";
+import { formatFreshness } from "../lib/alerts-summary";
 import {
   alertsCsv,
   alertsCsvFilename,
@@ -30,8 +33,8 @@ import {
   type AlertsList,
   type AlertsWidgetSpec,
 } from "../lib/alertsWidgets";
+import { AlertsDataDates } from "./AlertsDataDates";
 import DashboardAlertsList, {
-  LatestAlertDetected,
   type AlertsListView,
 } from "./DashboardAlertsList";
 import DashboardAlertsMapPane from "./DashboardAlertsMapPane";
@@ -164,6 +167,18 @@ function AlertsCard({
   const list = query.data ?? held;
   const failure = query.error ?? undefined;
 
+  // The release date comes from the analytics API, the alerts date from the
+  // list (the day its rows end on); each shows as soon as it is known, and a
+  // failed freshness call leaves just the alerts date.
+  const { data: freshness } = useIntegratedAlertsFreshness();
+  const dataDates = formatFreshness(
+    {
+      latestAlertDate: list?.latestAlertDate,
+      updatedOn: freshness?.updatedOn,
+    },
+    "day-first"
+  )?.toUpperCase();
+
   const range = list ? chipRange(chip, list, custom) : undefined;
   const settledRange = useMemo(
     () => (list ? chipRange(chip, list, settledCustom) : undefined),
@@ -219,7 +234,8 @@ function AlertsCard({
   // chart carries, and the tier on show.
   const paramChips = useMemo<ParamChipData[]>(
     () => [
-      ...buildChips({ areas: [aoi.name], dataset: "Integrated alerts" }),
+      areaChip(aoi.name),
+      datasetChip("Integrated alerts"),
       {
         label: "CONFIDENCE",
         value: confidenceLabel(confidence),
@@ -260,9 +276,7 @@ function AlertsCard({
       title={spec.title}
       paramChips={paramChips}
       paramsAside={
-        list?.latestAlertDate ? (
-          <LatestAlertDetected date={list.latestAlertDate} />
-        ) : undefined
+        dataDates ? <AlertsDataDates label={dataDates} /> : undefined
       }
       removeMode="widget"
       isOwner={isOwner}

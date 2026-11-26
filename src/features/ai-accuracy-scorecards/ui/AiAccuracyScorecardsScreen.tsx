@@ -1,11 +1,11 @@
 /**
  * The AI accuracy scorecards page: how accurately Horizon answers the
- * BENCHMARK questions, per run. Its views share one route
- * (`/ai-accuracy-scorecards?view=…&run=…`), so each view of a run can be
- * bookmarked. A standalone page: no app header, only a link home. Data is
- * precomputed page data from the public gnw-gold-evals repo, for the runs
- * `model/releases.ts` lists. Open to everyone, signed in or not (AJ,
- * 2026-10-29).
+ * BENCHMARK questions. Its views share one route
+ * (`/ai-accuracy-scorecards?view=…`), so each view can be bookmarked. A
+ * standalone page: no app header, only a link home. Data is precomputed
+ * page data from the public gnw-gold-evals repo, for the runs
+ * `model/releases.ts` lists: the newest fills the page, and the trend
+ * plots them all. Open to everyone, signed in or not (AJ, 2026-10-29).
  */
 
 import {
@@ -15,14 +15,14 @@ import {
   Flex,
   HStack,
   Link as ChakraLink,
-  NativeSelect,
   Text,
 } from "@chakra-ui/react";
 import { Link, useRouter, useSearchParams } from "@/src/shared/lib/router";
 import { RELEASES } from "../model/releases";
-import type { BenchmarkPage, TrendPoint } from "../model/types";
+import type { BenchmarkPage } from "../model/types";
 import { resultsUrl } from "../api/github";
-import { pickRun, releasedRuns, trendPoints } from "../lib/runs";
+import { formatReleaseName } from "../lib/format";
+import { releasedRuns, trendPoints } from "../lib/runs";
 import { FailureFlowSection } from "./dashboard/FailureFlowSection";
 import { Hero } from "./dashboard/Hero";
 import { QuestionTypesSection } from "./dashboard/QuestionTypesSection";
@@ -35,32 +35,27 @@ import { HomeLink, Panel } from "./parts";
 import { useBenchmarkPage, useBenchmarkPages } from "./use-benchmark-data";
 
 const RUNS = releasedRuns(RELEASES);
-
-/** The headline of every released run of the page's version; a point
- * appears once its page has loaded. */
-function useTrend(page: BenchmarkPage): TrendPoint[] {
-  return trendPoints(useBenchmarkPages(RUNS), page.benchmark.version);
-}
+// The newest release fills the page (AJ, 2026-11-19); older ones show only
+// on the trend.
+const RUN = RUNS[RUNS.length - 1];
 
 function Dashboard({ page }: { readonly page: BenchmarkPage }) {
-  const trend = useTrend(page);
-  const runId = page.run.runId;
+  // The headline of every released run; a point appears once its page
+  // has loaded.
+  const trend = trendPoints(RUNS, useBenchmarkPages(RUNS));
   return (
     <>
       <Hero
         page={page}
         trend={trend}
-        methodologyHref={pageHref({ view: "methodology", run: runId })}
+        methodologyHref={pageHref({ view: "methodology" })}
       />
       <FailureFlowSection page={page} />
       <UseCasesSection
         page={page}
-        questionsHref={(useCase) =>
-          pageHref({ view: "questions", run: runId, useCase })
-        }
+        questionsHref={(useCase) => pageHref({ view: "questions", useCase })}
         methodologyHref={pageHref({
           view: "methodology",
-          run: runId,
           hash: "question-types",
         })}
       />
@@ -78,7 +73,7 @@ function Dashboard({ page }: { readonly page: BenchmarkPage }) {
           how the score is calculated.
         </Text>
         <Button asChild size="sm" colorPalette="primary">
-          <Link href={pageHref({ view: "methodology", run: runId })}>
+          <Link href={pageHref({ view: "methodology" })}>
             Read the methodology →
           </Link>
         </Button>
@@ -98,18 +93,8 @@ export function AiAccuracyScorecardsScreen() {
     : isView(viewParam)
       ? viewParam
       : "dashboard";
-  const run = pickRun(RUNS, searchParams?.get("run") ?? null);
-  const page = useBenchmarkPage(run);
+  const page = useBenchmarkPage(RUN);
   const useCaseParam = searchParams?.get("uc") ?? "";
-
-  function go(next: { view?: View; run?: string }) {
-    router.replace(
-      pageHref({ view: next.view ?? view, run: next.run ?? run.runId }),
-      {
-        scroll: next.view !== undefined && next.view !== view,
-      }
-    );
-  }
 
   const data = page.data;
   return (
@@ -138,27 +123,9 @@ export function AiAccuracyScorecardsScreen() {
           ) : null}
         </HStack>
         <HStack gap={3} wrap="wrap">
-          {RUNS.length > 1 ? (
-            <NativeSelect.Root size="sm" width="auto">
-              <NativeSelect.Field
-                id="benchmark-run"
-                aria-label="Run"
-                value={run.runId}
-                onChange={(e) => go({ run: e.target.value })}
-              >
-                {RUNS.toReversed().map((r) => (
-                  <option key={r.runId} value={r.runId}>
-                    {r.label}
-                  </option>
-                ))}
-              </NativeSelect.Field>
-              <NativeSelect.Indicator />
-            </NativeSelect.Root>
-          ) : (
-            <Text fontSize="sm" color="fg.muted">
-              {run.label}
-            </Text>
-          )}
+          <Text fontSize="sm" color="fg.muted">
+            {formatReleaseName(RUN.name)}
+          </Text>
           <HStack as="nav" aria-label="Views" gap={1}>
             {VIEWS.map((v) => (
               <Button
@@ -166,7 +133,9 @@ export function AiAccuracyScorecardsScreen() {
                 size="sm"
                 variant={v === view ? "subtle" : "ghost"}
                 aria-current={v === view ? "page" : undefined}
-                onClick={() => go({ view: v })}
+                onClick={() =>
+                  router.replace(pageHref({ view: v }), { scroll: v !== view })
+                }
               >
                 {VIEW_LABELS[v]}
               </Button>
@@ -190,7 +159,7 @@ export function AiAccuracyScorecardsScreen() {
           {view === "methodology" ? (
             <MethodologyView
               page={data}
-              dashboardHref={pageHref({ run: run.runId })}
+              dashboardHref={pageHref({})}
               openChecks={legacyChecks}
             />
           ) : null}
@@ -209,7 +178,7 @@ export function AiAccuracyScorecardsScreen() {
             {data.run.harnessSha ? `, harness ${data.run.harnessSha}` : ""}.
             Source:{" "}
             <ChakraLink
-              href={resultsUrl(run.ref)}
+              href={resultsUrl(RUN.ref)}
               target="_blank"
               rel="noopener noreferrer"
             >

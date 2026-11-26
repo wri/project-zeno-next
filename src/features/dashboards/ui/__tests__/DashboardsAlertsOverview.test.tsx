@@ -41,7 +41,7 @@ describe("DashboardsAlertsOverview", () => {
       screen.getByText("2 of 4 dashboards have new alerts detected Oct 5–11")
     ).toBeTruthy();
     expect(
-      screen.getByText("Latest alert detected Oct 9, 2026 · updated Oct 11")
+      screen.getByText("Data updated Oct 11 · alerts to Oct 9, 2026")
     ).toBeTruthy();
   });
 
@@ -59,7 +59,7 @@ describe("DashboardsAlertsOverview", () => {
     expect(
       screen.getByText("2 of 4 dashboards have new alerts detected Oct 5–11")
     ).toBeTruthy();
-    expect(screen.queryByText(/Latest alert detected/)).toBeNull();
+    expect(screen.queryByText(/Data updated/)).toBeNull();
   });
 
   it("says none were detected yet when the period starts after the latest detection", () => {
@@ -71,7 +71,7 @@ describe("DashboardsAlertsOverview", () => {
     expect(screen.getByText("No alerts detected Oct 5–11 yet")).toBeTruthy();
     expect(screen.queryByText(/dashboards have new alerts/)).toBeNull();
     expect(
-      screen.getByText("Latest alert detected Oct 4, 2026 · updated Oct 6")
+      screen.getByText("Data updated Oct 6 · alerts to Oct 4, 2026")
     ).toBeTruthy();
   });
 

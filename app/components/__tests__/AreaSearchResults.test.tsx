@@ -52,24 +52,14 @@ const PLACES = [
 
 const SAVED = [
   {
-    id: "ca-1",
-    user_id: "u1",
+    id: "user-aoi-1",
+    relationship: "owner",
     name: "Santa Cruz plots",
-    geometries: [
-      {
-        type: "Polygon",
-        coordinates: [
-          [
-            [0, 0],
-            [0, 1],
-            [1, 1],
-            [0, 0],
-          ],
-        ],
-      },
-    ],
+    source: "custom",
+    src_id: "ca-1",
+    subtype: "custom-area",
+    bbox: [0, 0, 1, 1],
     created_at: "2026-10-01T00:00:00Z",
-    updated_at: "2026-10-01T00:00:00Z",
   },
 ];
 
@@ -92,7 +82,7 @@ function routeRequests() {
         )
       );
     }
-    if (url.pathname === "/api/custom_areas") return json(SAVED);
+    if (url.pathname === "/api/user_aois") return json(SAVED);
     if (url.pathname.startsWith("/api/geometry/")) {
       return json({ geometry: { type: "FeatureCollection", features: [] } });
     }

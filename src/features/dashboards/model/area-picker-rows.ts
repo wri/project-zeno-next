@@ -1,8 +1,11 @@
 import type { CustomArea } from "@/app/schemas/api/custom_areas/get";
+import { areaSourceLabel } from "@/app/utils/areaSourceLabel";
 
 import type { AoiSearchResult } from "@/src/entities/aoi";
+import type { UserAoi } from "@/src/entities/user-aoi";
 
 import type { Dashboard } from "../api/schemas";
+import { areaRowKey } from "./area-tree";
 
 /** A single row in the new-dashboard area picker table. */
 export interface AreaPickerRow {
@@ -36,7 +39,10 @@ export function buildPreviousAnalysesMap(
 }
 
 export function aoiSearchResultToRow(
-  result: AoiSearchResult,
+  result: Pick<
+    AoiSearchResult,
+    "source" | "src_id" | "subtype" | "name" | "bbox"
+  >,
   typeLabel: string,
   analysesMap: Map<string, number>
 ): AreaPickerRow {
@@ -64,6 +70,39 @@ export function customAreaToRow(
     typeLabel: "Custom area",
     previousAnalyses: analysesMap.get(analysesKey("custom", area.id)) ?? 0,
   };
+}
+
+/** A user AOI as a row, addressed by the area's own source and id. */
+export function userAoiToRow(
+  userAoi: UserAoi,
+  analysesMap: Map<string, number>
+): AreaPickerRow {
+  return aoiSearchResultToRow(
+    { ...userAoi, bbox: userAoi.bbox ?? undefined },
+    areaSourceLabel(userAoi.source),
+    analysesMap
+  );
+}
+
+/**
+ * Merge reference rows with the user's rows, listing each area once. A saved
+ * area takes its reference row's place, with the user's own label.
+ */
+export function mergeUserAoiRows(
+  referenceRows: AreaPickerRow[],
+  userAoiRows: AreaPickerRow[]
+): AreaPickerRow[] {
+  const userRowsByKey = new Map(
+    userAoiRows.map((row) => [areaRowKey(row), row])
+  );
+  const merged = referenceRows.map(
+    (row) => userRowsByKey.get(areaRowKey(row)) ?? row
+  );
+  const listed = new Set(merged.map(areaRowKey));
+  return [
+    ...merged,
+    ...userAoiRows.filter((row) => !listed.has(areaRowKey(row))),
+  ];
 }
 
 /** Client-side, case-insensitive substring filter over already-loaded rows. */

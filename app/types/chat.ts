@@ -1,6 +1,7 @@
 import { FeatureCollection } from "geojson";
 import type { BlogArticle } from "@/app/schemas/api/blogs/get";
 import type { ChartColorFields } from "@/app/types/chartColors";
+import type { AnalysisInputs } from "@/src/entities/insight";
 
 export type { BlogArticle };
 
@@ -117,7 +118,10 @@ export interface InsightWidget extends ChartColorFields {
   // undefined, the workspace falls back to treating a missing `generation` (the
   // direct/curated flow) as curated.
   curated?: boolean;
-  analysisParams?: AnalysisParams; // Parameters used by the agent to produce this insight
+  // What the analysis was computed from, as the backend recorded it. Set on
+  // every analysis widget (the "What was analyzed" toggle); undefined on
+  // widgets that are not analyses, such as dataset cards.
+  analysisInputs?: AnalysisInputs;
   // Persisted insight UUID. All charts of one analysis share it; it is the
   // handle for REST widget adds (POST /api/dashboards/:id/widgets) and the id
   // the agent loads the insight by (view_context). generate_insights streams
@@ -127,15 +131,6 @@ export interface InsightWidget extends ChartColorFields {
   // `position`), so the agent can tell which chart of an analysis is on
   // screen.
   chartPosition?: number;
-}
-
-// Parameters the agent used to produce an insight (read-only transparency)
-export interface AnalysisParams {
-  areas?: string[]; // e.g. ["Pará, Brazil", "KBAs"]
-  dataset?: string; // e.g. "Tree cover loss"
-  canopyThreshold?: number; // e.g. 30 (percentage)
-  startYear?: number;
-  endYear?: number;
 }
 
 // Raw insight data from API (before conversion to InsightWidget)
@@ -209,6 +204,7 @@ export interface StreamMessage {
   aoi?: object;
   aoi_selection?: AOISelection;
   imagery?: ImageryInfo;
+  boundary_layer?: BoundaryLayerInfo;
   insights?: object[];
   charts_data?: object[];
   codeact_parts?: CodeActPart[];
@@ -218,6 +214,9 @@ export interface StreamMessage {
   // Persisted insight UUID riding on generate_insights (and recall/restyle)
   // state updates — the handle for adding the analysis to a dashboard.
   insight_id?: string;
+  // What that insight was computed from, as the backend sends it. `unknown`
+  // so only `toAnalysisInputs` can read it.
+  analysis_inputs?: unknown;
   // Names of the tools an AI message is about to call. The agent announces a
   // tool call before its result streams back, so this is the earliest signal
   // that e.g. an insight is being generated.
@@ -232,6 +231,14 @@ export interface StreamMessage {
   msg_type?: string;
   dashboard_id?: string;
   dashboard_name?: string;
+}
+
+// Boundary layer written to agent state by the show_boundary_layer tool.
+// `source` is the backend source key (e.g. "oil_palm"); boundaryLayerId in
+// app/utils/areaHelpers.ts resolves it to the map's boundary layer id.
+export interface BoundaryLayerInfo {
+  source: string;
+  name: string;
 }
 
 export type ImageryProvider = "sentinel-2" | "planet";
@@ -490,11 +497,15 @@ export interface LangChainUpdate {
   aoi?: object;
   aoi_selection?: AOISelection;
   imagery?: ImageryInfo;
+  boundary_layer?: BoundaryLayerInfo;
   start_date?: string;
   end_date?: string;
   insights: object[];
   charts_data: object[];
   insight_id?: string;
+  // Rides on generate_insights next to insight_id; absent before the backend
+  // records it. `unknown`: only `toAnalysisInputs` reads it.
+  analysis_inputs?: unknown;
   // Optional provenance fields emitted by tools
   codeact_parts?: CodeActPart[];
   source_urls?: string[];

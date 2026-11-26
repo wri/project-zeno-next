@@ -169,13 +169,6 @@ export function confidenceLabel(confidence: AlertsConfidence): string {
  */
 const SINCE_DAYS = 30;
 
-/** The GADM levels the analytics API takes: countries, states and districts. */
-const ANALYTICS_GADM_SUBTYPES = new Set([
-  "country",
-  "state-province",
-  "district-county",
-]);
-
 /**
  * Select the area the analytics API's points endpoints know: a GADM area by
  * its id without the version suffix, or a custom area by the id it was saved
@@ -183,11 +176,10 @@ const ANALYTICS_GADM_SUBTYPES = new Set([
  */
 function selectPointsArea(
   source: string,
-  srcId: string,
-  subtype: string
+  srcId: string
 ): PointsArea | undefined {
   if (source === "custom") return { kind: "custom", customAreaId: srcId };
-  if (source === "gadm" && ANALYTICS_GADM_SUBTYPES.has(subtype))
+  if (source === "gadm")
     return { kind: "gadm", gadmId: normalizeGadmId(srcId) };
   return undefined;
 }
@@ -236,7 +228,7 @@ export function alertsWidgetSpec(
     aoi: { source, srcId, subtype, name },
     layer,
     overlays,
-    pointsArea: selectPointsArea(source, srcId, subtype),
+    pointsArea: selectPointsArea(source, srcId),
   };
 }
 

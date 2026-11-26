@@ -14,7 +14,7 @@ back to the Horizon homepage.
 
 There is no backend. gnw-gold-evals precomputes the numbers for each benchmark
 run (`tools/benchmark_page.py`) and commits them as
-`results/benchmark/pages/<run_id>.json` (`schema_version` 1). The page shows
+`results/benchmark/pages/<run_id>.json` (`schema_version` 1). The page uses
 only the runs listed in `model/releases.ts`, and fetches each one's page file
 from GitHub raw at the gnw-gold-evals commit its release pins, never at a
 branch: a page can be rebuilt in place on the `benchmark` branch, so pinning
@@ -24,18 +24,28 @@ schema mismatch throws rather than being papered over.
 
 ### Releasing a run
 
-1. Push the canonical run and its page file to gnw-gold-evals `benchmark`.
-2. Add `{ runId, ref, draft }` to `RELEASES` in `model/releases.ts`, with
-   `ref` the full sha of a pushed commit that holds the page as you want it
-   shown. `draft` alone decides whether the page marks the run as a draft
-   (header and hero badges, trend, footer, the questions' unreviewed
-   expected answers); the version name in the page data does not.
+1. Push the canonical run and its page file to gnw-gold-evals `main`.
+2. Add `{ name, runId, ref, draft }` to `RELEASES` in `model/releases.ts`.
+   `name` is a slug of a three-letter month and a year (`nov-2026`), unique
+   in the list; a bad month fails to compile, and the page spells it out
+   ("November 2026"). `ref` is the full sha of a pushed commit that holds
+   the page as you want it shown. `draft` alone decides whether the page
+   marks the run as a draft (header and hero badges, trend, footer, the
+   questions' unreviewed expected answers); the version name in the page
+   data does not.
 3. Open a PR to `develop`, check the page on staging, then release to `main`.
 
-The dropdown names each release by the month in its run id ("October 2026");
-when a month has more than one release, each of them is named by its day
-("28 October 2026"). With one release the name shows in place of the
-dropdown. A `?run=` that is not released opens the newest release.
+Adding the entry is the whole change. The newest release (by run id) fills
+the page, and its name shows in the header. There is no run picker, and a
+`?run=` in an older link is ignored. Every release, the older ones included,
+gives one headline point on the trend, oldest first, whatever its benchmark
+version (AJ, 2026-11-19). Versions differ by a few questions, so each point's
+tooltip gives the number it scored.
+
+Release only a benchmark run's own page. A languages companion run writes a
+page of the same shape, marked by a top-level `languages` key that no
+benchmark page has, and its headline holds only the English twins of the
+translated questions; the gateway refuses a page with that key.
 
 Unlike `/evals`, this slice computes no scores: the page data already carries
 the tiers, failure attribution and per-group stats, so the numbers match the
@@ -55,12 +65,12 @@ while the benchmark was a draft.
 
 ## Segments
 
-| Segment  | Contents                                                                                                                          |
-| -------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `model/` | Normalised page types, the gateway port, the release list, stage labels, use-case names, the check reference                      |
-| `lib/`   | Pure presentation helpers (tiers, failure breakdown, filters, release naming and run picking)                                     |
-| `api/`   | GitHub raw gateway at pinned commits: zod schemas for the wire page, mapping                                                      |
-| `ui/`    | Screen, three views in the URL (`?view=`, `?run=`; `?uc=` opens All questions filtered to a use case; `#checks` opens the checks) |
+| Segment  | Contents                                                                                                                 |
+| -------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `model/` | Normalised page types, the gateway port, the release list, stage labels, use-case names, the check reference             |
+| `lib/`   | Pure presentation helpers (tiers, failure breakdown, filters, released runs, trend points)                               |
+| `api/`   | GitHub raw gateway at pinned commits: zod schemas for the wire page, mapping                                             |
+| `ui/`    | Screen, three views in the URL (`?view=`; `?uc=` opens All questions filtered to a use case; `#checks` opens the checks) |
 
 ## Invariants (mirrored from gnw-gold-evals; update both together)
 
@@ -76,5 +86,3 @@ while the benchmark was a draft.
   shared checks failed. A question wrong on fewer than most trials counts at
   the earliest stage among the checks that failed on any trial, so it sits at
   the same stage under every standard.
-- Rates are comparable only within a benchmark version: the trend draws the
-  released runs of the open run's version.

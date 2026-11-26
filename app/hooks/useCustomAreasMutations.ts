@@ -5,6 +5,7 @@ import {
   type CustomArea,
 } from "@/app/schemas/api/custom_areas/get";
 import { renameCustomArea } from "@/app/utils/renameCustomArea";
+import { USER_AOIS_QUERY_KEY } from "@/src/entities/user-aoi";
 
 async function updateCustomAreaName(
   areaId: string,
@@ -42,7 +43,7 @@ export function useCustomAreasUpdate() {
       // The query refetch updates the areas list; the map, the analysis
       // selection and chat area cards hold their own copies of the name.
       renameCustomArea(area);
-      queryClient.invalidateQueries({ queryKey: ["customAreas"] });
+      queryClient.invalidateQueries({ queryKey: USER_AOIS_QUERY_KEY });
     },
   });
 
@@ -59,7 +60,7 @@ export function useCustomAreasDelete() {
   const mutation = useMutation({
     mutationFn: (areaId: string) => deleteCustomArea(areaId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["customAreas"] });
+      queryClient.invalidateQueries({ queryKey: USER_AOIS_QUERY_KEY });
     },
   });
 

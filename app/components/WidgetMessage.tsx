@@ -42,13 +42,13 @@ import {
 } from "@/src/features/ghg-flux-tree";
 import { WidgetIcons } from "../utils/widgetIcons";
 import AddToDashboardToggle from "@/src/features/dashboards/ui/AddToDashboardToggle";
+import { isCuratedWidget } from "@/src/entities/insight";
 import InsightProvenanceDrawer from "./InsightProvenanceDrawer";
 import VisualizationDisclaimer from "./VisualizationDisclaimer";
 import WidgetErrorBoundary from "./widgets/WidgetErrorBoundary";
 import ScrollableTableWrapper from "./widgets/ScrollableTableWrapper";
-import { AnalysisParamsChips } from "./widgets/AnalysisParameters";
+import { AnalysisInputsChips } from "./widgets/AnalysisParameters";
 import DownloadMenu from "./widgets/DownloadMenu";
-import { buildChips } from "./widgets/analysis-params-utils";
 import { exportChartImage } from "@/app/utils/exportChartImage";
 import { csvFilename } from "@/app/utils/csvExport";
 import { downloadCsv, rowsToCsv } from "@/src/shared/lib/csv";
@@ -258,11 +258,8 @@ export default function WidgetMessage({
   const hasData =
     Array.isArray(displayWidget.data) && displayWidget.data.length > 0;
   const showDisclaimer = (isChartType || widget.type === "table") && hasData;
-  const isCurated = widget.curated ?? !widget.generation;
+  const isCurated = isCuratedWidget(widget);
   const supportsAxisFit = AXIS_FIT_TYPES.has(widget.type);
-  const fullscreenChips = widget.analysisParams
-    ? buildChips(widget.analysisParams)
-    : [];
   return (
     <Box
       rounded="md"
@@ -298,8 +295,11 @@ export default function WidgetMessage({
         </Flex>
       )}
       <Flex gap={3} px={print ? 0 : 4} py={2} flexDir="column">
-        {/* AI-assisted caption — sits above the chart toolbar in the workspace */}
-        {inWorkspace && <InsightCaption curated={isCurated} />}
+        {/* Where the output came from (SOURCE DATA or AI-ASSISTED), above the
+            chart toolbar on every surface (the caption hides "Learn more" in
+            print itself). No dataset name yet: a later PR names it from the
+            recorded analysis inputs. */}
+        <InsightCaption curated={isCurated} />
         {/* Every surface with a shell of its own puts these pills above the
             card (see InsightChartPills); inline is the fallback for a host
             that has none, today only /chart-debug. */}
@@ -590,7 +590,7 @@ export default function WidgetMessage({
                     </WidgetErrorBoundary>
                   </Box>
                   {(widget.description ||
-                    fullscreenChips.length > 0 ||
+                    widget.analysisInputs ||
                     widget.datasetName) && (
                     <Flex
                       direction="column"
@@ -614,12 +614,12 @@ export default function WidgetMessage({
                           </Text>
                         </Box>
                       )}
-                      {fullscreenChips.length > 0 && (
+                      {widget.analysisInputs && (
                         <Box>
                           <Heading size="xs" mb={2}>
-                            Analysis parameters
+                            What was analyzed
                           </Heading>
-                          <AnalysisParamsChips chips={fullscreenChips} />
+                          <AnalysisInputsChips inputs={widget.analysisInputs} />
                         </Box>
                       )}
                       {widget.datasetName && (

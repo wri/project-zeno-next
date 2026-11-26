@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Flex, IconButton, Stack, Text } from "@chakra-ui/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { PolygonIcon, XIcon } from "@phosphor-icons/react";
@@ -21,6 +21,7 @@ import { AreaSearchResults } from "./AreaSearchResults";
 import { BoundariesList } from "./BoundariesList";
 import { PanelEmpty, PanelPills } from "./PanelList";
 import { PanelSearchInput } from "./PanelSearchInput";
+import { UserAoisBoundary } from "./UserAoisBoundary";
 
 /** Matches CatalogPanel compact/full-size enter & exit (slide from the left). */
 const areasPanelSlideTransition = {
@@ -54,8 +55,9 @@ const AREA_FILTERS: { id: AreasPanelFilter; label: string }[] = [
  *  - "In this conversation" — read from `mapStore.layers` (filtered via
  *    `isAreaLayer`); the visible area layer IS the scope. Show-on-map toggle
  *    controls the layer's `visible` flag via `mapStore.setLayerVisibility`.
- *  - "My areas" — `useCustomAreasListSuspense().customAreas`. Toggling
- *    show-on-map registers the geometry and adds an area layer (or removes it).
+ *  - "My areas" — the user's areas (`useUserAoisSuspense`): owned custom
+ *    areas and saved source areas. Toggling show-on-map fetches the geometry
+ *    and adds an area layer (or removes it).
  *  - `AreaActionBar` above the chips: Draw (`startDrawing`) and Upload
  *    (`toggleUploadAreaDialog`), and the draw status / confirm strip.
  *  - The search box: typing swaps the tabs for `AreaSearchResults` (saved
@@ -172,9 +174,11 @@ function AreasPanelBody({
             ) : filter === "conversation" ? (
               <ConversationAreasList />
             ) : (
-              <Suspense fallback={<PanelEmpty>Loading your areas…</PanelEmpty>}>
+              <UserAoisBoundary
+                loading={<PanelEmpty>Loading your areas…</PanelEmpty>}
+              >
                 <MonitoredAreasList />
-              </Suspense>
+              </UserAoisBoundary>
             )}
           </Stack>
         </>

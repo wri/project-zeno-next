@@ -1,6 +1,5 @@
 import {
   ChartLineIcon,
-  CheckCircleIcon,
   PolygonIcon,
   SparkleIcon,
   SquaresFourIcon,
@@ -8,6 +7,8 @@ import {
   type Icon,
   type IconWeight,
 } from "@phosphor-icons/react";
+
+import { SOURCE_DATA_ICON_COLOR, SourceDataIcon } from "../source-data-icon";
 
 /**
  * The four things the app lists as cards — in chat, in the catalogue panels
@@ -75,15 +76,15 @@ export interface EyebrowSpec {
 /**
  * An analysis card's eyebrow says both what it is and how it was made, in
  * one badge, on every surface: a green check for a curated (direct-query)
- * analysis, a grey sparkle for an AI-assisted one. Colours match the
- * workspace's `InsightCaption`.
+ * analysis, a grey sparkle for an AI-assisted one. `InsightCaption` reads
+ * the same spec for its badge.
  */
 export const VERIFICATION_EYEBROW: Record<AnalysisVerification, EyebrowSpec> = {
   verified: {
-    label: "CURATED ANALYSIS",
+    label: "SOURCE DATA ANALYSIS",
     color: "#656E7B",
-    Icon: CheckCircleIcon,
-    iconColor: "#009E77",
+    Icon: SourceDataIcon,
+    iconColor: SOURCE_DATA_ICON_COLOR,
   },
   "ai-generated": {
     label: "AI-ASSISTED ANALYSIS",

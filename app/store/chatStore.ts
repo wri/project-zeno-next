@@ -38,6 +38,7 @@ import { pickAoiTool } from "./chat-tools/pickAoi";
 import { pickDatasetTool } from "./chat-tools/pickDataset";
 import { pullDataTool } from "./chat-tools/pullData";
 import { showImageryTool } from "./chat-tools/showImagery";
+import { showBoundaryLayerTool } from "./chat-tools/showBoundaryLayer";
 import { isImageryTool } from "@/app/utils/imagery";
 import { queryClient } from "@/app/lib/query-client";
 import {
@@ -139,11 +140,9 @@ const initialState: ChatState = {
     {
       id: "1",
       type: "system",
-      message: `**Welcome to Global Nature Watch Horizon!**
-
-Hi, I'm your nature monitoring assistant, powered by AI and open data from [Global Nature Watch](https://globalnaturewatch.org) and [Land & Carbon Lab](https://landcarbonlab.org).
-
-You can ask me about land cover change, forest loss, or biodiversity risks in places you care about. For more details on how to get started, check out the [Help Center](https://help.horizon.globalnaturewatch.org/get-started).`,
+      // Rendered from the `chat.welcome` catalog message in the UI language
+      // (see MessageBubble); the seed only marks the greeting's place.
+      message: "",
       timestamp: new Date().toISOString(),
     },
   ],
@@ -561,6 +560,12 @@ async function processStreamMessage(
         await showImageryTool(streamMessage);
         useChatStore.getState().setImageryUpdating(false);
       });
+      return;
+    }
+    // Handling for show_boundary_layer: show the concessions boundary layer
+    // so the user can click a concession to pick it.
+    else if (streamMessage.name === "show_boundary_layer") {
+      showBoundaryLayerTool(streamMessage);
       return;
     }
   }

@@ -1,12 +1,10 @@
-import { useMemo, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Flex, IconButton } from "@chakra-ui/react";
 import { CrosshairIcon } from "@phosphor-icons/react";
 import { useShallow } from "zustand/react/shallow";
 
-import { useCustomAreasListSuspense } from "@/app/hooks/useCustomAreasList";
-import type { CustomArea } from "@/app/schemas/api/custom_areas/get";
+import { toaster } from "@/app/components/ui/toaster";
 import {
-  customAreaRef,
   findRegistryEntry,
   isAreaLayer,
   type Layer,
@@ -16,19 +14,30 @@ import useMapStore from "@/app/store/mapStore";
 import type { AOISelection } from "@/app/types/chat";
 import { areaSourceLabel } from "@/app/utils/areaSourceLabel";
 import { aoiFlyBounds } from "@/app/utils/bboxUtils";
-import { customAreaToFeature } from "@/src/entities/custom-area";
+import {
+  addUserAoiToMap,
+  findUserAoiLayer,
+  removeUserAoiFromMap,
+} from "@/app/utils/userAoiMap";
+import { placeMeta } from "@/src/entities/aoi";
+import {
+  userAoiToAoi,
+  useUserAoisSuspense,
+  type UserAoi,
+} from "@/src/entities/user-aoi";
 import { ENTITY_KINDS, EntityCard } from "@/src/shared/ui/entity-card";
 
 import { areaActionIconProps } from "./AreaCardMenu";
 import { AreaThumbnail } from "./AreaThumbnail";
 import ConversationAreaActionsMenu from "./ConversationAreaActionsMenu";
-import CustomAreaActionsMenu from "./CustomAreaActionsMenu";
+import UserAoiActionsMenu from "./UserAoiActionsMenu";
+import { UserAoiThumbnail } from "./UserAoiThumbnail";
 import { PanelEmpty, PanelList } from "./PanelList";
 import { Tooltip } from "./ui/tooltip";
 
 /**
  * The Areas panel's own lists and rows: areas on the map ("In this
- * conversation") and saved custom areas ("My areas"). The panel's search
+ * conversation") and the user's areas ("My areas"). The panel's search
  * results reuse the rows, so a match behaves as it does in its tab.
  */
 
@@ -152,123 +161,100 @@ function ConversationAreaCard({ layer }: { layer: Layer }) {
 }
 
 export function MonitoredAreasList() {
-  const { customAreas } = useCustomAreasListSuspense();
+  const { data: userAois } = useUserAoisSuspense();
 
-  const sorted = useMemo(() => {
-    return [...customAreas].sort(
-      (a, b) => Number(new Date(b.created_at)) - Number(new Date(a.created_at))
-    );
-  }, [customAreas]);
-
-  if (sorted.length === 0) {
+  if (userAois.length === 0) {
     return (
       <PanelEmpty>
-        No saved areas yet. Upload or draw an area to save it here.
+        No saved areas yet. Upload or draw an area, or save one from the map, to
+        keep it here.
       </PanelEmpty>
     );
   }
 
   return (
     <PanelList>
-      {sorted.map((area) => (
-        <MonitoredAreaCard key={area.id} area={area} />
+      {userAois.map((userAoi) => (
+        <MonitoredAreaCard key={userAoi.id} userAoi={userAoi} />
       ))}
     </PanelList>
   );
 }
 
-export function MonitoredAreaCard({ area }: { area: CustomArea }) {
-  const addToRegistry = useMapStore((s) => s.addToRegistry);
-  const addLayer = useMapStore((s) => s.addLayer);
-  const removeLayer = useMapStore((s) => s.removeLayer);
+export function MonitoredAreaCard({ userAoi }: { userAoi: UserAoi }) {
   const setLayerVisibility = useMapStore((s) => s.setLayerVisibility);
-  const flyToGeoJsonWithRetry = useMapStore((s) => s.flyToGeoJsonWithRetry);
-  const layer = useMapStore(
-    useShallow((s) => s.layers.find((l) => l.id === area.id))
-  );
+  const flyToBounds = useMapStore((s) => s.flyToBounds);
+  const layer = useMapStore((s) => findUserAoiLayer(s.layers, userAoi));
+  const [adding, setAdding] = useState(false);
 
-  const isVisible = layer?.visible ?? false;
+  // A layer hidden from "In this conversation" shows as off here; turning it
+  // on shows it again rather than adding a second copy.
+  const isVisible = !!layer?.visible;
+  const aoi = useMemo(() => userAoiToAoi(userAoi), [userAoi]);
 
-  const feature = useMemo(() => customAreaToFeature(area), [area]);
-  const aoiSelection = useMemo(
-    (): AOISelection => ({
-      name: area.name,
-      aois: [
-        {
-          name: area.name,
-          src_id: area.id,
-          source: "custom",
-          subtype: "custom-area",
-        },
-      ],
-    }),
-    [area]
-  );
-
-  const customRef = customAreaRef(area);
-
-  function handleToggle(checked: boolean) {
-    if (checked) {
-      if (!layer) {
-        // Register geometry and add a visible area layer — the layer IS the
-        // scope, so there is no separate context item.
-        addToRegistry({
-          ref: customRef,
-          data: feature,
-          srcId: area.id,
-          subtype: "custom-area",
-        });
-        addLayer({
-          id: area.id,
-          name: area.name,
-          type: "geojson",
-          visible: true,
-          featureRefs: [customRef],
-        });
-        flyToGeoJsonWithRetry(feature);
-        return;
-      }
-      // Already added but hidden — just re-show it.
-      if (!layer.visible) {
-        setLayerVisibility(area.id, true);
-      }
+  async function handleToggle(checked: boolean) {
+    if (!checked) {
+      if (layer) removeUserAoiFromMap(layer, userAoi);
       return;
     }
-    // Toggle OFF on a monitored card removes it from the map entirely.
-    // (Visibility-only hiding is available from the "In this conversation" tab.)
     if (layer) {
-      removeLayer(area.id);
+      setLayerVisibility(layer.id, true);
+      return;
+    }
+    setAdding(true);
+    try {
+      await addUserAoiToMap(userAoi);
+    } catch (error) {
+      console.error(`Failed to add "${userAoi.name}" to the map:`, error);
+      toaster.create({
+        type: "error",
+        title: "Couldn't add this area",
+        description: `"${userAoi.name}" couldn't be loaded. Please try again.`,
+      });
+    } finally {
+      setAdding(false);
     }
   }
 
   function handleLocate() {
-    flyToGeoJsonWithRetry(feature);
+    const bounds = aoiFlyBounds([aoi]);
+    if (bounds) {
+      flyToBounds(bounds);
+      return;
+    }
+    // Without a bbox, fly to the geometry the layer put on the map.
+    const { geoJsonRegistry, flyToGeoJson } = useMapStore.getState();
+    for (const ref of layer?.featureRefs ?? []) {
+      const entry = findRegistryEntry(geoJsonRegistry, ref);
+      if (entry) {
+        flyToGeoJson(entry.data);
+        return;
+      }
+    }
   }
 
   return (
     <EntityCard
       kind="area"
-      thumbnail={
-        <AreaThumbnail
-          aoiSelection={aoiSelection}
-          alt={area.name}
-          geometry={feature}
-        />
-      }
-      title={area.name}
-      meta={areaSourceLabel("custom")}
+      thumbnail={<UserAoiThumbnail userAoi={userAoi} />}
+      title={userAoi.name}
+      meta={placeMeta(aoi)}
       interaction={{
         mode: "toggle",
-        checked: isVisible,
-        onChange: handleToggle,
+        checked: isVisible || adding,
+        onChange: (checked) => void handleToggle(checked),
+        status: adding ? "Adding…" : undefined,
+        disabled: adding,
         dataPanel: "areas",
       }}
       actions={
-        // Rename/delete act on the saved area, so the kebab must show even
+        // Rename/delete act on the user AOI, so the kebab must show even
         // when the area isn't on the map; the locate button stays on-map only.
+        // It's hidden while the area is being added, or a delete in that time
+        // would let the add put the deleted area back on the map.
         <AreaCardActions
           onLocate={isVisible ? handleLocate : undefined}
-          menu={<CustomAreaActionsMenu area={area} />}
+          menu={adding ? null : <UserAoiActionsMenu userAoi={userAoi} />}
         />
       }
     />
