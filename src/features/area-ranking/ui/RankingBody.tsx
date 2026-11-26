@@ -65,7 +65,10 @@ export function RankingBody({
       css={{ containerType: "inline-size" }}
     >
       {share && (
-        <Flex direction="column" gap="4px">
+        // 8px under the flex gap, so the space above the first bar is the 16px
+        // the pager text has below the last: its gap plus the 8px the text
+        // sits inside its 32px button row.
+        <Flex direction="column" gap="4px" mb="8px">
           <Text fontSize="12px" lineHeight="16px">
             <Text as="span" fontWeight="bold">
               {share.lead}

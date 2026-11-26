@@ -174,8 +174,11 @@ export function RankingBars({
     <Flex
       as="ol"
       direction="column"
-      // 10 rows of 16px, the pager and a two-line no-loss note fit the
-      // chart's 280px: 160 + 9 * 5 + 8 + 24 + 8 + 32 = 277.
+      // The card has no fixed height (the 280px cap is the generic chart's, and
+      // this body does not use it), so the stack grows: page share 26 + 8 + 8,
+      // 10 rows (160 + 9 * 5 = 205), 8, the 32px pager = 287 on a full first
+      // page. A last page with 10 rows and a two-line no-loss note (8 + 32)
+      // is 327.
       gap="5px"
       m={0}
       p={0}
