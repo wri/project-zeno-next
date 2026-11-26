@@ -15,7 +15,6 @@ const area = (overrides: Partial<RankedArea> = {}): RankedArea => ({
   rank: 1,
   name: "Bom Jesus",
   parent: "Piauí",
-  showParent: false,
   value: 72050.31,
   share: 15.21,
   ...overrides,
@@ -48,7 +47,7 @@ describe("tooltipLines", () => {
   });
 
   it("gives the value alone when the areas have no share", () => {
-    const bare = area({ share: undefined, parent: null });
+    const bare = area({ share: undefined, parent: undefined });
     expect(tooltipLines(bare, ranking([bare]))).toEqual([
       "Bom Jesus",
       "72,050.31 ha",
@@ -80,7 +79,7 @@ describe("barValueText", () => {
 describe("noValueText", () => {
   const empty = [
     area({ value: 0, name: "Belém" }),
-    area({ value: 0, name: "Bom Jesus", showParent: true }),
+    area({ value: 0, name: "Bom Jesus", qualifier: "Piauí" }),
   ];
 
   it("names the areas, with the parent where the name repeats", () => {

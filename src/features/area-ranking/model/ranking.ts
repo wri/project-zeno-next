@@ -25,10 +25,13 @@ export interface RankedArea {
   /** Competition rank: ties share a rank (1, 2, 3, 4, 4, 6). */
   rank: number;
   name: string;
-  /** The area it lies in ("Piauí" for "Bom Jesus"), null when it has none. */
-  parent: string | null;
-  /** The name repeats in this chart, so the parent tells the areas apart. */
-  showParent: boolean;
+  /** The area it lies in ("Piauí" for "Bom Jesus"), absent when it has none. */
+  parent?: string;
+  /**
+   * The parent, set only when the name repeats in this chart and there is a
+   * parent to tell the areas apart by.
+   */
+  qualifier?: string;
   /** Always ≥ 0. Zero means no loss (or no emissions). */
   value: number;
   /**
@@ -112,14 +115,14 @@ export function parseRanking(data: unknown, yAxis: string): Ranking {
     const name = readString(row, "name", index);
     nameCounts.set(name, (nameCounts.get(name) ?? 0) + 1);
     const parent =
-      row.parent === null ? null : readString(row, "parent", index);
+      row.parent === null ? undefined : readString(row, "parent", index);
     const value = readNumber(row, yAxis, index);
     if (value < 0) fail(index, `has a negative ${yAxis}`);
     return {
       aoiId,
       rank: readNumber(row, "rank", index),
       name,
-      parent,
+      ...(parent !== undefined ? { parent } : {}),
       value,
       ...(withShare > 0 ? { share: readNumber(row, "share_pct", index) } : {}),
     };
@@ -137,10 +140,11 @@ export function parseRanking(data: unknown, yAxis: string): Ranking {
   return {
     measure,
     unit: axisUnit(yAxis),
-    areas: parsed.map((area) => ({
-      ...area,
-      showParent: (nameCounts.get(area.name) ?? 0) > 1,
-    })),
+    areas: parsed.map((area) =>
+      area.parent !== undefined && (nameCounts.get(area.name) ?? 0) > 1
+        ? { ...area, qualifier: area.parent }
+        : area
+    ),
   };
 }
 

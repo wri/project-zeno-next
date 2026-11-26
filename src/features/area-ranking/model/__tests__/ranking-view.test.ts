@@ -9,8 +9,6 @@ function ranking(bars: number, empty = 0): Ranking {
     aoiId: `a${i}`,
     rank: i + 1,
     name: `Area ${i}`,
-    parent: null,
-    showParent: false,
     value,
   });
   return {

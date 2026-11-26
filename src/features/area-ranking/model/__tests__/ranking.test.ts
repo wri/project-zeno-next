@@ -47,7 +47,6 @@ describe("parseRanking", () => {
           rank: 1,
           name: "Narok",
           parent: "Kenya",
-          showParent: false,
           value: 72050.31,
           share: 60,
         },
@@ -56,7 +55,6 @@ describe("parseRanking", () => {
           rank: 2,
           name: "Nakuru",
           parent: "Kenya",
-          showParent: false,
           value: 48000,
           share: 40,
         },
@@ -64,8 +62,6 @@ describe("parseRanking", () => {
           aoiId: "KEN.30",
           rank: 3,
           name: "Nairobi",
-          parent: null,
-          showParent: false,
           value: 0,
           share: 0,
         },
@@ -85,7 +81,7 @@ describe("parseRanking", () => {
     expect(areas.every((area) => !("share" in area))).toBe(true);
   });
 
-  it("shows the parent of the areas that share a name", () => {
+  it("sets the qualifier of the areas that share a name", () => {
     const { areas } = parseRanking(
       [
         row({
@@ -111,7 +107,20 @@ describe("parseRanking", () => {
       ].map((r) => ({ ...r, area_ha: Number(r.share_pct) })),
       "area_ha"
     );
-    expect(areas.map((area) => area.showParent)).toEqual([true, true, false]);
+    expect(areas.map((area) => area.qualifier)).toEqual([
+      "Piauí",
+      "Rio Grande do Sul",
+      undefined,
+    ]);
+  });
+
+  it("leaves the qualifier off a repeated name that has no parent", () => {
+    const { areas } = parseRanking(
+      [row({ parent: null }), row({ rank: 2, aoi_id: "KEN.1", parent: null })],
+      "area_ha"
+    );
+    expect(areas.map((area) => area.parent)).toEqual([undefined, undefined]);
+    expect(areas.map((area) => area.qualifier)).toEqual([undefined, undefined]);
   });
 
   it("keeps rows that tie", () => {

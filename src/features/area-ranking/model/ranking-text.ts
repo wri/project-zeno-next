@@ -10,7 +10,7 @@ const NO_VALUE_PHRASE = {
 
 /** "Bom Jesus, Piauí": the name and, when there is one, the area it lies in. */
 function fullName({ name, parent }: RankedArea): string {
-  return parent === null ? name : `${name}, ${parent}`;
+  return parent === undefined ? name : `${name}, ${parent}`;
 }
 
 /** The exact figure: "72,050 ha". */
@@ -84,7 +84,7 @@ export function valueReserve(ranking: Ranking, print: boolean): string {
 /** The areas with no value, named in one line instead of drawn as bars. */
 export function noValueText(ranking: Ranking, areas: RankedArea[]): string {
   const names = areas.map((area) =>
-    area.showParent ? fullName(area) : area.name
+    area.qualifier === undefined ? area.name : fullName(area)
   );
   const count = `${areas.length} ${areas.length === 1 ? "area" : "areas"}`;
   return `${NO_VALUE_PHRASE[ranking.measure]} in ${count}: ${names.join(", ")}.`;

@@ -105,9 +105,9 @@ function RankingRow({
       </Text>
       <Text color="neutral.700" truncate>
         {area.name}
-        {area.showParent && area.parent !== null && (
+        {area.qualifier !== undefined && (
           <Text as="span" color="fg.muted">
-            {` · ${area.parent}`}
+            {` · ${area.qualifier}`}
           </Text>
         )}
       </Text>
