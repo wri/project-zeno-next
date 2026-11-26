@@ -213,7 +213,7 @@ describe("DashboardInsightModule", () => {
         },
       }),
     });
-    expect(screen.getByText(/CURATED/)).toBeTruthy();
+    expect(screen.getByText(/SOURCE DATA/)).toBeTruthy();
     expect(screen.queryByText(/AI-ASSISTED/)).toBe(null);
   });
 

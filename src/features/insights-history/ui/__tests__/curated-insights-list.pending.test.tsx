@@ -93,7 +93,12 @@ const chart: Chart = {
   data: [{ year: 2020, loss_ha: 5 }],
 };
 
-const RESULT: AnalysisResult = { id: "ins-1", charts: [chart] };
+const RESULT: AnalysisResult = {
+  id: "ins-1",
+  createdAt: "",
+  charts: [chart],
+  analysisInputs: { recorded: false },
+};
 const TCL_TITLE = "Tree cover loss in Pará";
 
 function deferred<T>() {
@@ -196,7 +201,12 @@ describe("CuratedInsightsList pending dashboard module", () => {
 
   it("clears the pending entry when the run yields no charts", async () => {
     const service = fakeService(() =>
-      Promise.resolve({ id: "ins-empty", charts: [] })
+      Promise.resolve({
+        id: "ins-empty",
+        createdAt: "",
+        charts: [],
+        analysisInputs: { recorded: false },
+      })
     );
     renderList(service);
 

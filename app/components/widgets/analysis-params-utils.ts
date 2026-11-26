@@ -1,7 +1,7 @@
-import { AnalysisParams } from "@/app/types/chat";
+import type { RecordedAnalysisInputs } from "@/src/entities/insight";
 import { ParamChipColorScheme } from "@/app/components/ui/ParamChip";
 import { shortDatasetName } from "@/app/constants/datasets";
-import { buildYearParam } from "@/app/utils/formatYearRange";
+import { yearParam } from "@/app/utils/formatYearRange";
 import { formatCanopyThreshold } from "@/app/utils/formatCanopyThreshold";
 
 export interface ParamChipData {
@@ -14,45 +14,60 @@ export interface ParamChipData {
   highlightValue?: boolean;
 }
 
-export function buildChips(params: AnalysisParams): ParamChipData[] {
-  const chips: ParamChipData[] = [];
+/** An AREA chip, its value coloured like the label. */
+export function areaChip(name: string): ParamChipData {
+  return {
+    label: "AREA",
+    value: name,
+    colorScheme: "blue",
+    highlightValue: true,
+  };
+}
 
-  // Area chips — one per AOI (value coloured like the label)
-  if (params.areas?.length) {
-    for (const area of params.areas) {
-      chips.push({
-        label: "AREA",
-        value: area,
-        colorScheme: "blue",
-        highlightValue: true,
-      });
-    }
-  }
+/** A DATA chip: the short label, with the full dataset name as tooltip. */
+export function datasetChip(name: string): ParamChipData {
+  return {
+    label: "DATA",
+    value: shortDatasetName(name),
+    colorScheme: "green",
+    tooltip: name,
+  };
+}
 
-  // Dataset chip — show the short label, tooltip the full dataset name
-  if (params.dataset) {
-    chips.push({
-      label: "DATA",
-      value: shortDatasetName(params.dataset),
-      colorScheme: "green",
-      tooltip: params.dataset,
-    });
-  }
+/** AREA chips shown before the rest fold into one "+N" chip. */
+const AREA_CHIP_LIMIT = 3;
 
-  // Canopy threshold chip (only if present — omit for non-tree-cover datasets)
-  if (params.canopyThreshold != null) {
-    chips.push({
-      label: "CANOPY",
-      value: formatCanopyThreshold(params.canopyThreshold),
-      colorScheme: "purple",
-    });
-  }
-
-  // Year chip — shared with the legend so labelling/format stay identical
-  const yearParam = buildYearParam(params.startYear, params.endYear);
-  if (yearParam) {
-    chips.push({ ...yearParam, colorScheme: "purple" });
-  }
-
-  return chips;
+/**
+ * The chips for an analysis's recorded inputs: one per distinct area,
+ * dataset, canopy threshold and year range. Past `areaLimit` areas, the rest
+ * fold into one "+N" chip whose tooltip names them; print passes `Infinity`,
+ * since paper has no tooltip.
+ */
+export function buildChips(
+  inputs: RecordedAnalysisInputs,
+  areaLimit = AREA_CHIP_LIMIT
+): ParamChipData[] {
+  const areaNames = inputs.areas.map((area) => area.name);
+  const folded = areaNames.slice(areaLimit);
+  return [
+    ...areaNames.slice(0, areaLimit).map(areaChip),
+    ...(folded.length > 0
+      ? [{ ...areaChip(`+${folded.length}`), tooltip: folded.join(" · ") }]
+      : []),
+    ...inputs.datasets.map((dataset) => datasetChip(dataset.name)),
+    ...inputs.canopyCover.map(
+      (value): ParamChipData => ({
+        label: "CANOPY",
+        value: formatCanopyThreshold(value),
+        colorScheme: "purple",
+      })
+    ),
+    // Shared with the legend so labelling and format stay identical.
+    ...inputs.years.map(
+      (years): ParamChipData => ({
+        ...yearParam(years.start, years.end),
+        colorScheme: "purple",
+      })
+    ),
+  ];
 }

@@ -1,68 +1,47 @@
 import { differenceInCalendarMonths, getDate } from "date-fns";
-import { calendarDate, formatLongDay, formatLongMonth } from "./format";
+import { calendarDate } from "./format";
 import type { Release } from "../model/releases";
-import type {
-  BenchmarkPage,
-  BenchmarkRunRef,
-  TrendPoint,
-} from "../model/types";
+import type { BenchmarkPage, TrendPoint } from "../model/types";
 
 /**
- * The released runs, oldest first, each named by the month in its run id
- * ("20261028T…" is October 2026); every release in a month that has more
- * than one is named by its day. The list's shape (run ids, full commit
- * shas, each run once) is checked by a unit test over RELEASES.
+ * The released runs, oldest first (a run id starts with its timestamp).
+ * The list's shape (names, run ids, full commit shas, each name and run
+ * once) is checked by a unit test over RELEASES.
  */
-export function releasedRuns(releases: readonly Release[]): BenchmarkRunRef[] {
-  const dated = releases.map((release) => {
-    const id = release.runId;
-    const day = `${id.slice(0, 4)}-${id.slice(4, 6)}-${id.slice(6, 8)}`;
-    return { release, day, month: formatLongMonth(day) };
-  });
-  return dated
-    .map(({ release, day, month }) => ({
-      ...release,
-      label:
-        dated.filter((d) => d.month === month).length > 1
-          ? formatLongDay(day)
-          : month,
-    }))
-    .sort((a, b) => a.runId.localeCompare(b.runId));
+export function releasedRuns(releases: readonly Release[]): Release[] {
+  return [...releases].sort((a, b) => a.runId.localeCompare(b.runId));
 }
 
 /**
- * The run the page opens on: the requested one when it is released, else
- * the newest release. Runs come oldest first, and RELEASES is never empty.
- */
-export function pickRun(
-  runs: readonly BenchmarkRunRef[],
-  requested: string | null
-): BenchmarkRunRef {
-  return runs.find((r) => r.runId === requested) ?? runs[runs.length - 1];
-}
-
-/**
- * The trend's points: the headline of each loaded page of `version`, in
- * the pages' order. Rates are only comparable within a version.
+ * The trend's points: the headline of each loaded page, in the runs' order
+ * (`pages[i]` is `runs[i]`'s page), whatever its benchmark version (AJ,
+ * 2026-11-19). Each point carries the number of questions it scored,
+ * because the sets differ slightly between versions.
  */
 export function trendPoints(
-  pages: readonly (BenchmarkPage | undefined)[],
-  version: string
+  runs: readonly Release[],
+  pages: readonly (BenchmarkPage | undefined)[]
 ): TrendPoint[] {
-  return pages.flatMap((p) =>
-    p?.benchmark.version !== version || p.summary.everyTime == null
-      ? []
-      : [
-          {
-            runId: p.run.runId,
-            started: p.run.started,
-            draft: p.run.draft,
-            everyTime: p.summary.everyTime,
-            majority: p.summary.majority,
-            anyTime: p.summary.anyTime,
-          },
-        ]
-  );
+  return runs.flatMap((run, i) => {
+    const p = pages[i];
+    if (!p) return [];
+    const { scored, everyTime, majority, anyTime } = p.summary;
+    // The page data nulls the three shares together, and only when nothing
+    // was scored: such a run has no headline to plot.
+    if (everyTime == null || majority == null || anyTime == null) return [];
+    return [
+      {
+        name: run.name,
+        runId: p.run.runId,
+        started: p.run.started,
+        draft: p.run.draft,
+        scored,
+        everyTime,
+        majority,
+        anyTime,
+      },
+    ];
+  });
 }
 
 /** The trend axis origin: 1 September 2026. */

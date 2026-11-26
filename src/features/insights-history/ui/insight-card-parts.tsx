@@ -1,15 +1,19 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { Fragment, useMemo, useState, type ReactNode } from "react";
 import { Box, Button, Flex, IconButton, Text } from "@chakra-ui/react";
 import {
   ArrowArcLeftIcon,
   ArrowArcRightIcon,
   CaretLeftIcon,
 } from "@phosphor-icons/react";
+import { format } from "date-fns";
 
 import { CATALOG_CARD_WIDTH_PX } from "@/app/explorationLayout";
 import InsightCaption from "@/app/components/InsightCaption";
 import InsightChartPills from "@/app/components/InsightChartPills";
 import WidgetMessage from "@/app/components/WidgetMessage";
+import { INPUTS_NOT_RECORDED } from "@/app/components/widgets/AnalysisParameters";
+import { describeCanopyThreshold } from "@/app/utils/formatCanopyThreshold";
+import { yearParam } from "@/app/utils/formatYearRange";
 import {
   collapseNetFluxRollups,
   netFluxRollups,
@@ -17,7 +21,10 @@ import {
 } from "@/src/features/net-flux";
 import { Tooltip } from "@/app/components/ui/tooltip";
 import { WidgetIconComponent } from "@/app/utils/widgetIcons";
-import type { InsightVerification } from "@/src/entities/insight";
+import type {
+  AnalysisInputs,
+  InsightVerification,
+} from "@/src/entities/insight";
 import type { InsightWidget } from "@/app/types/chat";
 
 import type { InsightGroupItem } from "../lib/insight-groups";
@@ -38,6 +45,106 @@ export function InsightThumbnail({ type }: { type: InsightWidget["type"] }) {
     <Flex w="100%" h="100%" align="center" justify="center" bg="primary.25">
       <Icon size={28} color={INSIGHT_LABEL_COLOR} weight="thin" />
     </Flex>
+  );
+}
+
+/** "13 Oct 2026" for an ISO timestamp; "" when there is none. */
+export function formatGeneratedAt(createdAt: string): string {
+  if (!createdAt) return "";
+  const date = new Date(createdAt);
+  return Number.isNaN(date.getTime()) ? "" : format(date, "d MMM yyyy");
+}
+
+/** Areas the panel names before the rest collapse into "and N more". */
+const PANEL_AREA_LIMIT = 5;
+
+/**
+ * The detail view's "What was analyzed" panel: the inputs the backend
+ * recorded for this analysis, and when it ran. Read-only: the map is not
+ * moved and nothing re-runs from here.
+ */
+export function AnalyzedInputsPanel({
+  inputs,
+  createdAt,
+}: {
+  inputs: AnalysisInputs;
+  /** The stored insight's timestamp; "" when unknown (the Run row is left out). */
+  createdAt: string;
+}) {
+  const run = formatGeneratedAt(createdAt);
+  const rows: [term: string, values: string[]][] = [];
+  if (inputs.recorded) {
+    const names = inputs.areas.map((area) => area.name);
+    const more = names.length - PANEL_AREA_LIMIT;
+    rows.push(
+      [
+        "Area",
+        [
+          ...names.slice(0, PANEL_AREA_LIMIT),
+          ...(more > 0 ? [`and ${more} more`] : []),
+        ],
+      ],
+      ["Dataset", inputs.datasets.map((dataset) => dataset.name)],
+      ["Canopy density", inputs.canopyCover.map(describeCanopyThreshold)],
+      [
+        "Years of data",
+        inputs.years.map((years) => yearParam(years.start, years.end).value),
+      ]
+    );
+  }
+  if (run) rows.push(["Run", [run]]);
+  const shown = rows.filter(([, values]) => values.length > 0);
+
+  return (
+    <Box
+      as="section"
+      aria-label="What was analyzed"
+      bg="primary.25"
+      borderWidth="1px"
+      borderColor="#DDE2F5"
+      borderRadius="6px"
+      px="14px"
+      py="12px"
+      fontSize="12px"
+      lineHeight="16px"
+      color="neutral.700"
+    >
+      <Text
+        fontFamily="mono"
+        fontSize="10px"
+        letterSpacing="0.03em"
+        color="neutral.500"
+        mb="8px"
+      >
+        WHAT WAS ANALYZED
+      </Text>
+      {!inputs.recorded && (
+        <Text mb={shown.length > 0 ? "8px" : 0}>{INPUTS_NOT_RECORDED}</Text>
+      )}
+      {shown.length > 0 && (
+        <Box
+          as="dl"
+          display="grid"
+          gridTemplateColumns="96px minmax(0, 1fr)"
+          columnGap="8px"
+          rowGap="4px"
+          m={0}
+        >
+          {shown.map(([term, values]) => (
+            <Fragment key={term}>
+              <Box as="dt" color="neutral.500">
+                {term}
+              </Box>
+              <Box as="dd" m={0} minW={0} overflowWrap="anywhere">
+                {values.map((value, i) => (
+                  <Text key={i}>{value}</Text>
+                ))}
+              </Box>
+            </Fragment>
+          ))}
+        </Box>
+      )}
+    </Box>
   );
 }
 
@@ -93,6 +200,7 @@ export function InsightGroupDetail({
       onIndexChange={setChartIndex}
       onBack={onBack}
       unit="chart"
+      createdAt={group.createdAt}
       toolbar={
         widget ? (
           <InsightChartPills
@@ -112,6 +220,7 @@ export function InsightDetail({
   onIndexChange,
   onBack,
   unit,
+  createdAt,
   toolbar,
 }: {
   widgets: InsightWidget[];
@@ -120,6 +229,8 @@ export function InsightDetail({
   onBack: () => void;
   /** What prev/next steps through: sibling analyses, or one analysis's charts. */
   unit: "analysis" | "chart";
+  /** When the analysis on show was stored; "" when unknown. */
+  createdAt: string;
   /**
    * Per-chart controls for the chart on show, rendered above the card the way
    * the workspace shell does (`InsightChartPills`). The pane is the shell
@@ -151,6 +262,15 @@ export function InsightDetail({
       {toolbar && <Box mb={2}>{toolbar}</Box>}
 
       <WidgetMessage widget={widget} inWorkspace />
+
+      {widget.analysisInputs && (
+        <Box mt={3}>
+          <AnalyzedInputsPanel
+            inputs={widget.analysisInputs}
+            createdAt={createdAt}
+          />
+        </Box>
+      )}
 
       {total > 1 && (
         <Flex mt={3} justify="space-between" align="center">

@@ -340,10 +340,10 @@ describe("useAnalysis", () => {
     ]);
   });
 
-  it("builds the YEARS param from the window the LGMS analysis ran over", async () => {
-    // PZB-1355: the chip is built from the analysed window, so an LGMS
-    // analysis seeded with the dataset's own coverage must report 2016–2024,
-    // not the catalogue-wide 2001–2025 default.
+  it("shows the stored insight's recorded inputs, not the selection", async () => {
+    // The chips describe what the backend recorded it computed (PZB-1355:
+    // an LGMS run over 2016–2024 must not read 2001–2025), so the selection
+    // that asked for the analysis does not feed them.
     const chart = {
       id: "c0",
       position: 0,
@@ -357,11 +357,19 @@ describe("useAnalysis", () => {
       seriesFields: [],
       data: [{ year: 2016 }, { year: 2024 }],
     };
+    const recorded = {
+      recorded: true as const,
+      areas: [{ name: "Brazil", source: "gadm", srcId: "BRA" }],
+      datasets: [{ name: "LGMS total net GHG flux", id: 12 }],
+      canopyCover: [],
+      years: [{ start: 2016, end: 2024 }],
+    };
     const service: AnalysisService = {
       run: vi.fn().mockResolvedValue({
         id: "r1",
+        createdAt: "",
         charts: [chart],
-        params: { source: "gadm", srcId: "BRA", name: "Brazil" },
+        analysisInputs: recorded,
       }),
     };
     const sink: InsightSink = { add: vi.fn() };
@@ -378,12 +386,7 @@ describe("useAnalysis", () => {
     await waitFor(() => expect(result.current.status).toBe("done"));
 
     const widgets = (sink.add as ReturnType<typeof vi.fn>).mock.calls[0][0];
-    expect(widgets[0].analysisParams).toMatchObject({
-      areas: ["Brazil"],
-      dataset: "LGMS total net GHG flux",
-      startYear: 2016,
-      endYear: 2024,
-    });
+    expect(widgets[0].analysisInputs).toEqual(recorded);
   });
 
   it("titles the curated charts even when the dataset name is unknown", async () => {

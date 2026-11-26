@@ -5,9 +5,10 @@
  * (`api/github-benchmark-gateway.ts`); tests inject a fake.
  */
 
-import type { BenchmarkPage, BenchmarkRunRef } from "./types";
+import type { Release } from "./releases";
+import type { BenchmarkPage } from "./types";
 
 export interface BenchmarkGateway {
   /** One released run's page data. */
-  page(run: BenchmarkRunRef, signal?: AbortSignal): Promise<BenchmarkPage>;
+  page(run: Release, signal?: AbortSignal): Promise<BenchmarkPage>;
 }

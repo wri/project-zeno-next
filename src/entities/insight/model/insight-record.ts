@@ -1,3 +1,4 @@
+import type { AnalysisInputs } from "./analysis-inputs";
 import type { Chart } from "./chart";
 
 /** How an insight was produced — drives the card's verification badge. */
@@ -34,4 +35,6 @@ export interface InsightRecord {
    */
   source?: string;
   charts: Chart[];
+  /** What the insight was computed from (backend `analysis_inputs`). */
+  analysisInputs: AnalysisInputs;
 }

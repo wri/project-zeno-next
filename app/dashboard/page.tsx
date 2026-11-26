@@ -34,6 +34,7 @@ import { getSettingsFormSchema } from "@/app/dashboard/schema";
 import RequirementHint from "@/app/components/RequirementHint";
 import { TopicPills, toggleTopic } from "@/app/components/TopicPills";
 import { ACCOUNT_DELETION_URL } from "@/app/dashboard/account-deletion";
+import { followPreferredLocale, useTranslation } from "@/src/shared/lib/i18n";
 
 /**
  * Every sector's "Other:" role. Choosing it relabels Job title as "Your role",
@@ -60,6 +61,7 @@ type ProfileFormState = {
 type ValueChangeDetails = { value: string[] };
 
 export default function UserProfilePage() {
+  const { t } = useTranslation();
   const isReady = useAuthGuard();
   const fieldRequired = isProfileFieldRequired;
   const schema = useMemo(() => getSettingsFormSchema(), []);
@@ -207,18 +209,22 @@ export default function UserProfilePage() {
         has_profile: true,
       });
 
+      const previousLanguage = useAuthStore.getState().preferredLanguageCode;
       const res = await apiFetch(`/api/auth/profile`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       if (!res.ok) {
-        throw new Error("Failed to save profile");
+        throw new Error(`Failed to save profile (${res.status})`);
       }
       // This page is where "Complete your profile" leads, so the reminder
       // (menu item, in-chat asks) must stop without a reload.
       const { status } = parseAuthMe(await res.json());
-      if (status) useAuthStore.getState().setAuthStatus(status);
+      if (status) {
+        useAuthStore.getState().setAuthStatus(status);
+        followPreferredLocale(previousLanguage, status.preferredLanguageCode);
+      }
 
       // Submit to Ortto directly from client (no secrets needed)
       await submitOrttoProfile({
@@ -234,16 +240,16 @@ export default function UserProfilePage() {
       });
 
       toaster.create({
-        title: "Profile saved",
-        description: "Your changes have been saved successfully.",
+        title: t("profile.saved.title"),
+        description: t("profile.saved.description"),
         type: "success",
         duration: 3000,
       });
     } catch (err) {
       console.error(err);
       toaster.create({
-        title: "Save failed",
-        description: (err as Error)?.message || "Unable to save profile.",
+        title: t("profile.saveFailed.title"),
+        description: t("profile.saveFailed.description"),
         type: "error",
         duration: 4000,
       });
@@ -267,7 +273,7 @@ export default function UserProfilePage() {
           <Flex alignItems="center" gap={2} color="fg.muted">
             <UserCircleIcon size={24} />
             <Heading as="h1" size="2xl" fontWeight="normal">
-              User Profile
+              {t("account.profile")}
             </Heading>
           </Flex>
           <Button
@@ -279,7 +285,7 @@ export default function UserProfilePage() {
             disabled={!isValid || isSaving}
           >
             <FloppyDiskIcon />
-            Save changes
+            {t("profile.save")}
           </Button>
         </Flex>
 
@@ -287,7 +293,7 @@ export default function UserProfilePage() {
           <Text as="span" color="red.500">
             *
           </Text>{" "}
-          required fields
+          {t("profile.required")}
         </Text>
 
         {/* Form Grid Layout */}
@@ -296,7 +302,7 @@ export default function UserProfilePage() {
           <GridItem>
             <Field.Root id="first-name" required={fieldRequired("firstName")}>
               <Field.Label>
-                First name
+                {t("profile.firstName")}
                 <RequirementHint field="firstName" />
               </Field.Label>
               <Input
@@ -314,7 +320,7 @@ export default function UserProfilePage() {
           <GridItem>
             <Field.Root id="last-name" required={fieldRequired("lastName")}>
               <Field.Label>
-                Last name
+                {t("profile.lastName")}
                 <RequirementHint field="lastName" />
               </Field.Label>
               <Input
@@ -332,7 +338,7 @@ export default function UserProfilePage() {
           <GridItem>
             <Field.Root id="email" required={fieldRequired("email")}>
               <Field.Label>
-                Email address
+                {t("profile.email")}
                 <RequirementHint field="email" />
               </Field.Label>
               <Input
@@ -354,7 +360,7 @@ export default function UserProfilePage() {
 
         {/* Second Section of the Form */}
         <Heading size="xs" color="fg.subtle" fontWeight="normal">
-          Additional Details
+          {t("profile.additional")}
         </Heading>
         <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={6}>
           {/* Sector */}
@@ -371,12 +377,14 @@ export default function UserProfilePage() {
               >
                 <Select.HiddenSelect />
                 <Select.Label>
-                  Sector
+                  {t("profile.sector")}
                   <RequirementHint field="sector" />
                 </Select.Label>
                 <Select.Control>
                   <Select.Trigger>
-                    <Select.ValueText placeholder="Select Sector" />
+                    <Select.ValueText
+                      placeholder={t("profile.sector.placeholder")}
+                    />
                   </Select.Trigger>
                   <Select.IndicatorGroup>
                     <Select.Indicator />
@@ -413,7 +421,7 @@ export default function UserProfilePage() {
               >
                 <Select.HiddenSelect />
                 <Select.Label>
-                  Role
+                  {t("profile.role")}
                   <RequirementHint field="role" />
                 </Select.Label>
                 <Select.Control
@@ -422,7 +430,9 @@ export default function UserProfilePage() {
                   }}
                 >
                   <Select.Trigger>
-                    <Select.ValueText placeholder="Select Role" />
+                    <Select.ValueText
+                      placeholder={t("profile.role.placeholder")}
+                    />
                   </Select.Trigger>
                   <Select.IndicatorGroup>
                     <Select.Indicator />
@@ -448,7 +458,9 @@ export default function UserProfilePage() {
           <GridItem>
             <Field.Root id="job-title" required={fieldRequired("jobTitle")}>
               <Field.Label>
-                {form.role === OTHER_ROLE ? "Your role" : "Job title"}
+                {form.role === OTHER_ROLE
+                  ? t("profile.yourRole")
+                  : t("profile.jobTitle")}
                 <RequirementHint field="jobTitle" />
               </Field.Label>
               <Input
@@ -456,7 +468,7 @@ export default function UserProfilePage() {
                 width="320px"
                 placeholder={
                   form.role === OTHER_ROLE
-                    ? "e.g. Community forest monitor"
+                    ? t("profile.yourRole.placeholder")
                     : undefined
                 }
                 value={form.jobTitle}
@@ -471,7 +483,7 @@ export default function UserProfilePage() {
           <GridItem>
             <Field.Root id="company" required={fieldRequired("company")}>
               <Field.Label>
-                Company / Organization
+                {t("profile.company")}
                 <RequirementHint field="company" />
               </Field.Label>
               <Input
@@ -499,12 +511,14 @@ export default function UserProfilePage() {
               >
                 <Select.HiddenSelect />
                 <Select.Label>
-                  Country
+                  {t("profile.country")}
                   <RequirementHint field="country" />
                 </Select.Label>
                 <Select.Control>
                   <Select.Trigger>
-                    <Select.ValueText placeholder="Select Country" />
+                    <Select.ValueText
+                      placeholder={t("profile.country.placeholder")}
+                    />
                   </Select.Trigger>
                   <Select.IndicatorGroup>
                     <Select.Indicator />
@@ -540,12 +554,14 @@ export default function UserProfilePage() {
               >
                 <Select.HiddenSelect />
                 <Select.Label>
-                  Level of technical expertise
+                  {t("profile.expertise")}
                   <RequirementHint field="expertise" />
                 </Select.Label>
                 <Select.Control>
                   <Select.Trigger>
-                    <Select.ValueText placeholder="Select Level of technical expertise" />
+                    <Select.ValueText
+                      placeholder={t("profile.expertise.placeholder")}
+                    />
                   </Select.Trigger>
                   <Select.IndicatorGroup>
                     <Select.Indicator />
@@ -587,12 +603,14 @@ export default function UserProfilePage() {
               >
                 <Select.HiddenSelect />
                 <Select.Label>
-                  Preferred language
+                  {t("profile.language")}
                   <RequirementHint field="preferredLanguage" />
                 </Select.Label>
                 <Select.Control>
                   <Select.Trigger>
-                    <Select.ValueText placeholder="Select Language" />
+                    <Select.ValueText
+                      placeholder={t("profile.language.placeholder")}
+                    />
                   </Select.Trigger>
                   <Select.IndicatorGroup>
                     <Select.Indicator />
@@ -612,7 +630,7 @@ export default function UserProfilePage() {
                 </Portal>
               </Select.Root>
               <Field.HelperText color="fg.muted" fontSize="xs" mt={1}>
-                Please note most of our communications are in English.
+                {t("profile.language.note")}
               </Field.HelperText>
             </Field.Root>
           </GridItem>
@@ -621,7 +639,7 @@ export default function UserProfilePage() {
           <GridItem colSpan={{ base: 1, md: 2 }}>
             <Field.Root id="topics" required={fieldRequired("topics")}>
               <Field.Label>
-                What topic(s) are you most interested in?
+                {t("profile.topics")}
                 <RequirementHint field="topics" />
               </Field.Label>
               <TopicPills
@@ -651,9 +669,7 @@ export default function UserProfilePage() {
               >
                 <Checkbox.HiddenInput />
                 <Checkbox.Control />
-                <Checkbox.Label>
-                  Send me news and events from Global Nature Watch.
-                </Checkbox.Label>
+                <Checkbox.Label>{t("profile.news")}</Checkbox.Label>
               </Checkbox.Root>
               <Checkbox.Root
                 checked={form.helpTestFeatures}
@@ -666,9 +682,7 @@ export default function UserProfilePage() {
               >
                 <Checkbox.HiddenInput />
                 <Checkbox.Control />
-                <Checkbox.Label>
-                  Contact me about testing new features.
-                </Checkbox.Label>
+                <Checkbox.Label>{t("profile.testing")}</Checkbox.Label>
               </Checkbox.Root>
             </Flex>
           </GridItem>
@@ -679,13 +693,10 @@ export default function UserProfilePage() {
         {/* Account deletion: a help-centre request, handled by the team */}
         <Flex direction="column" gap={3} alignItems="flex-start">
           <Heading as="h2" size="md">
-            Delete your account
+            {t("profile.delete.title")}
           </Heading>
           <Text color="fg.muted" fontSize="sm" maxW="60ch">
-            Ask us to remove your Horizon account and all of its data: profile,
-            conversations and dashboards. This opens a request form on the
-            Global Nature Watch help centre. We&apos;ll reply to confirm once
-            it&apos;s done.
+            {t("profile.delete.body")}
           </Text>
           <Button asChild size="sm" variant="outline" colorPalette="red">
             <a
@@ -694,7 +705,7 @@ export default function UserProfilePage() {
               rel="noopener noreferrer"
             >
               <ArrowSquareOutIcon />
-              Request account deletion
+              {t("profile.delete.action")}
             </a>
           </Button>
         </Flex>

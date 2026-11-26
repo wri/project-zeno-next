@@ -13,7 +13,7 @@ import {
 } from "@/src/features/net-flux";
 import type { InsightWidget } from "@/app/types/chat";
 import type { DateRange } from "@/src/shared/lib/iso-date";
-import type { Dashboard, DashboardWidget } from "../api/schemas";
+import type { DashboardWidget } from "../api/schemas";
 import {
   alertsChartPeriod,
   alertsChartRange,
@@ -69,7 +69,6 @@ import RemoveAnalysisDialog from "./RemoveAnalysisDialog";
  */
 export default function DashboardInsightModule({
   widget,
-  areaAoi,
   sectionTemplate,
   isOwner,
   isDouble,
@@ -80,8 +79,6 @@ export default function DashboardInsightModule({
   onRemove,
 }: {
   widget: DashboardWidget;
-  /** The dashboard's area — feeds the card's AREA param chip. */
-  areaAoi?: Dashboard["aois"][number];
   /** The template that built the widget's section, if one did. */
   sectionTemplate?: string;
   isOwner: boolean;
@@ -101,7 +98,7 @@ export default function DashboardInsightModule({
   // The chart on show, by position in the shown set.
   const [page, setPage] = useState(0);
 
-  const vm = insightModule(widget, { areaName: areaAoi?.name });
+  const vm = insightModule(widget);
   const showSummary = vm.summaryShown && vm.summaryText.length > 0;
   const allChartIds = vm.allCharts.map((c) => c.id);
   // The widget's charts are one analysis by construction, so the roll-ups are

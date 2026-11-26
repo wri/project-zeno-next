@@ -16,7 +16,7 @@ export const AREA_PICKER_SECTIONS = [
     id: source,
     label: REFERENCE_AOI_SOURCE_LABELS[source],
   })),
-  { id: "custom" as const, label: "Custom areas" },
+  { id: "custom" as const, label: "My areas" },
 ] as const;
 
 export type AreaPickerSectionId = (typeof AREA_PICKER_SECTIONS)[number]["id"];

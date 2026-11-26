@@ -2,10 +2,16 @@ import { describe, expect, it } from "vitest";
 import { checkLabel } from "../../model/checks";
 import { groupChecks } from "../checks";
 import { failureBreakdown, failureFlow, failurePhrase } from "../failures";
-import { formatDay, formatMonth, pct, share, versionSet } from "../format";
+import {
+  formatDay,
+  formatReleaseName,
+  pct,
+  share,
+  versionSet,
+} from "../format";
 import { mixSentence } from "../mix";
 import { filterQuestions, NO_FILTER } from "../questions";
-import { monthsSinceOrigin, pickRun, releasedRuns, trendPoints } from "../runs";
+import { monthsSinceOrigin, releasedRuns, trendPoints } from "../runs";
 import { tierFigure, tierLines, tiersOf } from "../tiers";
 import { RELEASES } from "../../model/releases";
 import type { BenchmarkPage, FailedCheck } from "../../model/types";
@@ -274,63 +280,64 @@ describe("mixSentence", () => {
 });
 
 describe("runs", () => {
-  const ref = (n: number) => String(n).repeat(40);
-
-  it("names each release by its month (by its day when it shares one) and keeps its draft flag", () => {
-    const runs = releasedRuns([
-      { runId: "20261128T090000Z_prod", ref: ref(3), draft: true },
-      { runId: "20261014T090000Z_prod", ref: ref(1), draft: false },
-      { runId: "20261028T124051Z_prod", ref: ref(2), draft: false },
-    ]);
-    expect(runs.map((r) => [r.runId, r.label, r.draft])).toEqual([
-      ["20261014T090000Z_prod", "14 October 2026", false],
-      ["20261028T124051Z_prod", "28 October 2026", false],
-      ["20261128T090000Z_prod", "November 2026", true],
-    ]);
+  it("lists the releases oldest first, whatever the list's order", () => {
+    const runs = releasedRuns([...RELEASES].reverse());
+    expect(runs.map((r) => r.runId)).toEqual(
+      RELEASES.map((r) => r.runId).sort()
+    );
   });
 
-  it("ships well-formed releases: run ids, full commit shas, each once", () => {
+  it("ships well-formed releases: names, run ids, full commit shas, each name and run once", () => {
     for (const release of RELEASES) {
+      expect(release.name).toMatch(/^[a-z]{3}-\d{4}$/);
       expect(release.runId).toMatch(/^\d{8}T\d{6}Z_/);
       expect(release.ref).toMatch(/^[0-9a-f]{40}$/);
     }
-    const ids = RELEASES.map((r) => r.runId);
-    expect(new Set(ids).size).toBe(ids.length);
+    for (const key of ["name", "runId"] as const) {
+      const values = RELEASES.map((r) => r[key]);
+      expect(new Set(values).size).toBe(values.length);
+    }
   });
 
-  it("opens on the requested release, else the newest", () => {
-    const runs = releasedRuns([
-      { runId: "20261014T090000Z_prod", ref: ref(1), draft: false },
-      { runId: "20261028T124051Z_prod", ref: ref(2), draft: false },
-    ]);
-    expect(pickRun(runs, "20261014T090000Z_prod").runId).toBe(
-      "20261014T090000Z_prod"
-    );
-    expect(pickRun(runs, "missing").runId).toBe("20261028T124051Z_prod");
-    expect(pickRun(runs, null).runId).toBe("20261028T124051Z_prod");
-  });
-
-  it("draws the trend from loaded pages of one version only", () => {
-    const page = (runId: string, version: string, draft: boolean) =>
+  it("draws one trend point per loaded page, named by its release, whatever its version", () => {
+    const runs = releasedRuns(RELEASES);
+    const page = (runId: string, version: string, scored: number) =>
       ({
-        run: { runId, started: "2026-10-28T00:00:00Z", draft },
+        run: { runId, started: "2026-10-28T00:00:00Z", draft: false },
         benchmark: { version },
-        summary: makeStats({ everyTime: 0.6, majority: 0.7, anyTime: 0.8 }),
+        summary: makeStats({ scored, everyTime: 0.6 }),
       }) as unknown as BenchmarkPage;
+    const pages = runs.map((r, i) => page(r.runId, `v${i}`, 260 + i));
+    expect(trendPoints(runs, pages).map((p) => [p.name, p.runId])).toEqual(
+      runs.map((r) => [r.name, r.runId])
+    );
+    expect(trendPoints(runs, pages).map((p) => p.scored)).toEqual(
+      runs.map((_, i) => 260 + i)
+    );
+    // A page still loading leaves its own run out and keeps the rest named
+    // by the right release.
+    const rest = runs.slice(1);
     expect(
-      trendPoints(
-        [
-          page("a", "2026", false),
-          undefined,
-          page("b", "2027", false),
-          page("c", "2026", true),
-        ],
-        "2026"
-      ).map((p) => [p.runId, p.draft])
-    ).toEqual([
-      ["a", false],
-      ["c", true],
-    ]);
+      trendPoints(runs, [undefined, ...pages.slice(1)]).map((p) => p.name)
+    ).toEqual(rest.map((r) => r.name));
+  });
+
+  it("draws no point for a run that scored nothing", () => {
+    const runs = releasedRuns(RELEASES);
+    const empty = {
+      run: {
+        runId: runs[0].runId,
+        started: "2026-10-28T00:00:00Z",
+        draft: false,
+      },
+      summary: makeStats({
+        scored: 0,
+        everyTime: null,
+        majority: null,
+        anyTime: null,
+      }),
+    } as unknown as BenchmarkPage;
+    expect(trendPoints(runs.slice(0, 1), [empty])).toEqual([]);
   });
 
   it("places dates on the axis in months since September 2026", () => {
@@ -345,7 +352,7 @@ describe("format", () => {
     expect(pct(null)).toBe("–");
     expect(share(1, 0)).toBeNull();
     expect(formatDay("2026-10-23T09:44:47Z")).toBe("23 Oct 2026");
-    expect(formatMonth("2026-10-28T12:40:51Z")).toBe("Oct 2026");
+    expect(formatReleaseName("oct-2026")).toBe("October 2026");
   });
 
   it("names the Benchmark Set a version belongs to", () => {

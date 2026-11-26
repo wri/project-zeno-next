@@ -2,13 +2,11 @@ import { describe, expect, it } from "vitest";
 import { isView, pageHref } from "../links";
 
 describe("pageHref", () => {
-  it("drops defaults and keeps run, use case and anchor", () => {
+  it("drops defaults and keeps use case and anchor", () => {
     expect(pageHref({})).toBe("/ai-accuracy-scorecards");
-    expect(pageHref({ view: "dashboard", run: "r1" })).toBe(
-      "/ai-accuracy-scorecards?run=r1"
-    );
-    expect(pageHref({ view: "questions", run: "r1", useCase: "UC2" })).toBe(
-      "/ai-accuracy-scorecards?view=questions&run=r1&uc=UC2"
+    expect(pageHref({ view: "dashboard" })).toBe("/ai-accuracy-scorecards");
+    expect(pageHref({ view: "questions", useCase: "UC2" })).toBe(
+      "/ai-accuracy-scorecards?view=questions&uc=UC2"
     );
     expect(pageHref({ view: "methodology", hash: "question-types" })).toBe(
       "/ai-accuracy-scorecards?view=methodology#question-types"

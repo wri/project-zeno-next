@@ -4,7 +4,7 @@ import {
   GithubBenchmarkGateway,
   parseBenchmarkPage,
 } from "../github-benchmark-gateway";
-import type { BenchmarkRunRef } from "../../model/types";
+import type { Release } from "../../model/releases";
 
 const STATS = {
   scored: 2,
@@ -251,6 +251,13 @@ describe("parseBenchmarkPage", () => {
     ).toThrow();
   });
 
+  it("refuses a languages companion page", () => {
+    // The producer adds a top-level `languages` key to a companion page only.
+    expect(() =>
+      parseBenchmarkPage({ ...WIRE_PAGE, languages: [{ key: "es" }] }, true)
+    ).toThrow(/is a languages companion page, not a benchmark run/);
+  });
+
   it("refuses a question whose type the page does not list", () => {
     const [q] = WIRE_PAGE.questions;
     expect(() =>
@@ -273,9 +280,9 @@ describe("parseBenchmarkPage", () => {
 });
 
 describe("GithubBenchmarkGateway", () => {
-  const RUN: BenchmarkRunRef = {
+  const RUN: Release = {
+    name: "oct-2026",
     runId: "r1",
-    label: "October 2026",
     ref: "f7c138e514c4780ed84003b13a7decdfede8ff21",
     draft: true,
   };

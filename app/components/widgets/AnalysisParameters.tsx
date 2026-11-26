@@ -1,34 +1,53 @@
-import { Flex, Text } from "@chakra-ui/react";
+import { chakra, Flex, Text } from "@chakra-ui/react";
+import { CaretDownIcon } from "@phosphor-icons/react";
 import { ParamChip } from "@/app/components/ui/ParamChip";
-import { ParamChipData } from "./analysis-params-utils";
+import type { AnalysisInputs } from "@/src/entities/insight";
+import { buildChips, ParamChipData } from "./analysis-params-utils";
+
+/** What an analysis whose inputs the backend did not record shows instead. */
+export const INPUTS_NOT_RECORDED = "Inputs were not recorded for this analysis";
 
 interface AnalysisParametersToggleProps {
   expanded: boolean;
   onToggle: () => void;
 }
 
-/** Toggle button rendered in the widget header row */
+/**
+ * Disclosure in the widget header row. One label in both states: the chevron
+ * and `aria-expanded` say whether the inputs are on show.
+ */
 export default function AnalysisParametersToggle({
   expanded,
   onToggle,
 }: AnalysisParametersToggleProps) {
   return (
-    <Text
-      as="button"
+    <chakra.button
+      type="button"
       onClick={onToggle}
+      aria-expanded={expanded}
+      display="inline-flex"
+      alignItems="center"
+      gap="2px"
+      bg="transparent"
       fontFamily="mono"
       fontSize="10px"
       fontWeight="400"
       lineHeight="16px"
       color="#4A64CB"
-      textDecoration="underline"
-      textDecorationStyle="solid"
       whiteSpace="nowrap"
       flexShrink={0}
       cursor="pointer"
     >
-      {expanded ? "Hide params" : "Show params"}
-    </Text>
+      <Text as="span" textDecoration="underline" textDecorationStyle="solid">
+        What was analyzed
+      </Text>
+      <CaretDownIcon
+        size={10}
+        weight="bold"
+        aria-hidden
+        style={{ transform: expanded ? "rotate(180deg)" : undefined }}
+      />
+    </chakra.button>
   );
 }
 
@@ -56,4 +75,16 @@ export function AnalysisParamsChips({
       ))}
     </Flex>
   );
+}
+
+/** An analysis's recorded inputs as chips, or the not-recorded note. */
+export function AnalysisInputsChips({ inputs }: { inputs: AnalysisInputs }) {
+  if (!inputs.recorded) {
+    return (
+      <Text fontSize="xs" color="fg.muted">
+        {INPUTS_NOT_RECORDED}
+      </Text>
+    );
+  }
+  return <AnalysisParamsChips chips={buildChips(inputs)} />;
 }

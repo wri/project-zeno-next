@@ -1,6 +1,8 @@
 import type { InsightWidget } from "@/app/types/chat";
 import { shiftIsoDate, type DateRange } from "@/src/shared/lib/iso-date";
 
+import { NRT_MONITORING } from "./analysis-templates";
+
 /**
  * The period pills of the curated integrated alerts chart in a Near
  * real-time monitoring section (PZB-1566): the last 30 days, 2 weeks or week
@@ -31,8 +33,6 @@ export const ALERTS_CHART_PRESETS: {
   { value: "last-week", label: "Last week", days: 7 },
 ];
 
-/** The template whose alerts chart carries the pills (the Analyses pane's does not). */
-const NRT_MONITORING = "nrt-monitoring";
 const ALERT_DATE = "alert_date";
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
 

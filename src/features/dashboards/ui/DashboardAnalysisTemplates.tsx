@@ -6,7 +6,9 @@ import type { Dashboard } from "../api/schemas";
 import {
   ANALYSIS_TEMPLATE_CARDS,
   ANALYSIS_TEMPLATES_BLURB,
+  templateStatus,
   type AnalysisTemplateCard,
+  type TemplateStatus,
 } from "../lib/analysis-templates";
 import DashboardFooterHeading from "./DashboardFooterHeading";
 import { useAnalysisTemplates } from "./dashboardQueries";
@@ -22,9 +24,6 @@ import {
 const CARD_OUTLINE = "#D0E35B";
 const CARD_HOVER_FILL = "#D0E35B";
 const CAPTION_COLOR = "rgba(19, 22, 25, 0.7)";
-
-/** `building`: this card's request is in flight; `disabled`: it can't run. */
-type TemplateCardStatus = "idle" | "building" | "disabled";
 
 // The footer grid's narrowest card: the thumbnail and gutters take 132px, and
 // the rest has to hold a label's first words ("Near real-time") on one line.
@@ -53,7 +52,7 @@ function TemplateCard({
   onClick,
 }: {
   card: AnalysisTemplateCard;
-  status: TemplateCardStatus;
+  status: TemplateStatus;
   /** The Analyses pane's shorter card (Figma node 3938:12065). */
   compact: boolean;
   onClick: () => void;
@@ -177,7 +176,11 @@ export function AnalysisTemplateCards({
   const pending = usePendingAnalysisTemplates(dashboard.id);
   // The template uses the dashboard's first area; without one the backend
   // answers 422, so the cards stay inert.
-  const runnable = dashboard.aois.length > 0 && pending.length === 0;
+  const hasArea = dashboard.aois.length > 0;
+  const cardStatus = (name: string): TemplateStatus => {
+    const status = templateStatus(name, pending);
+    return hasArea || status === "building" ? status : "disabled";
+  };
 
   return (
     <Grid {...gridProps}>
@@ -186,13 +189,7 @@ export function AnalysisTemplateCards({
           key={card.name}
           card={card}
           compact={compact}
-          status={
-            pending.includes(card.name)
-              ? "building"
-              : runnable
-                ? "idle"
-                : "disabled"
-          }
+          status={cardStatus(card.name)}
           onClick={() => apply.mutate(card.name)}
         />
       ))}

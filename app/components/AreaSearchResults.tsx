@@ -1,8 +1,7 @@
-import { Suspense, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Button, Stack, Text } from "@chakra-ui/react";
 
 import { toaster } from "@/app/components/ui/toaster";
-import { useCustomAreasListSuspense } from "@/app/hooks/useCustomAreasList";
 import useMapStore from "@/app/store/mapStore";
 import {
   addPlaceToMap,
@@ -20,12 +19,14 @@ import {
   type AoiSearchResult,
   type ReferenceAoiSource,
 } from "@/src/entities/aoi";
+import { useUserAoisSuspense } from "@/src/entities/user-aoi";
 import { useDebounced } from "@/src/shared/lib/use-debounced";
 import { EntityCard } from "@/src/shared/ui/entity-card";
 
 import { MonitoredAreaCard } from "./AreaLists";
 import { AreaThumbnail } from "./AreaThumbnail";
 import { PanelEmpty, PanelList, PanelPills, PanelSection } from "./PanelList";
+import { UserAoisBoundary } from "./UserAoisBoundary";
 
 /** What a search covers: every boundary set, one of them, or your own areas. */
 type SearchScope = "all" | ReferenceAoiSource | "mine";
@@ -77,9 +78,9 @@ function SavedMatches({
   showEmpty?: boolean;
 }) {
   return (
-    <Suspense fallback={null}>
+    <UserAoisBoundary loading={null}>
       <SavedMatchList term={term} showEmpty={showEmpty} />
-    </Suspense>
+    </UserAoisBoundary>
   );
 }
 
@@ -90,11 +91,11 @@ function SavedMatchList({
   term: string;
   showEmpty: boolean;
 }) {
-  const { customAreas } = useCustomAreasListSuspense();
+  const { data: userAois } = useUserAoisSuspense();
   const matches = useMemo(() => {
     const q = term.toLowerCase();
-    return customAreas.filter((a) => a.name.toLowerCase().includes(q));
-  }, [customAreas, term]);
+    return userAois.filter((userAoi) => userAoi.name.toLowerCase().includes(q));
+  }, [userAois, term]);
 
   if (matches.length === 0) {
     return showEmpty ? (
@@ -104,8 +105,8 @@ function SavedMatchList({
   return (
     <PanelSection label="My areas">
       <PanelList>
-        {matches.map((area) => (
-          <MonitoredAreaCard key={area.id} area={area} />
+        {matches.map((userAoi) => (
+          <MonitoredAreaCard key={userAoi.id} userAoi={userAoi} />
         ))}
       </PanelList>
     </PanelSection>

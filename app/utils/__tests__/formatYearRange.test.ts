@@ -1,5 +1,14 @@
 import { describe, it, expect } from "vitest";
-import { buildYearParam, formatDateRange } from "../formatYearRange";
+import { buildYearParam, formatDateRange, yearParam } from "../formatYearRange";
+
+describe("yearParam", () => {
+  it.each([
+    [2020, 2020, { label: "YEAR", value: "2020" }],
+    [2020, 2023, { label: "YEARS", value: "2020–23" }],
+  ])("builds the chip for %i to %i", (start, end, expected) => {
+    expect(yearParam(start, end)).toEqual(expected);
+  });
+});
 
 describe("buildYearParam", () => {
   it("collapses equal bounds to a single YEAR", () => {

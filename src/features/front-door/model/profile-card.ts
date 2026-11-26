@@ -118,7 +118,7 @@ export function isProfileDraftComplete(
   return requiredFieldsComplete(draft) && emailFieldsComplete(draft, options);
 }
 
-function known(
+export function known(
   value: string | undefined,
   options: Record<string, string>
 ): string {

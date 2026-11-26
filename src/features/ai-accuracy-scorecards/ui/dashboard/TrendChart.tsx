@@ -1,6 +1,6 @@
 import { useRef, type KeyboardEvent, type PointerEvent } from "react";
 import { Box } from "@chakra-ui/react";
-import { formatDay, formatMonth, pct } from "../../lib/format";
+import { formatDay, formatReleaseName, pct } from "../../lib/format";
 import { monthsSinceOrigin } from "../../lib/runs";
 import { TIER_COPY } from "../../lib/tiers";
 import type { TrendPoint } from "../../model/types";
@@ -38,14 +38,12 @@ const TICKS: readonly [number, string][] = [
 ];
 const Y_TICKS = [100, 80, 60, 40, 20, 0] as const;
 
-/** The point's range bar, bottom up; a missing share ends the bar early. */
+/** The point's range bar, bottom up. */
 function rangeSegments(p: TrendPoint) {
-  const segments: { tier: "most" | "some"; from: number; to: number }[] = [];
-  if (p.majority == null) return segments;
-  segments.push({ tier: "most", from: p.everyTime, to: p.majority });
-  if (p.anyTime != null) {
-    segments.push({ tier: "some", from: p.majority, to: p.anyTime });
-  }
+  const segments = [
+    { tier: "most", from: p.everyTime, to: p.majority },
+    { tier: "some", from: p.majority, to: p.anyTime },
+  ] as const;
   return segments.filter((s) => s.to > s.from);
 }
 
@@ -65,18 +63,16 @@ function RunTip({
   return (
     <>
       <TipNote>
-        {formatDay(point.started)}
+        {formatDay(point.started)} · {point.scored} questions
         {point.draft ? " · draft run" : ""}
       </TipNote>
       <TipRows
-        rows={rows
-          .filter((row) => row.value != null)
-          .map((row) => ({
-            key: row.key,
-            color: TIER_COLORS[row.key],
-            label: `Accurate on ${TIER_COPY[row.key].tries}`,
-            value: pct(row.value, 1),
-          }))}
+        rows={rows.map((row) => ({
+          key: row.key,
+          color: TIER_COLORS[row.key],
+          label: `Accurate on ${TIER_COPY[row.key].tries}`,
+          value: pct(row.value, 1),
+        }))}
       />
       {previous && change !== null ? (
         <>
@@ -93,7 +89,7 @@ function RunTip({
 }
 
 /**
- * Headline accuracy (right every time) per released run of the version.
+ * Headline accuracy (right every time) per released run, oldest first.
  * Points only; a line joins them once there are two or more. The shares are
  * nested (every time ⊆ most ⊆ some), so each point carries one bar stacked
  * upwards from it, tinted like the tier bar: up to "most of the time", then
@@ -178,7 +174,7 @@ export function TrendChart({
             ? `Accuracy over time: ${points
                 .map((p) => `${pct(p.everyTime, 1)} on ${formatDay(p.started)}`)
                 .join(", ")}.`
-            : "Accuracy over time: no comparable runs yet."
+            : "Accuracy over time: no runs yet."
         }
       >
         {last ? (
@@ -251,7 +247,7 @@ export function TrendChart({
               fontWeight="600"
               fill="var(--chakra-colors-fg)"
             >
-              {formatMonth(first.started)} baseline
+              {formatReleaseName(first.name)} baseline
             </text>
           </>
         ) : null}

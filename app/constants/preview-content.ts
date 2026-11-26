@@ -1,7 +1,4 @@
-export const PREVIEW_TITLE = "Preview Release";
-
-export const PREVIEW_BODY =
-  "This is an experimental preview of Global Nature Watch Horizon. Results are grounded in trusted datasets, but AI summaries can be incomplete or incorrect. Verify important findings with source data.";
+import type { MessageKey } from "@/src/shared/lib/i18n";
 
 export const PREVIEW_FEEDBACK_FORM =
   "https://globalnaturewatch.zendesk.com/hc/en-us/requests/new";
@@ -11,19 +8,19 @@ export const PREVIEW_HELP_CENTER_URL =
 
 export const PREVIEW_LINKS = [
   {
-    label: "FAQs",
+    labelKey: "preview.faqs",
     href: "https://help.horizon.globalnaturewatch.org/support/faqs",
   },
   {
-    label: "Capabilities",
+    labelKey: "preview.capabilities",
     href: "https://help.horizon.globalnaturewatch.org/get-started/capabilities-and-datasets",
   },
   {
-    label: "Accuracy",
+    labelKey: "preview.accuracy",
     href: "https://help.horizon.globalnaturewatch.org/get-started/accuracy-and-performance",
   },
   {
-    label: "Known Issues",
+    labelKey: "preview.knownIssues",
     href: "https://help.horizon.globalnaturewatch.org/resources/known-issues",
   },
-];
+] as const satisfies readonly { labelKey: MessageKey; href: string }[];

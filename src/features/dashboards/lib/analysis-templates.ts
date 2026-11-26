@@ -1,4 +1,11 @@
 /**
+ * The Near real-time monitoring template's registry name: its alerts chart
+ * carries the pills (the Analyses pane's does not), and the alerts banner
+ * applies it to add an alerts list.
+ */
+export const NRT_MONITORING = "nrt-monitoring";
+
+/**
  * A card in the "Add an analysis template" row (Figma node 3938:12209).
  * `name` is the backend registry name (`GET /api/analysis-templates`), which
  * is what the card applies. `label` is the design's copy.
@@ -21,7 +28,7 @@ export const ANALYSIS_TEMPLATES_BLURB =
  */
 export const ANALYSIS_TEMPLATE_CARDS: readonly AnalysisTemplateCard[] = [
   {
-    name: "nrt-monitoring",
+    name: NRT_MONITORING,
     label: "Near real-time monitoring",
     image: "/analysis_template_nrt_monitoring.jpg",
   },
@@ -36,6 +43,20 @@ export const ANALYSIS_TEMPLATE_CARDS: readonly AnalysisTemplateCard[] = [
     image: "/analysis_template_forest_loss_drivers.jpg",
   },
 ];
+
+/**
+ * `building`: this template's request is in flight; `disabled`: another
+ * template's is, and two requests would make two sections.
+ */
+export type TemplateStatus = "idle" | "building" | "disabled";
+
+export function templateStatus(
+  name: string,
+  pending: readonly string[]
+): TemplateStatus {
+  if (pending.includes(name)) return "building";
+  return pending.length > 0 ? "disabled" : "idle";
+}
 
 /**
  * The toast for a template request that failed, keyed on the statuses the

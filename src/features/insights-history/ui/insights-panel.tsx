@@ -11,7 +11,6 @@ import {
 } from "@chakra-ui/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChartLineIcon, XIcon } from "@phosphor-icons/react";
-import { format } from "date-fns";
 import { useShallow } from "zustand/react/shallow";
 
 import {
@@ -39,6 +38,7 @@ import { useCurrentDashboardArea } from "@/src/features/dashboards/ui/useCurrent
 import { useUserInsights } from "./use-user-insights";
 import { CuratedInsightsList } from "./curated-insights-list";
 import {
+  formatGeneratedAt,
   INSIGHT_LABEL_COLOR,
   INSIGHT_SELECTED_BG,
   InsightDetail,
@@ -86,8 +86,8 @@ const INSIGHT_FILTERS: {
   dashboardOnly?: boolean;
 }[] = [
   { id: "templates", label: "Templates", dashboardOnly: true },
-  { id: "verified", label: "Curated" },
-  { id: "ai", label: "AI generated" },
+  { id: "verified", label: "Source data" },
+  { id: "ai", label: "AI-assisted" },
   { id: "conversation", label: "In this conversation" },
 ];
 
@@ -107,16 +107,18 @@ interface InsightCardItem {
 
 function recordToItems(record: InsightRecord): InsightCardItem[] {
   const curated = record.verification === "verified";
-  return chartsToWidgets(record.charts, record.id).map((widget) => ({
-    widget: {
-      ...widget,
-      title: resolveInsightTitle(record, widget.title),
-      curated,
-    },
-    source: record.source ?? "",
-    createdAt: record.createdAt,
-    verification: record.verification,
-  }));
+  return chartsToWidgets(record.charts, record.id, record.analysisInputs).map(
+    (widget) => ({
+      widget: {
+        ...widget,
+        title: resolveInsightTitle(record, widget.title),
+        curated,
+      },
+      source: record.source ?? "",
+      createdAt: record.createdAt,
+      verification: record.verification,
+    })
+  );
 }
 
 function liveWidgetToItem(widget: InsightWidget): InsightCardItem {
@@ -144,12 +146,6 @@ function mergeById(...lists: InsightCardItem[][]): InsightCardItem[] {
     }
   }
   return out;
-}
-
-function formatGeneratedAt(createdAt: string): string {
-  if (!createdAt) return "";
-  const date = new Date(createdAt);
-  return Number.isNaN(date.getTime()) ? "" : format(date, "d MMM yyyy");
 }
 
 function cardDescription(item: InsightCardItem): string {
@@ -379,16 +375,16 @@ function InsightsList({
     threadId: currentThreadId,
   });
   const { insights: allInsights } = useUserInsights(aiScope);
-  // Stored insights split by how they were produced, so the Curated and AI
-  // generated filters never list the same record.
+  // Stored insights split by how they were produced, so the Source data and
+  // AI-assisted filters never list the same record.
   const { curated: curatedInsights, aiGenerated: aiInsights } = useMemo(
     () => partitionByVerification(allInsights),
     [allInsights]
   );
 
   // Dashboard surface: one card per analysis, added/removed whole — per-chart
-  // visibility lives in the module's Customize menu on the grid. The Curated
-  // filter is not a list of records here but the run-on-demand catalogue
+  // visibility lives in the module's Customize menu on the grid. The Source
+  // data filter is not a list of records here but the run-on-demand catalogue
   // (`CuratedInsightsList`), rendered below.
   const groups = useMemo<InsightGroupItem[]>(() => {
     if (!isDashboard || filter === "verified") return [];
@@ -479,6 +475,7 @@ function InsightsList({
         onIndexChange={(i) => setSelectedId(itemId(items[i]))}
         onBack={() => setSelectedId(null)}
         unit="analysis"
+        createdAt={items[selectedIndex].createdAt}
       />
     );
   }
@@ -499,9 +496,9 @@ function InsightsList({
 function EmptyState({ filter }: { filter: ListFilter }) {
   const message =
     filter === "verified"
-      ? "No curated analyses yet. Open a dashboard to run one for its area."
+      ? "No analyses from source data yet. Open a dashboard to run one for its area."
       : filter === "ai"
-        ? "No analyses generated yet. Ask the assistant to analyse an area."
+        ? "No AI-assisted analyses yet. Ask the assistant to analyse an area."
         : "No analyses in this conversation yet. Ask the assistant to analyse an area, or generate one from a dataset and area.";
   return (
     <Text fontSize="sm" color="fg.muted" mt={4}>

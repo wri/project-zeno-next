@@ -4,6 +4,7 @@ import { Link } from "@/src/shared/lib/router";
 import useChatStore from "@/app/store/chatStore";
 import { useThreadsInfinite } from "@/app/hooks/useThreadsInfinite";
 import { mapTabHref } from "@/app/utils/threadNavigation";
+import { useTranslation } from "@/src/shared/lib/i18n";
 
 /**
  * The settings pages' way back to the map (canvas option 12A): top-left,
@@ -12,6 +13,7 @@ import { mapTabHref } from "@/app/utils/threadNavigation";
  * /app, which resets them.
  */
 export default function BackToMapLink() {
+  const { t } = useTranslation();
   const currentThreadId = useChatStore((s) => s.currentThreadId);
   // With no conversation under way there's nothing to name, so no fetch.
   const { threads } = useThreadsInfinite({ enabled: currentThreadId !== null });
@@ -49,7 +51,7 @@ export default function BackToMapLink() {
         color="primary.500"
       >
         <ArrowLeftIcon size={16} />
-        Back to map
+        {t("settings.backToMap")}
       </Flex>
       {threadName && (
         <Text

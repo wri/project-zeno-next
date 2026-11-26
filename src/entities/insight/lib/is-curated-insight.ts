@@ -1,4 +1,4 @@
-import type { CodeActPart } from "@/app/types/chat";
+import type { CodeActPart, InsightWidget } from "@/app/types/chat";
 
 /**
  * The well-formed provenance parts of an insight's raw `codeact_parts`; `[]`
@@ -28,4 +28,14 @@ export function codeActParts(raw: unknown): CodeActPart[] {
  */
 export function isCuratedInsight(codeactParts: unknown): boolean {
   return codeActParts(codeactParts).length === 0;
+}
+
+/**
+ * Whether a widget is curated. An explicit `curated` flag wins; a widget with
+ * no provenance (`generation`) came from the direct, curated flow.
+ */
+export function isCuratedWidget(
+  widget: Pick<InsightWidget, "curated" | "generation">
+): boolean {
+  return widget.curated ?? !widget.generation;
 }

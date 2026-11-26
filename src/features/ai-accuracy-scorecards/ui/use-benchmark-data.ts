@@ -6,12 +6,13 @@
 
 import { useQueries, useQuery } from "@tanstack/react-query";
 import type { BenchmarkGateway } from "../model/benchmark-gateway";
-import type { BenchmarkPage, BenchmarkRunRef } from "../model/types";
+import type { Release } from "../model/releases";
+import type { BenchmarkPage } from "../model/types";
 import { GithubBenchmarkGateway } from "../api/github-benchmark-gateway";
 
 const defaultGateway: BenchmarkGateway = new GithubBenchmarkGateway();
 
-function pageQuery(run: BenchmarkRunRef, gateway: BenchmarkGateway) {
+function pageQuery(run: Release, gateway: BenchmarkGateway) {
   return {
     queryKey: ["ai-accuracy-scorecards", "page", run.ref, run.runId],
     queryFn: ({ signal }: { signal: AbortSignal }) => gateway.page(run, signal),
@@ -23,19 +24,19 @@ function pageQuery(run: BenchmarkRunRef, gateway: BenchmarkGateway) {
 
 /** One run's page data. */
 export function useBenchmarkPage(
-  run: BenchmarkRunRef,
+  run: Release,
   gateway: BenchmarkGateway = defaultGateway
 ) {
   return useQuery(pageQuery(run, gateway));
 }
 
 /**
- * Several runs' pages (the trend's candidates), aligned with `runs`;
+ * Several runs' pages (the trend's runs), aligned with `runs`;
  * undefined while a page loads. Combined so callers re-render only when a
  * page arrives.
  */
 export function useBenchmarkPages(
-  runs: readonly BenchmarkRunRef[],
+  runs: readonly Release[],
   gateway: BenchmarkGateway = defaultGateway
 ): (BenchmarkPage | undefined)[] {
   return useQueries({

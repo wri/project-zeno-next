@@ -33,7 +33,12 @@ const chart: Chart = {
   data: [{ year: 2020, loss_ha: 5 }],
 };
 
-const RESULT: AnalysisResult = { id: "ins-1", charts: [chart] };
+const RESULT: AnalysisResult = {
+  id: "ins-1",
+  createdAt: "",
+  charts: [chart],
+  analysisInputs: { recorded: false },
+};
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -246,7 +251,12 @@ describe("useCuratedAnalysis", () => {
 
   it("maps a completed job with no charts to no-data", async () => {
     const service = fakeService(() =>
-      Promise.resolve({ id: "ins-empty", charts: [] })
+      Promise.resolve({
+        id: "ins-empty",
+        createdAt: "",
+        charts: [],
+        analysisInputs: { recorded: false },
+      })
     );
     const { result } = renderHook(
       () => useCuratedAnalysis(selection, service),
@@ -304,7 +314,12 @@ describe("useCuratedAnalysis", () => {
     const service = fakeService(
       vi
         .fn<AnalysisService["run"]>()
-        .mockResolvedValueOnce({ id: "ins-empty", charts: [] })
+        .mockResolvedValueOnce({
+          id: "ins-empty",
+          createdAt: "",
+          charts: [],
+          analysisInputs: { recorded: false },
+        })
         .mockResolvedValueOnce(RESULT)
     );
     const { result } = renderHook(
@@ -333,7 +348,12 @@ describe("useCuratedAnalysis", () => {
     const service = fakeService(
       vi
         .fn<AnalysisService["run"]>()
-        .mockResolvedValueOnce({ id: "ins-empty", charts: [] })
+        .mockResolvedValueOnce({
+          id: "ins-empty",
+          createdAt: "",
+          charts: [],
+          analysisInputs: { recorded: false },
+        })
         .mockReturnValueOnce(fresh.promise)
     );
     const { result } = renderHook(
@@ -365,7 +385,12 @@ describe("useCuratedAnalysis", () => {
 
   it("caches per dataset: a different dataset runs separately", async () => {
     const service = fakeService((sel) =>
-      Promise.resolve({ id: `ins-${sel.dataset.id}`, charts: [chart] })
+      Promise.resolve({
+        id: `ins-${sel.dataset.id}`,
+        createdAt: "",
+        charts: [chart],
+        analysisInputs: { recorded: false },
+      })
     );
     const client = makeClient();
     const tcl = renderHook(() => useCuratedAnalysis(selection, service), {

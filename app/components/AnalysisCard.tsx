@@ -1,11 +1,10 @@
 import { Flex, Text } from "@chakra-ui/react";
-import { SparkleIcon } from "@phosphor-icons/react";
 import { formatDistanceToNow } from "date-fns";
 import { InsightWidget } from "@/app/types/chat";
 import { WidgetIconComponent } from "@/app/utils/widgetIcons";
+import { isCuratedWidget } from "@/src/entities/insight";
+import { VERIFICATION_EYEBROW } from "@/src/shared/ui/entity-card";
 import { InfoCard } from "./InfoCard";
-
-const TYPE_LABEL_COLOR = "#8E9954";
 
 function formatRelativeTime(timestamp: string): string | null {
   const date = new Date(timestamp);
@@ -28,6 +27,9 @@ export function AnalysisCard({
   timestamp,
 }: AnalysisCardProps) {
   const Icon = WidgetIconComponent[widget.type];
+  const eyebrow =
+    VERIFICATION_EYEBROW[isCuratedWidget(widget) ? "verified" : "ai-generated"];
+  const EyebrowIcon = eyebrow.Icon;
   const relativeTime = timestamp ? formatRelativeTime(timestamp) : null;
 
   return (
@@ -35,10 +37,16 @@ export function AnalysisCard({
       <InfoCard
         thumbnail={<Icon size={32} color="#0049AA" />}
         thumbnailBg="#F7F9FF"
-        typeLabel="AI-ASSISTED ANALYSIS"
-        typeLabelColor={TYPE_LABEL_COLOR}
+        typeLabel={eyebrow.label}
+        typeLabelColor={eyebrow.color}
         typeLabelIcon={
-          <SparkleIcon size={12} weight="thin" color={TYPE_LABEL_COLOR} />
+          EyebrowIcon && (
+            <EyebrowIcon
+              size={12}
+              weight={eyebrow.iconWeight}
+              color={eyebrow.iconColor}
+            />
+          )
         }
         title={widget.title}
         description={relativeTime ?? undefined}

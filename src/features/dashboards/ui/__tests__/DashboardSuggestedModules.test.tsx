@@ -114,7 +114,12 @@ const chart: Chart = {
   data: [{ year: 2020, loss_ha: 5 }],
 };
 
-const RESULT: AnalysisResult = { id: "ins-1", charts: [chart] };
+const RESULT: AnalysisResult = {
+  id: "ins-1",
+  createdAt: "",
+  charts: [chart],
+  analysisInputs: { recorded: false },
+};
 const TCL_LABEL = "Tree cover loss analysis";
 
 function deferred<T>() {
@@ -198,8 +203,8 @@ describe("DashboardSuggestedModules", () => {
     ];
     expect(names).toHaveLength(expectedStart.length);
     expectedStart.forEach((label, i) => expect(names[i]).toContain(label));
-    // Every curated tile carries the CURATED badge.
-    expect(screen.getAllByText("CURATED")).toHaveLength(
+    // Every curated tile carries the SOURCE DATA badge.
+    expect(screen.getAllByText("SOURCE DATA")).toHaveLength(
       OFFERED_CURATED_MODULES.length
     );
   });
@@ -253,7 +258,7 @@ describe("DashboardSuggestedModules", () => {
       expect(screen.queryByRole("button", { name: LABEL })).toBeNull();
       // The tiles offered for a KBA are unaffected by the flag (tree cover
       // gain is withheld by area, like LGMS).
-      expect(screen.getAllByText("CURATED")).toHaveLength(
+      expect(screen.getAllByText("SOURCE DATA")).toHaveLength(
         CURATED_SUGGESTED_MODULES.filter((m) =>
           curatedCatalogue({ aoiSource: "kba" }).some(
             (spec) => spec.datasetId === m.datasetId
@@ -348,7 +353,7 @@ describe("DashboardSuggestedModules", () => {
     fireEvent.click(onDashboard);
     expect(service.run).not.toHaveBeenCalled();
     // The other curated tiles are unaffected.
-    expect(screen.getAllByText("CURATED")).toHaveLength(
+    expect(screen.getAllByText("SOURCE DATA")).toHaveLength(
       OFFERED_CURATED_MODULES.length - 1
     );
   });

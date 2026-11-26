@@ -1,0 +1,109 @@
+// @vitest-environment happy-dom
+import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { render, screen, waitFor } from "@testing-library/react";
+import { StrictMode } from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("@/app/lib/api-client", () => ({ apiFetch: vi.fn() }));
+
+import { apiFetch } from "@/app/lib/api-client";
+import type { UserAoi } from "@/src/entities/user-aoi";
+
+import { UserAoiThumbnail } from "../UserAoiThumbnail";
+
+const mockedFetch = vi.mocked(apiFetch);
+
+const owned: UserAoi = {
+  id: "userAoi-1",
+  relationship: "owner",
+  name: "Borena",
+  source: "custom",
+  src_id: "ca-1",
+  subtype: "custom-area",
+  bbox: [37, 3, 40, 6],
+  created_at: "2026-11-24T00:00:00",
+};
+
+const saved: UserAoi = {
+  ...owned,
+  id: "userAoi-2",
+  relationship: "saved",
+  name: "Ethiopia",
+  source: "gadm",
+  src_id: "ETH",
+  subtype: "country",
+};
+
+function renderThumbnail(
+  userAoi: UserAoi,
+  queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  })
+) {
+  return render(
+    <StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <ChakraProvider value={defaultSystem}>
+          <UserAoiThumbnail userAoi={userAoi} />
+        </ChakraProvider>
+      </QueryClientProvider>
+    </StrictMode>
+  );
+}
+
+describe("UserAoiThumbnail", () => {
+  beforeEach(() => {
+    mockedFetch.mockReset();
+    URL.createObjectURL = vi.fn(() => "blob:outline");
+    URL.revokeObjectURL = vi.fn();
+  });
+
+  it.each([
+    ["an owned area", owned, "/api/geometry/custom/ca-1/thumbnail"],
+    ["a saved area", saved, "/api/geometry/gadm/ETH/thumbnail"],
+  ])("shows the outline the backend draws for %s", async (_, userAoi, path) => {
+    mockedFetch.mockResolvedValue(
+      new Response(new Blob(["png"], { type: "image/png" }), { status: 200 })
+    );
+
+    renderThumbnail(userAoi);
+
+    const img = await screen.findByRole("img", { name: userAoi.name });
+    expect(img.getAttribute("src")).toBe("blob:outline");
+    expect(mockedFetch.mock.calls[0][0]).toContain(path);
+  });
+
+  // StrictMode replays effects, as React does when a component remounts.
+  it("keeps the outline's image URL alive when a card mounts with it cached", async () => {
+    let created = 0;
+    URL.createObjectURL = vi.fn(() => `blob:outline-${++created}`);
+    mockedFetch.mockResolvedValue(
+      new Response(new Blob(["png"], { type: "image/png" }), { status: 200 })
+    );
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    const first = renderThumbnail(owned, queryClient);
+    await screen.findByRole("img", { name: owned.name });
+    first.unmount();
+    renderThumbnail(owned, queryClient);
+
+    const img = await screen.findByRole("img", { name: owned.name });
+    expect(URL.revokeObjectURL).not.toHaveBeenCalledWith(
+      img.getAttribute("src")
+    );
+  });
+
+  it("falls back to the plain thumbnail when the backend has none", async () => {
+    mockedFetch.mockResolvedValue(new Response("{}", { status: 404 }));
+
+    renderThumbnail(owned);
+
+    await waitFor(() => expect(mockedFetch).toHaveBeenCalled());
+    expect(
+      screen.queryByRole("img", { name: owned.name })?.getAttribute("src")
+    ).not.toBe("blob:outline");
+  });
+});

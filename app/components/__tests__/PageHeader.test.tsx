@@ -2,7 +2,7 @@
 /**
  * The slim header: menu button (opens the menu side bar), logo with the
  * PREVIEW badge, the Map and Dashboards tabs, and the avatar (User Profile
- * and Logout, email on hover). The active tab follows the route; state items
+ * and Log out, email on hover). The active tab follows the route; state items
  * (prompt meter, What's new) sit left of the avatar.
  */
 import { ChakraProvider } from "@chakra-ui/react";
@@ -12,6 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import system from "@/app/theme";
 import useAuthStore from "@/app/store/authStore";
 import useSidebarStore from "@/app/store/sidebarStore";
+import { catalogs, i18n } from "@/src/shared/lib/i18n";
 import {
   WHATS_NEW_OPEN_EVENT,
   WHATS_NEW_STORAGE_KEY,
@@ -144,7 +145,7 @@ describe("PageHeader account menu", () => {
     expect(avatar().getAttribute("aria-label")).toBe("Account menu");
   });
 
-  it("lists only User Profile and Logout, without repeating the email", async () => {
+  it("lists only User Profile and Log out, without repeating the email", async () => {
     renderHeader("/app");
 
     await act(async () => {
@@ -154,7 +155,7 @@ describe("PageHeader account menu", () => {
     const items = screen
       .getAllByRole("menuitem")
       .map((el) => el.textContent?.trim());
-    expect(items).toEqual(["User Profile", "Logout"]);
+    expect(items).toEqual(["User Profile", "Log out"]);
     expect(screen.getByRole("menu").textContent).not.toContain(
       "user@example.com"
     );
@@ -341,18 +342,35 @@ describe("PageHeader prompt meter", () => {
     expect(screen.queryByTestId("prompt-quota-meter")).toBeNull();
   });
 
-  it("orders meter, What's new, avatar when both states are true", () => {
+  it("orders meter, What's new, language, avatar when both states are true", () => {
     useAuthStore.getState().setPromptUsage(15, 20);
     renderHeader("/app");
 
     const meter = screen.getByTestId("prompt-quota-meter");
     const whatsNew = screen.getByRole("button", { name: /what's new/i });
+    const language = screen.getByRole("button", { name: "Language: English" });
     const avatar = screen.getByRole("button", { name: "Account menu" });
 
     // Unread updates: the What's new dot is showing.
     expect(screen.getByTestId("whats-new-header-dot")).toBeTruthy();
     expect(precedes(meter, whatsNew)).toBe(true);
-    expect(precedes(whatsNew, avatar)).toBe(true);
+    expect(precedes(whatsNew, language)).toBe(true);
+    expect(precedes(language, avatar)).toBe(true);
+  });
+});
+
+describe("PageHeader language selector", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    useSidebarStore.setState({ menuOpen: false });
+  });
+
+  it("shows the selector to signed-out visitors too", () => {
+    useAuthStore.getState().clearAuth();
+    renderHeader("/app");
+    expect(
+      screen.getByRole("button", { name: "Language: English" })
+    ).toBeTruthy();
   });
 });
 
@@ -390,7 +408,7 @@ describe("PageHeader profile reminder (front door)", () => {
 
     expect(await openAccountMenu()).toEqual([
       "Complete your profile",
-      "Logout",
+      "Log out",
     ]);
     expect(menuItem()!.getAttribute("href")).toBe("/dashboard");
   });
@@ -399,6 +417,59 @@ describe("PageHeader profile reminder (front door)", () => {
     signIn(true);
     renderHeader("/app");
     expect(dot()).toBeNull();
-    expect(await openAccountMenu()).toEqual(["User Profile", "Logout"]);
+    expect(await openAccountMenu()).toEqual(["User Profile", "Log out"]);
+  });
+});
+
+describe("PageHeader locale", () => {
+  const es = catalogs.es;
+
+  beforeEach(async () => {
+    localStorage.clear();
+    useSidebarStore.setState({ menuOpen: false });
+    useAuthStore.getState().setAuthStatus({
+      email: "user@example.com",
+      id: "u1",
+      hasProfile: true,
+      userType: null,
+    });
+    useAuthStore.getState().setPromptUsage(15, 20);
+    await act(() => i18n.changeLanguage("es"));
+  });
+
+  afterEach(async () => {
+    vi.unstubAllEnvs();
+    await act(() => i18n.changeLanguage("en"));
+  });
+
+  it("renders the header, preview info and account menu in the active locale", async () => {
+    localStorage.setItem("gnw_disclaimer_dismissed_v2", "true");
+    renderHeader("/app");
+
+    expect(screen.getByRole("link", { name: es["nav.map"] })).toBeTruthy();
+    expect(screen.getByText(es["header.badge.preview"]!)).toBeTruthy();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: es["preview.open"] }));
+    });
+    expect(screen.getByText(es["preview.title"]!)).toBeTruthy();
+    expect(screen.getByRole("link", { name: es["preview.faqs"] })).toBeTruthy();
+
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", { name: es["header.account.menu"] })
+      );
+    });
+    expect(
+      screen.getByRole("menuitem", { name: es["account.logOut"] })
+    ).toBeTruthy();
+  });
+
+  it("translates the PROTOTYPE badge in place of PREVIEW", () => {
+    vi.stubEnv("NEXT_PUBLIC_PROTOTYPE_MODE", "true");
+    renderHeader("/app");
+
+    expect(screen.getByText(es["header.badge.prototype"]!)).toBeTruthy();
+    expect(screen.queryByText(es["header.badge.preview"]!)).toBeNull();
   });
 });

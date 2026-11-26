@@ -13,8 +13,8 @@ export {
   resolveLocale,
   type Locale,
 } from "./locale";
-export { type MessageKey } from "./catalogs";
+export { catalogs, type MessageKey } from "./catalogs";
 export { createI18n, i18n } from "./i18n";
-export { applyLocale, browserLocaleInput, rememberLocale } from "./browser";
+export { applyLocale, followPreferredLocale, rememberLocale } from "./browser";
 export { useLocale } from "./use-locale";
-export { I18nextProvider, useTranslation } from "react-i18next";
+export { I18nextProvider, Trans, useTranslation } from "react-i18next";
