@@ -1,0 +1,225 @@
+name: PR Preview
+
+# Builds every PR, uploads dist/ to s3://$PREVIEW_BUCKET/pr-<N>/ and serves it
+# at https://pr-<N>.$PREVIEW_DOMAIN through CloudFront (see infra/preview/).
+# The preview is removed when the PR is closed.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, closed]
+    branches: [main, develop]
+
+concurrency:
+  group: preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+# Each job declares its own permissions. The build job runs third-party code
+# (pnpm install/build), so it never gets an OIDC token or a writable
+# GITHUB_TOKEN; only the publish/cleanup jobs, which run no repo code, do.
+permissions: {}
+
+env:
+  NODE: 22
+  PR_PREFIX: pr-${{ github.event.pull_request.number }}
+  PREVIEW_URL: https://pr-${{ github.event.pull_request.number }}.${{ vars.PREVIEW_DOMAIN }}
+  COMMENT_MARKER: "<!-- gnw-preview -->"
+
+jobs:
+  build:
+    # Fork PRs get no OIDC token or secrets, so they can't deploy.
+    # Skipped until the AWS side is configured (vars.PREVIEW_BUCKET set).
+    if: >-
+      vars.PREVIEW_BUCKET != '' &&
+      github.event.action != 'closed' &&
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE }}
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build application
+        run: pnpm build
+        env:
+          NEXT_PUBLIC_SITE_URL: ${{ env.PREVIEW_URL }}
+          NEXT_PUBLIC_API_HOST: ${{ vars.PREVIEW_API_HOST }}
+          NEXT_PUBLIC_RW_API_URL: ${{ vars.PREVIEW_RW_API_URL }}
+          NEXT_PUBLIC_ANALYTICS_API_HOST: ${{ vars.PREVIEW_ANALYTICS_API_HOST }}
+          NEXT_PUBLIC_EOAPI_HOST: ${{ vars.PREVIEW_EOAPI_HOST }}
+          NEXT_PUBLIC_LANDING_PAGE_VERSION: ${{ vars.PREVIEW_LANDING_PAGE_VERSION || 'public' }}
+          NEXT_PUBLIC_ENABLE_DEBUG_TOOLS: ${{ vars.PREVIEW_ENABLE_DEBUG_TOOLS || 'true' }}
+          NEXT_PUBLIC_PROTOTYPE_MODE: ${{ vars.PREVIEW_PROTOTYPE_MODE || 'false' }}
+          NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN: ${{ secrets.PREVIEW_MAPBOX_ACCESS_TOKEN }}
+
+      - name: Upload build
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          retention-days: 1
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # OIDC token for aws-actions/configure-aws-credentials
+      pull-requests: write # sticky preview comment
+    # The environment gives the PR its "View deployment" button and sets the
+    # OIDC subject to environment:pr-<N>-preview (see the IAM trust policy).
+    environment:
+      name: pr-${{ github.event.pull_request.number }}-preview
+      url: ${{ env.PREVIEW_URL }}
+    steps:
+      - name: Download build
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_PREVIEW_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Upload to S3
+        env:
+          DEST: s3://${{ vars.PREVIEW_BUCKET }}/${{ env.PR_PREFIX }}
+        run: |
+          # Hashed bundles never change, so cache them forever.
+          aws s3 sync dist/assets "$DEST/assets" --delete \
+            --cache-control "public, max-age=31536000, immutable"
+          # Everything else (HTML, public/ files) is revalidated on every load,
+          # so new pushes show up without a CloudFront invalidation.
+          aws s3 sync dist "$DEST" --delete --exclude "assets/*" \
+            --cache-control "no-cache"
+
+      - name: Write job summary
+        run: |
+          {
+            echo "### 🔎 Preview deployed"
+            echo ""
+            echo "**URL:** ${PREVIEW_URL}"
+            echo ""
+            echo "Commit: \`${{ github.event.pull_request.head.sha }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const marker = process.env.COMMENT_MARKER;
+            const sha = context.payload.pull_request.head.sha;
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const body = [
+              marker,
+              "### 🔎 Preview deployed",
+              "",
+              `**URL:** ${process.env.PREVIEW_URL}`,
+              "",
+              `| Commit | Built | Run |`,
+              `| --- | --- | --- |`,
+              `| \`${sha.slice(0, 7)}\` | ${new Date().toISOString().replace("T", " ").slice(0, 16)} UTC | [logs](${runUrl}) |`,
+            ].join("\n");
+            await upsertComment(body);
+
+            async function upsertComment(body) {
+              const { owner, repo } = context.repo;
+              const issue_number = context.issue.number;
+              const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number });
+              const existing = comments.find((c) => c.body?.includes(marker));
+              if (existing) {
+                await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+              } else {
+                await github.rest.issues.createComment({ owner, repo, issue_number, body });
+              }
+            }
+
+  cleanup:
+    if: >-
+      vars.PREVIEW_BUCKET != '' &&
+      github.event.action == 'closed' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      deployments: write # mark the PR's deployments inactive
+      pull-requests: write
+    steps:
+      # So the PR's "View deployment" button and the Environments page stop
+      # showing the deleted preview as active. Deleting the environment itself
+      # needs admin rights, which GITHUB_TOKEN doesn't have.
+      - name: Mark preview deployments inactive
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const environment = `${process.env.PR_PREFIX}-preview`;
+            const deployments = await github.paginate(github.rest.repos.listDeployments, { owner, repo, environment });
+            for (const deployment of deployments) {
+              await github.rest.repos.createDeploymentStatus({
+                owner,
+                repo,
+                deployment_id: deployment.id,
+                state: "inactive",
+              });
+            }
+            core.info(`Marked ${deployments.length} deployment(s) in ${environment} inactive`);
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_PREVIEW_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Delete preview from S3
+        run: aws s3 rm "s3://${{ vars.PREVIEW_BUCKET }}/${PR_PREFIX}/" --recursive
+
+      - name: Update PR comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const marker = process.env.COMMENT_MARKER;
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number });
+            const existing = comments.find((c) => c.body?.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body: `${marker}\n### 🧹 Preview removed\n\nThe preview for this PR was deleted when the PR was closed.`,
+              });
+            }
