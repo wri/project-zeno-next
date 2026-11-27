@@ -18,8 +18,6 @@ import {
  */
 const NAME_WIDTH = { base: "112px", wide: "160px", wider: "220px" };
 const NAME_COLUMN = "--ranking-name-width";
-/** Marks a row, so a tap can tell its own row from another place. */
-const ROW_ATTRIBUTE = "data-ranking-row";
 
 /**
  * A tap opens the row's tooltip and a tap elsewhere closes it: Ark's tooltip
@@ -31,21 +29,22 @@ const ROW_ATTRIBUTE = "data-ranking-row";
  * open from a tap, the tooltip's own close requests are ignored and only a
  * pointer down outside the row closes it.
  */
-function useTouchTooltip(rowId: string) {
+function useTouchTooltip(rowRef: React.RefObject<HTMLElement | null>) {
   const [open, setOpen] = useState(false);
   const openedByTouch = useRef(false);
 
   useEffect(() => {
     if (!open) return;
     const closeOutside = (event: PointerEvent) => {
-      const row = (event.target as Element).closest(`[${ROW_ATTRIBUTE}]`);
-      if (row?.getAttribute(ROW_ATTRIBUTE) === rowId) return;
+      // This row's element, not an id: another chart of the same answer ranks
+      // the same areas, and a tap on its row must close this tooltip.
+      if (rowRef.current?.contains(event.target as Node)) return;
       openedByTouch.current = false;
       setOpen(false);
     };
     document.addEventListener("pointerdown", closeOutside);
     return () => document.removeEventListener("pointerdown", closeOutside);
-  }, [open, rowId]);
+  }, [open, rowRef]);
 
   return {
     open,
@@ -74,13 +73,14 @@ function RankingRow({
   reserve: string;
   print: boolean;
 }) {
-  const touch = useTouchTooltip(area.aoiId);
+  const rowRef = useRef<HTMLLIElement>(null);
+  const touch = useTouchTooltip(rowRef);
   const [fullName, figures] = tooltipLines(area, ranking);
 
   const row = (
     <Box
       as="li"
-      {...{ [ROW_ATTRIBUTE]: area.aoiId }}
+      ref={rowRef}
       listStyleType="none"
       display="grid"
       gridTemplateColumns={`20px var(${NAME_COLUMN}) minmax(0, 1fr)`}

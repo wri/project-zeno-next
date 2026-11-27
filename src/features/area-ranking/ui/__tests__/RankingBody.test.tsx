@@ -142,6 +142,30 @@ describe("RankingBody", () => {
     );
   });
 
+  it("closes a tapped tooltip on a tap on the same area in another chart", async () => {
+    render(
+      <ChakraProvider value={defaultSystem}>
+        <RankingBody widget={widget(rows(12))} />
+        <RankingBody widget={{ ...widget(rows(12)), id: "r-2" }} />
+      </ChakraProvider>
+    );
+    // Ten rows to a page: the second chart's first row is the eleventh.
+    const items = screen.getAllByRole("listitem");
+    const [first, second] = [items[0], items[10]];
+    const text = "1,000 ha · 2.5% of all loss in the 12 areas";
+
+    fireEvent.pointerDown(first, { pointerType: "touch" });
+    fireEvent.pointerUp(first, { pointerType: "touch" });
+    expect(await screen.findByText(text)).toBeTruthy();
+
+    // Same aoi_id as the open row, in the other chart.
+    expect(second.getAttribute("aria-label")).toBe(
+      first.getAttribute("aria-label")
+    );
+    fireEvent.pointerDown(second, { pointerType: "touch" });
+    await vi.waitFor(() => expect(screen.queryByText(text)).toBeNull());
+  });
+
   it("leaves the share out when the rows have none", () => {
     renderBody(rows(12, 0, false));
 
