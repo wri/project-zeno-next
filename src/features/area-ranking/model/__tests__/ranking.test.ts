@@ -36,35 +36,43 @@ const withoutShare = (rows: Record<string, unknown>[]) =>
 
 describe("parseRanking", () => {
   it("reads every field of every row, in the wire order", () => {
-    expect(parseRanking(ROWS, "area_ha")).toEqual({
-      measure: "loss",
-      unit: "ha",
-      areas: [
-        {
-          aoiId: "KEN.33",
-          rank: 1,
-          name: "Narok",
-          parent: "Kenya",
-          value: 72050.31,
-          share: 60,
-        },
-        {
-          aoiId: "KEN.32",
-          rank: 2,
-          name: "Nakuru",
-          parent: "Kenya",
-          value: 48000,
-          share: 40,
-        },
-        {
-          aoiId: "KEN.30",
-          rank: 3,
-          name: "Nairobi",
-          value: 0,
-          share: 0,
-        },
-      ],
-    });
+    const { areas } = parseRanking(ROWS, "area_ha");
+    expect(areas).toEqual([
+      {
+        aoiId: "KEN.33",
+        rank: 1,
+        name: "Narok",
+        parent: "Kenya",
+        value: 72050.31,
+        share: 60,
+      },
+      {
+        aoiId: "KEN.32",
+        rank: 2,
+        name: "Nakuru",
+        parent: "Kenya",
+        value: 48000,
+        share: 40,
+      },
+      {
+        aoiId: "KEN.30",
+        rank: 3,
+        name: "Nairobi",
+        value: 0,
+        share: 0,
+      },
+    ]);
+  });
+
+  it("splits the bars from the areas with no value, and totals the bars", () => {
+    const ranking = parseRanking(ROWS, "area_ha");
+    expect(ranking.bars.map((a) => a.aoiId)).toEqual(["KEN.33", "KEN.32"]);
+    expect(ranking.noValue.map((a) => a.aoiId)).toEqual(["KEN.30"]);
+    expect(ranking.total).toBeCloseTo(120050.31);
+  });
+
+  it("has no total when the areas have no shares", () => {
+    expect(parseRanking(withoutShare(ROWS), "area_ha").total).toBeUndefined();
   });
 
   it("names the measure and unit of the emissions column", () => {

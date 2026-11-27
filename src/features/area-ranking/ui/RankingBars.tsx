@@ -63,14 +63,12 @@ function useTouchTooltip(rowId: string) {
 function RankingRow({
   area,
   ranking,
-  scaleMax,
   color,
   reserve,
   print,
 }: {
   area: RankedArea;
   ranking: Ranking;
-  scaleMax: number;
   color: string;
   reserve: string;
   print: boolean;
@@ -117,7 +115,7 @@ function RankingRow({
           flexShrink={0}
           rounded="2px"
           style={{
-            width: `max(2px, calc((100% - ${reserve}) * ${area.value / scaleMax}))`,
+            width: `max(2px, calc((100% - ${reserve}) * ${area.value / ranking.bars[0].value}))`,
             backgroundColor: color,
           }}
         />
@@ -152,20 +150,18 @@ function RankingRow({
 }
 
 /**
- * Ranked area bars: rank, name, a bar as long as its share of `scaleMax`, and
+ * Ranked area bars: rank, name, a bar as long as its share of the largest value, and
  * the value. In `print` every row is plain: no tooltip, no tab stop, and the
  * share printed after the value.
  */
 export function RankingBars({
   rows,
   ranking,
-  scaleMax,
   color,
   print = false,
 }: {
   rows: RankedArea[];
   ranking: Ranking;
-  scaleMax: number;
   color: string;
   print?: boolean;
 }) {
@@ -194,7 +190,6 @@ export function RankingBars({
           key={area.aoiId}
           area={area}
           ranking={ranking}
-          scaleMax={scaleMax}
           color={color}
           reserve={reserve}
           print={print}

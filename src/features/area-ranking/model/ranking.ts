@@ -47,6 +47,38 @@ export interface Ranking {
   unit: string;
   /** Every area of the pull in rank order, those with no value last. */
   areas: RankedArea[];
+  /** The areas with a value, in rank order: the ones drawn as bars. */
+  bars: RankedArea[];
+  /** The areas with no value: named in a line, not drawn. */
+  noValue: RankedArea[];
+  /**
+   * The bars' values summed, which the shares are of. Absent when the areas
+   * have no shares (they can overlap), so a share of "all" would be false.
+   */
+  total?: number;
+}
+
+/**
+ * The one place the split of bars and no-value areas is made. `areas` must be
+ * in rank order with the empty areas last, as `parseRanking` guarantees.
+ */
+export function rankingOf(
+  measure: RankingMeasure,
+  unit: string,
+  areas: RankedArea[]
+): Ranking {
+  const bars = areas.filter((area) => area.value > 0);
+  const hasShares = areas.every((area) => area.share !== undefined);
+  return {
+    measure,
+    unit,
+    areas,
+    bars,
+    noValue: areas.slice(bars.length),
+    ...(hasShares
+      ? { total: bars.reduce((sum, area) => sum + area.value, 0) }
+      : {}),
+  };
 }
 
 function fail(index: number, problem: string): never {
@@ -137,15 +169,15 @@ export function parseRanking(data: unknown, yAxis: string): Ranking {
     throw new Error("Area ranking: every value is 0");
   }
 
-  return {
+  return rankingOf(
     measure,
-    unit: axisUnit(yAxis),
-    areas: parsed.map((area) =>
+    axisUnit(yAxis),
+    parsed.map((area) =>
       area.parent !== undefined && (nameCounts.get(area.name) ?? 0) > 1
         ? { ...area, qualifier: area.parent }
         : area
-    ),
-  };
+    )
+  );
 }
 
 /**

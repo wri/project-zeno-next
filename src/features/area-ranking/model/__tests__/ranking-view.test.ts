@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { RankedArea, Ranking } from "../ranking";
+import { rankingOf, type RankedArea, type Ranking } from "../ranking";
 import { rankingView } from "../ranking-view";
 
 /** `bars` areas worth 100, 99, … then `empty` areas with no value. */
@@ -11,20 +11,17 @@ function ranking(bars: number, empty = 0): Ranking {
     name: `Area ${i}`,
     value,
   });
-  return {
-    measure: "loss",
-    unit: "ha",
-    areas: [
-      ...Array.from({ length: bars }, (_, i) => area(i, 100 - i)),
-      ...Array.from({ length: empty }, (_, i) => area(bars + i, 0)),
-    ],
-  };
+  return rankingOf("loss", "ha", [
+    ...Array.from({ length: bars }, (_, i) => area(i, 100 - i)),
+    ...Array.from({ length: empty }, (_, i) => area(bars + i, 0)),
+  ]);
 }
 
 describe("rankingView", () => {
   it("pages the bars ten at a time and counts the bars", () => {
     const first = rankingView(ranking(44, 3), 0);
-    expect(first).toMatchObject({ start: 1, end: 10, total: 44, pageCount: 5 });
+    expect(first).toMatchObject({ start: 1, end: 10, pageCount: 5 });
+    expect(ranking(44, 3).bars).toHaveLength(44);
     expect(first.hasPrevious).toBe(false);
     expect(first.hasNext).toBe(true);
 
@@ -33,15 +30,9 @@ describe("rankingView", () => {
     expect(last.rows).toHaveLength(4);
   });
 
-  it("measures every page against the largest value", () => {
-    expect(rankingView(ranking(25), 0).scaleMax).toBe(100);
-    expect(rankingView(ranking(25), 2).scaleMax).toBe(100);
-  });
-
-  it("separates the areas with no value from the bars", () => {
-    const view = rankingView(ranking(12, 3), 0);
-    expect(view.total).toBe(12);
-    expect(view.noValue.map((a) => a.aoiId)).toEqual(["a12", "a13", "a14"]);
+  it("pages over the bars only, never the areas with no value", () => {
+    const view = rankingView(ranking(12, 3), 1);
+    expect(view.rows.map((a) => a.aoiId)).toEqual(["a10", "a11"]);
     expect(view.rows.every((a) => a.value > 0)).toBe(true);
   });
 
@@ -53,6 +44,6 @@ describe("rankingView", () => {
   it("is one page for exactly ten bars, with the empty areas listed", () => {
     const view = rankingView(ranking(10, 3), 0);
     expect(view).toMatchObject({ pageCount: 1, hasNext: false });
-    expect(view.noValue).toHaveLength(3);
+    expect(ranking(10, 3).noValue).toHaveLength(3);
   });
 });

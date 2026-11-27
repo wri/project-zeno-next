@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { RankedArea, Ranking } from "../ranking";
+import { rankingOf, type RankedArea, type Ranking } from "../ranking";
 import {
   barValueText,
   displayName,
@@ -26,7 +26,10 @@ const area = (overrides: Partial<RankedArea> = {}): RankedArea => ({
 const ranking = (
   areas: RankedArea[],
   overrides: Partial<Ranking> = {}
-): Ranking => ({ measure: "loss", unit: "ha", areas, ...overrides });
+): Ranking => {
+  const { measure = "loss", unit = "ha" } = overrides;
+  return { ...rankingOf(measure, unit, areas), ...overrides };
+};
 
 describe("shareText", () => {
   it("shows one decimal, and <0.1% below 0.05", () => {

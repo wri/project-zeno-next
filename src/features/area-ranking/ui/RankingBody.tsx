@@ -54,7 +54,8 @@ export function RankingBody({
     getChartColors()[0];
   const share = print ? undefined : pageShare(ranking, view);
   const showNoValue =
-    view.noValue.length > 0 && (print ? view.pageCount === 1 : !view.hasNext);
+    ranking.noValue.length > 0 &&
+    (print ? view.pageCount === 1 : !view.hasNext);
 
   return (
     // The container the name column's width is measured against.
@@ -96,7 +97,6 @@ export function RankingBody({
       <RankingBars
         rows={view.rows}
         ranking={ranking}
-        scaleMax={view.scaleMax}
         color={color}
         print={print}
       />
@@ -105,7 +105,7 @@ export function RankingBody({
         // The table's pager, copied: extracting one is a follow-up.
         <Flex align="center" justify="space-between" gap="8px">
           <Text fontSize="xs" color="fg.muted" aria-live="polite">
-            Showing {view.start}–{view.end} of {view.total}
+            Showing {view.start}–{view.end} of {ranking.bars.length}
           </Text>
           {/* Left out of a downloaded image (see exportChartImage). */}
           <Flex gap={1} data-export-exclude="">
@@ -131,8 +131,8 @@ export function RankingBody({
         </Flex>
       )}
 
-      {showNoValue && <Note>{noValueText(ranking, view.noValue)}</Note>}
-      {print && view.total > PAGE_SIZE && (
+      {showNoValue && <Note>{noValueText(ranking, ranking.noValue)}</Note>}
+      {print && ranking.bars.length > PAGE_SIZE && (
         <Note>{topNoteText(PAGE_SIZE, ranking.areas.length)}</Note>
       )}
     </Flex>

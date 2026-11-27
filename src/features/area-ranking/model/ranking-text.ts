@@ -86,9 +86,7 @@ const RESERVE_MARGIN_CH = 2;
  */
 export function valueReserve(ranking: Ranking, print: boolean): string {
   const longest = Math.max(
-    ...ranking.areas
-      .filter((area) => area.value > 0)
-      .map((area) => rowValueText(area, ranking, print).length)
+    ...ranking.bars.map((area) => rowValueText(area, ranking, print).length)
   );
   return `${longest + RESERVE_MARGIN_CH}ch`;
 }
@@ -122,14 +120,10 @@ export function pageShare(
   ranking: Ranking,
   view: RankingView
 ): PageShare | undefined {
-  // The bars are a prefix of `ranking.areas`; the no-value areas come last.
-  const bars = ranking.areas.slice(0, view.total);
-  if (view.pageCount === 1 || bars.some((area) => area.share === undefined)) {
-    return undefined;
-  }
+  const { bars, total } = ranking;
+  if (view.pageCount === 1 || total === undefined) return undefined;
   const sum = (areas: RankedArea[]) =>
-    areas.reduce((total, area) => total + area.value, 0);
-  const total = sum(bars);
+    areas.reduce((sum, area) => sum + area.value, 0);
   const beforeSum = sum(bars.slice(0, view.start - 1));
   const pageSum = sum(view.rows);
   const pagePct = (pageSum / total) * 100;
