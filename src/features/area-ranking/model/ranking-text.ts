@@ -4,11 +4,6 @@ import { formatTooltipValue } from "@/app/utils/formatCharts";
 import type { RankedArea, Ranking } from "./ranking";
 import type { RankingView } from "./ranking-view";
 
-const NO_VALUE_PHRASE = {
-  loss: "No loss",
-  emissions: "No emissions",
-} as const;
-
 /** "Bom Jesus, Piauí": the name and, when there is one, the area it lies in. */
 function fullName({ name, parent }: RankedArea): string {
   return parent === undefined ? name : `${name}, ${parent}`;
@@ -95,7 +90,7 @@ export function valueReserve(ranking: Ranking, print: boolean): string {
 export function noValueText(ranking: Ranking, areas: RankedArea[]): string {
   const names = areas.map(displayName);
   const count = `${areas.length} ${areas.length === 1 ? "area" : "areas"}`;
-  return `${NO_VALUE_PHRASE[ranking.measure]} in ${count}: ${names.join(", ")}.`;
+  return `No ${ranking.measure} in ${count}: ${names.join(", ")}.`;
 }
 
 export interface PageShare {
