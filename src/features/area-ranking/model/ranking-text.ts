@@ -1,5 +1,5 @@
-import { formatCompactNumber } from "@/app/utils/boundaryFeatureDetails";
 import { formatTooltipValue } from "@/app/utils/formatCharts";
+import { formatCompactNumber } from "@/src/shared/lib/number-format";
 
 import type { RankedArea, Ranking } from "./ranking";
 import type { RankingView } from "./ranking-view";

@@ -1,4 +1,5 @@
 import type { LayerId } from "@/app/types/map";
+import { formatCompactNumber } from "@/src/shared/lib/number-format";
 
 /**
  * Display model for a hovered boundary feature: the eyebrow kind, title,
@@ -33,18 +34,6 @@ export function clean(value: unknown): string | undefined {
   if (value === null || value === undefined) return undefined;
   const text = String(value).trim();
   return PLACEHOLDERS.has(text.toLowerCase()) ? undefined : text;
-}
-
-const COMPACT = new Intl.NumberFormat("en", {
-  notation: "compact",
-  maximumFractionDigits: 1,
-});
-
-/** "8.4M"; undefined for non-positive or non-numeric input. */
-export function formatCompactNumber(value: unknown): string | undefined {
-  const n = Number(value);
-  if (!Number.isFinite(n) || n <= 0) return undefined;
-  return COMPACT.format(n);
 }
 
 /** "8.4M ha"; undefined for non-positive or non-numeric input. */

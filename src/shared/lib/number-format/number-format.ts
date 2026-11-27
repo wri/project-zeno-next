@@ -10,3 +10,15 @@ export const signed = new Intl.NumberFormat("en-US", {
   maximumSignificantDigits: 2,
   signDisplay: "always",
 });
+
+const COMPACT = new Intl.NumberFormat("en", {
+  notation: "compact",
+  maximumFractionDigits: 1,
+});
+
+/** "8.4M"; undefined for non-positive or non-numeric input. */
+export function formatCompactNumber(value: unknown): string | undefined {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) return undefined;
+  return COMPACT.format(n);
+}
