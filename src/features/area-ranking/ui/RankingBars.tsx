@@ -102,7 +102,14 @@ function RankingRow({
       <Text color="fg.muted" textAlign="end">
         {area.rank}
       </Text>
-      <Text color="neutral.700" truncate>
+      {/* On screen a long name is cut and the tooltip has it in full; paper has
+          no tooltip, so there it wraps and the "· parent" qualifier survives. */}
+      <Text
+        color="neutral.700"
+        truncate={!print}
+        overflowWrap={print ? "anywhere" : undefined}
+        minW={0}
+      >
         {area.name}
         {area.qualifier !== undefined && (
           <Text as="span" color="fg.muted">

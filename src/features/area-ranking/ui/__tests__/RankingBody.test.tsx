@@ -186,6 +186,30 @@ describe("RankingBody", () => {
       expect(screen.queryByText(/^Top 10/)).toBeNull();
     });
 
+    it("wraps a long name instead of cutting it, which a tap on paper cannot reveal", () => {
+      const data = rows(3);
+      data[0].name = "Bom Jesus";
+      data[0].parent = "Rio Grande do Sul";
+      // happy-dom does not apply Emotion's rules, so read the rules the
+      // cell's classes match.
+      const nameCss = (print: boolean) => {
+        const { unmount } = renderBody(data, print);
+        const cell = screen.getByText("Bom Jesus");
+        const classes = Array.from(cell.classList);
+        const css = Array.from(document.styleSheets)
+          .flatMap((sheet) => Array.from(sheet.cssRules))
+          .map((rule) => rule.cssText)
+          .filter((text) => classes.some((name) => text.includes(`.${name}`)))
+          .join(" ");
+        unmount();
+        return css;
+      };
+
+      expect(nameCss(false)).toContain("text-overflow");
+      expect(nameCss(true)).not.toContain("text-overflow");
+      expect(nameCss(true)).not.toContain("nowrap");
+    });
+
     it("omits the share when the rows have none", () => {
       renderBody(rows(12, 0, false), true);
 
