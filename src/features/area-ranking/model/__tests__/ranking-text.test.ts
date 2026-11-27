@@ -36,6 +36,10 @@ describe("shareText", () => {
     expect(shareText(0.05)).toBe("0.1%");
     expect(shareText(0.04)).toBe("<0.1%");
   });
+
+  it("shows a share the backend rounded to 0 as <0.1%", () => {
+    expect(shareText(0)).toBe("<0.1%");
+  });
 });
 
 describe("tooltipLines", () => {

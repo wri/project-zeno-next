@@ -33,9 +33,13 @@ function exactValue(area: RankedArea, { unit }: Ranking): string {
   return `${formatTooltipValue(area.value)} ${unit}`;
 }
 
-/** "8.8%", or "<0.1%" below 0.05 so a small share never reads as none. */
+/**
+ * "8.8%", or "<0.1%" below 0.05 so a small share never reads as none. Callers
+ * pass the share of a value above 0, and the backend rounds that share to 2
+ * decimals, so a tiny area can arrive as 0: it still reads "<0.1%".
+ */
 export function shareText(percent: number): string {
-  return percent > 0 && percent < 0.05 ? "<0.1%" : `${percent.toFixed(1)}%`;
+  return percent < 0.05 ? "<0.1%" : `${percent.toFixed(1)}%`;
 }
 
 /**
