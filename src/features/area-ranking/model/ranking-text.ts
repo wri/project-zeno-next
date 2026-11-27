@@ -98,11 +98,6 @@ export function noValueText(ranking: Ranking, areas: RankedArea[]): string {
   return `${NO_VALUE_PHRASE[ranking.measure]} in ${count}: ${names.join(", ")}.`;
 }
 
-/** The PDF's note under a ranking cut to its first page. */
-export function topNoteText(shown: number, areaCount: number): string {
-  return `Top ${shown} of ${areaCount} areas.`;
-}
-
 export interface PageShare {
   lead: string;
   tail: string;

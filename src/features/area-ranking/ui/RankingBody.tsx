@@ -7,8 +7,8 @@ import { resolveSeriesColor } from "@/app/utils/formatCharts";
 import { widgetViewKey } from "@/src/shared/lib/widget-view-key";
 
 import { parseRanking } from "../model/ranking";
-import { noValueText, pageShare, topNoteText } from "../model/ranking-text";
-import { PAGE_SIZE, rankingView } from "../model/ranking-view";
+import { noValueText, pageShare } from "../model/ranking-text";
+import { rankingView } from "../model/ranking-view";
 import useRankingViewStore from "../model/ranking-view-store";
 import { RankingBars } from "./RankingBars";
 
@@ -53,9 +53,8 @@ export function RankingBody({
     resolveSeriesColor(widget.seriesColor, widget.datasetName) ??
     getChartColors()[0];
   const share = print ? undefined : pageShare(ranking, view);
-  const showNoValue =
-    ranking.noValue.length > 0 &&
-    (print ? view.pageCount === 1 : !view.hasNext);
+  // Print always draws page 0, so "no next page" is "every bar fits".
+  const showNoValue = ranking.noValue.length > 0 && !view.hasNext;
 
   return (
     // The container the name column's width is measured against.
@@ -132,8 +131,8 @@ export function RankingBody({
       )}
 
       {showNoValue && <Note>{noValueText(ranking, ranking.noValue)}</Note>}
-      {print && ranking.bars.length > PAGE_SIZE && (
-        <Note>{topNoteText(PAGE_SIZE, ranking.areas.length)}</Note>
+      {print && view.hasNext && (
+        <Note>{`Top ${view.end} of ${ranking.areas.length} areas.`}</Note>
       )}
     </Flex>
   );

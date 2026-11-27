@@ -8,7 +8,6 @@ import {
   pageShare,
   shareText,
   tooltipLines,
-  topNoteText,
   valueReserve,
 } from "../ranking-text";
 import { rankingView } from "../ranking-view";
@@ -115,12 +114,6 @@ describe("noValueText", () => {
     expect(
       noValueText(ranking(empty, { measure: "emissions" }), [empty[0]])
     ).toBe("No emissions in 1 area: Belém.");
-  });
-});
-
-describe("topNoteText", () => {
-  it("says how many of the areas are shown", () => {
-    expect(topNoteText(10, 47)).toBe("Top 10 of 47 areas.");
   });
 });
 

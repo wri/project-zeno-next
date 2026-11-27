@@ -1,6 +1,6 @@
 import type { RankedArea, Ranking } from "./ranking";
 
-export const PAGE_SIZE = 10;
+const PAGE_SIZE = 10;
 
 export interface RankingView {
   /** The current page's bars, largest first. */
