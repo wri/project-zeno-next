@@ -16,6 +16,7 @@ const ALLOWED_TYPES = new Set<InsightWidget["type"]>([
   "scatter",
   "stacked-bar-with-line",
   "hierarchical-bar",
+  "ranked-bar",
 ]);
 
 /**

@@ -1,4 +1,5 @@
 import type { LayerId } from "@/app/types/map";
+import { formatCompactNumber } from "@/src/shared/lib/number-format";
 
 /**
  * Display model for a hovered boundary feature: the eyebrow kind, title,
@@ -35,16 +36,10 @@ export function clean(value: unknown): string | undefined {
   return PLACEHOLDERS.has(text.toLowerCase()) ? undefined : text;
 }
 
-const HECTARES = new Intl.NumberFormat("en", {
-  notation: "compact",
-  maximumFractionDigits: 1,
-});
-
 /** "8.4M ha"; undefined for non-positive or non-numeric input. */
 export function formatHectares(value: unknown): string | undefined {
-  const n = Number(value);
-  if (!Number.isFinite(n) || n <= 0) return undefined;
-  return `${HECTARES.format(n)} ha`;
+  const compact = formatCompactNumber(value);
+  return compact === undefined ? undefined : `${compact} ha`;
 }
 
 function capitalise(text: string | undefined): string | undefined {

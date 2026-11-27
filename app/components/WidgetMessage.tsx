@@ -40,6 +40,11 @@ import {
   GhgFluxTreeChartInfo,
   isFluxTreeWidget,
 } from "@/src/features/ghg-flux-tree";
+import {
+  isRankingWidget,
+  RankingBody,
+  rankingTableProps,
+} from "@/src/features/area-ranking";
 import { WidgetIcons } from "../utils/widgetIcons";
 import AddToDashboardToggle from "@/src/features/dashboards/ui/AddToDashboardToggle";
 import { isCuratedWidget } from "@/src/entities/insight";
@@ -107,6 +112,8 @@ interface ChartBodyProps {
   fitYAxis: boolean;
   expanded?: boolean;
   fullWidth?: boolean;
+  /** The dashboard export: charts with controls of their own draw without them. */
+  print?: boolean;
 }
 
 function ChartBody({
@@ -116,6 +123,7 @@ function ChartBody({
   fitYAxis,
   expanded,
   fullWidth,
+  print,
 }: ChartBodyProps) {
   if (netFluxVariant) {
     return (
@@ -130,6 +138,9 @@ function ChartBody({
   }
   if (isFluxTree) {
     return <GhgFluxTreeBody widget={displayWidget} />;
+  }
+  if (isRankingWidget(displayWidget)) {
+    return <RankingBody widget={displayWidget} print={print} />;
   }
   return (
     <ChartWidget
@@ -243,6 +254,7 @@ export default function WidgetMessage({
     "scatter",
     "stacked-bar-with-line",
     "hierarchical-bar",
+    "ranked-bar",
   ];
   const isChartType = chartTypes.includes(widget.type);
   // This chart renders its own tree + plot + legend composition rather than
@@ -254,7 +266,9 @@ export default function WidgetMessage({
     ? netFluxTableProps(netFluxVariant, widget.xAxis, netFluxView.measure)
     : isFluxTree
       ? fluxTreeTableProps()
-      : undefined;
+      : isRankingWidget(widget)
+        ? rankingTableProps(widget.yAxis)
+        : undefined;
   const hasData =
     Array.isArray(displayWidget.data) && displayWidget.data.length > 0;
   const showDisclaimer = (isChartType || widget.type === "table") && hasData;
@@ -389,6 +403,7 @@ export default function WidgetMessage({
                 displayWidget={displayWidget}
                 fitYAxis={fitYAxis}
                 fullWidth={fullWidth}
+                print={print}
               />
             </Box>
           </WidgetErrorBoundary>

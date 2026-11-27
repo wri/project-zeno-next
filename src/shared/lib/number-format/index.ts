@@ -1,1 +1,1 @@
-export { signed } from "./number-format";
+export { formatCompactNumber, signed } from "./number-format";

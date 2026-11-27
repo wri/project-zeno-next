@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { signed } from "../number-format";
+import { formatCompactNumber, signed } from "../number-format";
 
 describe("signed", () => {
   it("rounds to two significant digits at every magnitude", () => {
@@ -18,5 +18,24 @@ describe("signed", () => {
     expect(signed.format(-843.7)).toBe("-840");
     // Under the old integer-only rounding this printed as "-0".
     expect(signed.format(-0.3)).toBe("-0.3");
+  });
+});
+
+describe("formatCompactNumber", () => {
+  it("shortens a positive number to one decimal", () => {
+    expect(formatCompactNumber(8_400_000)).toBe("8.4M");
+    expect(formatCompactNumber(72_050.31)).toBe("72.1K");
+    expect(formatCompactNumber(950)).toBe("950");
+  });
+
+  it("is undefined for zero and negative numbers", () => {
+    expect(formatCompactNumber(0)).toBeUndefined();
+    expect(formatCompactNumber(-5)).toBeUndefined();
+  });
+
+  it("is undefined for non-numeric input", () => {
+    expect(formatCompactNumber("abc")).toBeUndefined();
+    expect(formatCompactNumber(undefined)).toBeUndefined();
+    expect(formatCompactNumber(NaN)).toBeUndefined();
   });
 });

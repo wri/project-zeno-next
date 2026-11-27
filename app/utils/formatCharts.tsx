@@ -4,6 +4,23 @@ import CHART_COLOR_MAPPING, {
   DATASET_DIVERGENT_COLORS,
 } from "@/app/config/chartColorMappings";
 import type { ChartColorFields } from "@/app/types/chartColors";
+import type { InsightWidget } from "@/app/types/chat";
+
+/**
+ * A single series' color from what is known about it: the backend's
+ * `seriesColor`, else the dataset's own color. Absent when neither is set, and
+ * the caller falls back to its default, so one-area charts and rankings of the
+ * same dataset agree.
+ */
+export function resolveSeriesColor(
+  seriesColor: string | undefined,
+  datasetName: string | undefined
+): string | undefined {
+  return (
+    seriesColor ??
+    (datasetName ? DATASET_SERIES_COLORS[datasetName] : undefined)
+  );
+}
 
 interface InputData {
   [key: string]: unknown | unknown;
@@ -168,21 +185,9 @@ function filterChartDataColumns(
  */
 export default function formatChartData(
   data: InputData[] | unknown,
-  type:
-    | "line"
-    | "bar"
-    | "table"
-    | "dataset-card"
-    | "pie"
-    | "stacked-bar"
-    | "grouped-bar"
-    | "area"
-    | "scatter"
-    | "stacked-bar-with-line"
-    // Listed only so ChartWidget's call site typechecks. A hierarchy has no
-    // cartesian axes and gets no branch below: WidgetMessage routes it to the
-    // ghg-flux-tree slice, which builds its own plot, so this never runs for it.
-    | "hierarchical-bar",
+  // hierarchical-bar and ranked-bar never reach here: WidgetMessage routes them
+  // to their slices, which build their own plots.
+  type: InsightWidget["type"],
   xAxis?: string,
   yAxis?: string,
   datasetName?: string,
@@ -342,9 +347,10 @@ export default function formatChartData(
       name: item[nameKey],
     }));
 
-    const datasetColor =
-      colorOverrides?.seriesColor ??
-      (datasetName ? DATASET_SERIES_COLORS[datasetName] : undefined);
+    const datasetColor = resolveSeriesColor(
+      colorOverrides?.seriesColor,
+      datasetName
+    );
     const series: ChartSeries[] = [
       {
         name: nameKey, // The series name can be derived from the label key
@@ -376,9 +382,10 @@ export default function formatChartData(
     const divergent =
       colorOverrides?.divergentColors ??
       (datasetName ? DATASET_DIVERGENT_COLORS[datasetName] : undefined);
-    const datasetColor =
-      colorOverrides?.seriesColor ??
-      (datasetName ? DATASET_SERIES_COLORS[datasetName] : undefined);
+    const datasetColor = resolveSeriesColor(
+      colorOverrides?.seriesColor,
+      datasetName
+    );
 
     // For bar charts with divergent colors, add per-bar _barColor based on value sign
     if (type === "bar" && divergent && chartValueKeys.length === 1) {

@@ -94,6 +94,15 @@ describe("chartsToWidgets", () => {
     expect(series.map((s) => s.name)).toEqual(["high", "low"]);
   });
 
+  it("keeps the ranked-bar type, whose rows are not a bar chart's", () => {
+    const widgets = chartsToWidgets(
+      [{ ...baseChart, type: "ranked-bar" }],
+      "ins-1",
+      NOT_RECORDED
+    );
+    expect(widgets[0].type).toBe("ranked-bar");
+  });
+
   it("falls back to 'bar' for an unknown chart type", () => {
     const widgets = chartsToWidgets(
       [{ ...baseChart, type: "nonsense" }],

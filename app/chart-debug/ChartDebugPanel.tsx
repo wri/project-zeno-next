@@ -794,6 +794,118 @@ const GHG_NET_FLUX_DATA = [
 // Widget fixtures
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Ranked-bar fixtures (curated ranking of areas). Fixture only: the names are
+// real counties, the values are invented. The wire rows are what project-zeno
+// sends: rank, aoi_id, name, parent, the value column, share_pct.
+// ---------------------------------------------------------------------------
+
+const KENYA_COUNTIES = [
+  "Narok",
+  "Nakuru",
+  "Kericho",
+  "Baringo",
+  "Laikipia",
+  "Meru",
+  "Nyeri",
+  "Trans Nzoia",
+  "Kakamega",
+  "Kwale",
+  "Tana River",
+  "Garissa",
+  "Lamu",
+  "Kilifi",
+  "Taita Taveta",
+  "West Pokot",
+  "Elgeyo-Marakwet",
+  "Nandi",
+  "Bomet",
+  "Kisii",
+  "Nyamira",
+  "Embu",
+  "Tharaka-Nithi",
+  "Kirinyaga",
+  "Murang'a",
+  "Kiambu",
+  "Nyandarua",
+  "Bungoma",
+  "Vihiga",
+  "Busia",
+  "Siaya",
+  "Kisumu",
+  "Homa Bay",
+  "Migori",
+  "Machakos",
+  "Makueni",
+  "Kitui",
+  "Kajiado",
+  "Isiolo",
+  "Marsabit",
+  "Samburu",
+  "Turkana",
+  "Wajir",
+  "Mandera",
+  "Mombasa",
+  "Nairobi",
+  "Uasin Gishu",
+];
+
+/** 47 counties, each worth 85% of the one before, with their share of the total. */
+const KENYA_RANKING_DATA = (() => {
+  const values = KENYA_COUNTIES.map((_, i) => Math.round(72050 * 0.85 ** i));
+  const total = values.reduce((sum, value) => sum + value, 0);
+  return KENYA_COUNTIES.map((name, i) => ({
+    rank: i + 1,
+    aoi_id: `KEN.${i + 1}`,
+    name,
+    parent: "Kenya",
+    area_ha: values[i],
+    share_pct: Math.round((values[i] / total) * 10000) / 100,
+  }));
+})();
+
+/** Two "Bom Jesus", a tie, three areas with no loss, no shares (areas that may overlap). */
+const RANKING_EDGE_DATA = [
+  {
+    rank: 1,
+    aoi_id: "BRA.17.4",
+    name: "Bom Jesus",
+    parent: "Piauí",
+    area_ha: 18400,
+  },
+  {
+    rank: 2,
+    aoi_id: "BRA.21.9",
+    name: "Bom Jesus",
+    parent: "Rio Grande do Sul",
+    area_ha: 9100,
+  },
+  {
+    rank: 3,
+    aoi_id: "BRA.14.2",
+    name: "Altamira, a municipality with a very long name",
+    parent: "Pará",
+    area_ha: 4200,
+  },
+  {
+    rank: 3,
+    aoi_id: "BRA.14.7",
+    name: "Paragominas",
+    parent: "Pará",
+    area_ha: 4200,
+  },
+  { rank: 5, aoi_id: "BRA.14.1", name: "Santarém", parent: null, area_ha: 310 },
+  { rank: 6, aoi_id: "BRA.14.3", name: "Belém", parent: "Pará", area_ha: 0 },
+  {
+    rank: 6,
+    aoi_id: "BRA.14.5",
+    name: "Ananindeua",
+    parent: "Pará",
+    area_ha: 0,
+  },
+  { rank: 6, aoi_id: "BRA.14.6", name: "Marituba", parent: "Pará", area_ha: 0 },
+];
+
 const RAW_FIXTURES: { label: string; notes: string; widget: InsightWidget }[] =
   [
     {
@@ -1234,6 +1346,35 @@ const RAW_FIXTURES: { label: string; notes: string; widget: InsightWidget }[] =
         yAxis: "y",
       },
     },
+    {
+      label: "Ranked bars — 47 Kenya counties",
+      notes:
+        "Curated ranking of areas by tree cover loss: 10 to a page, one scale on every page, shares in the tooltip, loss color. Tab to a row for its tooltip; the table hides the area id.",
+      widget: {
+        id: "ranked-bar-kenya",
+        type: "ranked-bar",
+        title: "Tree Cover Loss by Area",
+        description: "Counties of Kenya by tree cover loss, 2001–2024.",
+        data: KENYA_RANKING_DATA,
+        xAxis: "name",
+        yAxis: "area_ha",
+        seriesColor: "#DC6C9A",
+      },
+    },
+    {
+      label: "Ranked bars — edge cases",
+      notes:
+        "Two 'Bom Jesus' (parent after the name), a tie, a name too long for its column, a missing parent, three areas with no loss (named in one line) and no shares. Default color, as the emissions chart.",
+      widget: {
+        id: "ranked-bar-edge",
+        type: "ranked-bar",
+        title: "Tree Cover Loss by Area",
+        description: "Municipalities of Brazil by tree cover loss.",
+        data: RANKING_EDGE_DATA,
+        xAxis: "name",
+        yAxis: "area_ha",
+      },
+    },
   ];
 
 const LOREM =
@@ -1421,6 +1562,7 @@ export default function ChartDebugPanel() {
         "grouped-bar",
         "stacked-bar-with-line",
         "hierarchical-bar",
+        "ranked-bar",
       ].includes(f.widget.type);
     if (filter === "line") return ["line", "area"].includes(f.widget.type);
     if (filter === "pie") return f.widget.type === "pie";

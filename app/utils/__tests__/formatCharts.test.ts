@@ -5,6 +5,7 @@ import formatChartData, {
   formatYAxisLabel,
   formatXAxisLabel,
   formatTooltipValue,
+  resolveSeriesColor,
 } from "../formatCharts";
 
 describe("toAxisLabel", () => {
@@ -463,5 +464,14 @@ describe("formatChartData", () => {
       expect(result.data[0]._barColor).toBe("#FF0000");
       expect(result.data[1]._barColor).toBe("#00FF00");
     });
+  });
+});
+
+describe("resolveSeriesColor", () => {
+  it("prefers the backend color, then the dataset's, else nothing", () => {
+    expect(resolveSeriesColor("#ABCDEF", "Tree cover loss")).toBe("#ABCDEF");
+    expect(resolveSeriesColor(undefined, "Tree cover loss")).toBe("#DC6C9A");
+    expect(resolveSeriesColor(undefined, "Unknown dataset")).toBeUndefined();
+    expect(resolveSeriesColor(undefined, undefined)).toBeUndefined();
   });
 });

@@ -25,6 +25,7 @@ const CHART_TYPES = new Set([
   "scatter",
   "stacked-bar-with-line",
   "hierarchical-bar",
+  "ranked-bar",
 ]);
 
 export type WidgetSize = "single" | "double";
