@@ -1562,6 +1562,7 @@ export default function ChartDebugPanel() {
         "grouped-bar",
         "stacked-bar-with-line",
         "hierarchical-bar",
+        "ranked-bar",
       ].includes(f.widget.type);
     if (filter === "line") return ["line", "area"].includes(f.widget.type);
     if (filter === "pie") return f.widget.type === "pie";
