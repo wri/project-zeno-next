@@ -157,7 +157,24 @@ describe("pageShare", () => {
   it("leads with the first page's share and the sums", () => {
     const share = pageShare(twelve, rankingView(twelve, 0));
     expect(share?.lead).toBe("Top 10 areas: 89.1% of all loss");
+    expect(share?.tail).toBe("(775 of 870 ha)");
     expect(share?.beforePct).toBe(0);
+  });
+
+  it("gives the unit once in the first page's totals", () => {
+    const emissions = ranking(
+      Array.from({ length: 12 }, (_, i) =>
+        area({
+          aoiId: `E${i}`,
+          rank: i + 1,
+          value: 12_000_000 - i * 1_000_000,
+          share: 1,
+        })
+      ),
+      { measure: "emissions", unit: "MgCO₂e" }
+    );
+    const share = pageShare(emissions, rankingView(emissions, 0));
+    expect(share?.tail).toBe("(75M of 78M MgCO₂e)");
   });
 
   it("names the ranks and the running total on a later page", () => {

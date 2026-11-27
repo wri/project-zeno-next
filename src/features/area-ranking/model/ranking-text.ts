@@ -135,10 +135,14 @@ export function pageShare(
   const pageSum = sum(view.rows);
   const pagePct = (pageSum / total) * 100;
   const noun = `of all ${ranking.measure}`;
+  // Both sums are positive here (the bars have values), so the exact figure
+  // is only the type's fallback.
+  const compact = (value: number) =>
+    formatCompactNumber(value) ?? formatTooltipValue(value);
   if (view.page === 0) {
     return {
       lead: `Top ${view.end} areas: ${shareText(pagePct)} ${noun}`,
-      tail: `(${barValueText({ ...bars[0], value: pageSum }, ranking)} of ${barValueText({ ...bars[0], value: total }, ranking)})`,
+      tail: `(${compact(pageSum)} of ${compact(total)} ${ranking.unit})`,
       beforePct: 0,
       pagePct,
     };
