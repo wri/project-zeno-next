@@ -5,6 +5,7 @@ import { Tooltip } from "@/app/components/ui/tooltip";
 
 import type { RankedArea, Ranking } from "../model/ranking";
 import {
+  QUALIFIER_SEPARATOR,
   rowValueText,
   tooltipLines,
   valueReserve,
@@ -105,7 +106,7 @@ function RankingRow({
         {area.name}
         {area.qualifier !== undefined && (
           <Text as="span" color="fg.muted">
-            {` · ${area.qualifier}`}
+            {`${QUALIFIER_SEPARATOR}${area.qualifier}`}
           </Text>
         )}
       </Text>

@@ -9,13 +9,18 @@ function fullName({ name, parent }: RankedArea): string {
   return parent === undefined ? name : `${name}, ${parent}`;
 }
 
+/** Between a name and its qualifier, in the bars and in the lists. */
+export const QUALIFIER_SEPARATOR = " · ";
+
 /**
  * What names the area in a list: the name, and for a name that repeats the
  * qualifier after a " · ", as the bars show it ("Bom Jesus · Piauí"). Not the
  * tooltip's comma form, which would read as two areas inside a comma list.
  */
 export function displayName({ name, qualifier }: RankedArea): string {
-  return qualifier === undefined ? name : `${name} · ${qualifier}`;
+  return qualifier === undefined
+    ? name
+    : `${name}${QUALIFIER_SEPARATOR}${qualifier}`;
 }
 
 /** The shortened figure; the exact one only where the short form has none. */
