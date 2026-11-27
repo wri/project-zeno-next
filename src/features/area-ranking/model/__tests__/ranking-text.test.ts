@@ -196,8 +196,13 @@ describe("pageShare", () => {
     expect(pageShare(few, rankingView(few, 0))).toBeUndefined();
   });
 
-  it("is absent without shares", () => {
-    const none = ranking([area({ share: undefined })]);
+  it("is absent without shares, even over several pages", () => {
+    const none = ranking(
+      Array.from({ length: 12 }, (_, i) =>
+        area({ aoiId: `A${i}`, rank: i + 1, value: 100 - i, share: undefined })
+      )
+    );
+    expect(rankingView(none, 0).pageCount).toBe(2);
     expect(pageShare(none, rankingView(none, 0))).toBeUndefined();
   });
 });
