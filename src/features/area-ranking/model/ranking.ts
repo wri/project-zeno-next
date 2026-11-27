@@ -2,7 +2,7 @@ import type { InsightWidget } from "@/app/types/chat";
 import { axisUnit } from "@/app/utils/formatCharts";
 
 /** What the bars measure: tree cover loss in hectares, or the emissions of it. */
-export type RankingMeasure = "loss" | "emissions";
+type RankingMeasure = "loss" | "emissions";
 
 /** The value columns a ranking can have, by the chart's `yAxis`. */
 const MEASURES = new Map<string, RankingMeasure>([

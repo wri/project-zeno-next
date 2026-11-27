@@ -102,7 +102,7 @@ export function noValueText(ranking: Ranking, areas: RankedArea[]): string {
   return `No ${ranking.measure} in ${count}: ${names.join(", ")}.`;
 }
 
-export interface PageShare {
+interface PageShare {
   lead: string;
   tail: string;
   /** Percent of the total: the ranks before the page, and the page. */
