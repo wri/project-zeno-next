@@ -1,7 +1,4 @@
-import {
-  formatCompactNumber,
-  formatHectares,
-} from "@/app/utils/boundaryFeatureDetails";
+import { formatCompactNumber } from "@/app/utils/boundaryFeatureDetails";
 import { formatTooltipValue } from "@/app/utils/formatCharts";
 
 import type { RankedArea, Ranking } from "./ranking";
@@ -24,6 +21,11 @@ function fullName({ name, parent }: RankedArea): string {
  */
 export function displayName({ name, qualifier }: RankedArea): string {
   return qualifier === undefined ? name : `${name} · ${qualifier}`;
+}
+
+/** The shortened figure; the exact one only where the short form has none. */
+function compactValue(value: number): string {
+  return formatCompactNumber(value) ?? formatTooltipValue(value);
 }
 
 /** The exact figure: "72,050 ha". */
@@ -58,10 +60,7 @@ export function tooltipLines(
  * bar keeps its width. The tooltip carries the exact figure.
  */
 export function barValueText(area: RankedArea, ranking: Ranking): string {
-  const exact = exactValue(area, ranking);
-  if (ranking.measure === "loss") return formatHectares(area.value) ?? exact;
-  const compact = formatCompactNumber(area.value);
-  return compact === undefined ? exact : `${compact} ${ranking.unit}`;
+  return `${compactValue(area.value)} ${ranking.unit}`;
 }
 
 /** What the row prints after the bar: the value and, in print, the share. */
@@ -135,14 +134,10 @@ export function pageShare(
   const pageSum = sum(view.rows);
   const pagePct = (pageSum / total) * 100;
   const noun = `of all ${ranking.measure}`;
-  // Both sums are positive here (the bars have values), so the exact figure
-  // is only the type's fallback.
-  const compact = (value: number) =>
-    formatCompactNumber(value) ?? formatTooltipValue(value);
   if (view.page === 0) {
     return {
       lead: `Top ${view.end} areas: ${shareText(pagePct)} ${noun}`,
-      tail: `(${compact(pageSum)} of ${compact(total)} ${ranking.unit})`,
+      tail: `(${compactValue(pageSum)} of ${compactValue(total)} ${ranking.unit})`,
       beforePct: 0,
       pagePct,
     };
